@@ -31,6 +31,8 @@ public class DamageNumber : MonoBehaviour
 
     private void Update()
     {
+        if (PauseManager.isPaused) return;
+
         float dt = Time.unscaledDeltaTime;
 
         // 1. Sayıyı fırlat ve zamanla yavaşlat

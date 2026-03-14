@@ -37,6 +37,15 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
+        // Pause sırasında kamera girişi ve shake dursun
+        if (PauseManager.isPaused)
+        {
+            shakeTimer = 0f;
+            shakeOffset = Vector3.zero;
+            transform.position = targetPosition;
+            return;
+        }
+
         HandleKeyboardPan();
         HandleMouseDragPan();
         HandleZoom();
@@ -91,7 +100,7 @@ public class CameraController : MonoBehaviour
     {
         if (shakeTimer > 0f)
         {
-            shakeTimer -= Time.deltaTime;
+            shakeTimer -= Time.unscaledDeltaTime;
             float progress = 1f - (shakeTimer / shakeDuration);
             float falloff = 1f - (progress * progress);
             shakeOffset = Random.insideUnitSphere * shakeMagnitude * falloff;

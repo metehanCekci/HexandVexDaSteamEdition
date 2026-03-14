@@ -175,6 +175,7 @@ public class EnemyAI : MonoBehaviour
 
     void OnMouseDown()
     {
+        if (PauseManager.isPaused) return;
         if (TurnManager.instance == null) return;
         if (TurnManager.instance.isNecroShotTargeting)
             TurnManager.instance.TryNecroShotKill(this);
@@ -286,6 +287,15 @@ public class EnemyAI : MonoBehaviour
     // ========================================================
     public void ApplyStun(int turns, bool showEffect)
     {
+        // NeuroStasisMist: tüm stunlara bonus tur ekle
+        if (RunManager.instance != null)
+        {
+            foreach (var p in RunManager.instance.activePerks)
+            {
+                if (p is NeuroStasisMistPerk mist) { turns += mist.GetStunBonus(); break; }
+            }
+        }
+
         skipTurns = Mathf.Max(skipTurns, turns);
         
         // Eğer ağır stunsak (duvara çarptıysak) efekti aç

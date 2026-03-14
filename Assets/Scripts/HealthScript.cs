@@ -92,16 +92,7 @@ public class HealthScript : MonoBehaviour
         EnemyAI enemy = GetComponentInParent<EnemyAI>();
         if (enemy != null && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Boss && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Totem)
         {
-            int stunTurns = 1;
-            if (RunManager.instance != null)
-            {
-                foreach (var p in RunManager.instance.activePerks)
-                    if (p is NeuroStasisMistPerk mist) { stunTurns += mist.GetStunBonus(); break; }
-            }
-            enemy.skipTurns = Mathf.Max(enemy.skipTurns, stunTurns);
-            enemy.SetStunVisual(true);
-            // Stun alpha'sını hemen başlat (sonra TriggerExplosion tarafından reset edilebilsin)
-            SetStunnedAlpha(true);
+            enemy.ApplyStun(1, false);
         }
 
         OnDamaged?.Invoke(currentHP);

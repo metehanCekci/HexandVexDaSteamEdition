@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,6 +72,8 @@ public class HexMovement : MonoBehaviour
 
     void Update()
     {
+        if (PauseManager.isPaused) return;
+
         HandleMovement();
         ProcessHighlights();
 
@@ -113,7 +116,7 @@ public class HexMovement : MonoBehaviour
 
     private void HandleMovementInput()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
             Vector3 worldPoint = GetMousePositionOnZPlane();
             Vector3Int clickedCell = groundMap.WorldToCell(worldPoint);

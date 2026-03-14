@@ -14,6 +14,8 @@ public class CoinDropService
         {
             if (enemy.enemyBehavior == EnemyAI.EnemyBehavior.Boss)
                 coinDrop = 20;
+            else
+                coinDrop = Random.Range(1, 3); // Minyonlar da az coin versin
         }
         else
         {

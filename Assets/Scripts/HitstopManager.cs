@@ -20,6 +20,8 @@ public class HitstopManager : MonoBehaviour
 
     public void TriggerHitstop(float duration = 1f / 15f)
     {
+        if (PauseManager.isPaused) return;
+
         // Aktif hitstop varsa iptal et ama orijinal timeScale'i koru
         if (activeHitstop != null)
             StopCoroutine(activeHitstop);
@@ -34,7 +36,8 @@ public class HitstopManager : MonoBehaviour
     {
         Time.timeScale = 0f;
         yield return new WaitForSecondsRealtime(duration);
-        Time.timeScale = savedTimeScale;
+        if (!PauseManager.isPaused)
+            Time.timeScale = savedTimeScale;
         activeHitstop = null;
     }
 }

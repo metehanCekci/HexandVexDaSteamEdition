@@ -214,9 +214,23 @@ public class SpawnerBossAI : MonoBehaviour
 
     public IEnumerator ExecuteBossTurn()
     {
-        if (myEnemyAI.skipTurns > 0) 
+        if (myEnemyAI.skipTurns > 0)
         {
             readyToExplodeThisTurn = false;
+
+            // Stun yediyse AoE uyarı döngüsünü de sıfırla
+            if (isAoEWarningActive)
+            {
+                isAoEWarningActive = false;
+                aoeCycleStep = 0;
+                if (myEnemyAI.animator != null) myEnemyAI.animator.SetBool("IsCharging", false);
+                if (bossWarningMap != null)
+                {
+                    foreach (var c in aoeWarningCells) bossWarningMap.SetTile(c, null);
+                }
+                aoeWarningCells.Clear();
+            }
+
             yield break;
         }
         if (isTransitioning)
@@ -569,22 +583,11 @@ public class SpawnerBossAI : MonoBehaviour
 
     private IEnumerator CameraShake(float duration, float magnitude)
     {
-        Camera cam = Camera.main;
-        if (cam == null) yield break;
-
-        Vector3 origin = cam.transform.position;
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            float strength = Mathf.Lerp(magnitude, 0f, elapsed / duration);
-            cam.transform.position = new Vector3(
-                origin.x + Random.Range(-1f, 1f) * strength,
-                origin.y + Random.Range(-1f, 1f) * strength,
-                origin.z);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-        cam.transform.position = origin;
+        // CameraController üzerinden shake yap — kendi konum yönetimini bozmasın
+        CameraController controller = FindObjectOfType<CameraController>();
+        if (controller != null)
+            controller.Shake(duration, magnitude);
+        yield return new WaitForSeconds(duration);
     }
 
     private IEnumerator ShieldPulseLoop()
