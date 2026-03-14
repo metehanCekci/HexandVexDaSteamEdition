@@ -54,6 +54,7 @@ public class TurnManager : MonoBehaviour
     private DiceUIController diceUI;
     private PerkCombatProcessor perkProcessor;
     [HideInInspector] public bool isLevelClearTriggered = false;
+    private bool manualDiceSkip = false;
     public bool isPlayerTurn = true;
     public bool hasAttackedThisTurn = false;
     public bool isAttackAnimationPlaying = false;
@@ -125,9 +126,9 @@ public class TurnManager : MonoBehaviour
     {
         if (diceUI != null) diceUI.CheckFastModeSkip();
 
-        // fastMode aktif ise zarları gizle, pasif ise göster
+        // fastMode veya manuel skip aktifse zarları gizle
         if (RunManager.instance != null)
-            skipDiceVisuals = RunManager.instance.fastMode;
+            skipDiceVisuals = RunManager.instance.fastMode || manualDiceSkip;
 
         if ((isBombPlacementTargeting || isThornPlacementTargeting) && Input.GetMouseButtonDown(0))
         {
@@ -307,6 +308,9 @@ public class TurnManager : MonoBehaviour
         // 1. Zamanı normale döndür (Pause'dan geliyorsa)
         Time.timeScale = 1f;
 
+        // Düşman scaling'ini sıfırla
+        LevelGenerator.ResetBossMultiplier();
+
         // 2. RunManager verilerini sıfırla
         if (RunManager.instance != null)
         {
@@ -326,6 +330,18 @@ public class TurnManager : MonoBehaviour
             rm.hasBioBarrier = false;
             rm.luckyCloverLevel = 0;
             rm.criticalChance = startingCritChance;
+            rm.shopRerollStack = 0;
+            rm.extraMovesPerTurn = 0;
+            rm.remainingMoves = 0;
+            rm.bonusGoldPerKill = 0;
+            rm.skipBonusGold = 0;
+            rm.bonusDiceNextCombat = 0;
+            rm.doubleGoldNextKill = false;
+            rm.doubleDamageNextCombat = false;
+            rm.cleaveNextCombat = false;
+            rm.surgeBootNextTurn = false;
+            rm.surgeBootActive = false;
+            rm.hasPerkReroll = false;
 
             // Perkleri temizle (Sahnedeki objeleri yok et)
             foreach (BasePerk perk in rm.activePerks)
@@ -1060,9 +1076,14 @@ public class TurnManager : MonoBehaviour
 
     public void ToggleSkipDiceVisuals()
     {
-        skipDiceVisuals = !skipDiceVisuals;
+        manualDiceSkip = !manualDiceSkip;
+        skipDiceVisuals = manualDiceSkip || (RunManager.instance != null && RunManager.instance.fastMode);
+
+        // Eğer skip açıldıysa ve ekranda zar varsa, hemen temizle
+        if (skipDiceVisuals && diceUI != null)
+            HideDiceResults();
     }
-    public bool GetSkipDiceVisuals() => skipDiceVisuals;
+    public bool GetSkipDiceVisuals() => manualDiceSkip;
 
     private IEnumerator MultiAttack(List<EnemyAI> targets)
     {
@@ -1347,18 +1368,7 @@ public class TurnManager : MonoBehaviour
 
         deadFromSpikes = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
         foreach (var deadEnemy in deadFromSpikes)
-        {
-            if (deadEnemy.enemyBehavior != EnemyAI.EnemyBehavior.Totem)
-            {
-                bool isBossRoom = RunManager.instance.currentLevel % 5 == 0;
-                int coinDrop = 0;
-                if (isBossRoom) { if (deadEnemy.enemyBehavior == EnemyAI.EnemyBehavior.Boss) coinDrop = 20; }
-                else { coinDrop = Random.Range(1, 4) + RunManager.instance.bonusGold; if (RunManager.instance.doubleGoldNextKill) { coinDrop *= 2; RunManager.instance.doubleGoldNextKill = false; } }
-                if (coinDrop > 0) { RunManager.instance.currentGold += coinDrop; RunManager.instance.totalGoldEarned += coinDrop; if (CoinDropVFX.instance != null) CoinDropVFX.instance.SpawnCoins(deadEnemy.transform.position, coinDrop); }
-            }
-            foreach (var p in RunManager.instance.activePerks) p.OnEnemyKilled(deadEnemy);
-            RunManager.instance.totalEnemiesKilled++;
-        }
+            coinService.ProcessKillRewards(deadEnemy);
         UpdateCoinUI();
         if (CleanupDeadAndCheckLevelClear()) yield break;
 
