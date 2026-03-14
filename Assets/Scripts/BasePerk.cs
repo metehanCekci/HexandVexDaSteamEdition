@@ -32,6 +32,9 @@ public abstract class BasePerk : MonoBehaviour
     // Her yeni levele/odaya geçildiğinde çalışır
     public virtual void OnLevelStart() { }
 
+    // Level temizlendiğinde (tüm düşmanlar öldüğünde) çalışır
+    public virtual void OnLevelClear() { }
+
     // Düşman öldüğünde çalışır
     public virtual void OnEnemyKilled(EnemyAI enemy) { }
 

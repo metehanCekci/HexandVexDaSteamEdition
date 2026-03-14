@@ -453,6 +453,15 @@ public class TurnManager : MonoBehaviour
 
         RunManager.instance.totalLevelsPlayed++;
 
+        // Level temizlendiğinde perklerin OnLevelClear callback'ini çağır
+        if (RunManager.instance != null)
+        {
+            foreach (var perk in RunManager.instance.activePerks)
+            {
+                if (perk != null) perk.OnLevelClear();
+            }
+        }
+
         if (Shopmanager.instance != null)
         {
             bool isBossLevel = RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0;
@@ -727,7 +736,8 @@ public class TurnManager : MonoBehaviour
 
     public void SkipTurn()
     {
-        if (!isPlayerTurn || IsAnyTargetingActive) return;
+        if (!isPlayerTurn || IsAnyTargetingActive || isAttackAnimationPlaying) return;
+        if (diceUI != null && diceUI.IsDiceAnimPlaying) return;
         isPlayerTurn = false;
         if (RunManager.instance != null) RunManager.instance.remainingMoves = 0;
 
@@ -1074,8 +1084,11 @@ public class TurnManager : MonoBehaviour
     }
     public bool GetFastMode() => RunManager.instance != null && RunManager.instance.fastMode;
 
+    public bool IsDiceAnimPlaying => diceUI != null && diceUI.IsDiceAnimPlaying;
+
     public void ToggleSkipDiceVisuals()
     {
+        if (diceUI != null && diceUI.IsDiceAnimPlaying) return;
         manualDiceSkip = !manualDiceSkip;
         skipDiceVisuals = manualDiceSkip || (RunManager.instance != null && RunManager.instance.fastMode);
 

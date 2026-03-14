@@ -266,7 +266,15 @@ public class Shopmanager : MonoBehaviour
 
         RunManager.instance.currentGold -= item.price;
         if (AudioManager.instance != null) AudioManager.instance.PlayPurchase();
-        item.Use();
+        bool used = item.Use();
+
+        // Item kullanılamadıysa parayı geri ver ve satın almayı iptal et
+        if (!used)
+        {
+            RunManager.instance.currentGold += item.price;
+            RefreshCoinDisplay();
+            return;
+        }
 
         // ========================================================
         // EĞER SATIN ALINAN EŞYA SECRET İSE, ARTIK BİR DAHA ÇIKMASIN DİYE KİLİTLE
