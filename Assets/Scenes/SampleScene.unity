@@ -8076,7 +8076,7 @@ MonoBehaviour:
   skipButton: {fileID: 0}
   skipButtonImage: {fileID: 1267672139}
   levelUpCanvasGroup: {fileID: 1574552225}
-  forcedPerk: {fileID: 0}
+  forcedPerk: {fileID: 8421024522635560941, guid: 9a9e4094e59f8eb4caa4127aee7c2b46, type: 3}
   forcedPerk2: {fileID: 0}
 --- !u!4 &937609419
 Transform:
@@ -10397,7 +10397,7 @@ MonoBehaviour:
   warlockEnemyPrefab: {fileID: 506802351436183914, guid: 216abee7f8db59f4181fc42e10839b5d, type: 3}
   warlockStartLevel: 6
   warlockSpawnChance: 0.2
-  baseMapRadius: 2
+  baseMapRadius: 3
   aoeStartLevel: 3
 --- !u!4 &1114187817
 Transform:
@@ -13468,6 +13468,52 @@ MonoBehaviour:
   shakeDuration: 2
   shakeMagnitude: 0.1
   roarPopupPrefab: {fileID: 0}
+--- !u!1 &1397671544
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1397671546}
+  - component: {fileID: 1397671545}
+  m_Layer: 0
+  m_Name: DiceSkipController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1397671545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397671544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35fead794dfcb554d8b99764f584f950, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceSkipController
+  skipIndicatorUI: {fileID: 0}
+  skipDiceButton: {fileID: 0}
+--- !u!4 &1397671546
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397671544}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1400458064
 GameObject:
   m_ObjectHideFlags: 0
@@ -21614,3 +21660,4 @@ SceneRoots:
   - {fileID: 779959443}
   - {fileID: 641170134}
   - {fileID: 40458107}
+  - {fileID: 1397671546}
