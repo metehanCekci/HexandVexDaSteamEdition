@@ -14,7 +14,7 @@ public class RegenTissuePerk : BasePerk
         ApplyHealthBoost(); // Seviye atladığı an canı ver!
     }
 
-    public override void OnLevelStart()
+    public override void OnLevelClear()
     {
         ApplyHealthBoost();
     }
