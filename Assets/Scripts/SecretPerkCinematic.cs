@@ -38,6 +38,7 @@ public class SecretPerkCinematic : MonoBehaviour
     private float[] particleLifetimes;
 
     private bool isPlaying = false;
+    public bool IsPlaying => isPlaying;
 
     void Awake()
     {
@@ -472,7 +473,6 @@ public class SecretPerkCinematic : MonoBehaviour
         {
             perkNameText.text = fullName.Substring(0, i + 1);
             if (AudioManager.instance != null) AudioManager.instance.PlayTextEffect();
-            CameraController.ShakeLight();
             yield return new WaitForSecondsRealtime(typeDelay);
         }
 

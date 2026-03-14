@@ -156,6 +156,7 @@ public class LevelGenerator : MonoBehaviour
 
         bool isPostBossLevel = RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1;
         int currentRadius = baseMapRadius + (RunManager.instance.currentLevel / 6);
+        int enemyCountToSpawn = 3 + (RunManager.instance.currentLevel / 3);
 
         for (int x = -currentRadius; x <= currentRadius; x++)
         {
@@ -187,6 +188,33 @@ public class LevelGenerator : MonoBehaviour
 
         CleanUpDisconnectedIslands();
         EnsureSafeConnectivity();
+
+        // Minimum tile garantisi: düşman sayısı + hazard sayısı + 4 (oyuncu + hareket alanı)
+        int minSafeTiles = enemyCountToSpawn + hazardCells.Count + 4;
+        int safeTileCount = validCells.Count(c => !hazardCells.Contains(c) && !scaffoldCells.Contains(c));
+        if (safeTileCount < minSafeTiles)
+        {
+            int needed = minSafeTiles - safeTileCount;
+            List<Vector3Int> existingCells = new List<Vector3Int>(validCells);
+            foreach (var existing in existingCells)
+            {
+                if (needed <= 0) break;
+                Vector3Int[] offs = (existing.y % 2 != 0) ? evenOffsets : oddOffsets;
+                foreach (var off in offs)
+                {
+                    if (needed <= 0) break;
+                    Vector3Int neighbor = existing + off;
+                    if (!validCells.Contains(neighbor))
+                    {
+                        groundMap.SetTile(neighbor, groundTile);
+                        groundMap.SetColor(neighbor, Color.white);
+                        validCells.Add(neighbor);
+                        needed--;
+                    }
+                }
+            }
+        }
+
         GenerateColumns();
 
         Vector3 worldCenter = groundMap.GetCellCenterWorld(Vector3Int.zero);
@@ -220,8 +248,6 @@ public class LevelGenerator : MonoBehaviour
         TurnManager.instance.player.transform.position = groundMap.GetCellCenterWorld(playerStartCell);
         TurnManager.instance.player.StartKnockbackMovement(playerStartCell);
         validCells.Remove(playerStartCell);
-
-        int enemyCountToSpawn = 3 + (RunManager.instance.currentLevel / 3);
 
         List<Vector3Int> spawnedEnemyCells = new List<Vector3Int>();
         int spawnedWarlockCount = 0;

@@ -113,6 +113,7 @@ public class Shopmanager : MonoBehaviour
     {
         if (RunManager.instance == null) return;
         if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive) return;
+        if (SecretPerkCinematic.instance != null && SecretPerkCinematic.instance.IsPlaying) return;
 
         if (RunManager.instance.currentGold < currentRerollCost)
         {
@@ -254,6 +255,7 @@ public class Shopmanager : MonoBehaviour
         if (index >= purchased.Count || purchased[index]) return;
         if (RunManager.instance == null) return;
         if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive) return;
+        if (SecretPerkCinematic.instance != null && SecretPerkCinematic.instance.IsPlaying) return;
 
         BaseItem item = currentItems[index];
         if (item == null) return;

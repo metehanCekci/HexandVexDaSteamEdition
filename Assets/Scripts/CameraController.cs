@@ -91,7 +91,7 @@ public class CameraController : MonoBehaviour
     {
         if (shakeTimer > 0f)
         {
-            shakeTimer -= Time.deltaTime;
+            shakeTimer -= Time.unscaledDeltaTime;
             float progress = 1f - (shakeTimer / shakeDuration);
             float falloff = 1f - (progress * progress);
             shakeOffset = Random.insideUnitSphere * shakeMagnitude * falloff;
