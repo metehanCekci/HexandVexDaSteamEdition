@@ -37,6 +37,15 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
+        // Pause sırasında kamera girişi ve shake dursun
+        if (PauseManager.isPaused)
+        {
+            shakeTimer = 0f;
+            shakeOffset = Vector3.zero;
+            transform.position = targetPosition;
+            return;
+        }
+
         HandleKeyboardPan();
         HandleMouseDragPan();
         HandleZoom();

@@ -125,6 +125,8 @@ public class TurnManager : MonoBehaviour
 
     void Update()
     {
+        if (PauseManager.isPaused) return;
+
         if (diceUI != null) diceUI.CheckFastModeSkip();
 
         // fastMode veya manuel skip aktifse zarları gizle

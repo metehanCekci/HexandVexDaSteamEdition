@@ -72,6 +72,8 @@ public class HexMovement : MonoBehaviour
 
     void Update()
     {
+        if (PauseManager.isPaused) return;
+
         HandleMovement();
         ProcessHighlights();
 
