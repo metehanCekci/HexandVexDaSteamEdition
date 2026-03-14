@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(xargs basename:*)",
+      "Bash(find c:UserskutusDesktopGithubRepoHexAndVexAssets -name 49b0ff9c05cb759bc8723e972c94a3e3* -o -name *.mat)",
+      "Bash(awk \"NR>=15070 && NR<=15120\")",
+      "Bash(sed -n 15060,15130p c:UserskutusDesktopGithubRepoHexAndVexAssetsScenesSampleScene.unity)",
+      "Bash(find /c/GitHub/HexAndVex -name *GeneSplice* -o -name *Gene*)",
+      "Bash(python3 -c \"print\\(''ok''\\)\")",
+      "Bash(python -c \"print\\(''ok''\\)\")",
+      "Bash(__NEW_LINE_8ad021a675c54029__ echo:*)",
+      "Bash(find c:GitHubHexAndVexAssetsPrefabsUI -name *Canvas* -o -name *Stats*)",
+      "Bash(grep -r \"totalTurnsPlayed\\\\|totalDiceRolled\\\\|totalDamageDealt\\\\|totalEnemiesKilled\\\\|totalGoldEarned\" c:/GitHub/HexAndVex/Assets/Scripts --include=*.cs)"
+    ]
+  }
+}

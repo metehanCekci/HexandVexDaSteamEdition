@@ -1,0 +1,270 @@
+using TMPro;
+using UnityEngine;
+using System.Collections;
+
+/// <summary>
+/// Oyuncu ve düşman için ortak sağlık sistemi.
+/// Hasar, iyileştirme, yumuşak renk geçişleri (Damage Flash), yumuşak saydamlaşma ve ölüm animasyonunu yönetir.
+/// </summary>
+public class HealthScript : MonoBehaviour
+{    public static HitstopManager hitstopManager;
+    [Header("HP Settings")]
+    public int maxHP = 3;
+    public int currentHP;
+
+    public System.Action OnDeath;
+    public System.Action<int> OnDamaged;
+
+    public TMP_Text hptext;
+
+    private SpriteRenderer spriteRenderer;
+    private Color originalColor = Color.white;
+    private Coroutine flashCoroutine;
+    private Coroutine alphaFadeCoroutine; // YENİ: Saydamlığın yavaşça değişmesini sağlayan animasyon
+    private bool isDead = false;
+
+    private bool isDeepStunnedAlpha = false;
+    [Header("VFX")]
+    public GameObject damageTextPrefab; // Hazırladığın prefabı buraya sürükle
+
+    public GameObject deathMenuUI; // Ölme ekranını buraya da sürükle
+    void Start()
+    {
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (spriteRenderer != null) originalColor = spriteRenderer.color;
+
+        if (gameObject.CompareTag("Player"))
+        {
+            if (RunManager.instance != null)
+            {
+                maxHP = RunManager.instance.playerMaxHealth;
+                currentHP = RunManager.instance.playerCurrentHealth;
+            }
+        }
+        else
+        {
+            currentHP = maxHP;
+        }
+        updateHealth();
+    }
+
+    public void TakeDamage(int dmg, bool applyHitstop = false)
+    {
+        if (isDead) return;
+
+        // Boss kalkanı varken hasar vurulmaz
+        EnemyAI enemyAI = GetComponentInParent<EnemyAI>();
+        if (enemyAI != null && enemyAI.enemyBehavior == EnemyAI.EnemyBehavior.Boss)
+        {
+            var boss = enemyAI.GetComponent<SpawnerBossAI>();
+            if (boss != null && boss.isShielded)
+            {
+                Debug.Log("Boss kalkanı aktif - Hasar verilmedi!");
+                return;
+            }
+        }
+
+        if (AudioManager.instance != null) AudioManager.instance.PlayTakeDamage();
+        currentHP -= dmg;
+
+        // Impact anında hafif camera shake
+        CameraController.ShakeLight();
+        
+        // Hitstop uygula
+        if (applyHitstop && HitstopManager.instance != null)
+            HitstopManager.instance.TriggerHitstop();
+
+        if (gameObject.CompareTag("Player"))
+        {
+            RunManager.instance.totalDamageReceived += dmg; // Alınan hasarı kaydet
+            RunManager.instance.playerCurrentHealth = currentHP; // Senkronize et
+        }
+        
+        if (damageTextPrefab != null)
+        {
+            // Sayıyı tam düşmanın merkezinde oluştur
+            GameObject dmgObj = Instantiate(damageTextPrefab, transform.position, Quaternion.identity);
+
+            // Setup fonksiyonunu çağırarak içindeki rakamı yazdır
+            dmgObj.GetComponent<DamageNumber>().Setup(dmg);
+        }
+
+        EnemyAI enemy = GetComponentInParent<EnemyAI>();
+        if (enemy != null && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Boss && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Totem)
+        {
+            int stunTurns = 1;
+            if (RunManager.instance != null)
+            {
+                foreach (var p in RunManager.instance.activePerks)
+                    if (p is NeuroStasisMistPerk mist) { stunTurns += mist.GetStunBonus(); break; }
+            }
+            enemy.skipTurns = Mathf.Max(enemy.skipTurns, stunTurns);
+            enemy.SetStunVisual(true);
+            // Stun alpha'sını hemen başlat (sonra TriggerExplosion tarafından reset edilebilsin)
+            SetStunnedAlpha(true);
+        }
+
+        OnDamaged?.Invoke(currentHP);
+        updateHealth();
+
+        if (currentHP <= 0)
+        {
+            Die();
+        }
+        else
+        {
+            if (spriteRenderer != null && gameObject.activeInHierarchy)
+            {
+                if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+                flashCoroutine = StartCoroutine(DamageFlash());
+            }
+        }
+    }
+
+    private IEnumerator DamageFlash()
+    {
+        spriteRenderer.color = Color.red;
+
+        float duration = 0.35f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            // originalColor'ın alpha'sı o sırada değişiyor olsa bile sorunsuz takip eder
+            spriteRenderer.color = Color.Lerp(Color.red, originalColor, elapsed / duration);
+            yield return null;
+        }
+
+        spriteRenderer.color = originalColor;
+        flashCoroutine = null;
+    }
+
+    // --- YENİ: YUMUŞAK SAYDAMLAŞMA (FADE IN / FADE OUT) ---
+    public void SetStunnedAlpha(bool deepStun)
+    {
+        if (spriteRenderer == null || isDead) return;
+
+        // Eğer zaten ayarlandıysa ve aynı statüdeyse çık
+        if (isDeepStunnedAlpha == deepStun) return;
+
+        isDeepStunnedAlpha = deepStun;
+        float targetAlpha = deepStun ? 0.45f : 1f;
+
+        // Eğer halihazırda bir saydamlaşma animasyonu varsa durdur, yenisini başlat
+        if (alphaFadeCoroutine != null) StopCoroutine(alphaFadeCoroutine);
+        alphaFadeCoroutine = StartCoroutine(FadeAlphaCoroutine(targetAlpha, deepStun));
+    }
+
+    private IEnumerator FadeAlphaCoroutine(float targetAlpha, bool fadingIn)
+    {
+        float startAlpha = originalColor.a;
+        float duration = fadingIn ? 0.3f : 0.7f; // Saydamlaşma hızlı, belirginleşme yavaş
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float newAlpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / duration);
+
+            // Orijinal rengin hafızasını güncelle
+            originalColor = new Color(originalColor.r, originalColor.g, originalColor.b, newAlpha);
+
+            // Eğer o an kırmızı parlama YOKSA, yeni saydamlığı direkt uygula
+            // (Kırmızı parlama varsa, zaten üstteki DamageFlash bu originalColor'ı kullanıyor)
+            if (flashCoroutine == null)
+            {
+                spriteRenderer.color = originalColor;
+            }
+
+            yield return null;
+        }
+
+        // Animasyon bitince tam değeri oturt
+        originalColor = new Color(originalColor.r, originalColor.g, originalColor.b, targetAlpha);
+        if (flashCoroutine == null)
+        {
+            spriteRenderer.color = originalColor;
+        }
+    }
+
+    public void Heal(int amount)
+    {
+        if (isDead) return;
+        currentHP = Mathf.Min(currentHP + amount, maxHP);
+        updateHealth();
+    }
+
+    private void Die()
+    {
+        isDead = true;
+        OnDeath?.Invoke();
+
+        if (hptext != null) hptext.gameObject.SetActive(false);
+
+        if (gameObject.CompareTag("Player"))
+        {
+            if (RunManager.instance != null) RunManager.instance.SaveBestRun();
+            if (deathMenuUI != null)
+            {
+                deathMenuUI.SetActive(true);
+                Time.timeScale = 0f;
+            }
+            return;
+        }
+
+        // Düşman: DeathAnimation ile yok et (TurnManager gold verene kadar hayatta kalır)
+        Debug.Log(gameObject.name + " öldü.");
+        if (gameObject.activeInHierarchy)
+        {
+            StartCoroutine(DeathAnimation());
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private IEnumerator DeathAnimation()
+    {
+        // Animator'ı kapat ki sprite override etmesin
+        Animator anim = GetComponentInChildren<Animator>();
+        if (anim != null) anim.enabled = false;
+
+        float duration = 0.4f;
+        float elapsed = 0f;
+
+        Vector3 startScale = transform.localScale;
+        // Tüm SpriteRenderer'ları yakala (child'lar dahil)
+        SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>();
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            transform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
+
+            foreach (var sr in allRenderers)
+            {
+                if (sr != null)
+                {
+                    Color c = sr.color;
+                    sr.color = new Color(c.r, c.g, c.b, Mathf.Lerp(1f, 0f, t));
+                }
+            }
+
+            yield return null;
+        }
+
+        Destroy(gameObject);
+    }
+
+    public void updateHealth()
+    {
+        if (hptext != null) hptext.text = currentHP.ToString() + "/" + maxHP;
+
+        var healthBar = GetComponent<EnemyHealthBar>();
+        if (healthBar != null) healthBar.UpdateBar();
+    }
+}
