@@ -899,50 +899,122 @@ public class EnemyAI : MonoBehaviour
 
     public Vector3Int CalculateNextMove(Vector3Int playerCell)
     {
-        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        List<Vector3Int> openSet = new List<Vector3Int>();
+        HashSet<Vector3Int> closedSet = new HashSet<Vector3Int>();
         Dictionary<Vector3Int, Vector3Int> cameFrom = new Dictionary<Vector3Int, Vector3Int>();
 
-        queue.Enqueue(cell); cameFrom[cell] = cell;
-        Vector3Int targetNeighbor = playerCell; bool foundPath = false;
+        Dictionary<Vector3Int, float> gScore = new Dictionary<Vector3Int, float>();
+        Dictionary<Vector3Int, float> fScore = new Dictionary<Vector3Int, float>();
 
-        // Yol tamamen tıkalıysa en yakın hücreyi takip etmek için
-        Vector3Int closestCell = cell;
-        float closestDist = Distance(cell, playerCell);
+        openSet.Add(cell);
+        gScore[cell] = 0;
+        fScore[cell] = Distance(cell, playerCell);
 
-        while (queue.Count > 0)
+        Vector3Int bestReachableCell = cell;
+        float closestDistanceToPlayer = Distance(cell, playerCell);
+
+        while (openSet.Count > 0)
         {
-            Vector3Int current = queue.Dequeue();
-            if (IsNeighbor(current, playerCell)) { targetNeighbor = current; foundPath = true; break; }
+            Vector3Int current = openSet[0];
+            for (int i = 1; i < openSet.Count; i++)
+            {
+                if (fScore.ContainsKey(openSet[i]) && fScore[openSet[i]] < fScore[current])
+                {
+                    current = openSet[i];
+                }
+            }
 
-            float dist = Distance(current, playerCell);
-            if (dist < closestDist) { closestDist = dist; closestCell = current; }
+            if (IsNeighbor(current, playerCell))
+            {
+                bestReachableCell = current;
+                break;
+            }
+
+            openSet.Remove(current);
+            closedSet.Add(current);
 
             Vector3Int[] offsets = (current.y % 2 != 0) ? evenOffsets : oddOffsets;
+
             foreach (var off in offsets)
             {
-                Vector3Int next = current + off;
-                if (!cameFrom.ContainsKey(next))
-                {
-                    bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(next);
-                    if (!groundMap.HasTile(next) && !isScaffold) continue;
-                    if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells != null && LevelGenerator.instance.hazardCells.Contains(next)) continue;
-                    // if (LevelGenerator.instance != null && LevelGenerator.instance.scaffoldCells != null && LevelGenerator.instance.scaffoldCells.Contains(next)) continue;
-                    if (ScaffoldManager.instance != null && ScaffoldManager.instance.IsCollapsing(next)) continue;
-                    if (TurnManager.instance.IsEnemyAtCell(next) && next != cell) continue;
+                Vector3Int neighbor = current + off;
 
-                    cameFrom[next] = current; queue.Enqueue(next);
+                if (closedSet.Contains(neighbor)) continue;
+
+                // 1. TEMEL FİLTRE: Fiziksel Engeller
+                bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(neighbor);
+                if (!groundMap.HasTile(neighbor) && !isScaffold) continue;
+                if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells != null && LevelGenerator.instance.hazardCells.Contains(neighbor)) continue;
+                if (ScaffoldManager.instance != null && ScaffoldManager.instance.IsCollapsing(neighbor)) continue;
+                if (TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(neighbor) && neighbor != cell) continue;
+
+                // --- 2. ZEKİ YAPAY ZEKA (UTILITY, FLANKING, INFLUENCE) ---
+                float cellPenalty = 0f; // Hücrenin risk ve ceza puanı (Ne kadar düşükse o kadar iyi)
+
+                if (TurnManager.instance != null)
+                {
+                    foreach (var otherEnemy in TurnManager.instance.enemies)
+                    {
+                        if (otherEnemy != null && otherEnemy != this && otherEnemy.health.currentHP > 0)
+                        {
+                            // A. KUŞATMA (Flanking): Başka bir düşman bu hücreye yakınsa veya burayı hedeflediyse oradan uzak dur.
+                            // Bu sayede düşmanlar tek sıra halinde gelmek yerine haritaya yayılıp oyuncunun etrafını sararlar.
+                            if (Distance(neighbor, otherEnemy.GetCurrentCellPosition()) <= 1.5f)
+                            {
+                                cellPenalty += 2f; 
+                            }
+                            if (otherEnemy.hasLockedTarget && otherEnemy.lockedTargetCell == neighbor)
+                            {
+                                cellPenalty += 5f; // Başkasının gideceği yere gitme, trafiği tıkama
+                            }
+
+                            // B. RİSK/ÖDÜL (Utility AI): Diğer düşmanın planladığı bir AoE saldırı alanından kaç!
+                            if (otherEnemy.isChargingAttack && otherEnemy.warningCells.Contains(neighbor))
+                            {
+                                cellPenalty += 15f; // Kesinlikle girilmemesi gereken tehlike bölgesi
+                            }
+                        }
+                    }
+                }
+
+                // C. ETKİ HARİTASI (Influence): gScore (gidilen yol) + cellPenalty (tehlike/kalabalık puanı)
+                float tentative_gScore = gScore[current] + 1f + cellPenalty;
+
+                if (!gScore.ContainsKey(neighbor) || tentative_gScore < gScore[neighbor])
+                {
+                    cameFrom[neighbor] = current;
+                    gScore[neighbor] = tentative_gScore;
+                    
+                    // fScore = Şu anki maliyet + Oyuncuya kalan kuş uçuşu mesafe
+                    fScore[neighbor] = tentative_gScore + Distance(neighbor, playerCell);
+
+                    if (!openSet.Contains(neighbor))
+                    {
+                        openSet.Add(neighbor);
+                    }
+
+                    // Tıkanma durumunda B planı için en iyi noktayı hafızada tut
+                    float distToPlayer = Distance(neighbor, playerCell);
+                    if (distToPlayer < closestDistanceToPlayer)
+                    {
+                        closestDistanceToPlayer = distToPlayer;
+                        bestReachableCell = neighbor;
+                    }
                 }
             }
         }
 
-        // Tam yol bulunamadıysa, en yakın noktaya doğru git
-        Vector3Int destination = foundPath ? targetNeighbor : closestCell;
-        if (destination == cell) return cell;
+        if (bestReachableCell == cell) return cell;
 
-        Vector3Int step = destination;
-        while (cameFrom.ContainsKey(step) && cameFrom[step] != cell) step = cameFrom[step];
+        Vector3Int step = bestReachableCell;
+        while (cameFrom.ContainsKey(step) && cameFrom[step] != cell)
+        {
+            step = cameFrom[step];
+        }
+
         return step;
     }
+
 
     public void StartKnockbackMovement(Vector3Int targetCell)
     {
