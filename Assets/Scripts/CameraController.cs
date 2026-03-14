@@ -11,8 +11,8 @@ public class CameraController : MonoBehaviour
     public float maxZoomZ = -25f;
 
     [Header("Kamera Sınırları")]
-    public Vector2 minBounds = new Vector2(-20f, -20f); 
-    public Vector2 maxBounds = new Vector2(20f, 20f);   
+    public Vector2 minBounds = new Vector2(-60f, -60f); 
+    public Vector2 maxBounds = new Vector2(60f, 60f);   
 
     private Camera cam;
     private Vector3 dragOrigin;

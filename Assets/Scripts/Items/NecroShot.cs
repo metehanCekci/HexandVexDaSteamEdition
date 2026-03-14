@@ -14,6 +14,18 @@ public class NecroShot : BaseItem
     {
         if (TurnManager.instance == null) return false;
 
+        // Haritada NecroShot ile öldürülebilecek düşman yoksa (sadece Boss kaldıysa) kullanılamaz
+        bool hasNonBossEnemy = false;
+        foreach (var enemy in TurnManager.instance.enemies)
+        {
+            if (enemy != null && enemy.health.currentHP > 0 && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Boss)
+            {
+                hasNonBossEnemy = true;
+                break;
+            }
+        }
+        if (!hasNonBossEnemy) return false;
+
         // Oyuncunun bir düşman seçmesini beklemek için modu aç
         TurnManager.instance.StartNecroShotTargeting();
         return true;
