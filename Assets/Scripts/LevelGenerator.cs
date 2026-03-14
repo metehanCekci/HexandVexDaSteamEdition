@@ -48,6 +48,8 @@ public class LevelGenerator : MonoBehaviour
     [Range(0f, 1f)] public float warlockSpawnChance = 0.10f;
     private static float bossLegendaryMultiplier = 1f;  // Her bosstan sonra 2 ile çarpılır
 
+    public static void ResetBossMultiplier() { bossLegendaryMultiplier = 1f; }
+
     public float CurrentEnemyHealth
     {
         get { 
@@ -347,7 +349,7 @@ public class LevelGenerator : MonoBehaviour
             }
             // ========================================================
 
-            float postBossMultiplier = isPostBossLevel ? 2f : 1f;
+            float postBossMultiplier = isPostBossLevel ? 2.4f : 1f;
             // Dikkat: bossLegendaryMultiplier zaten CurrentEnemyHealth'te uygulandığı için postBossMultiplier KULLANMA!
             int finalHP = Mathf.RoundToInt(CurrentEnemyHealth * randomMultiplier);
             enemyAI.health.maxHP = Mathf.Max(1, finalHP);
