@@ -95,18 +95,9 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     /// </summary>
     public void ShowAtBottom(float nodeY)
     {
-        if (content == null || viewport == null) return;
-        float viewportH = viewport.rect.height;
-        if (viewportH <= 0) viewportH = Screen.height * 0.8f;
-
-        // nodeY negatif. Node ekranın altından %15 yukarıda olsun.
-        // Viewport üstü = content.y, viewport altı = content.y - viewportH
-        // Node pozisyonu ekranda = nodeY + content.y
-        // Node ekranın altından %15 yukarıda: nodeY + content.y = -viewportH * 0.85
-        // content.y = -viewportH * 0.85 - nodeY
-        float targetY = -viewportH * 0.85f - nodeY;
-        targetY = Mathf.Clamp(targetY, minY, maxY);
-        Debug.Log($"[SCROLL] ShowAtBottom nodeY={nodeY} viewportH={viewportH} targetY={targetY}");
-        content.anchoredPosition = new Vector2(0f, targetY);
+        if (content == null) return;
+        // TEST: direkt maxY'ye git — bu en aşağıyı göstermeli
+        Debug.Log($"[SCROLL] ShowAtBottom: maxY={maxY}, setting content.y = {maxY}");
+        content.anchoredPosition = new Vector2(0f, maxY);
     }
 }
