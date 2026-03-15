@@ -119,12 +119,14 @@ public class MapUI : MonoBehaviour
         RefreshNodeStates(map);
 
         // Scroll'u en alta getir (oyuncu alttan başlıyor)
-        if (scrollRect == null && nodeContainer != null)
-            scrollRect = nodeContainer.GetComponentInParent<ScrollRect>();
-        if (scrollRect != null)
+        if (nodeContainer != null)
         {
             Canvas.ForceUpdateCanvases();
-            scrollRect.verticalNormalizedPosition = 0f;
+            var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
+            if (dragScroll != null)
+                dragScroll.ScrollToBottom();
+            else if (scrollRect == null)
+                scrollRect = nodeContainer.GetComponentInParent<ScrollRect>();
         }
     }
 

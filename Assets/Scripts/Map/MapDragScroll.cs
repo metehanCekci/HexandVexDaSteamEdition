@@ -3,94 +3,111 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 /// <summary>
-/// ScrollRect'i sadece orta tuş / sağ tık ile drag'a izin verecek şekilde override eder.
-/// Sol tık drag'ı devre dışı bırakır (buton tıklamaları çalışsın diye).
-/// Mouse wheel scroll da çalışır.
+/// ScrollRect'i tamamen devre dışı bırakır.
+/// Kendi scroll mantığımız: orta tuş / sağ tık drag + mouse wheel.
+/// Sol tık node butonlarına gider, scroll'a karışmaz.
 /// </summary>
-public class MapDragScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IScrollHandler
+public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IScrollHandler
 {
-    private ScrollRect scrollRect;
-    private bool isDragging = false;
+    private RectTransform content;
+    private RectTransform viewport;
+    private float scrollSpeed = 30f;
+    private float dragSpeed = 1f;
 
-    void Awake()
+    private bool isDragging = false;
+    private Vector2 lastMousePos;
+
+    void Start()
     {
-        scrollRect = GetComponent<ScrollRect>();
-        // ScrollRect'in kendi drag handling'ini devre dışı bırak
-        if (scrollRect != null)
-            scrollRect.enabled = false;
+        // ScrollRect'ten referansları al ve sonra tamamen kapat
+        ScrollRect sr = GetComponent<ScrollRect>();
+        if (sr != null)
+        {
+            content = sr.content;
+            viewport = sr.viewport;
+            scrollSpeed = sr.scrollSensitivity;
+            sr.enabled = false;
+        }
     }
 
     void Update()
     {
-        if (scrollRect == null || scrollRect.content == null) return;
+        if (content == null) return;
 
-        // Orta tuş veya sağ tuş basılıyken drag
-        bool middleHeld = Input.GetMouseButton(2);
-        bool rightHeld = Input.GetMouseButton(1);
-
-        if ((middleHeld || rightHeld) && isDragging)
+        // Orta tuş (2) veya sağ tuş (1) basılıyken drag
+        if (isDragging && (Input.GetMouseButton(1) || Input.GetMouseButton(2)))
         {
-            float deltaY = Input.GetAxis("Mouse Y") * scrollRect.scrollSensitivity * 10f;
-            Vector2 pos = scrollRect.content.anchoredPosition;
-            pos.y -= deltaY;
+            Vector2 currentMousePos = Input.mousePosition;
+            float deltaY = currentMousePos.y - lastMousePos.y;
+            lastMousePos = currentMousePos;
 
-            // Clamp
-            float contentH = scrollRect.content.rect.height;
-            float viewportH = scrollRect.viewport != null ? scrollRect.viewport.rect.height : 0f;
-            float maxY = Mathf.Max(0f, contentH - viewportH);
-            pos.y = Mathf.Clamp(pos.y, 0f, maxY);
-
-            scrollRect.content.anchoredPosition = pos;
+            MoveContent(-deltaY * dragSpeed);
+        }
+        else
+        {
+            isDragging = false;
         }
     }
 
-    public void OnBeginDrag(PointerEventData eventData)
+    public void OnPointerDown(PointerEventData eventData)
     {
-        // Sadece orta/sağ tuşa izin ver
         if (eventData.button == PointerEventData.InputButton.Middle ||
             eventData.button == PointerEventData.InputButton.Right)
         {
             isDragging = true;
+            lastMousePos = eventData.position;
         }
     }
 
-    public void OnDrag(PointerEventData eventData)
+    public void OnPointerUp(PointerEventData eventData)
     {
-        if (!isDragging) return;
-
-        if (scrollRect == null || scrollRect.content == null) return;
-
-        float deltaY = eventData.delta.y;
-        Vector2 pos = scrollRect.content.anchoredPosition;
-        pos.y -= deltaY;
-
-        float contentH = scrollRect.content.rect.height;
-        float viewportH = scrollRect.viewport != null ? scrollRect.viewport.rect.height : 0f;
-        float maxY = Mathf.Max(0f, contentH - viewportH);
-        pos.y = Mathf.Clamp(pos.y, 0f, maxY);
-
-        scrollRect.content.anchoredPosition = pos;
-    }
-
-    public void OnEndDrag(PointerEventData eventData)
-    {
-        isDragging = false;
+        if (eventData.button == PointerEventData.InputButton.Middle ||
+            eventData.button == PointerEventData.InputButton.Right)
+        {
+            isDragging = false;
+        }
     }
 
     public void OnScroll(PointerEventData eventData)
     {
-        // Mouse wheel scroll — her zaman çalışsın
-        if (scrollRect == null || scrollRect.content == null) return;
+        // Mouse wheel — her zaman çalışsın
+        if (content == null) return;
+        MoveContent(-eventData.scrollDelta.y * scrollSpeed);
+    }
 
-        float scrollDelta = eventData.scrollDelta.y * scrollRect.scrollSensitivity;
-        Vector2 pos = scrollRect.content.anchoredPosition;
-        pos.y -= scrollDelta;
+    private void MoveContent(float deltaY)
+    {
+        if (content == null) return;
 
-        float contentH = scrollRect.content.rect.height;
-        float viewportH = scrollRect.viewport != null ? scrollRect.viewport.rect.height : 0f;
-        float maxY = Mathf.Max(0f, contentH - viewportH);
-        pos.y = Mathf.Clamp(pos.y, 0f, maxY);
+        Vector2 pos = content.anchoredPosition;
+        pos.y += deltaY;
 
-        scrollRect.content.anchoredPosition = pos;
+        // Clamp: content pivot=bottom, anchor=bottom
+        // pos.y = 0 → en alt görünür, pos.y = maxScroll → en üst görünür
+        float contentH = content.rect.height;
+        float viewportH = viewport != null ? viewport.rect.height : Screen.height;
+        float maxScroll = Mathf.Max(0f, contentH - viewportH);
+
+        pos.y = Mathf.Clamp(pos.y, 0f, maxScroll);
+        content.anchoredPosition = pos;
+    }
+
+    /// <summary>
+    /// Scroll'u en alta getir (row 0 görünsün)
+    /// </summary>
+    public void ScrollToBottom()
+    {
+        if (content != null)
+            content.anchoredPosition = new Vector2(content.anchoredPosition.x, 0f);
+    }
+
+    /// <summary>
+    /// Scroll'u en yukarı getir (boss row görünsün)
+    /// </summary>
+    public void ScrollToTop()
+    {
+        if (content == null || viewport == null) return;
+        float maxScroll = Mathf.Max(0f, content.rect.height - viewport.rect.height);
+        content.anchoredPosition = new Vector2(content.anchoredPosition.x, maxScroll);
     }
 }
