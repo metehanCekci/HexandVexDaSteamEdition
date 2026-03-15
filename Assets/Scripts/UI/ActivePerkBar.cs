@@ -232,41 +232,52 @@ public class ActivePerkBar : MonoBehaviour
 
     private GameObject CreatePerkIcon(BasePerk perk)
     {
-        GameObject iconGO = new GameObject("PerkIcon_" + perk.perkName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        // Dış kapsayıcı — kare, arka plan yok (sadece layout için)
+        GameObject iconGO = new GameObject("PerkIcon_" + perk.perkName, typeof(RectTransform));
 
         RectTransform rt = iconGO.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(ICON_SIZE, ICON_SIZE);
-
-        Image img = iconGO.GetComponent<Image>();
-        if (perk.icon != null)
-        {
-            img.sprite = perk.icon;
-            img.color = Color.white;
-        }
-        else
-        {
-            img.color = new Color(0.3f, 0.3f, 0.35f, 0.8f);
-        }
 
         // LayoutElement
         LayoutElement le = iconGO.AddComponent<LayoutElement>();
         le.preferredWidth = ICON_SIZE;
         le.preferredHeight = ICON_SIZE;
 
-        // Rarity renk kenarligi — alt cizgi olarak ekle
-        GameObject borderGO = new GameObject("RarityBorder", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        borderGO.transform.SetParent(iconGO.transform, false);
-        RectTransform borderRT = borderGO.GetComponent<RectTransform>();
-        borderRT.anchorMin = new Vector2(0f, 0f);
-        borderRT.anchorMax = new Vector2(1f, 0f);
-        borderRT.pivot = new Vector2(0.5f, 0f);
-        borderRT.anchoredPosition = new Vector2(0f, -2f);
-        borderRT.sizeDelta = new Vector2(0f, 3f);
-        Image borderImg = borderGO.GetComponent<Image>();
+        // Arka plan (koyu kare) — her zaman görünür, ikon yoksa placeholder olur
+        GameObject bgGO = new GameObject("BG", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        bgGO.transform.SetParent(iconGO.transform, false);
+        RectTransform bgRT = bgGO.GetComponent<RectTransform>();
+        bgRT.anchorMin = Vector2.zero;
+        bgRT.anchorMax = Vector2.one;
+        bgRT.offsetMin = Vector2.zero;
+        bgRT.offsetMax = Vector2.zero;
+        Image bgImg = bgGO.GetComponent<Image>();
+        bgImg.color = new Color(0.15f, 0.15f, 0.2f, 0.9f);
+        bgImg.raycastTarget = true; // hover eventleri bu objeye gelsin
+
+        // Perk ikonu — sprite varsa göster
+        if (perk.icon != null)
+        {
+            GameObject spriteGO = new GameObject("Sprite", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            spriteGO.transform.SetParent(iconGO.transform, false);
+            RectTransform spriteRT = spriteGO.GetComponent<RectTransform>();
+            spriteRT.anchorMin = new Vector2(0.1f, 0.1f);
+            spriteRT.anchorMax = new Vector2(0.9f, 0.9f);
+            spriteRT.offsetMin = Vector2.zero;
+            spriteRT.offsetMax = Vector2.zero;
+            Image spriteImg = spriteGO.GetComponent<Image>();
+            spriteImg.sprite = perk.icon;
+            spriteImg.preserveAspect = true;
+            spriteImg.color = Color.white;
+            spriteImg.raycastTarget = false;
+        }
+
+        // Rarity renk kenarlığı — Outline component ile kare çerçeve
         Color rarityColor;
         ColorUtility.TryParseHtmlString(PerkListUI.GetRarityHex(perk.rarity), out rarityColor);
-        borderImg.color = rarityColor;
-        borderImg.raycastTarget = false;
+        Outline outline = bgGO.AddComponent<Outline>();
+        outline.effectColor = rarityColor;
+        outline.effectDistance = new Vector2(2f, 2f);
 
         // Level gosterge — kucuk sayi sag-alt kosede
         if (perk.currentLevel > 1)
@@ -286,6 +297,10 @@ public class ActivePerkBar : MonoBehaviour
             lvTMP.color = new Color(1f, 0.9f, 0.4f);
             lvTMP.raycastTarget = false;
         }
+
+        // Raycast alabilmesi için iconGO'ya şeffaf Image ekle
+        Image raycastTarget = iconGO.AddComponent<Image>();
+        raycastTarget.color = new Color(0f, 0f, 0f, 0f); // Tamamen şeffaf
 
         // Hover event'leri — EventTrigger ile
         EventTrigger trigger = iconGO.AddComponent<EventTrigger>();

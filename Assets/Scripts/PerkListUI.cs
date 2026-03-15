@@ -33,6 +33,14 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     void Start()
     {
+        // ActivePerkBar varsa eski sistem tamamen devre disi — buton + panel gizle
+        if (ActivePerkBar.instance != null)
+        {
+            if (perkListPanel != null) perkListPanel.SetActive(false);
+            gameObject.SetActive(false);
+            return;
+        }
+
         // Kendi Canvas'ı yoksa ekle — LevelUpCanvas üstünde kalsın
         Canvas ownCanvas = GetComponent<Canvas>();
         if (ownCanvas == null)
