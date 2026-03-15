@@ -336,7 +336,10 @@ public class MapManager : MonoBehaviour
         // UI'ın oluşması için 1 frame bekle
         yield return null;
         GenerateNewMap(0);
-        ShowMap();
+
+        // Map'i arkada hazırla, sonra ScreenFader ile aydınlat
+        ShowMapInstant();
+        // ScreenFader zaten siyah olabilir (sahne yeni yüklendi) — aydınlat
     }
 
     // ─── Yeni layer haritası üret ───
@@ -410,87 +413,77 @@ public class MapManager : MonoBehaviour
         if (RunManager.instance != null)
             RunManager.instance.currentNodeType = node.nodeType;
 
+        // Her şeyi ScreenFader ile sar:
+        // 1. Ekranı karart
+        // 2. Map'i gizle + içeriği yükle
+        // 3. Ekranı aydınlat (ScreenFader.FadeAndLoad bunu otomatik yapıyor)
+
         switch (node.nodeType)
         {
             case MapNodeType.Combat:
             case MapNodeType.EliteCombat:
-                HideMap();
+            case MapNodeType.Event: // Event şimdilik combat
                 RunManager.instance.currentLevel++;
-                if (ScreenFader.instance != null)
+                FadeTransition(() =>
                 {
-                    ScreenFader.instance.FadeAndLoad(() =>
-                    {
-                        LevelGenerator.instance.GenerateNextLevel();
-                    });
-                }
-                else
-                {
+                    HideMap();
                     LevelGenerator.instance.GenerateNextLevel();
-                }
-                isTransitioning = false;
+                });
                 break;
 
             case MapNodeType.Shop:
-                HideMap();
-                if (Shopmanager.instance != null)
+                FadeTransition(() =>
                 {
-                    Shopmanager.instance.OpenAsMapNode();
-                }
-                isTransitioning = false;
+                    HideMap();
+                    if (Shopmanager.instance != null)
+                        Shopmanager.instance.OpenAsMapNode();
+                });
                 break;
 
             case MapNodeType.PerkSelection:
-                HideMap();
-                if (LevelUpManager.instance != null)
+                FadeTransition(() =>
                 {
-                    LevelUpManager.instance.ShowLevelUpScreen();
-                }
-                isTransitioning = false;
+                    HideMap();
+                    if (LevelUpManager.instance != null)
+                        LevelUpManager.instance.ShowLevelUpScreen();
+                });
                 break;
 
             case MapNodeType.Rest:
-                HideMap();
-                if (RestNodeUI.instance != null)
+                FadeTransition(() =>
                 {
-                    RestNodeUI.instance.Show();
-                }
-                isTransitioning = false;
-                break;
-
-            case MapNodeType.Event:
-                // Stub: şimdilik combat gibi davransın
-                HideMap();
-                RunManager.instance.currentLevel++;
-                if (ScreenFader.instance != null)
-                {
-                    ScreenFader.instance.FadeAndLoad(() =>
-                    {
-                        LevelGenerator.instance.GenerateNextLevel();
-                    });
-                }
-                else
-                {
-                    LevelGenerator.instance.GenerateNextLevel();
-                }
-                isTransitioning = false;
+                    HideMap();
+                    if (RestNodeUI.instance != null)
+                        RestNodeUI.instance.Show();
+                });
                 break;
 
             case MapNodeType.Boss:
-                HideMap();
                 RunManager.instance.currentLevel++;
-                if (ScreenFader.instance != null)
+                FadeTransition(() =>
                 {
-                    ScreenFader.instance.FadeAndLoad(() =>
-                    {
-                        LevelGenerator.instance.GenerateBossArena();
-                    });
-                }
-                else
-                {
+                    HideMap();
                     LevelGenerator.instance.GenerateBossArena();
-                }
-                isTransitioning = false;
+                });
                 break;
+        }
+    }
+
+    // ─── ScreenFader ile geçiş: karart → action → aydınlat ───
+    private void FadeTransition(System.Action action)
+    {
+        if (ScreenFader.instance != null)
+        {
+            ScreenFader.instance.FadeAndLoad(() =>
+            {
+                action?.Invoke();
+                isTransitioning = false;
+            });
+        }
+        else
+        {
+            action?.Invoke();
+            isTransitioning = false;
         }
     }
 
@@ -498,8 +491,6 @@ public class MapManager : MonoBehaviour
     public void OnNodeComplete()
     {
         isTransitioning = false;
-
-        if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
 
         // Boss node ise layer'ı ilerlet
         MapNode current = currentMap?.GetNode(currentMap.currentNodeId);
@@ -509,7 +500,12 @@ public class MapManager : MonoBehaviour
             return;
         }
 
-        ShowMap();
+        // Fade ile map'e dön
+        FadeTransition(() =>
+        {
+            if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
+            ShowMapInstant();
+        });
     }
 
     // ─── Boss yenildiğinde yeni layer'a geç ───
@@ -520,20 +516,28 @@ public class MapManager : MonoBehaviour
         if (RunManager.instance != null)
         {
             RunManager.instance.currentLayerIndex++;
-
-            // Boss legendary multiplier'ı burada artır (LevelGenerator'dan taşındı)
-            // LevelGenerator.GenerateNextLevel() zaten bunu kontrol ediyor ama
-            // ileride tamamen buraya taşınacak
         }
 
-        // Yeni layer haritası üret
-        int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
-        GenerateNewMap(newLayerIndex);
-        ShowMap();
+        FadeTransition(() =>
+        {
+            int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
+            GenerateNewMap(newLayerIndex);
+            ShowMapInstant();
+        });
     }
 
-    // ─── Map UI göster/gizle ───
+    // ─── Map UI göster/gizle (instant — fade ScreenFader'da) ───
     public void ShowMap()
+    {
+        // Fade ile göster
+        FadeTransition(() =>
+        {
+            if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
+            ShowMapInstant();
+        });
+    }
+
+    private void ShowMapInstant()
     {
         if (mapUI != null)
         {
