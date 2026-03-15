@@ -1,68 +1,98 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
-/// Tools menüsünden tek tıkla ActivePerkBar + PerkInventoryUI sistemini kurar.
-/// Runtime'da otomatik oluşturulan UI'ları sahneye koyar.
-/// Eski PerkListUI varsa kaldırır.
+/// Tools > Setup Active Perk Bar
+/// Sahnede ActivePerkBar canvas'ini olusturur.
+/// Inspector'dan duzenlenebilir — pozisyon, boyut, renk vs. hep gorunur.
 /// </summary>
 public class ActivePerkBarSetup : EditorWindow
 {
     [MenuItem("Tools/Setup Active Perk Bar")]
     public static void Setup()
     {
-        // 1. Eski PerkListUI'ları kaldır (artık kullanılmıyor)
+        // 1. Eski PerkListUI'lari kaldir
         foreach (var old in Object.FindObjectsByType<PerkListUI>(FindObjectsSortMode.None))
         {
-            Debug.Log($"Eski PerkListUI kaldırılıyor: {old.gameObject.name}");
+            Debug.Log($"Eski PerkListUI kaldiriliyor: {old.gameObject.name}");
             Undo.DestroyObjectImmediate(old.gameObject);
         }
 
-        // 2. Eski ActivePerkBar varsa kaldır
+        // 2. Eski ActivePerkBar varsa kaldir
         foreach (var old in Object.FindObjectsByType<ActivePerkBar>(FindObjectsSortMode.None))
         {
-            // Root objeyi bul (canvas'ın parent'ı)
-            Transform root = old.transform.root;
-            Debug.Log($"Eski ActivePerkBar kaldırılıyor: {root.name}");
+            Transform root = old.transform;
+            Debug.Log($"Eski ActivePerkBar kaldiriliyor: {root.name}");
             Undo.DestroyObjectImmediate(root.gameObject);
         }
 
-        // 3. Eski PerkInventoryUI varsa kaldır
-        foreach (var old in Object.FindObjectsByType<PerkInventoryUI>(FindObjectsSortMode.None))
+        // 3. Font yukle
+        TMP_FontAsset font = UIStyle.LoadFont();
+
+        // ─── ROOT: ActivePerkBar ───
+        GameObject rootGO = new GameObject("ActivePerkBar");
+        ActivePerkBar bar = rootGO.AddComponent<ActivePerkBar>();
+        Undo.RegisterCreatedObjectUndo(rootGO, "Create ActivePerkBar");
+
+        // ─── CANVAS ───
+        GameObject canvasGO = new GameObject("PerkBarCanvas");
+        canvasGO.transform.SetParent(rootGO.transform, false);
+        Canvas canvas = canvasGO.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 50;
+        var scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        canvasGO.AddComponent<GraphicRaycaster>();
+        bar.barCanvas = canvas;
+
+        // ─── ICON CONTAINER ───
+        GameObject containerGO = new GameObject("IconContainer", typeof(RectTransform));
+        containerGO.transform.SetParent(canvasGO.transform, false);
+        RectTransform containerRT = containerGO.GetComponent<RectTransform>();
+        containerRT.anchorMin = new Vector2(0.5f, 1f);
+        containerRT.anchorMax = new Vector2(0.5f, 1f);
+        containerRT.pivot = new Vector2(0.5f, 1f);
+        containerRT.anchoredPosition = new Vector2(0f, -10f);
+        containerRT.sizeDelta = new Vector2(600f, 56f);
+
+        HorizontalLayoutGroup hlg = containerGO.AddComponent<HorizontalLayoutGroup>();
+        hlg.spacing = 8f;
+        hlg.childAlignment = TextAnchor.MiddleCenter;
+        hlg.childControlWidth = false;
+        hlg.childControlHeight = false;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = false;
+
+        ContentSizeFitter csf = containerGO.AddComponent<ContentSizeFitter>();
+        csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        bar.container = containerRT;
+
+        // ─── TOOLTIP ───
+        bar.BuildTooltip(canvasGO.transform);
+        if (font != null && bar.tooltipText != null)
+            bar.tooltipText.font = font;
+
+        // ─── INV BUTONU ───
+        bar.BuildInventoryButton(canvasGO.transform);
+        // Font'u INV butonuna da uygula
+        if (font != null)
         {
-            Transform root = old.transform.root;
-            Debug.Log($"Eski PerkInventoryUI kaldırılıyor: {root.name}");
-            Undo.DestroyObjectImmediate(root.gameObject);
+            var btnTMP = bar.inventoryButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (btnTMP != null) btnTMP.font = font;
         }
 
-        // 4. ActivePerkBar ve PerkInventoryUI runtime'da CreateFromCode() ile otomatik oluşturulur.
-        //    RunManager.Start() -> ActivePerkBar.CreateFromCode() çağırır.
-        //    INV butonuna basılınca PerkInventoryUI.CreateFromCode() çağrılır.
-        //    Bu yüzden sahnede sadece RunManager'ın varlığını kontrol edelim.
+        // ─── SELECTION ───
+        Selection.activeGameObject = rootGO;
+        EditorUtility.SetDirty(rootGO);
 
-        var runManager = Object.FindFirstObjectByType<RunManager>();
-        if (runManager == null)
-        {
-            Debug.LogError("Sahnede RunManager bulunamadı! RunManager olmadan perk bar çalışmaz.");
-            return;
-        }
-
-        // RunManager'ın Start() metodu ActivePerkBar.CreateFromCode() çağıracak.
-        // Ama edit modda test için şimdi preview olarak oluşturabiliriz.
-
-        Debug.Log("✅ Perk Bar Setup tamamlandı!\n" +
-                  "• Eski PerkListUI kaldırıldı\n" +
-                  "• ActivePerkBar runtime'da otomatik oluşturulacak (RunManager.Start)\n" +
-                  "• PerkInventoryUI, INV butonuna basılınca oluşturulacak\n" +
-                  "• Oyunu başlatın ve test edin!");
-
-        EditorUtility.DisplayDialog("Perk Bar Setup",
-            "Eski PerkListUI kaldırıldı.\n\n" +
-            "ActivePerkBar ve PerkInventoryUI runtime'da otomatik oluşturulur:\n" +
-            "• Oyun başladığında üst ortada perk ikonları çıkar\n" +
-            "• Sağ üstteki INV butonu ile envanter açılır\n" +
-            "• Max 6 aktif perk, geri kalanı stash'te\n\n" +
-            "Play'e basıp test edin!",
-            "Tamam");
+        Debug.Log("✅ ActivePerkBar sahnede oluşturuldu!\n" +
+                  "• Inspector'dan pozisyon, boyut, renk ayarlayabilirsin\n" +
+                  "• Runtime'da ikonlar otomatik dolar\n" +
+                  "• INV butonu sağ üstte — PerkInventoryUI'ı açar");
     }
 }
