@@ -8,6 +8,10 @@ public class RunManager : MonoBehaviour
     [Header("Run Progression")]
     public int currentLevel = 1; // Kaçıncı odadayız?
 
+    [Header("Map Progression")]
+    public int currentLayerIndex = 0;
+    public MapNodeType currentNodeType = MapNodeType.Combat;
+
     [Header("Run Stats")]
 
     public int currentGold = 0;

@@ -465,7 +465,12 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        if (Shopmanager.instance != null)
+        // Map sistemi aktifse → haritaya dön
+        if (MapManager.instance != null)
+        {
+            MapManager.instance.OnNodeComplete();
+        }
+        else if (Shopmanager.instance != null)
         {
             bool isBossLevel = RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0;
             if (isBossLevel) Shopmanager.instance.OnBossCleared(); else Shopmanager.instance.OnDungeonCleared();

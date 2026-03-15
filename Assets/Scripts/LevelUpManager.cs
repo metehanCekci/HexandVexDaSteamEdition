@@ -287,7 +287,10 @@ public class LevelUpManager : MonoBehaviour
         List<BasePerk> existingPerks = new List<BasePerk>(RunManager.instance.activePerks);
 
         RunManager.instance.AddPerk(chosenPerk);
-        RunManager.instance.currentLevel++;
+
+        // Map sistemi aktif değilse eski davranış (level++)
+        if (MapManager.instance == null)
+            RunManager.instance.currentLevel++;
 
         BasePerk checkScript = chosenPerk.GetComponent<BasePerk>();
         BasePerk activeInstance = RunManager.instance.activePerks.Find(p => p.GetType() == checkScript.GetType());
@@ -459,7 +462,12 @@ public class LevelUpManager : MonoBehaviour
         // Gene Splice gibi upgrade sekanslarının görünmesi için kısa bekleme
         yield return new WaitForSeconds(0.5f);
 
-        if (ScreenFader.instance != null)
+        // Map sistemi aktifse haritaya dön
+        if (MapManager.instance != null)
+        {
+            MapManager.instance.OnNodeComplete();
+        }
+        else if (ScreenFader.instance != null)
         {
             ScreenFader.instance.FadeAndLoad(() =>
             {
@@ -475,6 +483,13 @@ public class LevelUpManager : MonoBehaviour
     /// <summary>Perk seçme ekranını göstermeden sonraki levele geç.</summary>
     private void SkipLevelUpScreen()
     {
+        // Map sistemi aktifse haritaya dön
+        if (MapManager.instance != null)
+        {
+            MapManager.instance.OnNodeComplete();
+            return;
+        }
+
         RunManager.instance.currentLevel++;
 
         if (ScreenFader.instance != null)

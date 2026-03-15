@@ -155,8 +155,12 @@ public class LevelGenerator : MonoBehaviour
         TurnManager.instance.enemies.Clear();
 
         bool isPostBossLevel = RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1;
+        bool isEliteNode = RunManager.instance.currentNodeType == MapNodeType.EliteCombat;
         int currentRadius = baseMapRadius + (RunManager.instance.currentLevel / 6);
         int enemyCountToSpawn = 3 + (RunManager.instance.currentLevel / 3);
+
+        // Elite node'larda daha fazla ve güçlü düşman
+        if (isEliteNode) enemyCountToSpawn += 2;
 
         for (int x = -currentRadius; x <= currentRadius; x++)
         {
@@ -376,8 +380,9 @@ public class LevelGenerator : MonoBehaviour
             // ========================================================
 
             float postBossMultiplier = isPostBossLevel ? 2.4f : 1f;
+            float eliteNodeMultiplier = isEliteNode ? 1.5f : 1f;
             // Dikkat: bossLegendaryMultiplier zaten CurrentEnemyHealth'te uygulandığı için postBossMultiplier KULLANMA!
-            int finalHP = Mathf.RoundToInt(CurrentEnemyHealth * randomMultiplier);
+            int finalHP = Mathf.RoundToInt(CurrentEnemyHealth * randomMultiplier * eliteNodeMultiplier);
             enemyAI.health.maxHP = Mathf.Max(1, finalHP);
             enemyAI.health.currentHP = enemyAI.health.maxHP;
 

@@ -84,6 +84,13 @@ public class Shopmanager : MonoBehaviour
     {
         RefreshCoinDisplay();
 
+        // Map sistemi aktifse haritaya dön (perk/shop ayrı node)
+        if (MapManager.instance != null)
+        {
+            MapManager.instance.OnNodeComplete();
+            return;
+        }
+
         if (LevelUpManager.instance != null)
             LevelUpManager.instance.ShowLevelUpScreen();
         else
@@ -100,6 +107,13 @@ public class Shopmanager : MonoBehaviour
         GenerateShopItems();
         RefreshCoinDisplay();
 
+        // Map sistemi aktifse boss defeated akışını başlat
+        if (MapManager.instance != null)
+        {
+            MapManager.instance.OnNodeComplete();
+            return;
+        }
+
         if (LevelUpManager.instance != null)
             LevelUpManager.instance.ShowLevelUpScreen();
         else
@@ -107,6 +121,45 @@ public class Shopmanager : MonoBehaviour
             RunManager.instance.currentLevel++;
             LevelGenerator.instance.GenerateNextLevel();
         }
+    }
+
+    // ─── Map node olarak shop aç (combat sonrası değil, haritadan direkt) ───
+    [Header("Map Node Modu")]
+    public GameObject continueButton; // Inspector'dan bağlanacak "Continue" butonu
+
+    public void OpenAsMapNode()
+    {
+        rerollCount = 0;
+        currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
+        GenerateShopItems();
+        RefreshCoinDisplay();
+
+        // Shop panelini göster (varsa parent panel'i aktif et)
+        if (shopSlotContainer != null && shopSlotContainer.parent != null)
+            shopSlotContainer.parent.gameObject.SetActive(true);
+
+        // Continue butonunu göster
+        if (continueButton != null)
+        {
+            continueButton.SetActive(true);
+            Button btn = continueButton.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(CloseMapNodeShop);
+            }
+        }
+    }
+
+    private void CloseMapNodeShop()
+    {
+        // Shop panelini gizle
+        if (shopSlotContainer != null && shopSlotContainer.parent != null)
+            shopSlotContainer.parent.gameObject.SetActive(false);
+        if (continueButton != null) continueButton.SetActive(false);
+
+        if (MapManager.instance != null)
+            MapManager.instance.OnNodeComplete();
     }
 
     public void TryReroll()
