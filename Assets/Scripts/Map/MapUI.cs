@@ -144,72 +144,25 @@ public class MapUI : MonoBehaviour
         }
     }
 
-    [Header("Fade Ayarları")]
-    public float fadeDuration = 0.4f;
-
-    private Coroutine fadeCoroutine;
-
     public void Show()
     {
         if (mapPanel != null) mapPanel.SetActive(true);
         if (canvasGroup != null)
         {
-            canvasGroup.blocksRaycasts = false; // Fade bitene kadar tıklanmasın
-            canvasGroup.interactable = false;
+            canvasGroup.alpha = 1f;
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
         }
-        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
-        fadeCoroutine = StartCoroutine(FadeIn());
     }
 
     public void Hide()
     {
+        if (mapPanel != null) mapPanel.SetActive(false);
         if (canvasGroup != null)
         {
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
         }
-        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
-        fadeCoroutine = StartCoroutine(FadeOut());
-    }
-
-    private IEnumerator FadeIn()
-    {
-        if (canvasGroup == null) yield break;
-        float elapsed = 0f;
-        canvasGroup.alpha = 0f;
-
-        while (elapsed < fadeDuration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            canvasGroup.alpha = Mathf.Clamp01(elapsed / fadeDuration);
-            yield return null;
-        }
-
-        canvasGroup.alpha = 1f;
-        canvasGroup.interactable = true;
-        canvasGroup.blocksRaycasts = true;
-    }
-
-    private IEnumerator FadeOut()
-    {
-        if (canvasGroup == null)
-        {
-            if (mapPanel != null) mapPanel.SetActive(false);
-            yield break;
-        }
-
-        float elapsed = 0f;
-        float startAlpha = canvasGroup.alpha;
-
-        while (elapsed < fadeDuration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsed / fadeDuration);
-            yield return null;
-        }
-
-        canvasGroup.alpha = 0f;
-        if (mapPanel != null) mapPanel.SetActive(false);
     }
 
     private void ClearMap()
