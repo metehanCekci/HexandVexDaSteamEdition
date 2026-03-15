@@ -145,7 +145,13 @@ public class MapUI : MonoBehaviour
 
     public void Show()
     {
-        if (mapPanel != null) mapPanel.SetActive(true);
+        // Önce parent Canvas'ı da aç
+        if (mapPanel != null)
+        {
+            Canvas parentCanvas = mapPanel.GetComponentInParent<Canvas>(true);
+            if (parentCanvas != null) parentCanvas.gameObject.SetActive(true);
+            mapPanel.SetActive(true);
+        }
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 1f;
@@ -156,7 +162,13 @@ public class MapUI : MonoBehaviour
 
     public void Hide()
     {
-        if (mapPanel != null) mapPanel.SetActive(false);
+        if (mapPanel != null)
+        {
+            mapPanel.SetActive(false);
+            // Parent Canvas'ı da kapat — ekranda iz kalmasın
+            Canvas parentCanvas = mapPanel.GetComponentInParent<Canvas>(true);
+            if (parentCanvas != null) parentCanvas.gameObject.SetActive(false);
+        }
         if (canvasGroup != null)
         {
             canvasGroup.interactable = false;
