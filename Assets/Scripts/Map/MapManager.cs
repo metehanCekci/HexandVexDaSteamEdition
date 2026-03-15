@@ -409,82 +409,96 @@ public class MapManager : MonoBehaviour
 
         Debug.Log($"[MAP] ExecuteNode: id={node.id} row={node.row} type={node.nodeType}");
 
-        // RunManager'a aktif node tipini bildir
         if (RunManager.instance != null)
             RunManager.instance.currentNodeType = node.nodeType;
 
-        // Her şeyi ScreenFader ile sar:
-        // 1. Ekranı karart
-        // 2. Map'i gizle + içeriği yükle
-        // 3. Ekranı aydınlat (ScreenFader.FadeAndLoad bunu otomatik yapıyor)
+        StartCoroutine(ExecuteNodeSequence(node));
+    }
 
+    private IEnumerator ExecuteNodeSequence(MapNode node)
+    {
+        // 1. Ekranı karart
+        yield return StartCoroutine(FadeToBlack());
+
+        // 2. Map'i gizle
+        HideMap();
+
+        // 3. İçeriği yükle
         switch (node.nodeType)
         {
             case MapNodeType.Combat:
             case MapNodeType.EliteCombat:
-            case MapNodeType.Event: // Event şimdilik combat
+            case MapNodeType.Event:
                 RunManager.instance.currentLevel++;
-                FadeTransition(() =>
-                {
-                    HideMap();
-                    LevelGenerator.instance.GenerateNextLevel();
-                });
+                LevelGenerator.instance.GenerateNextLevel();
                 break;
 
             case MapNodeType.Shop:
-                FadeTransition(() =>
-                {
-                    HideMap();
-                    if (Shopmanager.instance != null)
-                        Shopmanager.instance.OpenAsMapNode();
-                });
+                if (Shopmanager.instance != null)
+                    Shopmanager.instance.OpenAsMapNode();
                 break;
 
             case MapNodeType.PerkSelection:
-                FadeTransition(() =>
-                {
-                    HideMap();
-                    if (LevelUpManager.instance != null)
-                        LevelUpManager.instance.ShowLevelUpScreen();
-                });
+                if (LevelUpManager.instance != null)
+                    LevelUpManager.instance.ShowLevelUpScreen();
                 break;
 
             case MapNodeType.Rest:
-                FadeTransition(() =>
-                {
-                    HideMap();
-                    if (RestNodeUI.instance != null)
-                        RestNodeUI.instance.Show();
-                });
+                if (RestNodeUI.instance != null)
+                    RestNodeUI.instance.Show();
                 break;
 
             case MapNodeType.Boss:
                 RunManager.instance.currentLevel++;
-                FadeTransition(() =>
-                {
-                    HideMap();
-                    LevelGenerator.instance.GenerateBossArena();
-                });
+                LevelGenerator.instance.GenerateBossArena();
                 break;
         }
+
+        // 4. İçeriğin render edilmesi için kısa bekleme
+        yield return new WaitForSecondsRealtime(0.2f);
+
+        // 5. Ekranı aydınlat
+        yield return StartCoroutine(FadeFromBlack());
+
+        isTransitioning = false;
     }
 
-    // ─── ScreenFader ile geçiş: karart → action → aydınlat ───
-    private void FadeTransition(System.Action action)
+    // ─── Kendi fade helper'larımız (ScreenFader'ın faderGroup'unu kullanır) ───
+    private float mapFadeDuration = 0.5f;
+
+    private IEnumerator FadeToBlack()
     {
-        if (ScreenFader.instance != null)
+        CanvasGroup fader = ScreenFader.instance != null ? ScreenFader.instance.faderGroup : null;
+        if (fader == null) yield break;
+
+        fader.blocksRaycasts = true;
+        float elapsed = 0f;
+        float startAlpha = fader.alpha;
+
+        while (elapsed < mapFadeDuration)
         {
-            ScreenFader.instance.FadeAndLoad(() =>
-            {
-                action?.Invoke();
-                isTransitioning = false;
-            });
+            elapsed += Mathf.Min(Time.unscaledDeltaTime, 0.033f);
+            fader.alpha = Mathf.Lerp(startAlpha, 1f, elapsed / mapFadeDuration);
+            yield return null;
         }
-        else
+        fader.alpha = 1f;
+    }
+
+    private IEnumerator FadeFromBlack()
+    {
+        CanvasGroup fader = ScreenFader.instance != null ? ScreenFader.instance.faderGroup : null;
+        if (fader == null) yield break;
+
+        float elapsed = 0f;
+
+        while (elapsed < mapFadeDuration)
         {
-            action?.Invoke();
-            isTransitioning = false;
+            elapsed += Mathf.Min(Time.unscaledDeltaTime, 0.033f);
+            fader.alpha = Mathf.Lerp(1f, 0f, elapsed / mapFadeDuration);
+            yield return null;
         }
+        fader.alpha = 0f;
+        fader.blocksRaycasts = false;
     }
 
     // ─── Combat/Shop/Perk/Rest bittikten sonra haritaya dön ───
@@ -500,12 +514,33 @@ public class MapManager : MonoBehaviour
             return;
         }
 
-        // Fade ile map'e dön
-        FadeTransition(() =>
+        // ScreenFader ile: karart → map göster → aydınlat
+        // Ama sadece ScreenFader'ın meşgul olmadığı durumlarda
+        StartCoroutine(ReturnToMapWithFade());
+    }
+
+    private IEnumerator ReturnToMapWithFade()
+    {
+        // ScreenFader'ın mevcut fade'i bitmesini bekle
+        if (ScreenFader.instance != null)
         {
+            // Ekranı karart
+            yield return StartCoroutine(FadeToBlack());
+
+            // Map'i arkada hazırla
             if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
             ShowMapInstant();
-        });
+
+            // Kısa bekleme (map render edilsin)
+            yield return new WaitForSecondsRealtime(0.2f);
+
+            // Ekranı aydınlat
+            yield return StartCoroutine(FadeFromBlack());
+        }
+        else
+        {
+            ShowMapInstant();
+        }
     }
 
     // ─── Boss yenildiğinde yeni layer'a geç ───
@@ -518,23 +553,34 @@ public class MapManager : MonoBehaviour
             RunManager.instance.currentLayerIndex++;
         }
 
-        FadeTransition(() =>
+        StartCoroutine(BossDefeatedSequence());
+    }
+
+    private IEnumerator BossDefeatedSequence()
+    {
+        if (ScreenFader.instance != null)
+        {
+            yield return StartCoroutine(FadeToBlack());
+
+            int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
+            GenerateNewMap(newLayerIndex);
+            ShowMapInstant();
+
+            yield return new WaitForSecondsRealtime(0.2f);
+            yield return StartCoroutine(FadeFromBlack());
+        }
+        else
         {
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             GenerateNewMap(newLayerIndex);
             ShowMapInstant();
-        });
+        }
     }
 
     // ─── Map UI göster/gizle (instant — fade ScreenFader'da) ───
     public void ShowMap()
     {
-        // Fade ile göster
-        FadeTransition(() =>
-        {
-            if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
-            ShowMapInstant();
-        });
+        ShowMapInstant();
     }
 
     private void ShowMapInstant()
