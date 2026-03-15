@@ -138,8 +138,7 @@ public class MapManager : MonoBehaviour
         dragScroll.dragSpeed = 1f;      // Sürükleme hızı
         dragScroll.minX = -600f;        // Sol sınır (pixel)
         dragScroll.maxX = 600f;         // Sağ sınır (pixel)
-        dragScroll.minY = -300f;        // Alt sınır (pixel)
-        dragScroll.maxY = 2000f;        // Üst sınır (pixel) — harita yüksekliğine göre ayarla
+        // minY/maxY, BuildMap içinde UpdateLimitsForMapHeight ile otomatik ayarlanır
 
         // Node prefab
         GameObject nodePrefab = BuildNodePrefab();

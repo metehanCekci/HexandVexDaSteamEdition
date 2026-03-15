@@ -79,6 +79,10 @@ public class MapUI : MonoBehaviour
         nodeContainer.sizeDelta = new Vector2(nodeContainer.sizeDelta.x, totalHeight);
         Debug.Log($"[MAP] Container height={totalHeight}, maxRow={maxRow}, rowSpacing={rowSpacing}");
 
+        // Scroll sınırlarını harita boyutuna göre otomatik ayarla
+        if (dragScroll != null)
+            dragScroll.UpdateLimitsForMapHeight(totalHeight);
+
         // ─── Node'ları yerleştir ───
         foreach (var node in map.nodes)
         {
