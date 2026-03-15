@@ -66,6 +66,9 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        // ActivePerkBar aktifse hover davranisini devre disi birak
+        if (ActivePerkBar.instance != null) return;
+
         isMouseOverButton = true;
         if (exitDelayCoroutine != null) { StopCoroutine(exitDelayCoroutine); exitDelayCoroutine = null; }
         RefreshPerkList();
@@ -79,6 +82,9 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        // ActivePerkBar aktifse hover davranisini devre disi birak
+        if (ActivePerkBar.instance != null) return;
+
         isMouseOverButton = false;
         if (isMouseOverPanel) return;
         if (exitDelayCoroutine != null) StopCoroutine(exitDelayCoroutine);
@@ -147,7 +153,15 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void TriggerLevelUpAnimForPerk(BasePerk perk)
     {
-        // Menü kapalıysa önce aç
+        // ActivePerkBar aktifse pop animasyonunu oraya yonlendir
+        if (ActivePerkBar.instance != null)
+        {
+            ActivePerkBar.instance.RefreshBar();
+            ActivePerkBar.instance.TriggerPopForPerk(perk);
+            return;
+        }
+
+        // Menu kapaliysa once ac
         if (perkListPanel != null && !perkListPanel.activeSelf)
         {
             RefreshPerkList();
@@ -214,6 +228,13 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void TriggerShakeForPerk(BasePerk perk)
     {
+        // ActivePerkBar aktifse animasyonu oraya yonlendir
+        if (ActivePerkBar.instance != null)
+        {
+            ActivePerkBar.instance.TriggerShakeForPerk(perk);
+            return;
+        }
+
         if (perkListPanel == null || !perkListPanel.activeSelf) return;
         int idx = spawnedRowPerks.IndexOf(perk);
         if (idx >= 0 && idx < spawnedRows.Count)

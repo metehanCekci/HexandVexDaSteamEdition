@@ -41,6 +41,12 @@ public abstract class BasePerk : MonoBehaviour
     // Shop reroll yapıldığında çalışır
     public virtual void OnShopReroll() { }
 
+    // Perk aktif slotlara taşındığında çalışır
+    public virtual void OnEquip() { }
+
+    // Perk envanterden (stash) alana taşındığında çalışır
+    public virtual void OnUnequip() { }
+
     // ======================================================
     // İŞTE YENİ EKLENEN KISIM BURASI KANKA:
     // Ancient Blessing bu komutu çağıracak. Diğer perkler de bu komutu alınca ne yapacaklarını bilecek.
@@ -54,11 +60,15 @@ public abstract class BasePerk : MonoBehaviour
     }
     // ======================================================
 
-    // Görsel geri bildirim: Perk çalıştığında ekranda zıplar
+    // Gorsel geri bildirim: Perk calistiginda ekranda ziplar
     public void TriggerVisualPop()
     {
         if (gameObject.activeInHierarchy)
             StartCoroutine(PopAnimation());
+
+        // ActivePerkBar'da da ikon animasyonu tetikle
+        if (ActivePerkBar.instance != null)
+            ActivePerkBar.instance.TriggerPopForPerk(this);
     }
 
     private IEnumerator PopAnimation()
