@@ -33,6 +33,7 @@ public class MapUI : MonoBehaviour
     private List<MapNodeUI> spawnedNodes = new List<MapNodeUI>();
     private List<GameObject> spawnedLines = new List<GameObject>();
     private Dictionary<int, RectTransform> nodeTransforms = new Dictionary<int, RectTransform>();
+    private ScrollRect scrollRect;
 
     void Start()
     {
@@ -65,8 +66,20 @@ public class MapUI : MonoBehaviour
         }
 
         // ─── Container boyutunu ayarla ───
-        float totalHeight = (maxRow + 1) * rowSpacing + 100f;
+        float totalHeight = (maxRow + 1) * rowSpacing + 300f;
+
+        // Content viewport'tan büyük olmalı yoksa scroll çalışmaz
+        if (scrollRect == null && nodeContainer != null)
+            scrollRect = nodeContainer.GetComponentInParent<ScrollRect>();
+        if (scrollRect != null && scrollRect.viewport != null)
+        {
+            float viewportH = scrollRect.viewport.rect.height;
+            if (viewportH > 0 && totalHeight <= viewportH)
+                totalHeight = viewportH + 200f;
+        }
+
         nodeContainer.sizeDelta = new Vector2(nodeContainer.sizeDelta.x, totalHeight);
+        Debug.Log($"[MAP] Container height={totalHeight}, maxRow={maxRow}, rowSpacing={rowSpacing}");
 
         // ─── Node'ları yerleştir ───
         foreach (var node in map.nodes)
@@ -104,6 +117,15 @@ public class MapUI : MonoBehaviour
         DrawConnections(map);
 
         RefreshNodeStates(map);
+
+        // Scroll'u en alta getir (oyuncu alttan başlıyor)
+        if (scrollRect == null && nodeContainer != null)
+            scrollRect = nodeContainer.GetComponentInParent<ScrollRect>();
+        if (scrollRect != null)
+        {
+            Canvas.ForceUpdateCanvases();
+            scrollRect.verticalNormalizedPosition = 0f;
+        }
     }
 
     public void RefreshNodeStates(MapData map)
