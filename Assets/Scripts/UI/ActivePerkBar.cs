@@ -42,6 +42,21 @@ public class ActivePerkBar : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    void Start()
+    {
+        // Editor tool'dan oluşturulan butonların onClick listener'ları
+        // serialize edilmez — runtime'da tekrar bağla
+        if (inventoryButton != null)
+        {
+            Button btn = inventoryButton.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(OnInventoryButtonClicked);
+            }
+        }
+    }
+
     void OnDestroy()
     {
         if (instance == this) instance = null;

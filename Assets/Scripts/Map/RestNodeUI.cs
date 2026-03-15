@@ -71,14 +71,13 @@ public class RestNodeUI : MonoBehaviour
         if (infoText != null) infoText.text = $"+{amount} HP";
 
         DisableButtons();
-        Invoke(nameof(Close), 0.8f);
+        StartCoroutine(CloseAfterDelay());
     }
 
     private void OnTrain()
     {
         if (RunManager.instance == null || RunManager.instance.activePerks.Count == 0) return;
 
-        // Upgrade edilebilir perklerden rastgele birini seç
         var upgradeablePerks = RunManager.instance.activePerks.FindAll(
             p => p != null && p.currentLevel < p.maxLevel
         );
@@ -95,13 +94,20 @@ public class RestNodeUI : MonoBehaviour
         }
 
         DisableButtons();
-        Invoke(nameof(Close), 0.8f);
+        StartCoroutine(CloseAfterDelay());
     }
 
     private void DisableButtons()
     {
         if (restButton != null) restButton.interactable = false;
         if (trainButton != null) trainButton.interactable = false;
+    }
+
+    private System.Collections.IEnumerator CloseAfterDelay()
+    {
+        // Time.timeScale=0 iken Invoke çalışmaz, WaitForSecondsRealtime kullan
+        yield return new WaitForSecondsRealtime(0.8f);
+        Close();
     }
 
     private void Close()
