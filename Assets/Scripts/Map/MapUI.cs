@@ -71,6 +71,7 @@ public class MapUI : MonoBehaviour
         foreach (var node in map.nodes)
         {
             GameObject nodeGO = Instantiate(mapNodePrefab, nodeContainer);
+            nodeGO.SetActive(true); // Prefab inactive olabilir, zorla aktif et
             MapNodeUI nodeUI = nodeGO.GetComponent<MapNodeUI>();
 
             if (nodeUI != null)
@@ -202,6 +203,7 @@ public class MapUI : MonoBehaviour
                 RectTransform toRT = nodeTransforms[childId];
 
                 GameObject lineGO = Instantiate(linePrefab, nodeContainer);
+                lineGO.SetActive(true); // Prefab inactive olabilir
                 // Çizgiyi node'ların arkasına at
                 lineGO.transform.SetAsFirstSibling();
 
