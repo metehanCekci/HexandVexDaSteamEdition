@@ -114,12 +114,12 @@ public class MapManager : MonoBehaviour
         // Scroll alanı (ScrollRect yok — kendi MapDragScroll'umuz var)
         GameObject scrollGO = MakeUIObj("Scroll", panelGO.transform);
         RectTransform scrollRT = scrollGO.GetComponent<RectTransform>();
-        scrollRT.anchorMin = new Vector2(0.05f, 0.02f);
-        scrollRT.anchorMax = new Vector2(0.95f, 0.92f);
+        // Scroll alanı tam ekran — siyah panel zaten arka planı kapatıyor
+        scrollRT.anchorMin = Vector2.zero;
+        scrollRT.anchorMax = Vector2.one;
         scrollRT.offsetMin = Vector2.zero;
         scrollRT.offsetMax = Vector2.zero;
         scrollGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // Raycast almak için
-        scrollGO.AddComponent<RectMask2D>(); // Node'ları viewport dışında gizle
 
         // NodeContainer (scroll content) — üstten başlar, aşağı doğru uzar
         GameObject containerGO = MakeUIObj("NodeContainer", scrollGO.transform);
@@ -137,7 +137,7 @@ public class MapManager : MonoBehaviour
         dragScroll.scrollSpeed = 60f;   // Mouse wheel hızı
         dragScroll.dragSpeed = 1f;      // Sürükleme hızı
         dragScroll.paddingX = 200f;     // Yatay sınır boşluğu
-        dragScroll.paddingY = 150f;     // Dikey sınır boşluğu
+        dragScroll.paddingY = 300f;     // Dikey sınır boşluğu
 
         // Node prefab
         GameObject nodePrefab = BuildNodePrefab();
