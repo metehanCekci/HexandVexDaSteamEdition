@@ -103,6 +103,10 @@ public class LevelGenerator : MonoBehaviour
         // Map sistemi aktifse: ilk level'i üretme, haritayı göster
         if (MapManager.instance != null)
         {
+            // ScreenFader'ın otomatik fade'lerini durdur — MapManager kontrol edecek
+            if (ScreenFader.instance != null)
+                ScreenFader.instance.StopAllCoroutines();
+
             MapManager.instance.StartNewRun();
             Debug.Log("Map sistemi aktif — harita gösteriliyor.");
         }
