@@ -360,6 +360,12 @@ public class MapManager : MonoBehaviour
             }
         }
 
+        // Debug: tüm node'ları logla
+        foreach (var n in currentMap.nodes)
+        {
+            Debug.Log($"[MAP] Node id={n.id} row={n.row} col={n.column} type={n.nodeType} children=[{string.Join(",", n.childIds)}]");
+        }
+
         if (mapUI != null) mapUI.BuildMap(currentMap);
     }
 
@@ -397,6 +403,8 @@ public class MapManager : MonoBehaviour
     private void ExecuteNode(MapNode node)
     {
         isTransitioning = true;
+
+        Debug.Log($"[MAP] ExecuteNode: id={node.id} row={node.row} type={node.nodeType}");
 
         // RunManager'a aktif node tipini bildir
         if (RunManager.instance != null)
