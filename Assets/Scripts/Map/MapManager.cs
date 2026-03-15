@@ -94,7 +94,7 @@ public class MapManager : MonoBehaviour
         GameObject panelGO = MakeUIObj("MapPanel", canvasGO.transform);
         StretchFull(panelGO.GetComponent<RectTransform>());
         Image panelBG = panelGO.AddComponent<Image>();
-        panelBG.color = new Color(0.05f, 0.05f, 0.12f, 0.95f);
+        panelBG.color = Color.black; // Siyah arka plan (ileride sprite ile değiştirilebilir)
         CanvasGroup cg = panelGO.AddComponent<CanvasGroup>();
 
         // Başlık
