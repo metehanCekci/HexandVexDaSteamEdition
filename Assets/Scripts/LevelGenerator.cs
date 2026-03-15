@@ -100,13 +100,21 @@ public class LevelGenerator : MonoBehaviour
     {
         yield return null;
 
-        // Fader'ın animasyonunu beklemeye veya callback'ine güvenmeye gerek yok!
-        // Vibe'ı bozmadan leveli doğrudan üretiyoruz.
-        GenerateNextLevel();
-
-        if (ScreenFader.instance != null)
+        // Map sistemi aktifse: ilk level'i üretme, haritayı göster
+        if (MapManager.instance != null)
         {
-            Debug.Log("Harita çizildi. Ekran karartması (veya aydınlanması) arka planda çalışıyor.");
+            MapManager.instance.StartNewRun();
+            Debug.Log("Map sistemi aktif — harita gösteriliyor.");
+        }
+        else
+        {
+            // Legacy flow: direkt level üret
+            GenerateNextLevel();
+
+            if (ScreenFader.instance != null)
+            {
+                Debug.Log("Harita çizildi. Ekran karartması (veya aydınlanması) arka planda çalışıyor.");
+            }
         }
     }
 
