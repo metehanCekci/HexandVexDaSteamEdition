@@ -109,6 +109,8 @@ public class LevelUpManager : MonoBehaviour
                 BasePerk perkScript = randomPerk.GetComponent<BasePerk>();
 
                 BasePerk existing = RunManager.instance.activePerks.Find(p => p.GetType() == perkScript.GetType());
+                if (existing == null)
+                    existing = RunManager.instance.inventoryPerks.Find(p => p.GetType() == perkScript.GetType());
                 int displayLevel = (existing != null) ? existing.currentLevel + 1 : 1;
 
                 // ==========================================
@@ -202,10 +204,13 @@ public class LevelUpManager : MonoBehaviour
 
         BasePerk checkPerk = perkPrefab.GetComponent<BasePerk>();
 
-        // CanBeOffered kontrolü — koşullu perkler (GeneSplice vb.)
+        // CanBeOffered kontrolu -- kosullu perkler (GeneSplice vb.)
         if (!checkPerk.CanBeOffered()) return true;
 
+        // Hem activePerks hem inventoryPerks'te kontrol et
         BasePerk existing = RunManager.instance.activePerks.Find(p => p.GetType() == checkPerk.GetType());
+        if (existing == null)
+            existing = RunManager.instance.inventoryPerks.Find(p => p.GetType() == checkPerk.GetType());
 
         if (existing != null && existing.currentLevel >= existing.maxLevel)
         {
@@ -294,6 +299,8 @@ public class LevelUpManager : MonoBehaviour
 
         BasePerk checkScript = chosenPerk.GetComponent<BasePerk>();
         BasePerk activeInstance = RunManager.instance.activePerks.Find(p => p.GetType() == checkScript.GetType());
+        if (activeInstance == null)
+            activeInstance = RunManager.instance.inventoryPerks.Find(p => p.GetType() == checkScript.GetType());
 
         if (activeInstance != null && activeInstance.currentLevel >= activeInstance.maxLevel)
         {
