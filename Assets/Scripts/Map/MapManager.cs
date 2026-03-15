@@ -148,6 +148,8 @@ public class MapManager : MonoBehaviour
         linePrefab.SetActive(false);
         var lineRT = linePrefab.AddComponent<RectTransform>();
         lineRT.sizeDelta = new Vector2(100f, 3f);
+        lineRT.anchorMin = new Vector2(0.5f, 1f);
+        lineRT.anchorMax = new Vector2(0.5f, 1f);
         Image lineImg = linePrefab.AddComponent<Image>();
         lineImg.color = new Color(0.6f, 0.6f, 0.6f, 0.5f);
         lineImg.raycastTarget = false;
@@ -175,6 +177,10 @@ public class MapManager : MonoBehaviour
         go.SetActive(false);
         var rt = go.AddComponent<RectTransform>();
         rt.sizeDelta = new Vector2(110f, 110f);
+        // Container pivot=top olduğu için node anchor'ları da top olmalı
+        rt.anchorMin = new Vector2(0.5f, 1f);
+        rt.anchorMax = new Vector2(0.5f, 1f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
 
         Image bg = go.AddComponent<Image>();
         bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
