@@ -3,134 +3,121 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Haritayı sürükle: sağ tık / orta tuş ile pan (X+Y).
-/// Mouse wheel ile dikey hareket.
-/// Sol tık node butonlarına gider.
-///
-/// Container pivot=top, anchor=top demek:
-///   content.y = 0  → container üstü = viewport üstü → boss görünür
-///   content.y < 0  → container yukarı kayar → alt kısım (row 0) görünür
-///   content.y > 0  → container aşağı kayar → üstün üstü (boşluk) görünür
-/// Yani row 0'ı görmek için content.y NEGATİF olmalı.
+/// ScrollRect'in sol tık sürüklemesini engeller — sadece sağ tık ve orta tuşla pan.
+/// Mouse wheel desteği ScrollRect'ten gelir.
+/// Bu component ScrollRect'in yanına eklenir.
 /// </summary>
-public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IScrollHandler
+public class MapDragScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    [HideInInspector] public RectTransform content;
-    [HideInInspector] public RectTransform viewport;
+    private ScrollRect scrollRect;
+    private bool isDraggingWithRightOrMiddle = false;
 
-    [Header("Scroll Ayarları")]
-    public float scrollSpeed = 60f;
-    public float dragSpeed = 1f;
+    // Sürükleme sırasında sol tık event'lerini yutmak için
+    private bool blockLeftDrag = false;
 
-    [Header("Pan Sınırları (pixel)")]
-    public float minX = -600f;
-    public float maxX = 600f;
-    public float minY = -1500f;  // Negatif = aşağıyı gösterebilir
-    public float maxY = 200f;    // Pozitif = üstün biraz üstü
+    void Awake()
+    {
+        scrollRect = GetComponent<ScrollRect>();
+    }
 
-    private bool isDragging = false;
-    private Vector2 lastMousePos;
+    // Sol tık drag'ı engelle — ScrollRect'in OnBeginDrag'ını çağırma
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (eventData.button == PointerEventData.InputButton.Left)
+        {
+            blockLeftDrag = true;
+            eventData.pointerDrag = null; // ScrollRect'e iletme
+        }
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (blockLeftDrag) return;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        blockLeftDrag = false;
+    }
 
     void Update()
     {
-        if (content == null) return;
+        if (scrollRect == null) return;
 
-        if (isDragging && (Input.GetMouseButton(1) || Input.GetMouseButton(2)))
+        // Sağ tık veya orta tuş ile sürükleme
+        bool rightDown = Input.GetMouseButton(1);
+        bool middleDown = Input.GetMouseButton(2);
+
+        if ((rightDown || middleDown) && !isDraggingWithRightOrMiddle)
         {
-            Vector2 currentMousePos = (Vector2)Input.mousePosition;
-            Vector2 delta = currentMousePos - lastMousePos;
-            lastMousePos = currentMousePos;
-
-            Vector2 newPos = content.anchoredPosition + delta * dragSpeed;
-            newPos.x = Mathf.Clamp(newPos.x, minX, maxX);
-            newPos.y = Mathf.Clamp(newPos.y, minY, maxY);
-            content.anchoredPosition = newPos;
+            isDraggingWithRightOrMiddle = true;
         }
-        else
+
+        if (isDraggingWithRightOrMiddle)
         {
-            isDragging = false;
-        }
-    }
+            if (!rightDown && !middleDown)
+            {
+                isDraggingWithRightOrMiddle = false;
+            }
+            else
+            {
+                // Mouse delta ile content'i hareket ettir
+                float dx = Input.GetAxis("Mouse X") * 15f;
+                float dy = Input.GetAxis("Mouse Y") * 15f;
 
-    public void OnPointerDown(PointerEventData eventData)
-    {
-        if (eventData.button == PointerEventData.InputButton.Middle ||
-            eventData.button == PointerEventData.InputButton.Right)
-        {
-            isDragging = true;
-            lastMousePos = eventData.position;
+                var content = scrollRect.content;
+                if (content != null)
+                {
+                    Vector2 pos = content.anchoredPosition;
+                    pos.x += dx;
+                    pos.y += dy;
+                    content.anchoredPosition = pos;
+                }
+            }
         }
-    }
-
-    public void OnPointerUp(PointerEventData eventData)
-    {
-        if (eventData.button == PointerEventData.InputButton.Middle ||
-            eventData.button == PointerEventData.InputButton.Right)
-        {
-            isDragging = false;
-        }
-    }
-
-    public void OnScroll(PointerEventData eventData)
-    {
-        if (content == null) return;
-        Vector2 pos = content.anchoredPosition;
-        pos.y += eventData.scrollDelta.y * scrollSpeed;
-        pos.y = Mathf.Clamp(pos.y, minY, maxY);
-        content.anchoredPosition = pos;
     }
 
     /// <summary>
-    /// Scroll sınırlarını harita boyutuna göre otomatik ayarla.
-    /// Container height bilindiğinde çağrılmalı.
+    /// Belirli bir node Y pozisyonunu ekranın ortasına getir.
+    /// Container pivot=bottom olduğu için nodeY pozitif.
+    /// ScrollRect normalizedPosition kullanarak scroll eder.
     /// </summary>
-    public void UpdateLimitsForMapHeight(float containerHeight)
+    public void ScrollToNodeY(float nodeY, bool center)
     {
-        float viewportH = viewport != null ? viewport.rect.height : Screen.height * 0.8f;
+        if (scrollRect == null || scrollRect.content == null) return;
+
+        float contentH = scrollRect.content.rect.height;
+        float viewportH = scrollRect.viewport != null ? scrollRect.viewport.rect.height : Screen.height;
         if (viewportH <= 0) viewportH = Screen.height * 0.8f;
 
-        // content.y = 0 → boss (üst) görünür
-        // content.y = -(containerHeight - viewportH) → row 0 (alt) görünür
-        maxY = 100f; // Boss'un biraz üstüne kadar scroll edilebilsin
-        minY = -(containerHeight - viewportH + 100f); // Row 0'ın biraz altına kadar
-        if (minY > maxY) minY = maxY - 100f; // Güvenlik
+        float scrollableH = contentH - viewportH;
+        if (scrollableH <= 0)
+        {
+            scrollRect.verticalNormalizedPosition = 0f;
+            return;
+        }
 
-        Debug.Log($"[SCROLL] UpdateLimits: containerH={containerHeight} viewportH={viewportH} minY={minY} maxY={maxY}");
+        // normalizedPosition: 0 = en alt (row 0), 1 = en üst (boss)
+        // nodeY viewport'un alt kenarından bu kadar yukarıda olsun:
+        float offset = center ? viewportH * 0.5f : viewportH * 0.2f;
+        float targetScrollY = (nodeY - offset) / scrollableH;
+        targetScrollY = Mathf.Clamp01(targetScrollY);
+
+        scrollRect.verticalNormalizedPosition = targetScrollY;
+        Debug.Log($"[SCROLL] ScrollToNodeY: nodeY={nodeY} contentH={contentH} viewportH={viewportH} normalized={targetScrollY}");
     }
 
-    /// <summary>
-    /// Node'u ekranın ortasına getir (bölüm bittikten sonra).
-    /// Container pivot=top: nodeY negatif. Ekran ortasında görmek için:
-    /// content.y = nodeY + viewportH/2
-    /// </summary>
-    public void CenterOnY(float nodeY)
+    /// <summary>En alta scroll et (row 0 görünsün).</summary>
+    public void ScrollToBottom()
     {
-        if (content == null || viewport == null) return;
-        float viewportH = viewport.rect.height;
-        if (viewportH <= 0) viewportH = Screen.height * 0.8f;
-
-        // nodeY negatif (ör: -800). Ortada görmek için container'ı yukarı çek.
-        // content.y = nodeY + viewportH/2 → negatif + pozitif
-        float targetY = nodeY + viewportH / 2f;
-        targetY = Mathf.Clamp(targetY, minY, maxY);
-        Debug.Log($"[SCROLL] CenterOnY nodeY={nodeY} viewportH={viewportH} targetY={targetY}");
-        content.anchoredPosition = new Vector2(0f, targetY);
+        if (scrollRect != null)
+            scrollRect.verticalNormalizedPosition = 0f;
     }
 
-    /// <summary>
-    /// Node'u ekranın alt kısmına getir (ilk açılış — row 0 altta görünmeli).
-    /// content.y = nodeY + viewportH * 0.8  (node'u ekranın %80'ine koy, altta)
-    /// </summary>
-    public void ShowAtBottom(float nodeY)
+    /// <summary>En üste scroll et (boss görünsün).</summary>
+    public void ScrollToTop()
     {
-        if (content == null || viewport == null) return;
-        float viewportH = viewport.rect.height;
-        if (viewportH <= 0) viewportH = Screen.height * 0.8f;
-
-        // Row 0 ekranın altında olsun — %80 aşağıda
-        float targetY = nodeY + viewportH * 0.8f;
-        targetY = Mathf.Clamp(targetY, minY, maxY);
-        Debug.Log($"[SCROLL] ShowAtBottom nodeY={nodeY} viewportH={viewportH} targetY={targetY}");
-        content.anchoredPosition = new Vector2(0f, targetY);
+        if (scrollRect != null)
+            scrollRect.verticalNormalizedPosition = 1f;
     }
 }
