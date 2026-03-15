@@ -65,8 +65,8 @@ public class MapManager : MonoBehaviour
             BuildRestUIFromCode();
         }
 
-        // Shop continue butonu
-        BuildShopContinueButton();
+        // Auto-spawn Inventory & Hotbar if not present
+        EnsureInventoryAndHotbar();
     }
 
     // ═══════════════════════════════════════════
@@ -280,16 +280,20 @@ public class MapManager : MonoBehaviour
         panelGO.SetActive(false);
     }
 
-    private void BuildShopContinueButton()
+    // ─── Inventory & Hotbar auto-spawn ───
+    private void EnsureInventoryAndHotbar()
     {
-        if (Shopmanager.instance == null || Shopmanager.instance.continueButton != null) return;
-        Transform shopParent = Shopmanager.instance.shopSlotContainer != null
-            ? Shopmanager.instance.shopSlotContainer.parent : null;
-        if (shopParent == null) return;
+        if (InventoryManager.instance == null)
+        {
+            GameObject invGO = new GameObject("InventoryManager");
+            invGO.AddComponent<InventoryManager>();
+        }
 
-        GameObject btn = MakeButton("Continue", shopParent, new Vector2(0f, -80f), new Color(0.2f, 0.5f, 0.8f));
-        btn.SetActive(false);
-        Shopmanager.instance.continueButton = btn;
+        if (HotbarUI.instance == null)
+        {
+            GameObject hotbarGO = new GameObject("HotbarUI");
+            hotbarGO.AddComponent<HotbarUI>();
+        }
     }
 
     // ─── UI yardımcıları ───
@@ -341,6 +345,11 @@ public class MapManager : MonoBehaviour
     {
         // UI'ın oluşması için 1 frame bekle
         yield return null;
+
+        // Reset inventory for new run
+        if (InventoryManager.instance != null)
+            InventoryManager.instance.ResetForNewRun();
+
         GenerateNewMap(0);
 
         // Map'i arkada hazırla
@@ -434,7 +443,9 @@ public class MapManager : MonoBehaviour
         // 2. Map'i gizle
         HideMap();
 
-        // 3. İçeriği yükle
+        // 3. İçeriği yükle + hotbar visibility
+        bool showHotbar = false;
+
         switch (node.nodeType)
         {
             case MapNodeType.Combat:
@@ -442,9 +453,14 @@ public class MapManager : MonoBehaviour
             case MapNodeType.Event:
                 RunManager.instance.currentLevel++;
                 LevelGenerator.instance.GenerateNextLevel();
+                showHotbar = true; // Hotbar visible during combat
                 break;
 
             case MapNodeType.Shop:
+                // Generate small shop arena (player can walk to dealer)
+                if (LevelGenerator.instance != null)
+                    LevelGenerator.instance.GenerateShopArena();
+                // Open the full-screen shop canvas
                 if (Shopmanager.instance != null)
                     Shopmanager.instance.OpenAsMapNode();
                 break;
@@ -462,8 +478,12 @@ public class MapManager : MonoBehaviour
             case MapNodeType.Boss:
                 RunManager.instance.currentLevel++;
                 LevelGenerator.instance.GenerateBossArena();
+                showHotbar = true; // Hotbar visible during boss
                 break;
         }
+
+        if (HotbarUI.instance != null)
+            HotbarUI.instance.SetVisible(showHotbar);
 
         // 4. İçeriğin render edilmesi için kısa bekleme
         yield return new WaitForSecondsRealtime(0.2f);
@@ -596,6 +616,10 @@ public class MapManager : MonoBehaviour
 
     private void ShowMapInstant()
     {
+        // Hide hotbar when map is shown
+        if (HotbarUI.instance != null)
+            HotbarUI.instance.SetVisible(false);
+
         if (mapUI != null)
         {
             mapUI.RefreshNodeStates(currentMap);

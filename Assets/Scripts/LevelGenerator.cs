@@ -764,4 +764,70 @@ public class LevelGenerator : MonoBehaviour
         int by = -bx - bz;
         return Mathf.Max(Mathf.Abs(ax - bx), Mathf.Abs(ay - by), Mathf.Abs(az - bz));
     }
+
+    // ═══════════════════════════════════════════
+    // SHOP ARENA — Küçük sahne, ortada dealer olacak
+    // ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Generates a small hex arena (radius 2) for the shop scene.
+    /// Player spawns at the edge; center hex is reserved for dealer NPC.
+    /// Returns the center cell position (for future dealer placement).
+    /// </summary>
+    public Vector3 GenerateShopArena()
+    {
+        groundMap.ClearAllTiles();
+        if (backgroundMap != null) backgroundMap.ClearAllTiles();
+        if (hazardMap != null) hazardMap.ClearAllTiles();
+        if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
+        if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
+
+        validCells.Clear();
+        hazardCells.Clear();
+        scaffoldCells.Clear();
+
+        // Destroy all enemies (shop has none)
+        if (TurnManager.instance != null)
+        {
+            foreach (var enemy in TurnManager.instance.enemies)
+                if (enemy != null) Destroy(enemy.gameObject);
+            TurnManager.instance.enemies.Clear();
+        }
+
+        // Small hex radius — just 7 tiles (radius 1) or 19 tiles (radius 2)
+        int shopRadius = 2;
+
+        for (int x = -shopRadius; x <= shopRadius; x++)
+        {
+            for (int y = -shopRadius; y <= shopRadius; y++)
+            {
+                if (Mathf.Abs(x + y) <= shopRadius)
+                {
+                    Vector3Int cell = new Vector3Int(x, y, 0);
+                    groundMap.SetTile(cell, groundTile);
+                    groundMap.SetColor(cell, Color.white);
+                    validCells.Add(cell);
+                }
+            }
+        }
+
+        GenerateColumns();
+
+        // Player spawns at bottom edge
+        Vector3Int playerCell = new Vector3Int(0, -shopRadius, 0);
+        if (!validCells.Contains(playerCell))
+            playerCell = validCells[validCells.Count - 1];
+
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            TurnManager.instance.player.transform.position = groundMap.GetCellCenterWorld(playerCell);
+            TurnManager.instance.player.StartKnockbackMovement(playerCell);
+            TurnManager.instance.isPlayerTurn = true;
+            TurnManager.instance.player.UpdateHighlights();
+        }
+
+        // Center cell — reserved for dealer NPC (future)
+        Vector3Int dealerCell = Vector3Int.zero;
+        return groundMap.GetCellCenterWorld(dealerCell);
+    }
 }

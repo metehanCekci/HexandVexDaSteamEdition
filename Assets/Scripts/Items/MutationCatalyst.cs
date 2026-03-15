@@ -8,6 +8,7 @@ public class MutationCatalyst : BaseItem
         itemName = "Mutation Catalyst";
         description = "Once acquired, you gain the right to reroll perks on the next perk selection screen.";
         price = 6;
+        itemType = ItemType.Instant;
     }
 
     public override bool Use()
