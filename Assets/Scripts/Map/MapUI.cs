@@ -97,7 +97,9 @@ public class MapUI : MonoBehaviour
             {
                 int nodesInRow = rowMap.ContainsKey(node.row) ? rowMap[node.row].Count : 1;
                 float xPos = CalculateXPosition(node.column, nodesInRow);
-                float yPos = node.row * rowSpacing + 50f; // Alttan yukarı
+                // Container pivot=top: y=0 en üst, negatif aşağı
+                // Boss (maxRow) en üstte, start (row 0) en altta
+                float yPos = -(maxRow - node.row) * rowSpacing - 100f;
 
                 // Jitter (start ve boss hariç)
                 if (node.row > 0 && node.row < maxRow)
