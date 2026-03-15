@@ -120,7 +120,6 @@ public class MapUI : MonoBehaviour
         if (nodeContainer != null)
         {
             Canvas.ForceUpdateCanvases();
-            var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
             if (dragScroll != null)
                 dragScroll.ScrollToBottom();
         }
