@@ -549,16 +549,19 @@ public class MapManager : MonoBehaviour
     // ─── Combat/Shop/Perk/Rest bittikten sonra haritaya dön ───
     public void OnNodeComplete()
     {
+        Debug.Log($"[MAP] OnNodeComplete called. currentNodeId={currentMap?.currentNodeId}");
         isTransitioning = false;
 
         // Boss node ise layer'ı ilerlet
         MapNode current = currentMap?.GetNode(currentMap.currentNodeId);
         if (current != null && current.nodeType == MapNodeType.Boss)
         {
+            Debug.Log("[MAP] Current node is Boss → OnBossDefeated");
             OnBossDefeated();
             return;
         }
 
+        Debug.Log("[MAP] Starting ReturnToMapWithFade coroutine");
         // ScreenFader ile: karart → map göster → aydınlat
         // Ama sadece ScreenFader'ın meşgul olmadığı durumlarda
         StartCoroutine(ReturnToMapWithFade());

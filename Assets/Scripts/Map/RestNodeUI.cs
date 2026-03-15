@@ -60,6 +60,8 @@ public class RestNodeUI : MonoBehaviour
 
     private void OnRest(int amount)
     {
+        Debug.Log($"[REST] OnRest called — amount={amount}");
+
         if (RunManager.instance != null)
         {
             RunManager.instance.playerCurrentHealth = Mathf.Min(
@@ -105,17 +107,27 @@ public class RestNodeUI : MonoBehaviour
 
     private System.Collections.IEnumerator CloseAfterDelay()
     {
+        Debug.Log("[REST] CloseAfterDelay started — waiting 0.8s realtime");
         // Time.timeScale=0 iken Invoke çalışmaz, WaitForSecondsRealtime kullan
         yield return new WaitForSecondsRealtime(0.8f);
+        Debug.Log("[REST] CloseAfterDelay wait done — calling Close()");
         Close();
     }
 
     private void Close()
     {
+        Debug.Log("[REST] Close called — setting timeScale=1, hiding panel, calling OnNodeComplete");
         Time.timeScale = 1f;
         if (restPanel != null) restPanel.SetActive(false);
 
         if (MapManager.instance != null)
+        {
+            Debug.Log("[REST] MapManager.OnNodeComplete() calling...");
             MapManager.instance.OnNodeComplete();
+        }
+        else
+        {
+            Debug.LogWarning("[REST] MapManager.instance is NULL — cannot return to map!");
+        }
     }
 }
