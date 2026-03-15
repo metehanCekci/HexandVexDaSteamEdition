@@ -134,6 +134,10 @@ public class MapManager : MonoBehaviour
         var dragScroll = scrollGO.AddComponent<MapDragScroll>();
         dragScroll.content = containerRT;
         dragScroll.viewport = scrollRT;
+        dragScroll.scrollSpeed = 60f;   // Mouse wheel hızı
+        dragScroll.dragSpeed = 1f;      // Sürükleme hızı
+        dragScroll.paddingX = 200f;     // Yatay sınır boşluğu
+        dragScroll.paddingY = 150f;     // Dikey sınır boşluğu
 
         // Node prefab
         GameObject nodePrefab = BuildNodePrefab();
