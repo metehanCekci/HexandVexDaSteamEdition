@@ -86,6 +86,7 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
         float targetY = -nodeY - viewportH / 2f;
         targetY = Mathf.Clamp(targetY, minY, maxY);
+        Debug.Log($"[SCROLL] CenterOnY nodeY={nodeY} targetY={targetY}");
         content.anchoredPosition = new Vector2(0f, targetY);
     }
 
@@ -98,9 +99,14 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         float viewportH = viewport.rect.height;
         if (viewportH <= 0) viewportH = Screen.height * 0.8f;
 
-        // Node ekranın alttan %15'inde görünsün
-        float targetY = -nodeY - viewportH * 0.85f;
+        // nodeY negatif. Node ekranın altından %15 yukarıda olsun.
+        // Viewport üstü = content.y, viewport altı = content.y - viewportH
+        // Node pozisyonu ekranda = nodeY + content.y
+        // Node ekranın altından %15 yukarıda: nodeY + content.y = -viewportH * 0.85
+        // content.y = -viewportH * 0.85 - nodeY
+        float targetY = -viewportH * 0.85f - nodeY;
         targetY = Mathf.Clamp(targetY, minY, maxY);
+        Debug.Log($"[SCROLL] ShowAtBottom nodeY={nodeY} viewportH={viewportH} targetY={targetY}");
         content.anchoredPosition = new Vector2(0f, targetY);
     }
 }
