@@ -18,6 +18,8 @@ public class MapManager : MonoBehaviour
 
     private bool isTransitioning;
 
+    private bool isDuplicate = false;
+
     void Awake()
     {
         if (instance == null)
@@ -27,12 +29,14 @@ public class MapManager : MonoBehaviour
         }
         else
         {
+            isDuplicate = true;
             Destroy(gameObject);
         }
     }
 
     void Start()
     {
+        if (isDuplicate) return; // Duplikat instance ise UI oluşturma
         // Eğer layerConfigs boşsa default oluştur
         if (layerConfigs == null || layerConfigs.Length == 0)
         {
@@ -139,7 +143,7 @@ public class MapManager : MonoBehaviour
 
         // MapUI component
         MapUI ui = panelGO.AddComponent<MapUI>();
-        ui.mapPanel = panelGO;
+        ui.mapPanel = canvasGO; // Canvas'ın kendisini kapat/aç — böylece hiçbir şey ekranda kalmaz
         ui.canvasGroup = cg;
         ui.nodeContainer = containerRT;
         ui.mapNodePrefab = nodePrefab;
@@ -149,7 +153,7 @@ public class MapManager : MonoBehaviour
         ui.nodeJitter = 15f;
 
         mapUI = ui;
-        panelGO.SetActive(false);
+        canvasGO.SetActive(false); // Başlangıçta tüm canvas'ı kapat
 
         Debug.Log("MapManager: Map UI otomatik oluşturuldu.");
     }
