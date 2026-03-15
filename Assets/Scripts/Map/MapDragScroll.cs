@@ -82,10 +82,15 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     {
         if (content == null || viewport == null) return;
         float viewportH = viewport.rect.height;
-        // viewportH sıfırsa fallback
         if (viewportH <= 0) viewportH = Screen.height * 0.8f;
+
+        // nodeY negatif (container pivot=top, node'lar aşağı doğru)
+        // Node'u viewport ortasına getirmek için content'i aşağı kaydır
         float targetY = -nodeY - viewportH / 2f;
         targetY = Mathf.Clamp(targetY, minY, maxY);
+
+        Debug.Log($"[MAP SCROLL] CenterOnY: nodeY={nodeY}, viewportH={viewportH}, targetY={targetY}, content.pos={content.anchoredPosition}");
+
         content.anchoredPosition = new Vector2(0f, targetY);
     }
 }
