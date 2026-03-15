@@ -42,6 +42,9 @@ public class LevelGenerator : MonoBehaviour
     public GameObject bossPrefab;
     public GameObject totemPrefab;
 
+    [Header("Shop Arena")]
+    public GameObject shopDealerPrefab; // Optional — if null, creates a placeholder sprite
+
     [Header("Warlock Düşman")]
     public GameObject warlockEnemyPrefab;
     public int warlockStartLevel = 6; // İlk bosstan sonra (level 6+)
@@ -766,13 +769,15 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // SHOP ARENA — Küçük sahne, ortada dealer olacak
+    // SHOP ARENA — Elmas şekli (1-2-3-2-1), ortada dealer
     // ═══════════════════════════════════════════
 
     /// <summary>
-    /// Generates a small hex arena (radius 2) for the shop scene.
-    /// Player spawns at the edge; center hex is reserved for dealer NPC.
-    /// Returns the center cell position (for future dealer placement).
+    /// Generates a diamond-shaped hex arena for the shop scene.
+    /// Layout (top to bottom): 1-2-3-2-1 tiles.
+    /// Player spawns at the bottom single tile.
+    /// Center of the 3-tile middle row is reserved for the dealer NPC.
+    /// Returns the dealer cell world position.
     /// </summary>
     public Vector3 GenerateShopArena()
     {
@@ -794,29 +799,38 @@ public class LevelGenerator : MonoBehaviour
             TurnManager.instance.enemies.Clear();
         }
 
-        // Small hex radius — just 7 tiles (radius 1) or 19 tiles (radius 2)
-        int shopRadius = 2;
+        // Diamond shape: 1-2-3-2-1 (top to bottom)
+        // Row y=+2 (top):    1 tile  → (0,2)
+        // Row y=+1:          2 tiles → (0,1), (1,1)   [y=1 is odd row]
+        // Row y= 0 (middle): 3 tiles → (-1,0), (0,0), (1,0)
+        // Row y=-1:          2 tiles → (-1,-1), (0,-1) [y=-1 is odd row]
+        // Row y=-2 (bottom): 1 tile  → (0,-2)
 
-        for (int x = -shopRadius; x <= shopRadius; x++)
+        Vector3Int[] diamondCells = new Vector3Int[]
         {
-            for (int y = -shopRadius; y <= shopRadius; y++)
-            {
-                if (Mathf.Abs(x + y) <= shopRadius)
-                {
-                    Vector3Int cell = new Vector3Int(x, y, 0);
-                    groundMap.SetTile(cell, groundTile);
-                    groundMap.SetColor(cell, Color.white);
-                    validCells.Add(cell);
-                }
-            }
+            // Top (1)
+            new Vector3Int(0, 2, 0),
+            // Row 1 (2)
+            new Vector3Int(0, 1, 0), new Vector3Int(1, 1, 0),
+            // Middle (3) — dealer at center (0,0)
+            new Vector3Int(-1, 0, 0), new Vector3Int(0, 0, 0), new Vector3Int(1, 0, 0),
+            // Row -1 (2)
+            new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0),
+            // Bottom (1) — player spawn
+            new Vector3Int(0, -2, 0),
+        };
+
+        foreach (var cell in diamondCells)
+        {
+            groundMap.SetTile(cell, groundTile);
+            groundMap.SetColor(cell, Color.white);
+            validCells.Add(cell);
         }
 
         GenerateColumns();
 
-        // Player spawns at bottom edge
-        Vector3Int playerCell = new Vector3Int(0, -shopRadius, 0);
-        if (!validCells.Contains(playerCell))
-            playerCell = validCells[validCells.Count - 1];
+        // Player spawns at bottom single tile
+        Vector3Int playerCell = new Vector3Int(0, -2, 0);
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
@@ -826,8 +840,55 @@ public class LevelGenerator : MonoBehaviour
             TurnManager.instance.player.UpdateHighlights();
         }
 
-        // Center cell — reserved for dealer NPC (future)
+        // Spawn dealer at center of the 3-tile middle row
         Vector3Int dealerCell = Vector3Int.zero;
-        return groundMap.GetCellCenterWorld(dealerCell);
+        Vector3 dealerWorldPos = groundMap.GetCellCenterWorld(dealerCell);
+
+        // Destroy old dealer if any
+        if (ShopDealer.instance != null)
+            Destroy(ShopDealer.instance.gameObject);
+
+        GameObject dealerGO;
+        if (shopDealerPrefab != null)
+        {
+            dealerGO = Instantiate(shopDealerPrefab, dealerWorldPos, Quaternion.identity);
+        }
+        else
+        {
+            // Placeholder dealer — simple colored sprite
+            dealerGO = new GameObject("ShopDealer");
+            dealerGO.transform.position = dealerWorldPos;
+            SpriteRenderer sr = dealerGO.AddComponent<SpriteRenderer>();
+            sr.sprite = CreatePlaceholderSprite();
+            sr.color = new Color(0.2f, 0.8f, 1f, 1f);
+            sr.sortingOrder = 5;
+        }
+
+        ShopDealer dealer = dealerGO.GetComponent<ShopDealer>();
+        if (dealer == null)
+            dealer = dealerGO.AddComponent<ShopDealer>();
+        dealer.dealerCell = dealerCell;
+
+        return dealerWorldPos;
+    }
+
+    /// <summary>
+    /// Creates a simple white circle sprite for placeholder NPCs.
+    /// </summary>
+    private Sprite CreatePlaceholderSprite()
+    {
+        Texture2D tex = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+        Color[] pixels = new Color[32 * 32];
+        Vector2 center = new Vector2(15.5f, 15.5f);
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            int x = i % 32;
+            int y = i / 32;
+            float dist = Vector2.Distance(new Vector2(x, y), center);
+            pixels[i] = dist < 14f ? Color.white : Color.clear;
+        }
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
     }
 }

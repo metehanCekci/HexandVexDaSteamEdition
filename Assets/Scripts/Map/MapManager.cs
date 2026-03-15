@@ -468,12 +468,12 @@ public class MapManager : MonoBehaviour
                 break;
 
             case MapNodeType.Shop:
-                // Generate small shop arena (player can walk to dealer)
+                // Generate diamond shop arena with dealer NPC at center.
+                // Shop canvas does NOT auto-open — it opens when the player
+                // walks to the dealer's tile (handled by ShopDealer component).
                 if (LevelGenerator.instance != null)
                     LevelGenerator.instance.GenerateShopArena();
-                // Open the full-screen shop canvas
-                if (Shopmanager.instance != null)
-                    Shopmanager.instance.OpenAsMapNode();
+                showHotbar = true; // Player needs to walk around the arena
                 break;
 
             case MapNodeType.PerkSelection:

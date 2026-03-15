@@ -7,8 +7,8 @@ using UnityEngine.EventSystems;
 
 /// <summary>
 /// Map-node Shop Manager — full-screen perk-card-style shop canvas.
-/// Opens when player walks to dealer NPC in the shop arena, or via OpenAsMapNode().
-/// Items display as large cards (like LevelUpManager perk cards) with all info visible.
+/// Opens when player walks to the Dealer NPC in the shop arena.
+/// Items display as large cards with all info visible (no hover tooltips).
 /// Communicates purchases through GameEvents.
 /// </summary>
 public class Shopmanager : MonoBehaviour
@@ -29,14 +29,15 @@ public class Shopmanager : MonoBehaviour
     public float rerollBaseCost = 10f;
     public float rerollMultiplier = 1.5f;
 
-    // ─── Legacy Inspector References (kept for backward compat) ───
-    [Header("Legacy (auto-created if null)")]
+    // ─── Legacy Inspector References (kept so Inspector doesn't break) ───
+    [Header("Legacy (no longer used — hidden at runtime)")]
     public Transform shopSlotContainer;
     public GameObject shopSlotPrefab;
     public TMP_Text coinDisplayText;
     public Button rerollButton;
     public TMP_Text rerollPriceText;
     public GameObject continueButton;
+    [HideInInspector] public GameObject shopCanvas; // old field
 
     // ─── Internal State ───
     private List<BaseItem> currentItems = new List<BaseItem>();
@@ -46,7 +47,6 @@ public class Shopmanager : MonoBehaviour
     private int currentRerollCost;
 
     public static bool hasBoughtSecretItem = false;
-
     private bool isShopOpen = false;
 
     // ─── Code-Built UI ───
@@ -56,15 +56,17 @@ public class Shopmanager : MonoBehaviour
     private GameObject cardContainer;
     private List<ShopCardUI> cardUIs = new List<ShopCardUI>();
     private TMP_Text goldText;
+    private Image goldCoinIcon;
     private Button codeRerollButton;
     private TMP_Text codeRerollPriceText;
     private Button codeContinueButton;
     private TMP_Text shopTitleText;
 
     private static bool shopUIBuilt = false;
-
-    // ─── Card hover state ───
     private int hoveredCardIndex = -1;
+
+    // Cached coin sprite
+    private Sprite cachedCoinSprite;
 
     // ═══════════════════════════════════════════
     // LIFECYCLE
@@ -82,8 +84,45 @@ public class Shopmanager : MonoBehaviour
         if (RunManager.instance != null && RunManager.instance.currentLevel <= 1)
             hasBoughtSecretItem = false;
 
+        // Cache coin sprite
+        cachedCoinSprite = GetCoinSprite();
+
+        // HIDE legacy scene UI so it doesn't overlap
+        HideLegacyUI();
+
         BuildShopUI();
         CloseShop();
+    }
+
+    /// <summary>
+    /// Hides the old shop panel, reroll button, coin text, etc. that may
+    /// still exist in the scene from the legacy setup.
+    /// </summary>
+    private void HideLegacyUI()
+    {
+        if (shopSlotContainer != null && shopSlotContainer.parent != null)
+            shopSlotContainer.parent.gameObject.SetActive(false);
+
+        if (rerollButton != null)
+            rerollButton.gameObject.SetActive(false);
+
+        if (coinDisplayText != null)
+            coinDisplayText.transform.parent?.gameObject.SetActive(false);
+
+        if (rerollPriceText != null)
+            rerollPriceText.gameObject.SetActive(false);
+
+        if (continueButton != null)
+            continueButton.SetActive(false);
+    }
+
+    private Sprite GetCoinSprite()
+    {
+        if (TurnManager.instance != null && TurnManager.instance.coinSprite != null)
+            return TurnManager.instance.coinSprite;
+        var vfx = Object.FindFirstObjectByType<CoinDropVFX>();
+        if (vfx != null) return vfx.coinSprite;
+        return null;
     }
 
     // ═══════════════════════════════════════════
@@ -99,13 +138,13 @@ public class Shopmanager : MonoBehaviour
         shopCanvasGO = new GameObject("ShopCanvas");
         Canvas canvas = shopCanvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 92; // Above map (90), below rest (95)
+        canvas.sortingOrder = 92;
         var scaler = shopCanvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         shopCanvasGO.AddComponent<GraphicRaycaster>();
 
-        // ─── Full-screen panel (dark background) ───
+        // ─── Full-screen panel ───
         shopPanel = MakeUIObj("ShopPanel", shopCanvasGO.transform);
         StretchFull(shopPanel.GetComponent<RectTransform>());
         Image panelBG = shopPanel.AddComponent<Image>();
@@ -127,19 +166,50 @@ public class Shopmanager : MonoBehaviour
         shopTitleText.color = new Color(1f, 0.85f, 0.3f);
         shopTitleText.fontStyle = FontStyles.Bold;
 
-        // ─── Gold Display (top-right) ───
-        GameObject goldGO = MakeUIObj("GoldDisplay", shopPanel.transform);
-        RectTransform goldRT = goldGO.GetComponent<RectTransform>();
-        goldRT.anchorMin = new Vector2(1f, 1f);
-        goldRT.anchorMax = new Vector2(1f, 1f);
-        goldRT.pivot = new Vector2(1f, 1f);
-        goldRT.anchoredPosition = new Vector2(-40f, -40f);
-        goldRT.sizeDelta = new Vector2(200f, 50f);
-        goldText = goldGO.AddComponent<TextMeshProUGUI>();
+        // ─── Gold Display (top-right) — HorizontalLayout for icon + text ───
+        GameObject goldRowGO = MakeUIObj("GoldRow", shopPanel.transform);
+        RectTransform goldRowRT = goldRowGO.GetComponent<RectTransform>();
+        goldRowRT.anchorMin = new Vector2(1f, 1f);
+        goldRowRT.anchorMax = new Vector2(1f, 1f);
+        goldRowRT.pivot = new Vector2(1f, 1f);
+        goldRowRT.anchoredPosition = new Vector2(-30f, -35f);
+        goldRowRT.sizeDelta = new Vector2(200f, 50f);
+
+        HorizontalLayoutGroup goldHLG = goldRowGO.AddComponent<HorizontalLayoutGroup>();
+        goldHLG.spacing = 8f;
+        goldHLG.childAlignment = TextAnchor.MiddleRight;
+        goldHLG.childControlWidth = false;
+        goldHLG.childControlHeight = false;
+        goldHLG.childForceExpandWidth = false;
+        goldHLG.childForceExpandHeight = false;
+
+        // Coin Icon
+        GameObject goldIconGO = MakeUIObj("CoinIcon", goldRowGO.transform);
+        goldIconGO.layer = goldRowGO.layer;
+        goldCoinIcon = goldIconGO.AddComponent<Image>();
+        goldCoinIcon.preserveAspect = true;
+        goldCoinIcon.raycastTarget = false;
+        if (cachedCoinSprite != null) goldCoinIcon.sprite = cachedCoinSprite;
+        RectTransform goldIconRT = goldIconGO.GetComponent<RectTransform>();
+        goldIconRT.sizeDelta = new Vector2(36f, 36f);
+        LayoutElement goldIconLE = goldIconGO.AddComponent<LayoutElement>();
+        goldIconLE.preferredWidth = 36f;
+        goldIconLE.preferredHeight = 36f;
+
+        // Gold Text
+        GameObject goldTxtGO = MakeUIObj("GoldText", goldRowGO.transform);
+        goldTxtGO.layer = goldRowGO.layer;
+        goldText = goldTxtGO.AddComponent<TextMeshProUGUI>();
         goldText.fontSize = 32;
-        goldText.alignment = TextAlignmentOptions.Right;
+        goldText.alignment = TextAlignmentOptions.Left;
         goldText.color = new Color(1f, 0.85f, 0.2f);
         goldText.fontStyle = FontStyles.Bold;
+        goldText.raycastTarget = false;
+        RectTransform goldTxtRT = goldTxtGO.GetComponent<RectTransform>();
+        goldTxtRT.sizeDelta = new Vector2(120f, 40f);
+        LayoutElement goldTxtLE = goldTxtGO.AddComponent<LayoutElement>();
+        goldTxtLE.preferredWidth = 120f;
+        goldTxtLE.preferredHeight = 40f;
 
         // ─── Card Container (centered) ───
         cardContainer = MakeUIObj("CardContainer", shopPanel.transform);
@@ -157,9 +227,7 @@ public class Shopmanager : MonoBehaviour
         // ─── Create Item Cards ───
         cardUIs.Clear();
         for (int i = 0; i < shopSlotCount; i++)
-        {
             CreateCardUI(i, cardWidth, cardSpacing);
-        }
 
         // ─── Reroll Button (bottom-left) ───
         GameObject rerollGO = MakeUIObj("RerollBtn", shopPanel.transform);
@@ -216,7 +284,6 @@ public class Shopmanager : MonoBehaviour
         shopCanvasGO.SetActive(false);
     }
 
-    // ─── Individual Card (perk-card style) ───
     private void CreateCardUI(int index, float cardWidth, float cardSpacing)
     {
         float totalW = shopSlotCount * cardWidth + (shopSlotCount - 1) * cardSpacing;
@@ -230,11 +297,9 @@ public class Shopmanager : MonoBehaviour
         cardRT.anchoredPosition = new Vector2(startX + index * (cardWidth + cardSpacing), 0f);
         cardRT.sizeDelta = new Vector2(cardWidth, 400f);
 
-        // Card background
         Image cardBG = cardGO.AddComponent<Image>();
         cardBG.color = new Color(0.12f, 0.12f, 0.16f, 0.95f);
 
-        // Buy button (entire card is clickable)
         Button buyBtn = cardGO.AddComponent<Button>();
         int idx = index;
         buyBtn.onClick.AddListener(() => TryBuy(idx));
@@ -245,19 +310,14 @@ public class Shopmanager : MonoBehaviour
         cb.disabledColor = new Color(0.4f, 0.4f, 0.4f, 0.6f);
         buyBtn.colors = cb;
 
-        // Hover events for scale animation
         EventTrigger trigger = cardGO.AddComponent<EventTrigger>();
-        EventTrigger.Entry enterEntry = new EventTrigger.Entry();
-        enterEntry.eventID = EventTriggerType.PointerEnter;
+        EventTrigger.Entry enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
         enterEntry.callback.AddListener((_) => { hoveredCardIndex = idx; });
         trigger.triggers.Add(enterEntry);
-
-        EventTrigger.Entry exitEntry = new EventTrigger.Entry();
-        exitEntry.eventID = EventTriggerType.PointerExit;
+        EventTrigger.Entry exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
         exitEntry.callback.AddListener((_) => { if (hoveredCardIndex == idx) hoveredCardIndex = -1; });
         trigger.triggers.Add(exitEntry);
 
-        // ─── Card Content Layout ───
         var vlg = cardGO.AddComponent<VerticalLayoutGroup>();
         vlg.padding = new RectOffset(16, 16, 16, 16);
         vlg.spacing = 8;
@@ -267,64 +327,48 @@ public class Shopmanager : MonoBehaviour
         vlg.childForceExpandHeight = false;
         vlg.childAlignment = TextAnchor.UpperCenter;
 
-        // Item Name
-        GameObject nameGO = MakeUIObj("ItemName", cardGO.transform);
-        nameGO.layer = cardGO.layer;
-        TMP_Text nameText = nameGO.AddComponent<TextMeshProUGUI>();
+        // Name
+        TMP_Text nameText = MakeUIObj("ItemName", cardGO.transform).AddComponent<TextMeshProUGUI>();
         nameText.fontSize = 22;
         nameText.alignment = TextAlignmentOptions.Center;
         nameText.color = Color.white;
         nameText.fontStyle = FontStyles.Bold;
         nameText.raycastTarget = false;
-        LayoutElement nameLE = nameGO.AddComponent<LayoutElement>();
-        nameLE.preferredHeight = 36f;
+        nameText.gameObject.AddComponent<LayoutElement>().preferredHeight = 36f;
 
-        // Separator
-        GameObject sep1GO = MakeUIObj("Sep1", cardGO.transform);
-        sep1GO.layer = cardGO.layer;
-        Image sep1Img = sep1GO.AddComponent<Image>();
-        sep1Img.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
-        sep1Img.raycastTarget = false;
-        LayoutElement sep1LE = sep1GO.AddComponent<LayoutElement>();
-        sep1LE.preferredHeight = 2f;
-        sep1LE.minHeight = 2f;
+        // Sep1
+        Image sep1 = MakeUIObj("Sep1", cardGO.transform).AddComponent<Image>();
+        sep1.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
+        sep1.raycastTarget = false;
+        var sep1LE = sep1.gameObject.AddComponent<LayoutElement>();
+        sep1LE.preferredHeight = 2f; sep1LE.minHeight = 2f;
 
         // Icon
-        GameObject iconGO = MakeUIObj("Icon", cardGO.transform);
-        iconGO.layer = cardGO.layer;
-        Image iconImg = iconGO.AddComponent<Image>();
+        Image iconImg = MakeUIObj("Icon", cardGO.transform).AddComponent<Image>();
         iconImg.preserveAspect = true;
         iconImg.raycastTarget = false;
-        LayoutElement iconLE = iconGO.AddComponent<LayoutElement>();
-        iconLE.preferredHeight = 120f;
-        iconLE.preferredWidth = 120f;
+        var iconLE = iconImg.gameObject.AddComponent<LayoutElement>();
+        iconLE.preferredHeight = 120f; iconLE.preferredWidth = 120f;
 
         // Description
-        GameObject descGO = MakeUIObj("Description", cardGO.transform);
-        descGO.layer = cardGO.layer;
-        TMP_Text descText = descGO.AddComponent<TextMeshProUGUI>();
+        TMP_Text descText = MakeUIObj("Description", cardGO.transform).AddComponent<TextMeshProUGUI>();
         descText.fontSize = 15;
         descText.alignment = TextAlignmentOptions.Center;
         descText.color = new Color(0.85f, 0.85f, 0.85f);
         descText.enableWordWrapping = true;
         descText.raycastTarget = false;
-        LayoutElement descLE = descGO.AddComponent<LayoutElement>();
-        descLE.preferredHeight = 80f;
-        descLE.flexibleHeight = 1f;
+        var descLE = descText.gameObject.AddComponent<LayoutElement>();
+        descLE.preferredHeight = 80f; descLE.flexibleHeight = 1f;
 
-        // Separator 2
-        GameObject sep2GO = MakeUIObj("Sep2", cardGO.transform);
-        sep2GO.layer = cardGO.layer;
-        Image sep2Img = sep2GO.AddComponent<Image>();
-        sep2Img.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
-        sep2Img.raycastTarget = false;
-        LayoutElement sep2LE = sep2GO.AddComponent<LayoutElement>();
-        sep2LE.preferredHeight = 2f;
-        sep2LE.minHeight = 2f;
+        // Sep2
+        Image sep2 = MakeUIObj("Sep2", cardGO.transform).AddComponent<Image>();
+        sep2.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
+        sep2.raycastTarget = false;
+        var sep2LE = sep2.gameObject.AddComponent<LayoutElement>();
+        sep2LE.preferredHeight = 2f; sep2LE.minHeight = 2f;
 
         // Price Row
         GameObject priceRowGO = MakeUIObj("PriceRow", cardGO.transform);
-        priceRowGO.layer = cardGO.layer;
         HorizontalLayoutGroup priceHLG = priceRowGO.AddComponent<HorizontalLayoutGroup>();
         priceHLG.spacing = 6f;
         priceHLG.childAlignment = TextAnchor.MiddleCenter;
@@ -332,93 +376,59 @@ public class Shopmanager : MonoBehaviour
         priceHLG.childControlHeight = false;
         priceHLG.childForceExpandWidth = false;
         priceHLG.childForceExpandHeight = false;
-        LayoutElement priceRowLE = priceRowGO.AddComponent<LayoutElement>();
-        priceRowLE.preferredHeight = 36f;
+        priceRowGO.AddComponent<LayoutElement>().preferredHeight = 36f;
 
-        // Coin Icon in price row
-        GameObject coinGO = MakeUIObj("CoinIcon", priceRowGO.transform);
-        coinGO.layer = cardGO.layer;
-        Image coinImg = coinGO.AddComponent<Image>();
+        // Coin icon
+        Image coinImg = MakeUIObj("CoinIcon", priceRowGO.transform).AddComponent<Image>();
         coinImg.preserveAspect = true;
         coinImg.raycastTarget = false;
-        RectTransform coinRT = coinGO.GetComponent<RectTransform>();
-        coinRT.sizeDelta = new Vector2(26f, 26f);
-        LayoutElement coinLE = coinGO.AddComponent<LayoutElement>();
-        coinLE.preferredWidth = 26f;
-        coinLE.preferredHeight = 26f;
-
-        // Try to set coin sprite
-        Sprite coinSpr = null;
-        if (TurnManager.instance != null && TurnManager.instance.coinSprite != null)
-            coinSpr = TurnManager.instance.coinSprite;
-        if (coinSpr == null)
-        {
-            var vfx = Object.FindFirstObjectByType<CoinDropVFX>();
-            if (vfx != null) coinSpr = vfx.coinSprite;
-        }
-        if (coinSpr != null) coinImg.sprite = coinSpr;
+        coinImg.GetComponent<RectTransform>().sizeDelta = new Vector2(26f, 26f);
+        var coinLE = coinImg.gameObject.AddComponent<LayoutElement>();
+        coinLE.preferredWidth = 26f; coinLE.preferredHeight = 26f;
+        if (cachedCoinSprite != null) coinImg.sprite = cachedCoinSprite;
 
         // Price text
-        GameObject priceTxtGO = MakeUIObj("PriceText", priceRowGO.transform);
-        priceTxtGO.layer = cardGO.layer;
-        TMP_Text priceText = priceTxtGO.AddComponent<TextMeshProUGUI>();
+        TMP_Text priceText = MakeUIObj("PriceText", priceRowGO.transform).AddComponent<TextMeshProUGUI>();
         priceText.fontSize = 24;
         priceText.alignment = TextAlignmentOptions.Left;
         priceText.color = new Color(1f, 0.85f, 0.2f);
         priceText.fontStyle = FontStyles.Bold;
         priceText.raycastTarget = false;
-        RectTransform priceTxtRT = priceTxtGO.GetComponent<RectTransform>();
-        priceTxtRT.sizeDelta = new Vector2(60f, 30f);
-        LayoutElement priceTxtLE = priceTxtGO.AddComponent<LayoutElement>();
-        priceTxtLE.preferredWidth = 60f;
-        priceTxtLE.preferredHeight = 30f;
+        priceText.GetComponent<RectTransform>().sizeDelta = new Vector2(60f, 30f);
+        var pLE = priceText.gameObject.AddComponent<LayoutElement>();
+        pLE.preferredWidth = 60f; pLE.preferredHeight = 30f;
 
         // Sold Out overlay
         GameObject soldOutGO = MakeUIObj("SoldOut", cardGO.transform);
-        soldOutGO.layer = cardGO.layer;
-        // Remove from layout so it overlays
         soldOutGO.AddComponent<LayoutElement>().ignoreLayout = true;
-        RectTransform soldOutRT = soldOutGO.GetComponent<RectTransform>();
-        StretchFull(soldOutRT);
+        StretchFull(soldOutGO.GetComponent<RectTransform>());
         Image soldOutBG = soldOutGO.AddComponent<Image>();
         soldOutBG.color = new Color(0f, 0f, 0f, 0.7f);
         soldOutBG.raycastTarget = false;
 
-        GameObject soldOutTxtGO = MakeUIObj("SoldOutText", soldOutGO.transform);
-        StretchFull(soldOutTxtGO.GetComponent<RectTransform>());
-        TMP_Text soldOutTxt = soldOutTxtGO.AddComponent<TextMeshProUGUI>();
+        TMP_Text soldOutTxt = MakeUIObj("SoldOutText", soldOutGO.transform).AddComponent<TextMeshProUGUI>();
+        StretchFull(soldOutTxt.GetComponent<RectTransform>());
         soldOutTxt.text = "SOLD";
         soldOutTxt.fontSize = 36;
         soldOutTxt.alignment = TextAlignmentOptions.Center;
         soldOutTxt.color = new Color(0.8f, 0.2f, 0.2f, 0.9f);
         soldOutTxt.fontStyle = FontStyles.Bold;
         soldOutTxt.raycastTarget = false;
-
         soldOutGO.SetActive(false);
 
-        ShopCardUI card = new ShopCardUI
+        cardUIs.Add(new ShopCardUI
         {
-            root = cardGO,
-            background = cardBG,
-            button = buyBtn,
-            nameText = nameText,
-            iconImage = iconImg,
-            descriptionText = descText,
-            priceText = priceText,
-            coinImage = coinImg,
-            soldOutOverlay = soldOutGO
-        };
-
-        cardUIs.Add(card);
+            root = cardGO, background = cardBG, button = buyBtn,
+            nameText = nameText, iconImage = iconImg,
+            descriptionText = descText, priceText = priceText,
+            coinImage = coinImg, soldOutOverlay = soldOutGO
+        });
     }
 
     // ═══════════════════════════════════════════
     // SHOP OPEN / CLOSE
     // ═══════════════════════════════════════════
 
-    /// <summary>
-    /// Called by MapManager when player enters a Shop node.
-    /// </summary>
     public void OpenAsMapNode()
     {
         rerollCount = 0;
@@ -432,10 +442,8 @@ public class Shopmanager : MonoBehaviour
         isShopOpen = true;
         hoveredCardIndex = -1;
 
-        // Start card animations
         StopAllCoroutines();
         StartCoroutine(ShopOpenAnimation());
-
         GameEvents.ShopOpened();
     }
 
@@ -457,23 +465,20 @@ public class Shopmanager : MonoBehaviour
         }
     }
 
+    public bool IsShopOpen => isShopOpen;
+
     // ═══════════════════════════════════════════
-    // ANIMATIONS (matches LevelUpManager style)
+    // ANIMATIONS
     // ═══════════════════════════════════════════
 
     private IEnumerator ShopOpenAnimation()
     {
-        // Fade in panel
         if (shopCanvasGroup != null) shopCanvasGroup.alpha = 0f;
 
-        // Hide all cards initially
         for (int i = 0; i < cardUIs.Count; i++)
-        {
             if (i < currentItems.Count && cardUIs[i].root.activeSelf)
                 cardUIs[i].root.transform.localScale = Vector3.zero;
-        }
 
-        // Fade in background
         float fadeDur = 0.2f;
         float elapsed = 0f;
         while (elapsed < fadeDur)
@@ -485,35 +490,27 @@ public class Shopmanager : MonoBehaviour
         }
         if (shopCanvasGroup != null) shopCanvasGroup.alpha = 1f;
 
-        // Pop in cards one by one
         for (int i = 0; i < cardUIs.Count; i++)
         {
             if (i >= currentItems.Count || !cardUIs[i].root.activeSelf) continue;
             yield return StartCoroutine(CardPopIn(cardUIs[i].root.transform));
-            if (i < cardUIs.Count - 1)
-                yield return new WaitForSecondsRealtime(0.12f);
+            if (i < cardUIs.Count - 1) yield return new WaitForSecondsRealtime(0.12f);
         }
 
-        // Start idle bounce on all cards
         for (int i = 0; i < cardUIs.Count; i++)
-        {
             if (i < currentItems.Count && cardUIs[i].root.activeSelf)
                 StartCoroutine(CardIdleBounce(cardUIs[i].root.transform, i));
-        }
     }
 
     private IEnumerator ShopCloseAnimation()
     {
         float duration = 0.2f;
         float elapsed = 0f;
-
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = elapsed / duration;
-            float ease = t * t;
             if (shopCanvasGroup != null)
-                shopCanvasGroup.alpha = Mathf.Lerp(1f, 0f, ease);
+                shopCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed * elapsed / (duration * duration));
             yield return null;
         }
 
@@ -526,24 +523,20 @@ public class Shopmanager : MonoBehaviour
     private IEnumerator CardPopIn(Transform card)
     {
         if (AudioManager.instance != null) AudioManager.instance.PlayCard();
-        float dur = 0.25f;
-        float elapsed = 0f;
+        float dur = 0.25f, elapsed = 0f;
         while (elapsed < dur)
         {
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / dur);
-            float ease = 1f - (1f - t) * (1f - t);
-            float s = Mathf.Lerp(0f, 1.08f, ease);
+            float s = Mathf.Lerp(0f, 1.08f, 1f - (1f - t) * (1f - t));
             card.localScale = new Vector3(s, s, 1f);
             yield return null;
         }
-        dur = 0.1f;
-        elapsed = 0f;
+        dur = 0.1f; elapsed = 0f;
         while (elapsed < dur)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsed / dur);
-            float s = Mathf.Lerp(1.08f, 1f, t);
+            float s = Mathf.Lerp(1.08f, 1f, Mathf.Clamp01(elapsed / dur));
             card.localScale = new Vector3(s, s, 1f);
             yield return null;
         }
@@ -555,15 +548,14 @@ public class Shopmanager : MonoBehaviour
         while (card != null && card.gameObject.activeSelf && isShopOpen)
         {
             float target = (hoveredCardIndex == cardIdx) ? 1.08f : 1f;
-            float cur = card.localScale.x;
-            float s = Mathf.MoveTowards(cur, target, Time.unscaledDeltaTime * 3f);
+            float s = Mathf.MoveTowards(card.localScale.x, target, Time.unscaledDeltaTime * 3f);
             card.localScale = new Vector3(s, s, 1f);
             yield return null;
         }
     }
 
     // ═══════════════════════════════════════════
-    // COMBAT COMPLETION HOOKS (Legacy compat)
+    // LEGACY HOOKS
     // ═══════════════════════════════════════════
 
     public void OnDungeonCleared()
@@ -609,11 +601,9 @@ public class Shopmanager : MonoBehaviour
         RefreshCoinDisplay();
         GameEvents.GoldChanged(RunManager.instance.currentGold);
 
-        if (RunManager.instance != null)
-            foreach (var perk in RunManager.instance.activePerks)
-                if (perk != null) perk.OnShopReroll();
+        foreach (var perk in RunManager.instance.activePerks)
+            if (perk != null) perk.OnShopReroll();
 
-        // Re-animate cards
         hoveredCardIndex = -1;
         StopAllCoroutines();
         StartCoroutine(ShopOpenAnimation());
@@ -627,24 +617,18 @@ public class Shopmanager : MonoBehaviour
     {
         currentItems.Clear();
         purchased.Clear();
-
         if (itemPool.Count == 0) return;
 
-        // Secret item injection
         int secretSlotIndex = -1;
         bool guaranteeSecret = (RunManager.instance != null && RunManager.instance.currentLevel >= 6
                                 && !hasBoughtSecretItem && rerollCount == 0);
-        bool rollSecret = Random.value < secretItemChance;
-
-        if (secretItem != null && !hasBoughtSecretItem && (guaranteeSecret || rollSecret))
+        if (secretItem != null && !hasBoughtSecretItem && (guaranteeSecret || Random.value < secretItemChance))
             secretSlotIndex = Random.Range(0, shopSlotCount);
 
         List<int> usedIndices = new List<int>();
-
         for (int i = 0; i < shopSlotCount; i++)
         {
             BaseItem selectedItem = null;
-
             if (i == secretSlotIndex)
             {
                 selectedItem = secretItem;
@@ -652,9 +636,7 @@ public class Shopmanager : MonoBehaviour
             else
             {
                 if (itemPool.Count <= usedIndices.Count) break;
-
-                int poolIdx;
-                int safety = 0;
+                int poolIdx, safety = 0;
                 do
                 {
                     poolIdx = Random.Range(0, itemPool.Count);
@@ -664,17 +646,13 @@ public class Shopmanager : MonoBehaviour
                 while (usedIndices.Contains(poolIdx) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
                        (RunManager.instance != null && RunManager.instance.hasPerkReroll && selectedItem is MutationCatalyst));
-
                 usedIndices.Add(poolIdx);
             }
-
             if (selectedItem == null) continue;
-
             currentItems.Add(selectedItem);
             purchased.Add(false);
         }
 
-        // Populate card UIs
         for (int i = 0; i < cardUIs.Count; i++)
         {
             if (i < currentItems.Count)
@@ -689,26 +667,14 @@ public class Shopmanager : MonoBehaviour
                 cardUIs[i].root.SetActive(false);
             }
         }
-
         RefreshCoinDisplay();
     }
 
     private void PopulateCard(ShopCardUI card, BaseItem item)
     {
         card.nameText.text = item.itemName.ToUpper();
-
-        if (item.icon != null)
-        {
-            card.iconImage.sprite = item.icon;
-            card.iconImage.color = Color.white;
-            card.iconImage.enabled = true;
-        }
-        else
-        {
-            card.iconImage.sprite = null;
-            card.iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f);
-        }
-
+        if (item.icon != null) { card.iconImage.sprite = item.icon; card.iconImage.color = Color.white; card.iconImage.enabled = true; }
+        else { card.iconImage.sprite = null; card.iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); }
         card.descriptionText.text = item.description;
         card.priceText.text = item.price.ToString();
     }
@@ -727,51 +693,29 @@ public class Shopmanager : MonoBehaviour
         BaseItem item = currentItems[index];
         if (item == null) return;
 
-        // Check inventory space for consumables
-        if (item.itemType == ItemType.Consumable)
-        {
-            if (InventoryManager.instance != null && !InventoryManager.instance.HasEmptySlot())
-            {
-                StartCoroutine(FlashText(goldText));
-                return;
-            }
-        }
+        if (item.itemType == ItemType.Consumable && InventoryManager.instance != null && !InventoryManager.instance.HasEmptySlot())
+        { StartCoroutine(FlashText(goldText)); return; }
 
         if (RunManager.instance.currentGold < item.price)
-        {
-            StartCoroutine(FlashText(goldText));
-            return;
-        }
+        { StartCoroutine(FlashText(goldText)); return; }
 
         RunManager.instance.currentGold -= item.price;
         if (AudioManager.instance != null) AudioManager.instance.PlayPurchase();
 
         if (item.itemType == ItemType.Instant)
         {
-            bool used = item.Use();
-            if (!used)
-            {
-                RunManager.instance.currentGold += item.price;
-                RefreshCoinDisplay();
-                return;
-            }
+            if (!item.Use()) { RunManager.instance.currentGold += item.price; RefreshCoinDisplay(); return; }
         }
         else
         {
             GameEvents.ItemPurchased(item);
         }
 
-        // Secret item lock
         if (secretItem != null && item.itemName == secretItem.itemName)
             hasBoughtSecretItem = true;
 
         purchased[index] = true;
-
-        if (index < cardUIs.Count)
-        {
-            cardUIs[index].button.interactable = false;
-            cardUIs[index].soldOutOverlay.SetActive(true);
-        }
+        if (index < cardUIs.Count) { cardUIs[index].button.interactable = false; cardUIs[index].soldOutOverlay.SetActive(true); }
 
         RefreshCoinDisplay();
         GameEvents.GoldChanged(RunManager.instance.currentGold);
@@ -785,11 +729,6 @@ public class Shopmanager : MonoBehaviour
     {
         if (goldText != null && RunManager.instance != null)
             goldText.text = RunManager.instance.currentGold.ToString();
-
-        // Also update legacy text if bound
-        if (coinDisplayText != null && RunManager.instance != null)
-            coinDisplayText.text = RunManager.instance.currentGold.ToString();
-
         RefreshRerollButton();
         RefreshAffordability();
     }
@@ -801,15 +740,9 @@ public class Shopmanager : MonoBehaviour
         {
             if (purchased.Count > i && purchased[i]) continue;
             if (cardUIs[i].button == null) continue;
-
             bool canAfford = currentItems[i] != null && RunManager.instance.currentGold >= currentItems[i].price;
-
-            if (canAfford && currentItems[i] != null && currentItems[i].itemType == ItemType.Consumable)
-            {
-                if (InventoryManager.instance != null && !InventoryManager.instance.HasEmptySlot())
-                    canAfford = false;
-            }
-
+            if (canAfford && currentItems[i].itemType == ItemType.Consumable && InventoryManager.instance != null && !InventoryManager.instance.HasEmptySlot())
+                canAfford = false;
             cardUIs[i].button.interactable = canAfford;
         }
     }
@@ -820,15 +753,6 @@ public class Shopmanager : MonoBehaviour
             codeRerollPriceText.text = "REROLL  <color=#FFD933>" + currentRerollCost + "</color>";
         if (codeRerollButton != null && RunManager.instance != null)
             codeRerollButton.interactable = RunManager.instance.currentGold >= currentRerollCost;
-
-        // Legacy
-        if (rerollPriceText != null)
-        {
-            rerollPriceText.richText = true;
-            rerollPriceText.text = "Reroll  <color=#FFD933>" + currentRerollCost + "</color>";
-        }
-        if (rerollButton != null && RunManager.instance != null)
-            rerollButton.interactable = RunManager.instance.currentGold >= currentRerollCost;
     }
 
     // ═══════════════════════════════════════════
@@ -838,21 +762,12 @@ public class Shopmanager : MonoBehaviour
     public void AddSingleExtraSlot()
     {
         if (itemPool.Count == 0) return;
-
         List<int> usedIndices = new List<int>();
-        foreach (var currentItem in currentItems)
-        {
-            if (currentItem != null)
-            {
-                int indexInPool = itemPool.IndexOf(currentItem);
-                if (indexInPool != -1) usedIndices.Add(indexInPool);
-            }
-        }
-
+        foreach (var ci in currentItems)
+            if (ci != null) { int p = itemPool.IndexOf(ci); if (p != -1) usedIndices.Add(p); }
         if (itemPool.Count <= usedIndices.Count) return;
 
-        int idx;
-        int safety = 0;
+        int idx, safety = 0;
         do { idx = Random.Range(0, itemPool.Count); if (++safety > 100) break; }
         while (usedIndices.Contains(idx));
 
@@ -860,16 +775,14 @@ public class Shopmanager : MonoBehaviour
         currentItems.Add(newItem);
         purchased.Add(false);
 
-        // If we have a card UI slot available, populate it
         if (cardUIs.Count > currentItems.Count - 1)
         {
-            int newIdx = currentItems.Count - 1;
-            PopulateCard(cardUIs[newIdx], newItem);
-            cardUIs[newIdx].root.SetActive(true);
-            cardUIs[newIdx].soldOutOverlay.SetActive(false);
-            cardUIs[newIdx].button.interactable = true;
+            int ni = currentItems.Count - 1;
+            PopulateCard(cardUIs[ni], newItem);
+            cardUIs[ni].root.SetActive(true);
+            cardUIs[ni].soldOutOverlay.SetActive(false);
+            cardUIs[ni].button.interactable = true;
         }
-
         RefreshAffordability();
     }
 
@@ -900,10 +813,6 @@ public class Shopmanager : MonoBehaviour
         rt.offsetMin = Vector2.zero;
         rt.offsetMax = Vector2.zero;
     }
-
-    // ═══════════════════════════════════════════
-    // INTERNAL CARD DATA CLASS
-    // ═══════════════════════════════════════════
 
     private class ShopCardUI
     {

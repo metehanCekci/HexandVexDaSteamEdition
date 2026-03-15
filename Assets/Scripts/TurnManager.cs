@@ -865,6 +865,9 @@ public class TurnManager : MonoBehaviour
     {
         hexesMovedThisTurn++;
 
+        // Notify listeners (ShopDealer uses this to detect player stepping on its tile)
+        GameEvents.PlayerMoved(playerCell);
+
         // Surge Boot: hareketten sonra kapat
         if (RunManager.instance != null)
             RunManager.instance.surgeBootActive = false;

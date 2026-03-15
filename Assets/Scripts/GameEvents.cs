@@ -55,6 +55,18 @@ public static class GameEvents
         OnGoldChanged?.Invoke(newAmount);
     }
 
+    // ─── Player Movement ───
+    /// <summary>
+    /// Fired after the player finishes moving to a new cell.
+    /// ShopDealer listens to this to detect when the player steps on its tile.
+    /// </summary>
+    public static event Action<UnityEngine.Vector3Int> OnPlayerMoved;
+
+    public static void PlayerMoved(UnityEngine.Vector3Int cell)
+    {
+        OnPlayerMoved?.Invoke(cell);
+    }
+
     // ─── Shop Opened / Closed ───
     public static event Action OnShopOpened;
     public static event Action OnShopClosed;
