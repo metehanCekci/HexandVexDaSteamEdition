@@ -172,8 +172,9 @@ public class MapUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Kamerayı current node'un bulunduğu row'a ortalar.
-    /// currentNodeId == -1 ise row 0'ı ortalar (başlangıç).
+    /// Kamerayı seçilebilecek node'lara ortalar.
+    /// currentNodeId == -1 → row 0 (başlangıç seçenekleri)
+    /// currentNodeId set → current node'un child'ları (sonraki seçenekler)
     /// </summary>
     public void CenterOnCurrentNode(MapData map)
     {
@@ -184,23 +185,43 @@ public class MapUI : MonoBehaviour
         var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
         if (dragScroll == null) return;
 
-        // Hangi node'a odaklanacağız?
-        int targetNodeId = map.currentNodeId;
+        // Seçilebilecek node'ların Y ortalamasını bul
+        float totalY = 0f;
+        int count = 0;
 
-        // Henüz başlanmadıysa row 0'ın ilk node'unu bul
-        if (targetNodeId == -1)
+        if (map.currentNodeId == -1)
         {
+            // Henüz başlanmadı: row 0 node'ları seçilebilir
             foreach (var node in map.nodes)
             {
-                if (node.row == 0) { targetNodeId = node.id; break; }
+                if (node.row == 0 && nodeTransforms.ContainsKey(node.id))
+                {
+                    totalY += nodeTransforms[node.id].anchoredPosition.y;
+                    count++;
+                }
+            }
+        }
+        else
+        {
+            // Current node'un child'ları seçilebilir
+            MapNode current = map.GetNode(map.currentNodeId);
+            if (current != null)
+            {
+                foreach (int childId in current.childIds)
+                {
+                    if (nodeTransforms.ContainsKey(childId))
+                    {
+                        totalY += nodeTransforms[childId].anchoredPosition.y;
+                        count++;
+                    }
+                }
             }
         }
 
-        // Node'un Y pozisyonunu bul ve ortala
-        if (nodeTransforms.ContainsKey(targetNodeId))
+        if (count > 0)
         {
-            float nodeY = nodeTransforms[targetNodeId].anchoredPosition.y;
-            dragScroll.CenterOnY(nodeY);
+            float avgY = totalY / count;
+            dragScroll.CenterOnY(avgY);
         }
     }
 
