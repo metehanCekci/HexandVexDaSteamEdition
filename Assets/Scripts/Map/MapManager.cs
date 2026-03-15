@@ -121,10 +121,17 @@ public class MapManager : MonoBehaviour
         ScrollRect scroll = scrollGO.AddComponent<ScrollRect>();
         scroll.horizontal = false;
         scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Elastic;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 30f;
+        scroll.inertia = false; // Bırakınca kaymasın
         Image scrollBG = scrollGO.AddComponent<Image>();
         scrollBG.color = new Color(0, 0, 0, 0.01f);
         scrollGO.AddComponent<Mask>().showMaskGraphic = false;
+        // Viewport'u ScrollRect'e ata — bu olmadan scroll düzgün çalışmaz
+        scroll.viewport = scrollRT;
+
+        // Custom drag scroll: sadece orta/sağ tıkla scroll, sol tık node butonlarına gitsin
+        scrollGO.AddComponent<MapDragScroll>();
 
         // NodeContainer (scroll content)
         GameObject containerGO = MakeUIObj("NodeContainer", scrollGO.transform);
@@ -132,7 +139,7 @@ public class MapManager : MonoBehaviour
         containerRT.anchorMin = new Vector2(0.5f, 0f);
         containerRT.anchorMax = new Vector2(0.5f, 0f);
         containerRT.pivot = new Vector2(0.5f, 0f);
-        containerRT.sizeDelta = new Vector2(800f, 1200f);
+        containerRT.sizeDelta = new Vector2(1000f, 2000f);
         scroll.content = containerRT;
 
         // Node prefab
@@ -154,8 +161,8 @@ public class MapManager : MonoBehaviour
         ui.nodeContainer = containerRT;
         ui.mapNodePrefab = nodePrefab;
         ui.linePrefab = linePrefab;
-        ui.rowSpacing = 120f;
-        ui.columnSpacing = 140f;
+        ui.rowSpacing = 170f;
+        ui.columnSpacing = 190f;
         ui.nodeJitter = 15f;
 
         mapUI = ui;
@@ -169,7 +176,7 @@ public class MapManager : MonoBehaviour
         GameObject go = new GameObject("NodePrefab");
         go.SetActive(false);
         var rt = go.AddComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(70f, 70f);
+        rt.sizeDelta = new Vector2(110f, 110f);
 
         Image bg = go.AddComponent<Image>();
         bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
@@ -198,9 +205,9 @@ public class MapManager : MonoBehaviour
         labelRT.anchorMax = new Vector2(0.5f, 0f);
         labelRT.pivot = new Vector2(0.5f, 1f);
         labelRT.anchoredPosition = new Vector2(0f, -5f);
-        labelRT.sizeDelta = new Vector2(100f, 20f);
+        labelRT.sizeDelta = new Vector2(130f, 28f);
         var labelTxt = labelGO.AddComponent<TextMeshProUGUI>();
-        labelTxt.fontSize = 11;
+        labelTxt.fontSize = 14;
         labelTxt.alignment = TextAlignmentOptions.Center;
         labelTxt.color = new Color(0.7f, 0.7f, 0.7f);
 
