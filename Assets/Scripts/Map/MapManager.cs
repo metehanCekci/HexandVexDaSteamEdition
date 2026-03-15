@@ -97,59 +97,65 @@ public class MapManager : MonoBehaviour
         panelBG.color = Color.black; // Siyah arka plan (ileride sprite ile değiştirilebilir)
         CanvasGroup cg = panelGO.AddComponent<CanvasGroup>();
 
-        // Başlık
+        // Başlık — üstte sabit, scroll'dan bağımsız
         GameObject titleGO = MakeUIObj("Title", panelGO.transform);
         RectTransform titleRT = titleGO.GetComponent<RectTransform>();
         titleRT.anchorMin = new Vector2(0.5f, 1f);
         titleRT.anchorMax = new Vector2(0.5f, 1f);
         titleRT.pivot = new Vector2(0.5f, 1f);
-        titleRT.anchoredPosition = new Vector2(0f, -20f);
-        titleRT.sizeDelta = new Vector2(400f, 60f);
+        titleRT.anchoredPosition = new Vector2(0f, -10f);
+        titleRT.sizeDelta = new Vector2(400f, 50f);
         var titleTxt = titleGO.AddComponent<TextMeshProUGUI>();
         titleTxt.text = "MAP";
         titleTxt.fontSize = 36;
         titleTxt.alignment = TextAlignmentOptions.Center;
         titleTxt.color = new Color(0.9f, 0.85f, 0.7f);
 
-        // Scroll alanı (ScrollRect yok — kendi MapDragScroll'umuz var)
+        // ─── ScrollRect tabanlı scroll sistemi ───
+        // Viewport (scroll alanı) — başlığın altından başlasın
         GameObject scrollGO = MakeUIObj("Scroll", panelGO.transform);
         RectTransform scrollRT = scrollGO.GetComponent<RectTransform>();
-        // Scroll alanı tam ekran — siyah panel zaten arka planı kapatıyor
         scrollRT.anchorMin = Vector2.zero;
         scrollRT.anchorMax = Vector2.one;
         scrollRT.offsetMin = Vector2.zero;
-        scrollRT.offsetMax = Vector2.zero;
+        scrollRT.offsetMax = new Vector2(0f, -60f); // Başlık için üstten 60px boşluk
         scrollGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // Raycast almak için
+        scrollGO.AddComponent<Mask>().showMaskGraphic = true; // İçeriği kırp
 
-        // NodeContainer (scroll content) — üstten başlar, aşağı doğru uzar
+        // NodeContainer (scroll content) — alttan başlar, yukarı doğru büyür
         GameObject containerGO = MakeUIObj("NodeContainer", scrollGO.transform);
         RectTransform containerRT = containerGO.GetComponent<RectTransform>();
-        containerRT.anchorMin = new Vector2(0.5f, 1f);
-        containerRT.anchorMax = new Vector2(0.5f, 1f);
-        containerRT.pivot = new Vector2(0.5f, 1f);
+        // pivot=bottom: y=0 container'ın altı, pozitif y yukarı
+        containerRT.anchorMin = new Vector2(0.5f, 0f);
+        containerRT.anchorMax = new Vector2(0.5f, 0f);
+        containerRT.pivot = new Vector2(0.5f, 0f);
         containerRT.anchoredPosition = Vector2.zero;
         containerRT.sizeDelta = new Vector2(1000f, 2000f);
 
-        // Custom scroll: orta/sağ tık drag + mouse wheel
-        var dragScroll = scrollGO.AddComponent<MapDragScroll>();
-        dragScroll.content = containerRT;
-        dragScroll.viewport = scrollRT;
-        dragScroll.scrollSpeed = 60f;   // Mouse wheel hızı
-        dragScroll.dragSpeed = 1f;      // Sürükleme hızı
-        dragScroll.minX = -600f;        // Sol sınır (pixel)
-        dragScroll.maxX = 600f;         // Sağ sınır (pixel)
-        // minY/maxY, BuildMap içinde UpdateLimitsForMapHeight ile otomatik ayarlanır
+        // ScrollRect — Unity'nin kendi scroll sistemi
+        ScrollRect scrollRect = scrollGO.AddComponent<ScrollRect>();
+        scrollRect.content = containerRT;
+        scrollRect.viewport = scrollRT;
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.scrollSensitivity = 60f;
+        scrollRect.inertia = true;
+        scrollRect.decelerationRate = 0.1f;
+
+        // MapDragScroll — sol tık sürüklemeyi engelle, sağ tık/orta tuş ile pan
+        scrollGO.AddComponent<MapDragScroll>();
 
         // Node prefab
         GameObject nodePrefab = BuildNodePrefab();
 
-        // Line prefab
+        // Line prefab — anchor bottom-center (container pivot=bottom)
         GameObject linePrefab = new GameObject("LinePrefab");
         linePrefab.SetActive(false);
         var lineRT = linePrefab.AddComponent<RectTransform>();
         lineRT.sizeDelta = new Vector2(100f, 3f);
-        lineRT.anchorMin = new Vector2(0.5f, 1f);
-        lineRT.anchorMax = new Vector2(0.5f, 1f);
+        lineRT.anchorMin = new Vector2(0.5f, 0f);
+        lineRT.anchorMax = new Vector2(0.5f, 0f);
         Image lineImg = linePrefab.AddComponent<Image>();
         lineImg.color = new Color(0.6f, 0.6f, 0.6f, 0.5f);
         lineImg.raycastTarget = false;
@@ -177,9 +183,9 @@ public class MapManager : MonoBehaviour
         go.SetActive(false);
         var rt = go.AddComponent<RectTransform>();
         rt.sizeDelta = new Vector2(110f, 110f);
-        // Container pivot=top olduğu için node anchor'ları da top olmalı
-        rt.anchorMin = new Vector2(0.5f, 1f);
-        rt.anchorMax = new Vector2(0.5f, 1f);
+        // Container pivot=bottom: anchor bottom-center
+        rt.anchorMin = new Vector2(0.5f, 0f);
+        rt.anchorMax = new Vector2(0.5f, 0f);
         rt.pivot = new Vector2(0.5f, 0.5f);
 
         Image bg = go.AddComponent<Image>();
