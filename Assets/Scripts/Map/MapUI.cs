@@ -172,9 +172,8 @@ public class MapUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Kamerayı seçilebilecek node'lara ortalar.
-    /// currentNodeId == -1 → row 0 (başlangıç seçenekleri)
-    /// currentNodeId set → current node'un child'ları (sonraki seçenekler)
+    /// İlk açılış → row 0'ı ekranın altına koy
+    /// Bölüm bittikten sonra → bitirilen bölümü ekranın ortasına koy
     /// </summary>
     public void CenterOnCurrentNode(MapData map)
     {
@@ -185,44 +184,38 @@ public class MapUI : MonoBehaviour
         var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
         if (dragScroll == null) return;
 
-        // Seçilebilecek node'ların Y ortalamasını bul
-        float totalY = 0f;
-        int count = 0;
+        float targetY = 0f;
+        bool found = false;
 
         if (map.currentNodeId == -1)
         {
-            // Henüz başlanmadı: row 0 node'ları seçilebilir
+            // İlk açılış: row 0'ı bul
             foreach (var node in map.nodes)
             {
                 if (node.row == 0 && nodeTransforms.ContainsKey(node.id))
                 {
-                    totalY += nodeTransforms[node.id].anchoredPosition.y;
-                    count++;
+                    targetY = nodeTransforms[node.id].anchoredPosition.y;
+                    found = true;
+                    break;
                 }
             }
         }
         else
         {
-            // Current node'un child'ları seçilebilir
-            MapNode current = map.GetNode(map.currentNodeId);
-            if (current != null)
+            // Bitirilen node'u ortala
+            if (nodeTransforms.ContainsKey(map.currentNodeId))
             {
-                foreach (int childId in current.childIds)
-                {
-                    if (nodeTransforms.ContainsKey(childId))
-                    {
-                        totalY += nodeTransforms[childId].anchoredPosition.y;
-                        count++;
-                    }
-                }
+                targetY = nodeTransforms[map.currentNodeId].anchoredPosition.y;
+                found = true;
             }
         }
 
-        if (count > 0)
+        if (found)
         {
-            float avgY = totalY / count;
-            Debug.Log($"[MAP] CenterOnCurrentNode: currentNodeId={map.currentNodeId}, reachable count={count}, avgY={avgY}");
-            dragScroll.CenterOnY(avgY);
+            if (map.currentNodeId == -1)
+                dragScroll.ShowAtBottom(targetY);  // İlk açılış: row 0 ekranın altında
+            else
+                dragScroll.CenterOnY(targetY);     // Bölüm sonrası: bitirilen node ortada
         }
         else
         {
