@@ -112,14 +112,15 @@ public class LevelGenerator : MonoBehaviour
 
     public void GenerateNextLevel()
     {
-        // Yeni oyun başlıyorsa (level 0) multiplier'ı reset et
-        if (RunManager.instance.currentLevel == 0)
+        // Yeni oyun başlıyorsa (level 0 veya 1) multiplier'ı reset et
+        if (RunManager.instance.currentLevel <= 1)
         {
             bossLegendaryMultiplier = 1f;
         }
 
         // Boss hezimetini algıla ve legendary multiplier'ı artır
-        if (RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 1)
+        // currentLevel > 1 kontrolü: ilk level'da (yeni oyun) yanlışlıkla 2x olmasını engeller
+        if (RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1)
         {
             bossLegendaryMultiplier *= 2f;
             Debug.Log($"🏆 Boss yenildi! Legendary multiplier şimdi: {bossLegendaryMultiplier}x");

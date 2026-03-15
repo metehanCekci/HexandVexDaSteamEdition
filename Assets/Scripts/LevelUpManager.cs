@@ -175,9 +175,27 @@ public class LevelUpManager : MonoBehaviour
             rerollPerkButton.onClick.AddListener(RerollPerkChoices);
         }
 
-        // Skip butonunu deaktif yap (interactable = false)
+        // Skip butonunu deaktif yap ve rengini orijinaline sıfırla
         if (skipButton != null)
+        {
             skipButton.interactable = false;
+            skipButton.colors = skipButtonOriginalColorBlock;
+
+            // EventTrigger'dan gelen hover kalıntılarını temizle
+            EventTrigger skipTrigger = skipButton.GetComponent<EventTrigger>();
+            if (skipTrigger != null)
+                skipTrigger.triggers.Clear();
+        }
+        if (skipButtonImage != null)
+            skipButtonImage.color = skipButtonOriginalColor;
+
+        // Reroll butonundaki EventTrigger'ı temizle (skip butonuna sızma ihtimalini kes)
+        if (rerollPerkButton != null)
+        {
+            EventTrigger rerollTrigger = rerollPerkButton.GetComponent<EventTrigger>();
+            if (rerollTrigger != null)
+                rerollTrigger.triggers.Clear();
+        }
 
         Time.timeScale = 0f;
         StopAllCoroutines();
@@ -327,6 +345,7 @@ public class LevelUpManager : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < fadeDur)
         {
+            while (PauseManager.isPaused) yield return null;
             elapsed += Time.unscaledDeltaTime;
             float t = elapsed / fadeDur;
             if (levelUpCanvasGroup != null) levelUpCanvasGroup.alpha = Mathf.Lerp(0f, 1f, t);
@@ -340,7 +359,15 @@ public class LevelUpManager : MonoBehaviour
             if (choiceButtons[i] == null || !choiceButtons[i].gameObject.activeSelf) continue;
             yield return StartCoroutine(CardPopIn(choiceButtons[i].transform));
             if (i < choiceButtons.Length - 1)
-                yield return new WaitForSecondsRealtime(0.15f);
+            {
+                float delay = 0f;
+                while (delay < 0.15f)
+                {
+                    while (PauseManager.isPaused) yield return null;
+                    delay += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+            }
         }
 
         // Mark all cards as animation-done
@@ -362,6 +389,7 @@ public class LevelUpManager : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < dur)
         {
+            while (PauseManager.isPaused) yield return null;
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / dur);
             float ease = 1f - (1f - t) * (1f - t);
@@ -373,6 +401,7 @@ public class LevelUpManager : MonoBehaviour
         elapsed = 0f;
         while (elapsed < dur)
         {
+            while (PauseManager.isPaused) yield return null;
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / dur);
             float s = Mathf.Lerp(1.08f, 1f, t);
@@ -390,6 +419,7 @@ public class LevelUpManager : MonoBehaviour
 
         while (card != null && card.gameObject.activeSelf && levelUpPanel.activeSelf)
         {
+            if (PauseManager.isPaused) { yield return null; continue; }
             float target = (hoveredCardIndex == cardIdx) ? 1.1f : 1f;
             float cur = card.localScale.x;
             float s = Mathf.MoveTowards(cur, target, Time.unscaledDeltaTime * 3f);
