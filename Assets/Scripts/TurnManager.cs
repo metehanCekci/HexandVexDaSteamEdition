@@ -173,6 +173,13 @@ public class TurnManager : MonoBehaviour
 #if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.F6))
         {
+            // Cheat: tüm state'leri resetle ki level clear akışı takılmasın
+            isAttackAnimationPlaying = false;
+            isLevelClearTriggered = false;
+
+            // Boss kalkanını kaldır yoksa TakeDamage işlemez
+            if (SpawnerBossAI.instance != null) SpawnerBossAI.instance.isShielded = false;
+
             foreach (var e in new List<EnemyAI>(enemies))
                 if (e != null && e.health.currentHP > 0) e.health.TakeDamage(4444);
             enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
