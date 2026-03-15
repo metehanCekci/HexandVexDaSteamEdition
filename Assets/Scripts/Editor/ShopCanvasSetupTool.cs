@@ -92,11 +92,8 @@ public static class ShopCanvasSetupTool
         goldTxtLE.preferredWidth = 120f;
         goldTxtLE.preferredHeight = 40f;
 
-        // ─── Card Container ───
+        // ─── Card Container (vertical stack of horizontal card rows) ───
         int slotCount = 3;
-        float cardWidth = 280f;
-        float cardSpacing = 30f;
-        float totalW = slotCount * cardWidth + (slotCount - 1) * cardSpacing;
 
         GameObject cardContainer = MakeUIObj("CardContainer", panelGO.transform);
         RectTransform cardContRT = cardContainer.GetComponent<RectTransform>();
@@ -104,95 +101,76 @@ public static class ShopCanvasSetupTool
         cardContRT.anchorMax = new Vector2(0.5f, 0.5f);
         cardContRT.pivot = new Vector2(0.5f, 0.5f);
         cardContRT.anchoredPosition = new Vector2(0f, 20f);
-        cardContRT.sizeDelta = new Vector2(totalW, 420f);
+        cardContRT.sizeDelta = new Vector2(600f, 240f);
 
-        // ─── Create placeholder cards ───
+        var containerVLG = cardContainer.AddComponent<VerticalLayoutGroup>();
+        containerVLG.spacing = 12f;
+        containerVLG.childAlignment = TextAnchor.MiddleCenter;
+        containerVLG.childControlWidth = true;
+        containerVLG.childControlHeight = false;
+        containerVLG.childForceExpandWidth = true;
+        containerVLG.childForceExpandHeight = false;
+
+        // ─── Create 3 horizontal card rows: [Icon] [Name] [Coin] [Price] ───
         for (int i = 0; i < slotCount; i++)
         {
-            float startX = -totalW / 2f + cardWidth / 2f;
-
             GameObject cardGO = MakeUIObj($"ShopCard_{i}", cardContainer.transform);
-            RectTransform cardRT = cardGO.GetComponent<RectTransform>();
-            cardRT.anchorMin = new Vector2(0.5f, 0.5f);
-            cardRT.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRT.pivot = new Vector2(0.5f, 0.5f);
-            cardRT.anchoredPosition = new Vector2(startX + i * (cardWidth + cardSpacing), 0f);
-            cardRT.sizeDelta = new Vector2(cardWidth, 400f);
+            cardGO.AddComponent<LayoutElement>().preferredHeight = 64f;
 
             Image cardBG = cardGO.AddComponent<Image>();
             cardBG.color = new Color(0.12f, 0.12f, 0.16f, 0.95f);
 
-            var vlg = cardGO.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(16, 16, 16, 16);
-            vlg.spacing = 8;
-            vlg.childControlWidth = true;
-            vlg.childControlHeight = false;
-            vlg.childForceExpandWidth = true;
-            vlg.childForceExpandHeight = false;
-            vlg.childAlignment = TextAnchor.UpperCenter;
+            var hlg = cardGO.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(12, 12, 6, 6);
+            hlg.spacing = 12f;
+            hlg.childAlignment = TextAnchor.MiddleLeft;
+            hlg.childControlWidth = false;
+            hlg.childControlHeight = false;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
 
-            // Name
-            var nameText = MakeUIObj("ItemName", cardGO.transform).AddComponent<TextMeshProUGUI>();
-            nameText.text = "ITEM NAME";
-            nameText.fontSize = 22;
-            nameText.alignment = TextAlignmentOptions.Center;
-            nameText.color = Color.white;
-            nameText.fontStyle = FontStyles.Bold;
-            nameText.gameObject.AddComponent<LayoutElement>().preferredHeight = 36f;
-
-            // Sep
-            var sep1 = MakeUIObj("Sep1", cardGO.transform).AddComponent<Image>();
-            sep1.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
-            var sep1LE = sep1.gameObject.AddComponent<LayoutElement>();
-            sep1LE.preferredHeight = 2f; sep1LE.minHeight = 2f;
-
-            // Icon placeholder
+            // [1] Item icon placeholder
             var iconImg = MakeUIObj("Icon", cardGO.transform).AddComponent<Image>();
             iconImg.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
             iconImg.preserveAspect = true;
+            iconImg.GetComponent<RectTransform>().sizeDelta = new Vector2(48f, 48f);
             var iconLE = iconImg.gameObject.AddComponent<LayoutElement>();
-            iconLE.preferredHeight = 120f; iconLE.preferredWidth = 120f;
+            iconLE.preferredWidth = 48f;
+            iconLE.preferredHeight = 48f;
 
-            // Description
-            var descText = MakeUIObj("Description", cardGO.transform).AddComponent<TextMeshProUGUI>();
-            descText.text = "Item description goes here.";
-            descText.fontSize = 15;
-            descText.alignment = TextAlignmentOptions.Center;
-            descText.color = new Color(0.85f, 0.85f, 0.85f);
-            descText.enableWordWrapping = true;
-            var descLE = descText.gameObject.AddComponent<LayoutElement>();
-            descLE.preferredHeight = 80f; descLE.flexibleHeight = 1f;
+            // [2] Item name
+            var nameText = MakeUIObj("ItemName", cardGO.transform).AddComponent<TextMeshProUGUI>();
+            nameText.text = "ITEM NAME";
+            nameText.fontSize = 22;
+            nameText.alignment = TextAlignmentOptions.Left;
+            nameText.color = Color.white;
+            nameText.fontStyle = FontStyles.Bold;
+            nameText.GetComponent<RectTransform>().sizeDelta = new Vector2(300f, 48f);
+            var nameLE = nameText.gameObject.AddComponent<LayoutElement>();
+            nameLE.preferredWidth = 300f;
+            nameLE.preferredHeight = 48f;
+            nameLE.flexibleWidth = 1f;
 
-            // Sep2
-            var sep2 = MakeUIObj("Sep2", cardGO.transform).AddComponent<Image>();
-            sep2.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
-            var sep2LE = sep2.gameObject.AddComponent<LayoutElement>();
-            sep2LE.preferredHeight = 2f; sep2LE.minHeight = 2f;
-
-            // Price row
-            GameObject priceRow = MakeUIObj("PriceRow", cardGO.transform);
-            var priceHLG = priceRow.AddComponent<HorizontalLayoutGroup>();
-            priceHLG.spacing = 6f;
-            priceHLG.childAlignment = TextAnchor.MiddleCenter;
-            priceHLG.childControlWidth = false;
-            priceHLG.childControlHeight = false;
-            priceRow.AddComponent<LayoutElement>().preferredHeight = 36f;
-
-            var coinImg = MakeUIObj("CoinIcon", priceRow.transform).AddComponent<Image>();
+            // [3] Coin icon
+            var coinImg = MakeUIObj("CoinIcon", cardGO.transform).AddComponent<Image>();
             coinImg.color = new Color(1f, 0.85f, 0.2f);
-            coinImg.GetComponent<RectTransform>().sizeDelta = new Vector2(26f, 26f);
+            coinImg.preserveAspect = true;
+            coinImg.GetComponent<RectTransform>().sizeDelta = new Vector2(28f, 28f);
             var coinLE = coinImg.gameObject.AddComponent<LayoutElement>();
-            coinLE.preferredWidth = 26f; coinLE.preferredHeight = 26f;
+            coinLE.preferredWidth = 28f;
+            coinLE.preferredHeight = 28f;
 
-            var priceText = MakeUIObj("PriceText", priceRow.transform).AddComponent<TextMeshProUGUI>();
+            // [4] Price text
+            var priceText = MakeUIObj("PriceText", cardGO.transform).AddComponent<TextMeshProUGUI>();
             priceText.text = "10";
             priceText.fontSize = 24;
             priceText.alignment = TextAlignmentOptions.Left;
             priceText.color = new Color(1f, 0.85f, 0.2f);
             priceText.fontStyle = FontStyles.Bold;
-            priceText.GetComponent<RectTransform>().sizeDelta = new Vector2(60f, 30f);
+            priceText.GetComponent<RectTransform>().sizeDelta = new Vector2(60f, 48f);
             var pLE = priceText.gameObject.AddComponent<LayoutElement>();
-            pLE.preferredWidth = 60f; pLE.preferredHeight = 30f;
+            pLE.preferredWidth = 60f;
+            pLE.preferredHeight = 48f;
         }
 
         // ─── Reroll Button (bottom-left) ───

@@ -148,7 +148,7 @@ public class Shopmanager : MonoBehaviour
         shopPanel = MakeUIObj("ShopPanel", shopCanvasGO.transform);
         StretchFull(shopPanel.GetComponent<RectTransform>());
         Image panelBG = shopPanel.AddComponent<Image>();
-        panelBG.color = new Color(0.03f, 0.03f, 0.06f, 0.95f);
+        panelBG.color = new Color(0f, 0f, 0f, 1f);
         shopCanvasGroup = shopPanel.AddComponent<CanvasGroup>();
 
         // ─── Title ───
@@ -289,16 +289,21 @@ public class Shopmanager : MonoBehaviour
         float totalW = shopSlotCount * cardWidth + (shopSlotCount - 1) * cardSpacing;
         float startX = -totalW / 2f + cardWidth / 2f;
 
+        // ─── Card root ───
         GameObject cardGO = MakeUIObj($"ShopCard_{index}", cardContainer.transform);
         RectTransform cardRT = cardGO.GetComponent<RectTransform>();
         cardRT.anchorMin = new Vector2(0.5f, 0.5f);
         cardRT.anchorMax = new Vector2(0.5f, 0.5f);
         cardRT.pivot = new Vector2(0.5f, 0.5f);
         cardRT.anchoredPosition = new Vector2(startX + index * (cardWidth + cardSpacing), 0f);
-        cardRT.sizeDelta = new Vector2(cardWidth, 400f);
+        cardRT.sizeDelta = new Vector2(cardWidth, 420f);
 
+        // Grey card background with white outline
         Image cardBG = cardGO.AddComponent<Image>();
-        cardBG.color = new Color(0.12f, 0.12f, 0.16f, 0.95f);
+        cardBG.color = new Color(0.18f, 0.18f, 0.22f, 0.95f);
+        Outline cardOutline = cardGO.AddComponent<Outline>();
+        cardOutline.effectColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+        cardOutline.effectDistance = new Vector2(3f, 3f);
 
         Button buyBtn = cardGO.AddComponent<Button>();
         int idx = index;
@@ -319,86 +324,42 @@ public class Shopmanager : MonoBehaviour
         trigger.triggers.Add(exitEntry);
 
         var vlg = cardGO.AddComponent<VerticalLayoutGroup>();
-        vlg.padding = new RectOffset(16, 16, 16, 16);
-        vlg.spacing = 8;
+        vlg.padding = new RectOffset(10, 10, 10, 14);
+        vlg.spacing = 6;
         vlg.childControlWidth = true;
         vlg.childControlHeight = false;
         vlg.childForceExpandWidth = true;
         vlg.childForceExpandHeight = false;
         vlg.childAlignment = TextAnchor.UpperCenter;
 
-        // Name
+        // ── [1] Item Name (top, italic like perk cards) ──
         TMP_Text nameText = MakeUIObj("ItemName", cardGO.transform).AddComponent<TextMeshProUGUI>();
-        nameText.fontSize = 22;
+        nameText.fontSize = 24;
         nameText.alignment = TextAlignmentOptions.Center;
-        nameText.color = Color.white;
-        nameText.fontStyle = FontStyles.Bold;
+        nameText.color = new Color(0.6f, 0.85f, 1f);
+        nameText.fontStyle = FontStyles.Bold | FontStyles.Italic;
         nameText.raycastTarget = false;
-        nameText.gameObject.AddComponent<LayoutElement>().preferredHeight = 36f;
+        nameText.gameObject.AddComponent<LayoutElement>().preferredHeight = 34f;
 
-        // Sep1
-        Image sep1 = MakeUIObj("Sep1", cardGO.transform).AddComponent<Image>();
-        sep1.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
-        sep1.raycastTarget = false;
-        var sep1LE = sep1.gameObject.AddComponent<LayoutElement>();
-        sep1LE.preferredHeight = 2f; sep1LE.minHeight = 2f;
-
-        // Icon
+        // ── [2] Big square icon (fills card width like perk card) ──
         Image iconImg = MakeUIObj("Icon", cardGO.transform).AddComponent<Image>();
         iconImg.preserveAspect = true;
         iconImg.raycastTarget = false;
         var iconLE = iconImg.gameObject.AddComponent<LayoutElement>();
-        iconLE.preferredHeight = 120f; iconLE.preferredWidth = 120f;
+        iconLE.preferredHeight = 240f;
+        iconLE.preferredWidth = 240f;
 
-        // Description
+        // ── [3] Description (below icon, like perk cards) ──
         TMP_Text descText = MakeUIObj("Description", cardGO.transform).AddComponent<TextMeshProUGUI>();
-        descText.fontSize = 15;
+        descText.fontSize = 16;
         descText.alignment = TextAlignmentOptions.Center;
         descText.color = new Color(0.85f, 0.85f, 0.85f);
         descText.enableWordWrapping = true;
         descText.raycastTarget = false;
         var descLE = descText.gameObject.AddComponent<LayoutElement>();
-        descLE.preferredHeight = 80f; descLE.flexibleHeight = 1f;
+        descLE.preferredHeight = 60f; descLE.flexibleHeight = 1f;
 
-        // Sep2
-        Image sep2 = MakeUIObj("Sep2", cardGO.transform).AddComponent<Image>();
-        sep2.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
-        sep2.raycastTarget = false;
-        var sep2LE = sep2.gameObject.AddComponent<LayoutElement>();
-        sep2LE.preferredHeight = 2f; sep2LE.minHeight = 2f;
-
-        // Price Row
-        GameObject priceRowGO = MakeUIObj("PriceRow", cardGO.transform);
-        HorizontalLayoutGroup priceHLG = priceRowGO.AddComponent<HorizontalLayoutGroup>();
-        priceHLG.spacing = 6f;
-        priceHLG.childAlignment = TextAnchor.MiddleCenter;
-        priceHLG.childControlWidth = false;
-        priceHLG.childControlHeight = false;
-        priceHLG.childForceExpandWidth = false;
-        priceHLG.childForceExpandHeight = false;
-        priceRowGO.AddComponent<LayoutElement>().preferredHeight = 36f;
-
-        // Coin icon
-        Image coinImg = MakeUIObj("CoinIcon", priceRowGO.transform).AddComponent<Image>();
-        coinImg.preserveAspect = true;
-        coinImg.raycastTarget = false;
-        coinImg.GetComponent<RectTransform>().sizeDelta = new Vector2(26f, 26f);
-        var coinLE = coinImg.gameObject.AddComponent<LayoutElement>();
-        coinLE.preferredWidth = 26f; coinLE.preferredHeight = 26f;
-        if (cachedCoinSprite != null) coinImg.sprite = cachedCoinSprite;
-
-        // Price text
-        TMP_Text priceText = MakeUIObj("PriceText", priceRowGO.transform).AddComponent<TextMeshProUGUI>();
-        priceText.fontSize = 24;
-        priceText.alignment = TextAlignmentOptions.Left;
-        priceText.color = new Color(1f, 0.85f, 0.2f);
-        priceText.fontStyle = FontStyles.Bold;
-        priceText.raycastTarget = false;
-        priceText.GetComponent<RectTransform>().sizeDelta = new Vector2(60f, 30f);
-        var pLE = priceText.gameObject.AddComponent<LayoutElement>();
-        pLE.preferredWidth = 60f; pLE.preferredHeight = 30f;
-
-        // Sold Out overlay
+        // ── Sold Out overlay ──
         GameObject soldOutGO = MakeUIObj("SoldOut", cardGO.transform);
         soldOutGO.AddComponent<LayoutElement>().ignoreLayout = true;
         StretchFull(soldOutGO.GetComponent<RectTransform>());
@@ -415,6 +376,42 @@ public class Shopmanager : MonoBehaviour
         soldOutTxt.fontStyle = FontStyles.Bold;
         soldOutTxt.raycastTarget = false;
         soldOutGO.SetActive(false);
+
+        // ── [5] Price row — bottom-right, outside layout ──
+        GameObject priceRowGO = MakeUIObj("PriceRow", cardGO.transform);
+        priceRowGO.AddComponent<LayoutElement>().ignoreLayout = true;
+        RectTransform priceRowRT = priceRowGO.GetComponent<RectTransform>();
+        priceRowRT.anchorMin = new Vector2(1f, 0f);
+        priceRowRT.anchorMax = new Vector2(1f, 0f);
+        priceRowRT.pivot = new Vector2(1f, 0f);
+        priceRowRT.anchoredPosition = new Vector2(-8f, 8f);
+        priceRowRT.sizeDelta = new Vector2(100f, 30f);
+
+        HorizontalLayoutGroup priceHLG = priceRowGO.AddComponent<HorizontalLayoutGroup>();
+        priceHLG.spacing = 4f;
+        priceHLG.childAlignment = TextAnchor.MiddleRight;
+        priceHLG.childControlWidth = false;
+        priceHLG.childControlHeight = false;
+        priceHLG.childForceExpandWidth = false;
+        priceHLG.childForceExpandHeight = false;
+
+        Image coinImg = MakeUIObj("CoinIcon", priceRowGO.transform).AddComponent<Image>();
+        coinImg.preserveAspect = true;
+        coinImg.raycastTarget = false;
+        coinImg.GetComponent<RectTransform>().sizeDelta = new Vector2(22f, 22f);
+        var coinLE = coinImg.gameObject.AddComponent<LayoutElement>();
+        coinLE.preferredWidth = 22f; coinLE.preferredHeight = 22f;
+        if (cachedCoinSprite != null) coinImg.sprite = cachedCoinSprite;
+
+        TMP_Text priceText = MakeUIObj("PriceText", priceRowGO.transform).AddComponent<TextMeshProUGUI>();
+        priceText.fontSize = 20;
+        priceText.alignment = TextAlignmentOptions.Left;
+        priceText.color = new Color(1f, 0.85f, 0.2f);
+        priceText.fontStyle = FontStyles.Bold;
+        priceText.raycastTarget = false;
+        priceText.GetComponent<RectTransform>().sizeDelta = new Vector2(50f, 26f);
+        var pLE = priceText.gameObject.AddComponent<LayoutElement>();
+        pLE.preferredWidth = 50f; pLE.preferredHeight = 26f;
 
         cardUIs.Add(new ShopCardUI
         {

@@ -432,6 +432,9 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     void OnDisable()
     {
-        HideTooltip();
+        // Can't start coroutines on inactive objects — just hide immediately
+        if (fadeCoroutine != null) { StopCoroutine(fadeCoroutine); fadeCoroutine = null; }
+        if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 0f;
+        if (tooltipObj != null) tooltipObj.SetActive(false);
     }
 }

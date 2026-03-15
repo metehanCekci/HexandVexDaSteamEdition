@@ -474,12 +474,32 @@ public class MapManager : MonoBehaviour
                 break;
 
             case MapNodeType.Shop:
-                // Generate diamond shop arena with dealer NPC at center.
-                // Shop canvas does NOT auto-open — it opens when the player
-                // walks to the dealer's tile (handled by ShopDealer component).
+                // Full-screen canvas shop — clear EVERYTHING behind
                 if (LevelGenerator.instance != null)
-                    LevelGenerator.instance.GenerateShopArena();
-                showHotbar = true; // Player needs to walk around the arena
+                {
+                    LevelGenerator.instance.groundMap.ClearAllTiles();
+                    if (LevelGenerator.instance.backgroundMap != null)
+                        LevelGenerator.instance.backgroundMap.ClearAllTiles();
+                    if (LevelGenerator.instance.hazardMap != null)
+                        LevelGenerator.instance.hazardMap.ClearAllTiles();
+                    if (LevelGenerator.instance.scaffoldMap != null)
+                        LevelGenerator.instance.scaffoldMap.ClearAllTiles();
+                    if (ScaffoldManager.instance != null)
+                        ScaffoldManager.instance.ClearAll();
+                }
+                // Hide player
+                if (TurnManager.instance != null && TurnManager.instance.player != null)
+                    TurnManager.instance.player.gameObject.SetActive(false);
+                // Destroy remaining enemies
+                if (TurnManager.instance != null)
+                {
+                    foreach (var enemy in TurnManager.instance.enemies)
+                        if (enemy != null) Destroy(enemy.gameObject);
+                    TurnManager.instance.enemies.Clear();
+                }
+                if (Shopmanager.instance != null)
+                    Shopmanager.instance.OpenAsMapNode();
+                showHotbar = false;
                 break;
 
             case MapNodeType.PerkSelection:
@@ -586,6 +606,10 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator ReturnToMapWithFade()
     {
+        // Re-enable player if it was hidden (e.g. shop)
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+            TurnManager.instance.player.gameObject.SetActive(true);
+
         // ScreenFader'ın mevcut fade'i bitmesini bekle
         if (ScreenFader.instance != null)
         {

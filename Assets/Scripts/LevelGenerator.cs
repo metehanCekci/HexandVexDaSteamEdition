@@ -769,17 +769,15 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // SHOP ARENA — Elmas şekli (1-2-3-2-1), ortada dealer
+    // SHOP ARENA — Büyük hexagon, dealer arkada, itemler önünde
     // ═══════════════════════════════════════════
 
     /// <summary>
-    /// Generates a diamond-shaped hex arena for the shop scene.
-    /// Layout (top to bottom): 1-2-3-2-1 tiles.
-    /// Player spawns at the bottom single tile.
-    /// Center of the 3-tile middle row is reserved for the dealer NPC.
-    /// Returns the dealer cell world position.
+    /// Generates a large hexagon arena (radius 3) for the shop scene.
+    /// Dealer (capsule) sits at the back (top). 3 item hexes are in front of dealer.
+    /// Exit hex is on the right edge. Player spawns at the bottom.
     /// </summary>
-    public Vector3 GenerateShopArena()
+    public ShopDealer GenerateShopArena()
     {
         groundMap.ClearAllTiles();
         if (backgroundMap != null) backgroundMap.ClearAllTiles();
@@ -799,38 +797,41 @@ public class LevelGenerator : MonoBehaviour
             TurnManager.instance.enemies.Clear();
         }
 
-        // Diamond shape: 1-2-3-2-1 (top to bottom)
-        // Row y=+2 (top):    1 tile  → (0,2)
-        // Row y=+1:          2 tiles → (0,1), (1,1)   [y=1 is odd row]
-        // Row y= 0 (middle): 3 tiles → (-1,0), (0,0), (1,0)
-        // Row y=-1:          2 tiles → (-1,-1), (0,-1) [y=-1 is odd row]
-        // Row y=-2 (bottom): 1 tile  → (0,-2)
-
-        Vector3Int[] diamondCells = new Vector3Int[]
+        // ─── Big hexagon (radius 3) ───
+        int shopRadius = 3;
+        for (int x = -shopRadius; x <= shopRadius; x++)
         {
-            // Top (1)
-            new Vector3Int(0, 2, 0),
-            // Row 1 (2)
-            new Vector3Int(0, 1, 0), new Vector3Int(1, 1, 0),
-            // Middle (3) — dealer at center (0,0)
-            new Vector3Int(-1, 0, 0), new Vector3Int(0, 0, 0), new Vector3Int(1, 0, 0),
-            // Row -1 (2)
-            new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0),
-            // Bottom (1) — player spawn
-            new Vector3Int(0, -2, 0),
-        };
-
-        foreach (var cell in diamondCells)
-        {
-            groundMap.SetTile(cell, groundTile);
-            groundMap.SetColor(cell, Color.white);
-            validCells.Add(cell);
+            for (int y = -shopRadius; y <= shopRadius; y++)
+            {
+                if (Mathf.Abs(x + y) <= shopRadius)
+                {
+                    Vector3Int cell = new Vector3Int(x, y, 0);
+                    groundMap.SetTile(cell, groundTile);
+                    groundMap.SetColor(cell, Color.white);
+                    validCells.Add(cell);
+                }
+            }
         }
 
         GenerateColumns();
 
-        // Player spawns at bottom single tile
-        Vector3Int playerCell = new Vector3Int(0, -2, 0);
+        // ─── Key cells ───
+        // Dealer sits at top-center (visual only — remove from walkable)
+        Vector3Int dealerVisualCell = new Vector3Int(0, 3, 0);
+
+        // Item hexes: row in front of dealer (row y=2, side by side)
+        Vector3Int[] itemCells = new Vector3Int[]
+        {
+            new Vector3Int(-1, 2, 0),  // Item 0 (left)
+            new Vector3Int(0, 2, 0),   // Item 1 (center)
+            new Vector3Int(1, 2, 0),   // Item 2 (right)
+        };
+
+        // Exit hex: right edge of the hexagon
+        Vector3Int exitCell = new Vector3Int(3, 0, 0);
+
+        // Player spawns at bottom
+        Vector3Int playerCell = new Vector3Int(0, -3, 0);
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
@@ -840,13 +841,11 @@ public class LevelGenerator : MonoBehaviour
             TurnManager.instance.player.UpdateHighlights();
         }
 
-        // Spawn dealer at center of the 3-tile middle row
-        Vector3Int dealerCell = Vector3Int.zero;
-        Vector3 dealerWorldPos = groundMap.GetCellCenterWorld(dealerCell);
-
-        // Destroy old dealer if any
+        // ─── Spawn dealer (capsule) at top ───
         if (ShopDealer.instance != null)
             Destroy(ShopDealer.instance.gameObject);
+
+        Vector3 dealerWorldPos = groundMap.GetCellCenterWorld(dealerVisualCell);
 
         GameObject dealerGO;
         if (shopDealerPrefab != null)
@@ -855,21 +854,65 @@ public class LevelGenerator : MonoBehaviour
         }
         else
         {
-            // Placeholder dealer — simple colored sprite
+            // Capsule placeholder dealer
             dealerGO = new GameObject("ShopDealer");
             dealerGO.transform.position = dealerWorldPos;
             SpriteRenderer sr = dealerGO.AddComponent<SpriteRenderer>();
-            sr.sprite = CreatePlaceholderSprite();
-            sr.color = new Color(0.2f, 0.8f, 1f, 1f);
+            sr.sprite = CreateCapsuleSprite();
+            sr.color = new Color(1f, 0.85f, 0.2f, 1f);
             sr.sortingOrder = 5;
         }
 
         ShopDealer dealer = dealerGO.GetComponent<ShopDealer>();
         if (dealer == null)
             dealer = dealerGO.AddComponent<ShopDealer>();
-        dealer.dealerCell = dealerCell;
 
-        return dealerWorldPos;
+        dealer.dealerCell = dealerVisualCell;
+        dealer.SetupShopArena(itemCells, exitCell);
+
+        return dealer;
+    }
+
+    /// <summary>
+    /// Creates a capsule-shaped sprite for the dealer NPC placeholder.
+    /// </summary>
+    private Sprite CreateCapsuleSprite()
+    {
+        int w = 24, h = 48;
+        Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        Color32[] pixels = new Color32[w * h];
+        float halfW = w / 2f;
+        float capRadius = w / 2f; // Semicircle radius = half width
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                bool inside = false;
+
+                if (y < capRadius) // Bottom semicircle
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(halfW - 0.5f, capRadius));
+                    inside = dist <= capRadius;
+                }
+                else if (y >= h - capRadius) // Top semicircle
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(halfW - 0.5f, h - capRadius - 1));
+                    inside = dist <= capRadius;
+                }
+                else // Middle rectangle
+                {
+                    inside = x >= 0 && x < w;
+                }
+
+                pixels[y * w + x] = inside ? new Color32(255, 255, 255, 255) : new Color32(0, 0, 0, 0);
+            }
+        }
+
+        tex.SetPixels32(pixels);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 32f);
     }
 
     /// <summary>

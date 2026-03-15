@@ -6617,15 +6617,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b5e9a3c7d1f8264e0a9b3d5f7c1e4a68, type: 2}
   secretItem: {fileID: 0}
   secretItemChance: 0.02
+  shopSlotCount: 3
+  rerollBaseCost: 10
+  rerollMultiplier: 1.2
   shopSlotContainer: {fileID: 1400458065}
   shopSlotPrefab: {fileID: 8164334485540262811, guid: 22dde9155aaf3554f9955e1432f107fd, type: 3}
-  shopSlotCount: 3
   coinDisplayText: {fileID: 311926039}
   rerollButton: {fileID: 2099779297}
   rerollPriceText: {fileID: 814757009}
-  rerollBaseCost: 10
-  rerollMultiplier: 1.2
   continueButton: {fileID: 0}
+  shopCanvas: {fileID: 0}
 --- !u!4 &663098664
 Transform:
   m_ObjectHideFlags: 0
@@ -10568,6 +10569,7 @@ MonoBehaviour:
   aoeEnemyPrefab: {fileID: 506802351436183914, guid: 588d8cef8891f034fbe90850575934da, type: 3}
   bossPrefab: {fileID: 506802351436183914, guid: 97c61cbaf2582b640b815e709dbb58a8, type: 3}
   totemPrefab: {fileID: 506802351436183914, guid: 6cde806ac5b47d2449caf40fbd008f39, type: 3}
+  shopDealerPrefab: {fileID: 3792929955601508085, guid: eaa1a06c6db7f0e49bd78d6b41618756, type: 3}
   warlockEnemyPrefab: {fileID: 506802351436183914, guid: 216abee7f8db59f4181fc42e10839b5d, type: 3}
   warlockStartLevel: 6
   warlockSpawnChance: 0.2
@@ -12191,6 +12193,7 @@ MonoBehaviour:
   criticalDamageMultiplier: 2
   perkUIContainer: {fileID: 1574552221}
   activePerks: []
+  inventoryPerks: []
   bonusDiceNextCombat: 0
   doubleGoldNextKill: 0
   doubleDamageNextCombat: 0
