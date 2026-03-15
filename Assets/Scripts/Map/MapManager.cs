@@ -337,9 +337,14 @@ public class MapManager : MonoBehaviour
         yield return null;
         GenerateNewMap(0);
 
-        // Map'i arkada hazırla, sonra ScreenFader ile aydınlat
+        // Map'i arkada hazırla
         ShowMapInstant();
-        // ScreenFader zaten siyah olabilir (sahne yeni yüklendi) — aydınlat
+
+        // Kısa bekleme (render edilsin)
+        yield return new WaitForSecondsRealtime(0.1f);
+
+        // Ekranı aydınlat
+        yield return StartCoroutine(FadeFromBlack());
     }
 
     // ─── Yeni layer haritası üret ───
