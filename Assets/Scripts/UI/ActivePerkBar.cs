@@ -7,24 +7,24 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Ekranin ust-ortasinda aktif perk ikonlarini gosteren kalici bar.
-/// Koddan otomatik olusturulur, DontDestroyOnLoad ile sahne gecislerinde hayatta kalir.
+/// Editor tool ile sahnede olusturulur (Tools > Setup Active Perk Bar).
+/// Sahnede yoksa runtime'da otomatik olusturulur (fallback).
 /// </summary>
 public class ActivePerkBar : MonoBehaviour
 {
     public static ActivePerkBar instance;
 
-    private Canvas barCanvas;
-    private RectTransform container;
-    private GameObject tooltipObj;
-    private TextMeshProUGUI tooltipText;
-    private CanvasGroup tooltipCanvasGroup;
+    [Header("Referanslar (Editor Tool Atar)")]
+    public Canvas barCanvas;
+    public RectTransform container;
+    public GameObject tooltipObj;
+    public TextMeshProUGUI tooltipText;
+    public CanvasGroup tooltipCanvasGroup;
+    public GameObject inventoryButton;
 
     // Spawnlanan ikon objeleri — RefreshBar'da yeniden olusturulur
     private readonly List<GameObject> spawnedIcons = new List<GameObject>();
     private readonly List<BasePerk> spawnedPerks = new List<BasePerk>();
-
-    // Envanter butonu referansi
-    private GameObject inventoryButton;
 
     private const float ICON_SIZE = 48f;
     private const float ICON_SPACING = 8f;
@@ -39,6 +39,7 @@ public class ActivePerkBar : MonoBehaviour
             return;
         }
         instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     void OnDestroy()
@@ -46,15 +47,24 @@ public class ActivePerkBar : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    /// <summary>Koddan tum UI'yi olusturur ve DontDestroyOnLoad yapar.</summary>
+    /// <summary>Runtime fallback — sahnede yoksa koddan olusturur.</summary>
     public static void CreateFromCode()
     {
         if (instance != null) return;
 
-        // Root obje
+        // Sahnede zaten var mi?
+        var existing = Object.FindFirstObjectByType<ActivePerkBar>();
+        if (existing != null)
+        {
+            instance = existing;
+            DontDestroyOnLoad(existing.gameObject);
+            return;
+        }
+
+        // Yoksa koddan olustur (eski fallback yol)
         GameObject rootGO = new GameObject("ActivePerkBar");
-        DontDestroyOnLoad(rootGO);
         ActivePerkBar bar = rootGO.AddComponent<ActivePerkBar>();
+        // Awake zaten instance + DontDestroyOnLoad yapar
 
         // Canvas
         GameObject canvasGO = new GameObject("PerkBarCanvas");
@@ -92,20 +102,20 @@ public class ActivePerkBar : MonoBehaviour
 
         bar.container = containerRT;
 
-        // Tooltip — baslangicta gizli
+        // Tooltip
         bar.BuildTooltip(canvasGO.transform);
 
-        // Envanter butonu — sag ust kose
+        // Envanter butonu
         bar.BuildInventoryButton(canvasGO.transform);
     }
 
-    private void BuildTooltip(Transform canvasTransform)
+    // Editor tool'dan da cagrilabilmesi icin public yapildi
+    public void BuildTooltip(Transform canvasTransform)
     {
         tooltipObj = new GameObject("PerkTooltip", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         tooltipObj.transform.SetParent(canvasTransform, false);
         RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
         ttRT.sizeDelta = new Vector2(TOOLTIP_WIDTH, TOOLTIP_HEIGHT);
-        // Tooltip ekranin ust kismindan biraz asagida gorunecek
         ttRT.anchorMin = new Vector2(0.5f, 1f);
         ttRT.anchorMax = new Vector2(0.5f, 1f);
         ttRT.pivot = new Vector2(0.5f, 1f);
@@ -120,7 +130,6 @@ public class ActivePerkBar : MonoBehaviour
         tooltipCanvasGroup.blocksRaycasts = false;
         tooltipCanvasGroup.interactable = false;
 
-        // Tooltip text
         GameObject textGO = new GameObject("TooltipText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         textGO.transform.SetParent(tooltipObj.transform, false);
         RectTransform textRT = textGO.GetComponent<RectTransform>();
@@ -137,19 +146,17 @@ public class ActivePerkBar : MonoBehaviour
         tooltipText.richText = true;
         tooltipText.raycastTarget = false;
 
-        // ContentSizeFitter ile tooltipun boyutunu texte gore ayarla
         var ttCSF = tooltipObj.AddComponent<ContentSizeFitter>();
         ttCSF.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         ttCSF.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        // LayoutElement ile minimum boyut
         var ttLE = tooltipObj.AddComponent<LayoutElement>();
         ttLE.preferredWidth = TOOLTIP_WIDTH;
 
         tooltipObj.SetActive(false);
     }
 
-    private void BuildInventoryButton(Transform canvasTransform)
+    public void BuildInventoryButton(Transform canvasTransform)
     {
         inventoryButton = new GameObject("InventoryButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         inventoryButton.transform.SetParent(canvasTransform, false);
@@ -172,7 +179,6 @@ public class ActivePerkBar : MonoBehaviour
         btn.colors = cb;
         btn.onClick.AddListener(OnInventoryButtonClicked);
 
-        // Buton ikonu — basit bir canta/disi sembol (TMP ile)
         GameObject btnTextGO = new GameObject("BtnText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         btnTextGO.transform.SetParent(inventoryButton.transform, false);
         RectTransform textRT = btnTextGO.GetComponent<RectTransform>();
@@ -207,10 +213,8 @@ public class ActivePerkBar : MonoBehaviour
     // BAR YENILEME
     // ======================================================
 
-    /// <summary>Ikoncuklari RunManager.activePerks'ten yeniden olusturur.</summary>
     public void RefreshBar()
     {
-        // Eski ikonlari temizle
         foreach (var icon in spawnedIcons)
         {
             if (icon != null) Destroy(icon);
@@ -218,7 +222,7 @@ public class ActivePerkBar : MonoBehaviour
         spawnedIcons.Clear();
         spawnedPerks.Clear();
 
-        if (RunManager.instance == null) return;
+        if (RunManager.instance == null || container == null) return;
 
         foreach (var perk in RunManager.instance.activePerks)
         {
@@ -232,18 +236,17 @@ public class ActivePerkBar : MonoBehaviour
 
     private GameObject CreatePerkIcon(BasePerk perk)
     {
-        // Dış kapsayıcı — kare, arka plan yok (sadece layout için)
+        // Dış kapsayıcı — kare
         GameObject iconGO = new GameObject("PerkIcon_" + perk.perkName, typeof(RectTransform));
 
         RectTransform rt = iconGO.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(ICON_SIZE, ICON_SIZE);
 
-        // LayoutElement
         LayoutElement le = iconGO.AddComponent<LayoutElement>();
         le.preferredWidth = ICON_SIZE;
         le.preferredHeight = ICON_SIZE;
 
-        // Arka plan (koyu kare) — her zaman görünür, ikon yoksa placeholder olur
+        // Arka plan (koyu kare)
         GameObject bgGO = new GameObject("BG", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         bgGO.transform.SetParent(iconGO.transform, false);
         RectTransform bgRT = bgGO.GetComponent<RectTransform>();
@@ -253,7 +256,7 @@ public class ActivePerkBar : MonoBehaviour
         bgRT.offsetMax = Vector2.zero;
         Image bgImg = bgGO.GetComponent<Image>();
         bgImg.color = new Color(0.15f, 0.15f, 0.2f, 0.9f);
-        bgImg.raycastTarget = true; // hover eventleri bu objeye gelsin
+        bgImg.raycastTarget = false;
 
         // Perk ikonu — sprite varsa göster
         if (perk.icon != null)
@@ -272,14 +275,14 @@ public class ActivePerkBar : MonoBehaviour
             spriteImg.raycastTarget = false;
         }
 
-        // Rarity renk kenarlığı — Outline component ile kare çerçeve
+        // Rarity renk kenarlığı
         Color rarityColor;
         ColorUtility.TryParseHtmlString(PerkListUI.GetRarityHex(perk.rarity), out rarityColor);
         Outline outline = bgGO.AddComponent<Outline>();
         outline.effectColor = rarityColor;
         outline.effectDistance = new Vector2(2f, 2f);
 
-        // Level gosterge — kucuk sayi sag-alt kosede
+        // Level gösterge
         if (perk.currentLevel > 1)
         {
             GameObject lvGO = new GameObject("LvText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
@@ -298,16 +301,16 @@ public class ActivePerkBar : MonoBehaviour
             lvTMP.raycastTarget = false;
         }
 
-        // Raycast alabilmesi için iconGO'ya şeffaf Image ekle
-        Image raycastTarget = iconGO.AddComponent<Image>();
-        raycastTarget.color = new Color(0f, 0f, 0f, 0f); // Tamamen şeffaf
+        // Raycast için şeffaf Image
+        Image raycastImg = iconGO.AddComponent<Image>();
+        raycastImg.color = new Color(0f, 0f, 0f, 0f);
 
-        // Hover event'leri — EventTrigger ile
+        // Hover event'leri
         EventTrigger trigger = iconGO.AddComponent<EventTrigger>();
 
         EventTrigger.Entry enterEntry = new EventTrigger.Entry();
         enterEntry.eventID = EventTriggerType.PointerEnter;
-        BasePerk capturedPerk = perk; // closure icin
+        BasePerk capturedPerk = perk;
         enterEntry.callback.AddListener((_) => ShowTooltip(capturedPerk, iconGO.GetComponent<RectTransform>()));
         trigger.triggers.Add(enterEntry);
 
@@ -333,9 +336,7 @@ public class ActivePerkBar : MonoBehaviour
 
         tooltipObj.SetActive(true);
 
-        // Tooltip'i ikonun altinda ortala
         RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
-        // Icon'un ekrandaki pozisyonunu tooltipun anchor'una cevir
         Vector3 iconWorldPos = iconRT.position;
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -356,23 +357,19 @@ public class ActivePerkBar : MonoBehaviour
     // GORSEL ANIMASYONLAR
     // ======================================================
 
-    /// <summary>Belirli bir perk icin ikonun ziplamasi (pop/shake) animasyonu tetikler.</summary>
     public void TriggerPopForPerk(BasePerk perk)
     {
         int idx = spawnedPerks.IndexOf(perk);
         if (idx < 0 || idx >= spawnedIcons.Count) return;
-
         GameObject iconGO = spawnedIcons[idx];
         if (iconGO != null && iconGO.activeInHierarchy)
             StartCoroutine(IconPopAnim(iconGO.GetComponent<RectTransform>()));
     }
 
-    /// <summary>Belirli bir perk icin ikonun shake animasyonu tetikler.</summary>
     public void TriggerShakeForPerk(BasePerk perk)
     {
         int idx = spawnedPerks.IndexOf(perk);
         if (idx < 0 || idx >= spawnedIcons.Count) return;
-
         GameObject iconGO = spawnedIcons[idx];
         if (iconGO != null && iconGO.activeInHierarchy)
             StartCoroutine(IconShakeAnim(iconGO.GetComponent<RectTransform>()));
@@ -384,7 +381,6 @@ public class ActivePerkBar : MonoBehaviour
         Vector3 baseScale = Vector3.one;
         float duration = 0.25f;
         float elapsed = 0f;
-
         while (elapsed < duration)
         {
             float t = elapsed / duration;
@@ -404,7 +400,6 @@ public class ActivePerkBar : MonoBehaviour
         float elapsed = 0f;
         float magnitude = 4f;
         float frequency = 35f;
-
         while (elapsed < duration)
         {
             float x = Mathf.Sin(elapsed * frequency) * magnitude * (1f - elapsed / duration);

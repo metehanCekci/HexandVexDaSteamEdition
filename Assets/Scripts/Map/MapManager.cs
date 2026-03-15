@@ -502,10 +502,27 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator FadeFromBlack()
     {
+        // ScreenFader'ın faderGroup'unu bul — yoksa InitializeFader ile tekrar dene
         CanvasGroup fader = ScreenFader.instance != null ? ScreenFader.instance.faderGroup : null;
-        if (fader == null) yield break;
+        if (fader == null && ScreenFader.instance != null)
+        {
+            // faderGroup henüz atanmamış olabilir — bir kere daha dene
+            yield return null;
+            fader = ScreenFader.instance.faderGroup;
+        }
+
+        if (fader == null)
+        {
+            Debug.LogWarning("[MAP] FadeFromBlack: faderGroup bulunamadı! Ekran siyah kalabilir.");
+            yield break;
+        }
+
+        // ScreenFader'ın kendi coroutine'leri çakışmasın
+        if (ScreenFader.instance != null)
+            ScreenFader.instance.StopAllCoroutines();
 
         float elapsed = 0f;
+        fader.alpha = 1f; // Başlangıçta kesin siyah
 
         while (elapsed < mapFadeDuration)
         {
