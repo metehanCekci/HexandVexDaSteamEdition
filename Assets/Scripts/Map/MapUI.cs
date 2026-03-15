@@ -221,7 +221,12 @@ public class MapUI : MonoBehaviour
         if (count > 0)
         {
             float avgY = totalY / count;
+            Debug.Log($"[MAP] CenterOnCurrentNode: currentNodeId={map.currentNodeId}, reachable count={count}, avgY={avgY}");
             dragScroll.CenterOnY(avgY);
+        }
+        else
+        {
+            Debug.LogWarning("[MAP] CenterOnCurrentNode: reachable node bulunamadı!");
         }
     }
 
