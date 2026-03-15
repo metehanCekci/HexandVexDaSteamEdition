@@ -26,6 +26,7 @@ public class RestNodeUI : MonoBehaviour
 
     public void Show()
     {
+        Debug.Log($"[REST] Show() called — restPanel={restPanel != null}, restButton={restButton != null}, trainButton={trainButton != null}");
         if (restPanel != null) restPanel.SetActive(true);
 
         Time.timeScale = 0f;
@@ -44,8 +45,17 @@ public class RestNodeUI : MonoBehaviour
         if (restButton != null)
         {
             restButton.onClick.RemoveAllListeners();
-            restButton.onClick.AddListener(() => OnRest(healAmount));
+            restButton.onClick.AddListener(() =>
+            {
+                Debug.Log($"[REST] Rest button onClick FIRED — healAmount={healAmount}");
+                OnRest(healAmount);
+            });
             restButton.interactable = true;
+            Debug.Log($"[REST] Rest button listener attached. interactable={restButton.interactable}");
+        }
+        else
+        {
+            Debug.LogError("[REST] restButton is NULL — cannot attach listener!");
         }
 
         if (trainButton != null)
