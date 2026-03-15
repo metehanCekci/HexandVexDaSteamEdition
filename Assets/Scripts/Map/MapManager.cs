@@ -111,27 +111,15 @@ public class MapManager : MonoBehaviour
         titleTxt.alignment = TextAlignmentOptions.Center;
         titleTxt.color = new Color(0.9f, 0.85f, 0.7f);
 
-        // ScrollRect
+        // Scroll alanı (ScrollRect yok — kendi MapDragScroll'umuz var)
         GameObject scrollGO = MakeUIObj("Scroll", panelGO.transform);
         RectTransform scrollRT = scrollGO.GetComponent<RectTransform>();
-        scrollRT.anchorMin = new Vector2(0.1f, 0.05f);
-        scrollRT.anchorMax = new Vector2(0.9f, 0.9f);
+        scrollRT.anchorMin = new Vector2(0.05f, 0.02f);
+        scrollRT.anchorMax = new Vector2(0.95f, 0.92f);
         scrollRT.offsetMin = Vector2.zero;
         scrollRT.offsetMax = Vector2.zero;
-        ScrollRect scroll = scrollGO.AddComponent<ScrollRect>();
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-        scroll.scrollSensitivity = 30f;
-        scroll.inertia = false; // Bırakınca kaymasın
-        Image scrollBG = scrollGO.AddComponent<Image>();
-        scrollBG.color = new Color(0, 0, 0, 0.01f);
-        scrollGO.AddComponent<Mask>().showMaskGraphic = false;
-        // Viewport'u ScrollRect'e ata — bu olmadan scroll düzgün çalışmaz
-        scroll.viewport = scrollRT;
-
-        // Custom drag scroll: sadece orta/sağ tıkla scroll, sol tık node butonlarına gitsin
-        scrollGO.AddComponent<MapDragScroll>();
+        scrollGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // Raycast almak için
+        scrollGO.AddComponent<RectMask2D>(); // Node'ları viewport dışında gizle
 
         // NodeContainer (scroll content)
         GameObject containerGO = MakeUIObj("NodeContainer", scrollGO.transform);
@@ -140,7 +128,11 @@ public class MapManager : MonoBehaviour
         containerRT.anchorMax = new Vector2(0.5f, 0f);
         containerRT.pivot = new Vector2(0.5f, 0f);
         containerRT.sizeDelta = new Vector2(1000f, 2000f);
-        scroll.content = containerRT;
+
+        // Custom scroll: orta/sağ tık drag + mouse wheel
+        var dragScroll = scrollGO.AddComponent<MapDragScroll>();
+        dragScroll.content = containerRT;
+        dragScroll.viewport = scrollRT;
 
         // Node prefab
         GameObject nodePrefab = BuildNodePrefab();

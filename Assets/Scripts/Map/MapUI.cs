@@ -33,7 +33,6 @@ public class MapUI : MonoBehaviour
     private List<MapNodeUI> spawnedNodes = new List<MapNodeUI>();
     private List<GameObject> spawnedLines = new List<GameObject>();
     private Dictionary<int, RectTransform> nodeTransforms = new Dictionary<int, RectTransform>();
-    private ScrollRect scrollRect;
 
     void Start()
     {
@@ -68,12 +67,11 @@ public class MapUI : MonoBehaviour
         // ─── Container boyutunu ayarla ───
         float totalHeight = (maxRow + 1) * rowSpacing + 300f;
 
-        // Content viewport'tan büyük olmalı yoksa scroll çalışmaz
-        if (scrollRect == null && nodeContainer != null)
-            scrollRect = nodeContainer.GetComponentInParent<ScrollRect>();
-        if (scrollRect != null && scrollRect.viewport != null)
+        // Content viewport'tan büyük olmalı
+        var dragScroll = nodeContainer != null ? nodeContainer.GetComponentInParent<MapDragScroll>() : null;
+        if (dragScroll != null && dragScroll.viewport != null)
         {
-            float viewportH = scrollRect.viewport.rect.height;
+            float viewportH = dragScroll.viewport.rect.height;
             if (viewportH > 0 && totalHeight <= viewportH)
                 totalHeight = viewportH + 200f;
         }
@@ -125,8 +123,6 @@ public class MapUI : MonoBehaviour
             var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
             if (dragScroll != null)
                 dragScroll.ScrollToBottom();
-            else if (scrollRect == null)
-                scrollRect = nodeContainer.GetComponentInParent<ScrollRect>();
         }
     }
 
