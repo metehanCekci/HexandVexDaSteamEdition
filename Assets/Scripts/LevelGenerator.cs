@@ -126,8 +126,8 @@ public class LevelGenerator : MonoBehaviour
             bossLegendaryMultiplier = 1f;
         }
 
-        // Boss hezimetini algıla ve legendary multiplier'ı artır
-        if (RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 1)
+        // Boss hezimetini algıla ve legendary multiplier'ı artır (sadece legacy modda)
+        if (MapManager.instance == null && RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 1)
         {
             bossLegendaryMultiplier *= 2f;
             Debug.Log($"🏆 Boss yenildi! Legendary multiplier şimdi: {bossLegendaryMultiplier}x");
@@ -140,7 +140,8 @@ public class LevelGenerator : MonoBehaviour
             if (perk != null) perk.OnLevelStart();
         }
 
-        if (RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0)
+        // Map sistemi aktifse boss kontrolü MapManager'a ait — burada tetikleme
+        if (MapManager.instance == null && RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0)
         {
             GenerateBossArena();
             return;
