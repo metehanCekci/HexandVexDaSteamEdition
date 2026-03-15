@@ -72,8 +72,14 @@ public class MapManager : MonoBehaviour
     // ═══════════════════════════════════════════
     // OTOMATİK UI OLUŞTURMA
     // ═══════════════════════════════════════════
+    private static bool uiBuilt = false;
+
     private void BuildUIFromCode()
     {
+        // Zaten oluşturulmuşsa tekrar oluşturma
+        if (uiBuilt) return;
+        uiBuilt = true;
+
         // Canvas
         GameObject canvasGO = new GameObject("MapCanvas");
         Canvas canvas = canvasGO.AddComponent<Canvas>();
@@ -207,8 +213,13 @@ public class MapManager : MonoBehaviour
         return go;
     }
 
+    private static bool restUIBuilt = false;
+
     private void BuildRestUIFromCode()
     {
+        if (restUIBuilt) return;
+        restUIBuilt = true;
+
         GameObject canvasGO = new GameObject("RestCanvas");
         Canvas c = canvasGO.AddComponent<Canvas>();
         c.renderMode = RenderMode.ScreenSpaceOverlay;
