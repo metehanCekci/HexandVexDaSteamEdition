@@ -3,33 +3,33 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// ScrollRect kullanmadan kendi scroll mantığımız.
-/// Container pivot=top, anchor=top: pos.y=0 → boss görünür, pos.y negatif → start görünür.
-/// Orta tuş / sağ tık drag + mouse wheel ile scroll.
+/// Haritayı özgürce sürükle: sağ tık / orta tuş ile pan (X+Y).
+/// Mouse wheel ile zoom (opsiyonel, şimdilik sadece dikey scroll).
+/// Sol tık node butonlarına gider.
 /// </summary>
 public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IScrollHandler
 {
     [HideInInspector] public RectTransform content;
     [HideInInspector] public RectTransform viewport;
 
-    public float scrollSpeed = 40f;
-    public float dragSpeed = 1.5f;
+    public float scrollSpeed = 60f;
+    public float dragSpeed = 1f;
 
     private bool isDragging = false;
     private Vector2 lastMousePos;
 
     void Update()
     {
-        if (content == null || viewport == null) return;
+        if (content == null) return;
 
         if (isDragging && (Input.GetMouseButton(1) || Input.GetMouseButton(2)))
         {
             Vector2 currentMousePos = (Vector2)Input.mousePosition;
-            float deltaY = currentMousePos.y - lastMousePos.y;
+            Vector2 delta = currentMousePos - lastMousePos;
             lastMousePos = currentMousePos;
 
-            // Mouse yukarı → content yukarı kayar → alttaki node'lar görünür
-            MoveContent(deltaY * dragSpeed);
+            // Serbest hareket — X ve Y
+            content.anchoredPosition += delta * dragSpeed;
         }
         else
         {
@@ -59,38 +59,22 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public void OnScroll(PointerEventData eventData)
     {
         if (content == null) return;
-        // Wheel yukarı → yukarı scroll (boss'a doğru)
-        MoveContent(eventData.scrollDelta.y * scrollSpeed);
-    }
-
-    private void MoveContent(float deltaY)
-    {
-        if (content == null || viewport == null) return;
-
+        // Wheel ile dikey hareket
         Vector2 pos = content.anchoredPosition;
-        pos.y += deltaY;
-
-        // Container pivot=top, anchor=top
-        // pos.y = 0 → en üst (boss) görünür
-        // pos.y = pozitif → content aşağı kayar → start row görünür
-        float contentH = content.rect.height;
-        float viewportH = viewport.rect.height;
-        float maxScroll = Mathf.Max(0f, contentH - viewportH);
-
-        pos.y = Mathf.Clamp(pos.y, 0f, maxScroll);
+        pos.y += eventData.scrollDelta.y * scrollSpeed;
         content.anchoredPosition = pos;
     }
 
     /// <summary>
-    /// Start row'u göster (oyuncu alttan başlıyor)
+    /// Start row'u ortala (oyuncu alttan başlıyor)
     /// </summary>
     public void ScrollToBottom()
     {
         if (content == null || viewport == null) return;
         float contentH = content.rect.height;
         float viewportH = viewport.rect.height;
-        float maxScroll = Mathf.Max(0f, contentH - viewportH);
-        content.anchoredPosition = new Vector2(content.anchoredPosition.x, maxScroll);
+        // Content en altını göster
+        content.anchoredPosition = new Vector2(0f, Mathf.Max(0f, contentH - viewportH));
     }
 
     /// <summary>
@@ -99,6 +83,6 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public void ScrollToTop()
     {
         if (content != null)
-            content.anchoredPosition = new Vector2(content.anchoredPosition.x, 0f);
+            content.anchoredPosition = new Vector2(0f, 0f);
     }
 }
