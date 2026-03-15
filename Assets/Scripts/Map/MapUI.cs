@@ -45,7 +45,6 @@ public class MapUI : MonoBehaviour
 
         if (map == null || mapNodePrefab == null || nodeContainer == null) return;
 
-        // İkon'ları her build'de güncelle (geç yükleme durumu için)
         MapNodeUI.SetIcons(combatIcon, eliteIcon, shopIcon, perkIcon, restIcon, eventIcon, bossIcon);
 
         // ─── Max row bul ───
@@ -66,28 +65,16 @@ public class MapUI : MonoBehaviour
 
         // ─── Container boyutunu ayarla ───
         float totalHeight = (maxRow + 1) * rowSpacing + 300f;
-
-        // Content viewport'tan büyük olmalı
-        var dragScroll = nodeContainer != null ? nodeContainer.GetComponentInParent<MapDragScroll>() : null;
-        if (dragScroll != null && dragScroll.viewport != null)
-        {
-            float viewportH = dragScroll.viewport.rect.height;
-            if (viewportH > 0 && totalHeight <= viewportH)
-                totalHeight = viewportH + 200f;
-        }
-
         nodeContainer.sizeDelta = new Vector2(nodeContainer.sizeDelta.x, totalHeight);
         Debug.Log($"[MAP] Container height={totalHeight}, maxRow={maxRow}, rowSpacing={rowSpacing}");
 
-        // Scroll sınırlarını harita boyutuna göre otomatik ayarla
-        if (dragScroll != null)
-            dragScroll.UpdateLimitsForMapHeight(totalHeight);
-
         // ─── Node'ları yerleştir ───
+        // Container pivot=bottom: y=0 en alt, pozitif y yukarı
+        // Row 0 (start) en altta, boss (maxRow) en üstte
         foreach (var node in map.nodes)
         {
             GameObject nodeGO = Instantiate(mapNodePrefab, nodeContainer);
-            nodeGO.SetActive(true); // Prefab inactive olabilir, zorla aktif et
+            nodeGO.SetActive(true);
             MapNodeUI nodeUI = nodeGO.GetComponent<MapNodeUI>();
 
             if (nodeUI != null)
@@ -101,9 +88,9 @@ public class MapUI : MonoBehaviour
             {
                 int nodesInRow = rowMap.ContainsKey(node.row) ? rowMap[node.row].Count : 1;
                 float xPos = CalculateXPosition(node.column, nodesInRow);
-                // Container pivot=top: y=0 en üst, negatif aşağı
-                // Boss (maxRow) en üstte, start (row 0) en altta
-                float yPos = -(maxRow - node.row) * rowSpacing - 100f;
+
+                // Bottom-up: row 0 → y=150, row 1 → y=150+spacing, ... boss → y=150+maxRow*spacing
+                float yPos = node.row * rowSpacing + 150f;
 
                 // Jitter (start ve boss hariç)
                 if (node.row > 0 && node.row < maxRow)
@@ -121,9 +108,6 @@ public class MapUI : MonoBehaviour
         DrawConnections(map);
 
         RefreshNodeStates(map);
-
-        // Kamerayı current node'a ortala
-        CenterOnCurrentNode(map);
     }
 
     public void RefreshNodeStates(MapData map)
@@ -134,7 +118,6 @@ public class MapUI : MonoBehaviour
 
         if (map.currentNodeId == -1)
         {
-            // Henüz başlanmadı: row 0 node'ları reachable
             foreach (var node in map.nodes)
             {
                 if (node.row == 0) reachableIds.Add(node.id);
@@ -142,7 +125,6 @@ public class MapUI : MonoBehaviour
         }
         else
         {
-            // Current node'un child'ları reachable
             MapNode current = map.GetNode(map.currentNodeId);
             if (current != null)
             {
@@ -176,8 +158,9 @@ public class MapUI : MonoBehaviour
     }
 
     /// <summary>
-    /// İlk açılış → row 0'ı ekranın altına koy
-    /// Bölüm bittikten sonra → bitirilen bölümü ekranın ortasına koy
+    /// Scroll'u doğru pozisyona getir:
+    /// İlk açılış → row 0 (en alt) görünsün
+    /// Bölüm bittikten sonra → seçilebilecek node'lar ortada
     /// </summary>
     public void CenterOnCurrentNode(MapData map)
     {
@@ -188,42 +171,39 @@ public class MapUI : MonoBehaviour
         var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
         if (dragScroll == null) return;
 
-        float targetY = 0f;
-        bool found = false;
-
         if (map.currentNodeId == -1)
         {
-            // İlk açılış: row 0'ı bul
-            foreach (var node in map.nodes)
+            // İlk açılış: en alta scroll — row 0 görünsün
+            dragScroll.ScrollToBottom();
+        }
+        else
+        {
+            // Bitirilen node'un child'larını bul, ortalama Y'sine scroll et
+            MapNode current = map.GetNode(map.currentNodeId);
+            if (current != null && current.childIds.Count > 0)
             {
-                if (node.row == 0 && nodeTransforms.ContainsKey(node.id))
+                float avgY = 0f;
+                int count = 0;
+                foreach (int childId in current.childIds)
                 {
-                    targetY = nodeTransforms[node.id].anchoredPosition.y;
-                    found = true;
-                    break;
+                    if (nodeTransforms.ContainsKey(childId))
+                    {
+                        avgY += nodeTransforms[childId].anchoredPosition.y;
+                        count++;
+                    }
+                }
+                if (count > 0)
+                {
+                    avgY /= count;
+                    dragScroll.ScrollToNodeY(avgY, true);
                 }
             }
-        }
-        else
-        {
-            // Bitirilen node'u ortala
-            if (nodeTransforms.ContainsKey(map.currentNodeId))
+            else if (nodeTransforms.ContainsKey(map.currentNodeId))
             {
-                targetY = nodeTransforms[map.currentNodeId].anchoredPosition.y;
-                found = true;
+                // Child yoksa (boss?) current node'u ortala
+                float nodeY = nodeTransforms[map.currentNodeId].anchoredPosition.y;
+                dragScroll.ScrollToNodeY(nodeY, true);
             }
-        }
-
-        if (found)
-        {
-            if (map.currentNodeId == -1)
-                dragScroll.ShowAtBottom(targetY);  // İlk açılış: row 0 ekranın altında
-            else
-                dragScroll.CenterOnY(targetY);     // Bölüm sonrası: bitirilen node ortada
-        }
-        else
-        {
-            Debug.LogWarning("[MAP] CenterOnCurrentNode: reachable node bulunamadı!");
         }
     }
 
@@ -276,8 +256,7 @@ public class MapUI : MonoBehaviour
                 RectTransform toRT = nodeTransforms[childId];
 
                 GameObject lineGO = Instantiate(linePrefab, nodeContainer);
-                lineGO.SetActive(true); // Prefab inactive olabilir
-                // Çizgiyi node'ların arkasına at
+                lineGO.SetActive(true);
                 lineGO.transform.SetAsFirstSibling();
 
                 RectTransform lineRT = lineGO.GetComponent<RectTransform>();
