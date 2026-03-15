@@ -12,7 +12,7 @@ public class PerkInventoryUI : MonoBehaviour
 {
     public static PerkInventoryUI instance;
 
-    public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
+    public bool IsOpen => canvasGO != null && canvasGO.activeSelf;
 
     // UI referanslari — runtime'da olusturulur
     private GameObject canvasGO;
