@@ -36,8 +36,14 @@ public class MapNodeUI : MonoBehaviour
     {
         nodeId = node.id;
 
+        // Node tipini label olarak yaz (sprite yoksa okunabilsin)
         if (labelText != null)
-            labelText.text = ""; // Label kullanılmayacaksa boş bırak
+            labelText.text = GetNodeLabel(node.nodeType);
+
+        // Arka plan rengini node tipine göre ayarla
+        baseColor = GetFallbackColor(node.nodeType);
+        if (backgroundImage != null)
+            backgroundImage.color = baseColor;
 
         UpdateIcon(node.nodeType);
 
@@ -52,6 +58,23 @@ public class MapNodeUI : MonoBehaviour
         }
     }
 
+    private string GetNodeLabel(MapNodeType type)
+    {
+        switch (type)
+        {
+            case MapNodeType.Combat:        return "FIGHT";
+            case MapNodeType.EliteCombat:   return "ELITE";
+            case MapNodeType.Shop:          return "SHOP";
+            case MapNodeType.PerkSelection: return "PERK";
+            case MapNodeType.Rest:          return "REST";
+            case MapNodeType.Event:         return "EVENT";
+            case MapNodeType.Boss:          return "BOSS";
+            default:                        return "?";
+        }
+    }
+
+    private Color baseColor; // Setup'ta atanan node rengi
+
     public void SetState(bool isReachable, bool isVisited, bool isCurrent)
     {
         if (button != null)
@@ -60,20 +83,38 @@ public class MapNodeUI : MonoBehaviour
         if (backgroundImage != null)
         {
             if (isCurrent)
-                backgroundImage.color = new Color(0.2f, 1f, 0.4f, 1f); // Yeşil — şu an burada
+            {
+                // Yeşil parlak çerçeve efekti — node rengini koru ama parlaklık ekle
+                backgroundImage.color = Color.Lerp(baseColor, new Color(0.2f, 1f, 0.4f), 0.5f);
+            }
             else if (isVisited)
-                backgroundImage.color = new Color(0.3f, 0.3f, 0.3f, 0.6f); // Koyu gri — ziyaret edildi
+            {
+                // Soluk / karartılmış
+                backgroundImage.color = baseColor * 0.35f;
+                backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0.5f);
+            }
             else if (isReachable)
-                backgroundImage.color = new Color(1f, 0.85f, 0.2f, 1f); // Altın — gidilebilir
+            {
+                // Normal node rengi + hafif parlama
+                backgroundImage.color = baseColor * 1.2f;
+                backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 1f);
+            }
             else
-                backgroundImage.color = new Color(0.5f, 0.5f, 0.5f, 0.4f); // Gri — kilitli
+            {
+                // Kilitli — çok soluk
+                backgroundImage.color = baseColor * 0.25f;
+                backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0.35f);
+            }
+        }
+
+        if (labelText != null)
+        {
+            labelText.color = (isVisited && !isCurrent) ? new Color(0.7f, 0.7f, 0.7f, 0.4f) : Color.white;
         }
 
         if (iconImage != null)
         {
-            iconImage.color = isVisited && !isCurrent
-                ? new Color(1f, 1f, 1f, 0.3f)
-                : Color.white;
+            iconImage.color = (isVisited && !isCurrent) ? new Color(1f, 1f, 1f, 0.3f) : Color.white;
         }
     }
 
