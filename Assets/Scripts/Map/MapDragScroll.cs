@@ -76,7 +76,7 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     }
 
     /// <summary>
-    /// Belirli bir Y pozisyonunu ekran ortasına getir.
+    /// Node'u ekranın ortasına getir (bölüm bittikten sonra).
     /// </summary>
     public void CenterOnY(float nodeY)
     {
@@ -84,13 +84,23 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         float viewportH = viewport.rect.height;
         if (viewportH <= 0) viewportH = Screen.height * 0.8f;
 
-        // Node'u ekranın alt kısmına getir (alttan %20 yukarıda)
-        // Oyuncu aşağıdan yukarı ilerliyor, seçenekler altta görünsün
-        float targetY = -nodeY - viewportH * 0.8f;
+        float targetY = -nodeY - viewportH / 2f;
         targetY = Mathf.Clamp(targetY, minY, maxY);
+        content.anchoredPosition = new Vector2(0f, targetY);
+    }
 
-        Debug.Log($"[MAP SCROLL] CenterOnY: nodeY={nodeY}, viewportH={viewportH}, targetY={targetY}, content.pos={content.anchoredPosition}");
+    /// <summary>
+    /// Node'u ekranın alt kısmına getir (ilk açılış).
+    /// </summary>
+    public void ShowAtBottom(float nodeY)
+    {
+        if (content == null || viewport == null) return;
+        float viewportH = viewport.rect.height;
+        if (viewportH <= 0) viewportH = Screen.height * 0.8f;
 
+        // Node ekranın alttan %15'inde görünsün
+        float targetY = -nodeY - viewportH * 0.85f;
+        targetY = Mathf.Clamp(targetY, minY, maxY);
         content.anchoredPosition = new Vector2(0f, targetY);
     }
 }
