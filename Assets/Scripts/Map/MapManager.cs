@@ -121,12 +121,13 @@ public class MapManager : MonoBehaviour
         scrollGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // Raycast almak için
         scrollGO.AddComponent<RectMask2D>(); // Node'ları viewport dışında gizle
 
-        // NodeContainer (scroll content)
+        // NodeContainer (scroll content) — üstten başlar, aşağı doğru uzar
         GameObject containerGO = MakeUIObj("NodeContainer", scrollGO.transform);
         RectTransform containerRT = containerGO.GetComponent<RectTransform>();
-        containerRT.anchorMin = new Vector2(0.5f, 0f);
-        containerRT.anchorMax = new Vector2(0.5f, 0f);
-        containerRT.pivot = new Vector2(0.5f, 0f);
+        containerRT.anchorMin = new Vector2(0.5f, 1f);
+        containerRT.anchorMax = new Vector2(0.5f, 1f);
+        containerRT.pivot = new Vector2(0.5f, 1f);
+        containerRT.anchoredPosition = Vector2.zero;
         containerRT.sizeDelta = new Vector2(1000f, 2000f);
 
         // Custom scroll: orta/sağ tık drag + mouse wheel

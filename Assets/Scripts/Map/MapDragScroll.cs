@@ -4,8 +4,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// ScrollRect kullanmadan kendi scroll mantığımız.
+/// Container pivot=top, anchor=top: pos.y=0 → boss görünür, pos.y negatif → start görünür.
 /// Orta tuş / sağ tık drag + mouse wheel ile scroll.
-/// Sol tık node butonlarına gider, scroll'a karışmaz.
 /// </summary>
 public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IScrollHandler
 {
@@ -28,7 +28,8 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
             float deltaY = currentMousePos.y - lastMousePos.y;
             lastMousePos = currentMousePos;
 
-            MoveContent(-deltaY * dragSpeed);
+            // Mouse yukarı → content yukarı kayar → alttaki node'lar görünür
+            MoveContent(deltaY * dragSpeed);
         }
         else
         {
@@ -58,7 +59,8 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public void OnScroll(PointerEventData eventData)
     {
         if (content == null) return;
-        MoveContent(-eventData.scrollDelta.y * scrollSpeed);
+        // Wheel yukarı → yukarı scroll (boss'a doğru)
+        MoveContent(eventData.scrollDelta.y * scrollSpeed);
     }
 
     private void MoveContent(float deltaY)
@@ -68,8 +70,9 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         Vector2 pos = content.anchoredPosition;
         pos.y += deltaY;
 
-        // Content pivot=bottom, anchor=bottom
-        // pos.y=0 → en alt, pos.y=max → en üst
+        // Container pivot=top, anchor=top
+        // pos.y = 0 → en üst (boss) görünür
+        // pos.y = pozitif → content aşağı kayar → start row görünür
         float contentH = content.rect.height;
         float viewportH = viewport.rect.height;
         float maxScroll = Mathf.Max(0f, contentH - viewportH);
@@ -78,16 +81,24 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
         content.anchoredPosition = pos;
     }
 
+    /// <summary>
+    /// Start row'u göster (oyuncu alttan başlıyor)
+    /// </summary>
     public void ScrollToBottom()
+    {
+        if (content == null || viewport == null) return;
+        float contentH = content.rect.height;
+        float viewportH = viewport.rect.height;
+        float maxScroll = Mathf.Max(0f, contentH - viewportH);
+        content.anchoredPosition = new Vector2(content.anchoredPosition.x, maxScroll);
+    }
+
+    /// <summary>
+    /// Boss row'u göster (en üst)
+    /// </summary>
+    public void ScrollToTop()
     {
         if (content != null)
             content.anchoredPosition = new Vector2(content.anchoredPosition.x, 0f);
-    }
-
-    public void ScrollToTop()
-    {
-        if (content == null || viewport == null) return;
-        float maxScroll = Mathf.Max(0f, content.rect.height - viewport.rect.height);
-        content.anchoredPosition = new Vector2(content.anchoredPosition.x, maxScroll);
     }
 }
