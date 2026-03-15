@@ -172,8 +172,8 @@ public class MapUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Kamerayı current node'un bulunduğu row'a ortalar.
-    /// currentNodeId == -1 ise row 0'ı ortalar (başlangıç).
+    /// İlk açılış → row 0'ı ekranın altına koy
+    /// Bölüm bittikten sonra → bitirilen bölümü ekranın ortasına koy
     /// </summary>
     public void CenterOnCurrentNode(MapData map)
     {
@@ -184,23 +184,42 @@ public class MapUI : MonoBehaviour
         var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
         if (dragScroll == null) return;
 
-        // Hangi node'a odaklanacağız?
-        int targetNodeId = map.currentNodeId;
+        float targetY = 0f;
+        bool found = false;
 
-        // Henüz başlanmadıysa row 0'ın ilk node'unu bul
-        if (targetNodeId == -1)
+        if (map.currentNodeId == -1)
         {
+            // İlk açılış: row 0'ı bul
             foreach (var node in map.nodes)
             {
-                if (node.row == 0) { targetNodeId = node.id; break; }
+                if (node.row == 0 && nodeTransforms.ContainsKey(node.id))
+                {
+                    targetY = nodeTransforms[node.id].anchoredPosition.y;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // Bitirilen node'u ortala
+            if (nodeTransforms.ContainsKey(map.currentNodeId))
+            {
+                targetY = nodeTransforms[map.currentNodeId].anchoredPosition.y;
+                found = true;
             }
         }
 
-        // Node'un Y pozisyonunu bul ve ortala
-        if (nodeTransforms.ContainsKey(targetNodeId))
+        if (found)
         {
-            float nodeY = nodeTransforms[targetNodeId].anchoredPosition.y;
-            dragScroll.CenterOnY(nodeY);
+            if (map.currentNodeId == -1)
+                dragScroll.ShowAtBottom(targetY);  // İlk açılış: row 0 ekranın altında
+            else
+                dragScroll.CenterOnY(targetY);     // Bölüm sonrası: bitirilen node ortada
+        }
+        else
+        {
+            Debug.LogWarning("[MAP] CenterOnCurrentNode: reachable node bulunamadı!");
         }
     }
 

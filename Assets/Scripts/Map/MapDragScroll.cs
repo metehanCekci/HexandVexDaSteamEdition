@@ -76,16 +76,28 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     }
 
     /// <summary>
-    /// Belirli bir Y pozisyonunu ekran ortasına getir.
+    /// Node'u ekranın ortasına getir (bölüm bittikten sonra).
     /// </summary>
     public void CenterOnY(float nodeY)
     {
         if (content == null || viewport == null) return;
         float viewportH = viewport.rect.height;
-        // viewportH sıfırsa fallback
         if (viewportH <= 0) viewportH = Screen.height * 0.8f;
+
         float targetY = -nodeY - viewportH / 2f;
         targetY = Mathf.Clamp(targetY, minY, maxY);
+        Debug.Log($"[SCROLL] CenterOnY nodeY={nodeY} targetY={targetY}");
         content.anchoredPosition = new Vector2(0f, targetY);
+    }
+
+    /// <summary>
+    /// Node'u ekranın alt kısmına getir (ilk açılış).
+    /// </summary>
+    public void ShowAtBottom(float nodeY)
+    {
+        if (content == null) return;
+        // TEST: direkt maxY'ye git — bu en aşağıyı göstermeli
+        Debug.Log($"[SCROLL] ShowAtBottom: maxY={maxY}, setting content.y = {maxY}");
+        content.anchoredPosition = new Vector2(0f, maxY);
     }
 }

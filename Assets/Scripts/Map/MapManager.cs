@@ -352,8 +352,14 @@ public class MapManager : MonoBehaviour
 
         GenerateNewMap(0);
 
-        // Map'i arkada hazırla
+        // Map'i aç
         ShowMapInstant();
+
+        // Canvas açıldıktan sonra 1 frame bekle — viewport boyutu ancak şimdi doğru
+        yield return null;
+
+        // Şimdi doğru pozisyona scroll et
+        if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
 
         // Kısa bekleme (render edilsin)
         yield return new WaitForSecondsRealtime(0.1f);
@@ -562,6 +568,10 @@ public class MapManager : MonoBehaviour
             if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
             ShowMapInstant();
 
+            // 1 frame bekle — viewport boyutu güncellensin
+            yield return null;
+            if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
+
             // Kısa bekleme (map render edilsin)
             yield return new WaitForSecondsRealtime(0.2f);
 
@@ -596,6 +606,9 @@ public class MapManager : MonoBehaviour
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             GenerateNewMap(newLayerIndex);
             ShowMapInstant();
+
+            yield return null;
+            if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
 
             yield return new WaitForSecondsRealtime(0.2f);
             yield return StartCoroutine(FadeFromBlack());
