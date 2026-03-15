@@ -118,13 +118,8 @@ public class MapUI : MonoBehaviour
 
         RefreshNodeStates(map);
 
-        // Scroll'u en alta getir (oyuncu alttan başlıyor)
-        if (nodeContainer != null)
-        {
-            Canvas.ForceUpdateCanvases();
-            if (dragScroll != null)
-                dragScroll.ScrollToBottom();
-        }
+        // Kamerayı current node'a ortala
+        CenterOnCurrentNode(map);
     }
 
     public void RefreshNodeStates(MapData map)
@@ -173,6 +168,39 @@ public class MapUI : MonoBehaviour
             canvasGroup.alpha = 1f;
             canvasGroup.interactable = true;
             canvasGroup.blocksRaycasts = true;
+        }
+    }
+
+    /// <summary>
+    /// Kamerayı current node'un bulunduğu row'a ortalar.
+    /// currentNodeId == -1 ise row 0'ı ortalar (başlangıç).
+    /// </summary>
+    public void CenterOnCurrentNode(MapData map)
+    {
+        if (map == null || nodeContainer == null) return;
+
+        Canvas.ForceUpdateCanvases();
+
+        var dragScroll = nodeContainer.GetComponentInParent<MapDragScroll>();
+        if (dragScroll == null) return;
+
+        // Hangi node'a odaklanacağız?
+        int targetNodeId = map.currentNodeId;
+
+        // Henüz başlanmadıysa row 0'ın ilk node'unu bul
+        if (targetNodeId == -1)
+        {
+            foreach (var node in map.nodes)
+            {
+                if (node.row == 0) { targetNodeId = node.id; break; }
+            }
+        }
+
+        // Node'un Y pozisyonunu bul ve ortala
+        if (nodeTransforms.ContainsKey(targetNodeId))
+        {
+            float nodeY = nodeTransforms[targetNodeId].anchoredPosition.y;
+            dragScroll.CenterOnY(nodeY);
         }
     }
 
