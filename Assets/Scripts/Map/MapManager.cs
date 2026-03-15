@@ -594,6 +594,7 @@ public class MapManager : MonoBehaviour
         {
             mapUI.RefreshNodeStates(currentMap);
             mapUI.Show();
+            mapUI.CenterOnCurrentNode(currentMap);
         }
     }
 

@@ -3,8 +3,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Haritayı özgürce sürükle: sağ tık / orta tuş ile pan (X+Y).
-/// Mouse wheel ile zoom (opsiyonel, şimdilik sadece dikey scroll).
+/// Haritayı sürükle: sağ tık / orta tuş ile pan (X+Y) — sınırlı.
+/// Mouse wheel ile dikey hareket.
 /// Sol tık node butonlarına gider.
 /// </summary>
 public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IScrollHandler
@@ -12,8 +12,13 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     [HideInInspector] public RectTransform content;
     [HideInInspector] public RectTransform viewport;
 
+    [Header("Scroll Ayarları — Inspector'dan değiştir")]
     public float scrollSpeed = 60f;
     public float dragSpeed = 1f;
+
+    [Header("Sınırlar (padding ekstra boşluk)")]
+    public float paddingX = 200f;  // Yatay sınır: node'ların ötesinde ne kadar boşluk
+    public float paddingY = 150f;  // Dikey sınır: node'ların ötesinde ne kadar boşluk
 
     private bool isDragging = false;
     private Vector2 lastMousePos;
@@ -28,8 +33,8 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
             Vector2 delta = currentMousePos - lastMousePos;
             lastMousePos = currentMousePos;
 
-            // Serbest hareket — X ve Y
-            content.anchoredPosition += delta * dragSpeed;
+            Vector2 newPos = content.anchoredPosition + delta * dragSpeed;
+            content.anchoredPosition = ClampPosition(newPos);
         }
         else
         {
@@ -59,30 +64,47 @@ public class MapDragScroll : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
     public void OnScroll(PointerEventData eventData)
     {
         if (content == null) return;
-        // Wheel ile dikey hareket
         Vector2 pos = content.anchoredPosition;
         pos.y += eventData.scrollDelta.y * scrollSpeed;
-        content.anchoredPosition = pos;
+        content.anchoredPosition = ClampPosition(pos);
+    }
+
+    private Vector2 ClampPosition(Vector2 pos)
+    {
+        if (content == null || viewport == null) return pos;
+
+        float contentH = content.rect.height;
+        float contentW = content.rect.width;
+        float viewportH = viewport.rect.height;
+        float viewportW = viewport.rect.width;
+
+        // Content pivot=top: y=0 → üst kenar viewport üstünde
+        // y pozitif → content aşağı kayar → alt node'lar görünür
+        float minY = -paddingY;
+        float maxY = Mathf.Max(0f, contentH - viewportH) + paddingY;
+
+        // X: content merkezi viewport merkezinde, sağa/sola kayma sınırı
+        float maxX = contentW / 2f + paddingX;
+        float minX = -contentW / 2f - paddingX;
+
+        pos.x = Mathf.Clamp(pos.x, minX, maxX);
+        pos.y = Mathf.Clamp(pos.y, minY, maxY);
+
+        return pos;
     }
 
     /// <summary>
-    /// Start row'u ortala (oyuncu alttan başlıyor)
+    /// Belirli bir Y pozisyonunu viewport ortasına getir.
+    /// nodeY: container içindeki node'un anchoredPosition.y değeri (negatif).
     /// </summary>
-    public void ScrollToBottom()
+    public void CenterOnY(float nodeY)
     {
         if (content == null || viewport == null) return;
-        float contentH = content.rect.height;
+        // nodeY negatif (üstten aşağı). Viewport ortasına getirmek için:
+        // content.y = -nodeY - viewportH/2
         float viewportH = viewport.rect.height;
-        // Content en altını göster
-        content.anchoredPosition = new Vector2(0f, Mathf.Max(0f, contentH - viewportH));
-    }
-
-    /// <summary>
-    /// Boss row'u göster (en üst)
-    /// </summary>
-    public void ScrollToTop()
-    {
-        if (content != null)
-            content.anchoredPosition = new Vector2(0f, 0f);
+        float targetY = -nodeY - viewportH / 2f;
+        Vector2 pos = new Vector2(0f, targetY);
+        content.anchoredPosition = ClampPosition(pos);
     }
 }
