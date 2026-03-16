@@ -524,13 +524,44 @@ public class PerkInventoryUI : MonoBehaviour
             nameTMP.overflowMode = TextOverflowModes.Ellipsis;
             nameTMP.raycastTarget = false;
 
-            // Drag event'leri
+            // Sağ tık: aktif perk'i stash'e / stash perk'i aktife taşı
             EventTrigger trigger = iconGO.AddComponent<EventTrigger>();
 
             int ci = index;
             bool cia = isActiveSlot;
             BasePerk cp = perk;
 
+            var clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            clickEntry.callback.AddListener((data) =>
+            {
+                PointerEventData ped = (PointerEventData)data;
+                if (ped.button == PointerEventData.InputButton.Right)
+                {
+                    if (cia)
+                    {
+                        // Aktif → Stash'e gönder
+                        if (RunManager.instance != null && ci < RunManager.instance.activePerks.Count)
+                        {
+                            RunManager.instance.MoveToInventory(ci);
+                            UpdatePerkPriorities();
+                            RunManager.instance.RefreshPerkUI();
+                        }
+                    }
+                    else
+                    {
+                        // Stash → Aktife taşı (yer varsa)
+                        if (RunManager.instance != null && RunManager.instance.activePerks.Count < RunManager.MAX_ACTIVE_PERKS)
+                        {
+                            RunManager.instance.MoveToActive(ci);
+                            UpdatePerkPriorities();
+                            RunManager.instance.RefreshPerkUI();
+                        }
+                    }
+                }
+            });
+            trigger.triggers.Add(clickEntry);
+
+            // Drag event'leri
             var beginEntry = new EventTrigger.Entry { eventID = EventTriggerType.BeginDrag };
             beginEntry.callback.AddListener((data) => BeginDrag(cia, ci, cp, (PointerEventData)data));
             trigger.triggers.Add(beginEntry);

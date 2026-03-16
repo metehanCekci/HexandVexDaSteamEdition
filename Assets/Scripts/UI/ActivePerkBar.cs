@@ -297,6 +297,18 @@ public class ActivePerkBar : MonoBehaviour
         dragIndex = -1;
     }
 
+    /// <summary>Aktif perk'i stash'e gönderir (sağ tık ile).</summary>
+    private void UnequipPerk(int index)
+    {
+        if (RunManager.instance == null) return;
+        if (index < 0 || index >= RunManager.instance.activePerks.Count) return;
+
+        RunManager.instance.MoveToInventory(index);
+        HideTooltip();
+        UpdatePerkPriorities();
+        RunManager.instance.RefreshPerkUI();
+    }
+
     /// <summary>Aktif perklerin priority'sini liste sırasına göre günceller.</summary>
     private void UpdatePerkPriorities()
     {
@@ -417,6 +429,16 @@ public class ActivePerkBar : MonoBehaviour
         var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
         exitEntry.callback.AddListener((_) => HideTooltip());
         trigger.triggers.Add(exitEntry);
+
+        // Sağ tık: perk'i çıkar (stash'e gönder)
+        var clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+        clickEntry.callback.AddListener((data) =>
+        {
+            PointerEventData ped = (PointerEventData)data;
+            if (ped.button == PointerEventData.InputButton.Right)
+                UnequipPerk(capturedIndex);
+        });
+        trigger.triggers.Add(clickEntry);
 
         // Drag: reorder
         var beginDragEntry = new EventTrigger.Entry { eventID = EventTriggerType.BeginDrag };
