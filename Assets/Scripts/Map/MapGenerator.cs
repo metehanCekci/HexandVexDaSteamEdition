@@ -587,38 +587,107 @@ public static class MapGenerator
 
             HashSet<int> connectedChildren = new HashSet<int>();
 
-            for (int i = 0; i < currentRow.Count; i++)
+            // ─── Tek node → tüm next row'a bağlan ───
+            if (currentRow.Count == 1)
             {
-                MapNode node = currentRow[i];
-
-                int bestCol = FindClosestColumn(i, currentRow.Count, nextRow.Count);
-                bestCol = Mathf.Clamp(bestCol, 0, nextRow.Count - 1);
-
-                node.childIds.Add(nextRow[bestCol].id);
-                connectedChildren.Add(nextRow[bestCol].id);
-
-                // 60% şansla ikinci bağlantı (sadece bitişik sütuna)
-                if (Random.value < 0.6f && nextRow.Count > 1)
+                MapNode node = currentRow[0];
+                for (int j = 0; j < nextRow.Count; j++)
                 {
-                    int secondaryCol = bestCol + (Random.value < 0.5f ? -1 : 1);
-                    secondaryCol = Mathf.Clamp(secondaryCol, 0, nextRow.Count - 1);
+                    node.childIds.Add(nextRow[j].id);
+                    connectedChildren.Add(nextRow[j].id);
+                }
+            }
+            // ─── Next row tek node → tüm current row'dan bağlantı ───
+            else if (nextRow.Count == 1)
+            {
+                for (int i = 0; i < currentRow.Count; i++)
+                {
+                    currentRow[i].childIds.Add(nextRow[0].id);
+                    connectedChildren.Add(nextRow[0].id);
+                }
+            }
+            // ─── Aynı sayıda node → 1:1 bağlantı + ortadaki bitişiğe de bağlanabilir ───
+            else if (currentRow.Count == nextRow.Count)
+            {
+                for (int i = 0; i < currentRow.Count; i++)
+                {
+                    // Kendi karşısına bağlan
+                    currentRow[i].childIds.Add(nextRow[i].id);
+                    connectedChildren.Add(nextRow[i].id);
 
-                    if (secondaryCol != bestCol && !WouldCross(currentRow, node, nextRow, secondaryCol))
+                    // Ortadaki node (3'lü row'da col 1) bitişiğe de bağlanabilir
+                    if (currentRow.Count == 3 && i == 1)
                     {
-                        node.childIds.Add(nextRow[secondaryCol].id);
-                        connectedChildren.Add(nextRow[secondaryCol].id);
+                        // Orta node: %50 sola, %50 sağa ek bağlantı
+                        int extra = Random.value < 0.5f ? 0 : 2;
+                        if (!currentRow[i].childIds.Contains(nextRow[extra].id))
+                        {
+                            currentRow[i].childIds.Add(nextRow[extra].id);
+                            connectedChildren.Add(nextRow[extra].id);
+                        }
+                    }
+                    else if (currentRow.Count == 2)
+                    {
+                        // 2'li row: %30 şansla karşı tarafa da bağlan (çapraz değil, bitişik)
+                        // ama sadece WouldCross kontrolü geçerse
+                        int other = 1 - i;
+                        if (Random.value < 0.3f && !WouldCross(currentRow, currentRow[i], nextRow, other))
+                        {
+                            if (!currentRow[i].childIds.Contains(nextRow[other].id))
+                            {
+                                currentRow[i].childIds.Add(nextRow[other].id);
+                                connectedChildren.Add(nextRow[other].id);
+                            }
+                        }
                     }
                 }
             }
-
-            // Her next-row node'un en az 1 parent'ı olsun
-            for (int j = 0; j < nextRow.Count; j++)
+            // ─── Farklı sayıda node: şerit bazlı bağlantı ───
+            else
             {
-                if (!connectedChildren.Contains(nextRow[j].id))
+                for (int i = 0; i < currentRow.Count; i++)
                 {
-                    int closestParent = FindClosestColumn(j, nextRow.Count, currentRow.Count);
-                    closestParent = Mathf.Clamp(closestParent, 0, currentRow.Count - 1);
-                    currentRow[closestParent].childIds.Add(nextRow[j].id);
+                    MapNode node = currentRow[i];
+
+                    // Her node kendi oransal pozisyonuna en yakın hedefe bağlanır
+                    int bestCol = FindClosestColumn(i, currentRow.Count, nextRow.Count);
+                    bestCol = Mathf.Clamp(bestCol, 0, nextRow.Count - 1);
+
+                    node.childIds.Add(nextRow[bestCol].id);
+                    connectedChildren.Add(nextRow[bestCol].id);
+
+                    // Sadece bitişik sütuna ek bağlantı (%40 şans), çapraz geçiş yok
+                    if (Random.value < 0.4f && nextRow.Count > 1)
+                    {
+                        // Kenar node'lar sadece iç tarafa, orta node rastgele
+                        int secondaryCol;
+                        if (bestCol == 0)
+                            secondaryCol = 1;
+                        else if (bestCol == nextRow.Count - 1)
+                            secondaryCol = bestCol - 1;
+                        else
+                            secondaryCol = bestCol + (Random.value < 0.5f ? -1 : 1);
+
+                        if (secondaryCol != bestCol && !WouldCross(currentRow, node, nextRow, secondaryCol))
+                        {
+                            if (!node.childIds.Contains(nextRow[secondaryCol].id))
+                            {
+                                node.childIds.Add(nextRow[secondaryCol].id);
+                                connectedChildren.Add(nextRow[secondaryCol].id);
+                            }
+                        }
+                    }
+                }
+
+                // Bağlantısız kalan child'lar için en yakın parent'tan bağla
+                for (int j = 0; j < nextRow.Count; j++)
+                {
+                    if (!connectedChildren.Contains(nextRow[j].id))
+                    {
+                        int closestParent = FindClosestColumn(j, nextRow.Count, currentRow.Count);
+                        closestParent = Mathf.Clamp(closestParent, 0, currentRow.Count - 1);
+                        currentRow[closestParent].childIds.Add(nextRow[j].id);
+                    }
                 }
             }
         }

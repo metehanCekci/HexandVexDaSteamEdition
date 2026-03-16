@@ -75,8 +75,12 @@ public class ActivePerkBarSetup : EditorWindow
 
         // ─── TOOLTIP ───
         bar.BuildTooltip(canvasGO.transform);
-        if (font != null && bar.tooltipText != null)
-            bar.tooltipText.font = font;
+        if (font != null)
+        {
+            if (bar.tooltipNameText != null) bar.tooltipNameText.font = font;
+            if (bar.tooltipLevelText != null) bar.tooltipLevelText.font = font;
+            if (bar.tooltipDescText != null) bar.tooltipDescText.font = font;
+        }
 
         // ─── SELECTION ───
         Selection.activeGameObject = rootGO;
