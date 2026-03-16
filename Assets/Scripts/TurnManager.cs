@@ -141,7 +141,7 @@ public class TurnManager : MonoBehaviour
             worldPoint.z = 0;
             Vector3Int clickedCell = groundMap.WorldToCell(worldPoint);
 
-            if (groundMap.HasTile(clickedCell))
+            if (HasWalkableTile(clickedCell))
             {
                 if (isBombPlacementTargeting) StartCoroutine(ExecuteBombAt(clickedCell));
                 else if (isThornPlacementTargeting) ExecuteThornAt(clickedCell);
@@ -157,7 +157,7 @@ public class TurnManager : MonoBehaviour
             wp.z = 0;
             Vector3Int hoverCell = groundMap.WorldToCell(wp);
 
-            if (groundMap.HasTile(hoverCell) && !IsThornCellBlocked(hoverCell))
+            if (HasWalkableTile(hoverCell) && !IsThornCellBlocked(hoverCell))
             {
                 Vector3 snapPos = groundMap.GetCellCenterWorld(hoverCell);
                 snapPos.z = 0;
@@ -209,11 +209,11 @@ public class TurnManager : MonoBehaviour
         {
             Vector3Int c1 = playerCell + offsets[pair[0]];
             Vector3Int c2 = playerCell + offsets[pair[1]];
-            if (groundMap.HasTile(c1) && groundMap.HasTile(c2) && !IsEnemyAtCell(c1) && !IsEnemyAtCell(c2))
+            if (HasWalkableTile(c1) && HasWalkableTile(c2) && !IsEnemyAtCell(c1) && !IsEnemyAtCell(c2))
             {
                 Vector3Int[] off1 = (c1.y % 2 != 0) ? evenOff : oddOff; Vector3Int far1 = c1 + off1[pair[0]];
                 Vector3Int[] off2 = (c2.y % 2 != 0) ? evenOff : oddOff; Vector3Int far2 = c2 + off2[pair[1]];
-                if (groundMap.HasTile(far1) && groundMap.HasTile(far2) && !IsEnemyAtCell(far1) && !IsEnemyAtCell(far2)) { spawnCells.Add(far1); spawnCells.Add(far2); break; }
+                if (HasWalkableTile(far1) && HasWalkableTile(far2) && !IsEnemyAtCell(far1) && !IsEnemyAtCell(far2)) { spawnCells.Add(far1); spawnCells.Add(far2); break; }
                 spawnCells.Add(c1); spawnCells.Add(c2); break;
             }
         }
@@ -920,7 +920,7 @@ public class TurnManager : MonoBehaviour
         foreach (var off in offsets)
         {
             Vector3Int n = centerCell + off;
-            if (groundMap.HasTile(n) && !IsEnemyAtCell(n) && !LevelGenerator.instance.hazardCells.Contains(n)) return n;
+            if (HasWalkableTile(n) && !IsEnemyAtCell(n) && !LevelGenerator.instance.hazardCells.Contains(n)) return n;
         }
         return centerCell;
     }
@@ -1137,7 +1137,7 @@ public class TurnManager : MonoBehaviour
                     Vector3Int neighborToPlayer = pCell + off;
                     if (IsNeighbor(neighborToPlayer, eCell))
                     {
-                        if (groundMap.HasTile(neighborToPlayer) && !IsEnemyAtCell(neighborToPlayer) && (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(neighborToPlayer)))
+                        if (HasWalkableTile(neighborToPlayer) && !IsEnemyAtCell(neighborToPlayer) && (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(neighborToPlayer)))
                         {
                             bestPullCell = neighborToPlayer; break;
                         }
@@ -1309,7 +1309,7 @@ public class TurnManager : MonoBehaviour
                 cPos.z = 0; pPos.z = 0; Vector3 bumpDir = (cPos - pPos).normalized;
                 e.StartWallBump(bumpDir); enemyBehind.StartWallBump(bumpDir);
             }
-            else if (!groundMap.HasTile(rawTargetCell) || player.GetCurrentCellPosition() == rawTargetCell)
+            else if (!HasWalkableTile(rawTargetCell) || player.GetCurrentCellPosition() == rawTargetCell)
             {
                 e.ApplyStun(2, true);
                 Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
@@ -1347,7 +1347,7 @@ public class TurnManager : MonoBehaviour
                 foreach (var off in offsets)
                 {
                     Vector3Int neighbor = playerOriginal + off;
-                    if (!groundMap.HasTile(neighbor) || IsEnemyAtCell(neighbor) || neighbor == player.GetCurrentCellPosition()) continue;
+                    if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor) || neighbor == player.GetCurrentCellPosition()) continue;
                     Vector3 nWorld = groundMap.GetCellCenterWorld(neighbor); nWorld.z = 0;
                     Vector2 nDir = (Vector2)(nWorld - playerWorld).normalized;
                     float dot = Vector2.Dot(recoilDir, nDir);
@@ -1492,6 +1492,13 @@ public class TurnManager : MonoBehaviour
         return false;
     }
 
+    /// <summary>Ground VEYA scaffold tile'ı var mı? Scaffold hücrelerinde groundMap boş olabilir.</summary>
+    public bool HasWalkableTile(Vector3Int cell)
+    {
+        if (groundMap.HasTile(cell)) return true;
+        return ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(cell);
+    }
+
     public EnemyAI GetEnemyAtCell(Vector3Int cell)
     {
         foreach (var e in enemies) if (e != null && e.health.currentHP > 0 && e.GetCurrentCellPosition() == cell) return e;
@@ -1516,8 +1523,7 @@ public class TurnManager : MonoBehaviour
             {
                 int oppositeIndex = (i + 3) % 6;
                 Vector3Int strictKnockbackCell = centerCell + offsets[oppositeIndex];
-                bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(strictKnockbackCell);
-                if ((!groundMap.HasTile(strictKnockbackCell) && !isScaffold) || IsEnemyAtCell(strictKnockbackCell) || player.GetCurrentCellPosition() == strictKnockbackCell)
+                if (!HasWalkableTile(strictKnockbackCell) || IsEnemyAtCell(strictKnockbackCell) || player.GetCurrentCellPosition() == strictKnockbackCell)
                     return centerCell;
                 return strictKnockbackCell;
             }
@@ -1534,8 +1540,7 @@ public class TurnManager : MonoBehaviour
         foreach (var off in offsets)
         {
             Vector3Int neighbor = centerCell + off;
-            bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(neighbor);
-            if ((groundMap.HasTile(neighbor) || isScaffold) && !IsEnemyAtCell(neighbor) && player.GetCurrentCellPosition() != neighbor && !LevelGenerator.instance.hazardCells.Contains(neighbor))
+            if (HasWalkableTile(neighbor) && !IsEnemyAtCell(neighbor) && player.GetCurrentCellPosition() != neighbor && !LevelGenerator.instance.hazardCells.Contains(neighbor))
                 safeNeighbors.Add(neighbor);
         }
         if (safeNeighbors.Count > 0) return safeNeighbors[Random.Range(0, safeNeighbors.Count)];

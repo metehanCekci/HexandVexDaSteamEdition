@@ -34,6 +34,13 @@ public class WarlockEnemyAI : MonoBehaviour
     private EnemyAI myEnemyAI;
     private Tilemap groundMap;
 
+    /// <summary>Ground VEYA scaffold tile'ı var mı? Scaffold hücrelerinde groundMap boş olabilir.</summary>
+    private bool HasWalkableTile(Vector3Int cell)
+    {
+        if (groundMap.HasTile(cell)) return true;
+        return ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(cell);
+    }
+
     // ========================================================
     // %100 KİŞİSEL HARİTA 
     // ========================================================
@@ -123,7 +130,7 @@ public class WarlockEnemyAI : MonoBehaviour
         foreach (var off in offsets)
         {
             Vector3Int neighbor = currentCell + off;
-            if (!groundMap.HasTile(neighbor)) continue;
+            if (!HasWalkableTile(neighbor)) continue;
             if (TurnManager.instance.IsEnemyAtCell(neighbor)) continue;
             if (TurnManager.instance.player.GetCurrentCellPosition() == neighbor) continue;
             if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(neighbor)) continue;
@@ -142,7 +149,7 @@ public class WarlockEnemyAI : MonoBehaviour
             foreach (var off in offsets)
             {
                 Vector3Int neighbor = currentCell + off;
-                if (groundMap.HasTile(neighbor) && !TurnManager.instance.IsEnemyAtCell(neighbor) &&
+                if (HasWalkableTile(neighbor) && !TurnManager.instance.IsEnemyAtCell(neighbor) &&
                     TurnManager.instance.player.GetCurrentCellPosition() != neighbor &&
                     (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(neighbor)))
                 {
@@ -248,7 +255,7 @@ public class WarlockEnemyAI : MonoBehaviour
         foreach (int i in attack1Indices)
         {
             Vector3Int neighbor = center + offsets[i];
-            if (groundMap.HasTile(neighbor)) cells.Add(neighbor);
+            if (HasWalkableTile(neighbor)) cells.Add(neighbor);
         }
         return cells;
     }
@@ -261,7 +268,7 @@ public class WarlockEnemyAI : MonoBehaviour
         foreach (int i in attack2Indices)
         {
             Vector3Int neighbor = center + offsets[i];
-            if (groundMap.HasTile(neighbor)) cells.Add(neighbor);
+            if (HasWalkableTile(neighbor)) cells.Add(neighbor);
         }
         return cells;
     }
@@ -442,7 +449,7 @@ public class WarlockEnemyAI : MonoBehaviour
             for (int y = -radius; y <= radius; y++)
             {
                 Vector3Int c = new Vector3Int(x, y, 0);
-                if (groundMap.HasTile(c) && !TurnManager.instance.IsEnemyAtCell(c) &&
+                if (HasWalkableTile(c) && !TurnManager.instance.IsEnemyAtCell(c) &&
                     myEnemyAI.Distance(c, playerCell) >= 4f &&
                     (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(c)))
                 {
@@ -458,7 +465,7 @@ public class WarlockEnemyAI : MonoBehaviour
                 for (int y = -radius; y <= radius; y++)
                 {
                     Vector3Int c = new Vector3Int(x, y, 0);
-                    if (groundMap.HasTile(c) && !TurnManager.instance.IsEnemyAtCell(c) &&
+                    if (HasWalkableTile(c) && !TurnManager.instance.IsEnemyAtCell(c) &&
                         myEnemyAI.Distance(c, playerCell) >= 3f &&
                         (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(c)))
                     {
