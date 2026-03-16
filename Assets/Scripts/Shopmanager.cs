@@ -19,7 +19,7 @@ public class Shopmanager : MonoBehaviour
 
     [Header("Secret Item")]
     public BaseItem secretItem;
-    [Range(0f, 1f)] public float secretItemChance = 0.001f;
+    [Range(0f, 1f)] public float secretItemChance = 0.0005f;
 
     [Header("Shop Config")]
     public int shopSlotCount = 3;

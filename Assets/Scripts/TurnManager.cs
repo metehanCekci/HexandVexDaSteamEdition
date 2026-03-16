@@ -236,7 +236,7 @@ public class TurnManager : MonoBehaviour
             if (SpawnerBossAI.instance != null) SpawnerBossAI.instance.isShielded = false;
 
             foreach (var e in new List<EnemyAI>(enemies))
-                if (e != null && e.health.currentHP > 0) e.health.TakeDamage(4444);
+                if (e != null && e.health.currentHP > 0) e.health.TakeDamage(99999);
             enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
             CleanupDeadAndCheckLevelClear();
         }
@@ -792,7 +792,7 @@ public class TurnManager : MonoBehaviour
         isNecroShotTargeting = false;
         if (player != null) player.TriggerAttackAnimation();
 
-        target.health.TakeDamage(4444);
+        target.health.TakeDamage(99999);
         coinService.ProcessKillRewards(target);
         UpdateCoinUI();
         CleanupDeadAndCheckLevelClear();

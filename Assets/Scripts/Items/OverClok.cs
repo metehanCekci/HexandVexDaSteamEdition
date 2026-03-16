@@ -6,7 +6,7 @@ public class OverClok : BaseItem
     void OnEnable()
     {
         itemName = "Over-Clock";
-        description = "Sıradaki ilk zar toplamının 2 katı hasar ver";
+        description = "Deal 2x damage on your next dice roll";
         price = 7;
     }
 

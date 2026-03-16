@@ -19,7 +19,7 @@ public class ShopCanvasConfig : ScriptableObject
     [Header("Title")]
     public string titleText = "SHOP";
     public float titleFontSize = 56;
-    public Color titleColor = new Color(1f, 0.82f, 0.2f);
+    public Color titleColor = Color.white;
     public FontStyles titleFontStyle = FontStyles.Bold;
     public Vector2 titlePosition = new Vector2(0f, -20f);
     public Vector2 titleSize = new Vector2(500f, 80f);
@@ -69,7 +69,7 @@ public class ShopCanvasConfig : ScriptableObject
 
     [Header("Card - Description")]
     public float descFontSize = 24f;
-    public Color descColor = new Color(0.75f, 0.82f, 0.92f);
+    public Color descColor = Color.white;
     public float descPreferredHeight = 70f;
 
     [Header("Card - Sold Out")]
