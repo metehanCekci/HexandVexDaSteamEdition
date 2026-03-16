@@ -477,7 +477,7 @@ public class MapManager : MonoBehaviour
                 // Full-screen canvas shop — clear EVERYTHING behind
                 if (LevelGenerator.instance != null)
                 {
-                    LevelGenerator.instance.groundMap.ClearAllTiles();
+                    LevelGenerator.instance.groundMap?.ClearAllTiles();
                     if (LevelGenerator.instance.backgroundMap != null)
                         LevelGenerator.instance.backgroundMap.ClearAllTiles();
                     if (LevelGenerator.instance.hazardMap != null)
@@ -503,11 +503,25 @@ public class MapManager : MonoBehaviour
                 break;
 
             case MapNodeType.PerkSelection:
+                // Perk seçim ekranı açılmadan önce level tile'larını temizle
+                if (LevelGenerator.instance != null)
+                {
+                    LevelGenerator.instance.groundMap?.ClearAllTiles();
+                    if (LevelGenerator.instance.backgroundMap != null)
+                        LevelGenerator.instance.backgroundMap.ClearAllTiles();
+                }
                 if (LevelUpManager.instance != null)
                     LevelUpManager.instance.ShowLevelUpScreen();
                 break;
 
             case MapNodeType.Rest:
+                // Rest açılmadan önce level tile'larını temizle
+                if (LevelGenerator.instance != null)
+                {
+                    LevelGenerator.instance.groundMap?.ClearAllTiles();
+                    if (LevelGenerator.instance.backgroundMap != null)
+                        LevelGenerator.instance.backgroundMap.ClearAllTiles();
+                }
                 if (RestNodeUI.instance != null)
                     RestNodeUI.instance.Show();
                 break;
@@ -589,16 +603,19 @@ public class MapManager : MonoBehaviour
     // ─── Combat/Shop/Perk/Rest bittikten sonra haritaya dön ───
     public void OnNodeComplete()
     {
+        Debug.Log($"[MAP] OnNodeComplete called. currentNodeId={currentMap?.currentNodeId}");
         isTransitioning = false;
 
         // Boss node ise layer'ı ilerlet
         MapNode current = currentMap?.GetNode(currentMap.currentNodeId);
         if (current != null && current.nodeType == MapNodeType.Boss)
         {
+            Debug.Log("[MAP] Current node is Boss → OnBossDefeated");
             OnBossDefeated();
             return;
         }
 
+        Debug.Log("[MAP] Starting ReturnToMapWithFade coroutine");
         // ScreenFader ile: karart → map göster → aydınlat
         // Ama sadece ScreenFader'ın meşgul olmadığı durumlarda
         StartCoroutine(ReturnToMapWithFade());
@@ -644,6 +661,7 @@ public class MapManager : MonoBehaviour
         if (RunManager.instance != null)
         {
             RunManager.instance.currentLayerIndex++;
+            Debug.Log($"[MAP] OnBossDefeated — new layerIndex={RunManager.instance.currentLayerIndex}, currentLevel={RunManager.instance.currentLevel}");
         }
 
         StartCoroutine(BossDefeatedSequence());
@@ -651,11 +669,22 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator BossDefeatedSequence()
     {
+        Debug.Log("[MAP] BossDefeatedSequence started");
+
+        // Boss sahnesini temizle — yoksa arkada boş level gözükür
+        if (LevelGenerator.instance != null)
+        {
+            LevelGenerator.instance.groundMap?.ClearAllTiles();
+            if (LevelGenerator.instance.backgroundMap != null)
+                LevelGenerator.instance.backgroundMap.ClearAllTiles();
+        }
+
         if (ScreenFader.instance != null)
         {
             yield return StartCoroutine(FadeToBlack());
 
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
+            Debug.Log($"[MAP] BossDefeatedSequence — GenerateNewMap(layerIndex={newLayerIndex})");
             GenerateNewMap(newLayerIndex);
             ShowMapInstant();
 
@@ -664,12 +693,14 @@ public class MapManager : MonoBehaviour
 
             yield return new WaitForSecondsRealtime(0.2f);
             yield return StartCoroutine(FadeFromBlack());
+            Debug.Log("[MAP] BossDefeatedSequence completed — new map visible");
         }
         else
         {
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             GenerateNewMap(newLayerIndex);
             ShowMapInstant();
+            Debug.Log("[MAP] BossDefeatedSequence completed (no fader)");
         }
     }
 

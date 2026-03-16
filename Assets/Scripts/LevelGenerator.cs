@@ -47,7 +47,7 @@ public class LevelGenerator : MonoBehaviour
 
     [Header("Warlock Düşman")]
     public GameObject warlockEnemyPrefab;
-    public int warlockStartLevel = 6; // İlk bosstan sonra (level 6+)
+    public int warlockStartLevel = 1; // Her bölümde çıkabilir
     [Range(0f, 1f)] public float warlockSpawnChance = 0.10f;
     private static float bossLegendaryMultiplier = 1f;  // Her bosstan sonra 2 ile çarpılır
 
@@ -62,7 +62,7 @@ public class LevelGenerator : MonoBehaviour
     }
 
     public int baseMapRadius = 3;
-    public int aoeStartLevel = 3;
+    public int aoeStartLevel = 1; // Her bölümde çıkabilir
 
     private List<Vector3Int> validCells = new List<Vector3Int>();
     public HashSet<Vector3Int> hazardCells = new HashSet<Vector3Int>();
@@ -395,21 +395,31 @@ public class LevelGenerator : MonoBehaviour
             float randomMultiplier = Random.Range(0.8f, 1.25f);
 
             // ========================================================
-            // ELITE DÜŞMAN GÖRSELLİĞİ: "Altın Aura" ve Büyüme
+            // ELITE DÜŞMAN: Elite node'da ilk düşman garanti elite, geri kalan %20
+            // Normal node'larda: %10 şans (level 6+)
             // ========================================================
-            if (Random.value < 0.10f && RunManager.instance.currentLevel >= 6)
+            bool makeElite = false;
+            if (isEliteNode)
+            {
+                // Elite node: ilk düşman garanti, geri kalanı %20
+                makeElite = (i == 0) || (Random.value < 0.20f);
+            }
+            else if (RunManager.instance.currentLevel >= 6)
+            {
+                makeElite = Random.value < 0.10f;
+            }
+
+            if (makeElite)
             {
                 randomMultiplier *= 2.0f;
                 newEnemyObj.name = "ELITE " + newEnemyObj.name;
-                
+
                 SpriteRenderer eliteSpriteRenderer = newEnemyObj.GetComponent<SpriteRenderer>();
                 if (eliteSpriteRenderer == null) eliteSpriteRenderer = newEnemyObj.GetComponentInChildren<SpriteRenderer>();
 
                 if (eliteSpriteRenderer != null)
                 {
-                    // 1. Karakterin kendisini parlat (Sarı/Altın Tonu)
-                    eliteSpriteRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);                 
-                    
+                    eliteSpriteRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);
                 }
             }
             // ========================================================
@@ -455,6 +465,9 @@ public class LevelGenerator : MonoBehaviour
     public void GenerateBossArena()
     {
         Debug.Log("🔥 BOSS BÖLÜMÜ YÜKLENİYOR! 🔥");
+
+        // isLevelClearTriggered reset — yoksa boss ölünce WaitAndTriggerLevelClear tetiklenmez
+        if (TurnManager.instance != null) TurnManager.instance.isLevelClearTriggered = false;
         groundMap.ClearAllTiles();
         if (backgroundMap != null) backgroundMap.ClearAllTiles();
         if (hazardMap != null) hazardMap.ClearAllTiles();

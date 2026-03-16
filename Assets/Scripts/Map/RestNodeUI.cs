@@ -26,7 +26,14 @@ public class RestNodeUI : MonoBehaviour
 
     public void Show()
     {
-        if (restPanel != null) restPanel.SetActive(true);
+        Debug.Log($"[REST] Show() called — restPanel={restPanel != null}, restButton={restButton != null}, trainButton={trainButton != null}");
+        if (restPanel != null)
+        {
+            // Parent canvas'ı da aktif et (Close'da kapatılmış olabilir)
+            if (restPanel.transform.parent != null)
+                restPanel.transform.parent.gameObject.SetActive(true);
+            restPanel.SetActive(true);
+        }
 
         Time.timeScale = 0f;
 
@@ -44,8 +51,17 @@ public class RestNodeUI : MonoBehaviour
         if (restButton != null)
         {
             restButton.onClick.RemoveAllListeners();
-            restButton.onClick.AddListener(() => OnRest(healAmount));
+            restButton.onClick.AddListener(() =>
+            {
+                Debug.Log($"[REST] Rest button onClick FIRED — healAmount={healAmount}");
+                OnRest(healAmount);
+            });
             restButton.interactable = true;
+            Debug.Log($"[REST] Rest button listener attached. interactable={restButton.interactable}");
+        }
+        else
+        {
+            Debug.LogError("[REST] restButton is NULL — cannot attach listener!");
         }
 
         if (trainButton != null)
@@ -60,6 +76,8 @@ public class RestNodeUI : MonoBehaviour
 
     private void OnRest(int amount)
     {
+        Debug.Log($"[REST] OnRest called — amount={amount}");
+
         if (RunManager.instance != null)
         {
             RunManager.instance.playerCurrentHealth = Mathf.Min(
@@ -71,14 +89,13 @@ public class RestNodeUI : MonoBehaviour
         if (infoText != null) infoText.text = $"+{amount} HP";
 
         DisableButtons();
-        Invoke(nameof(Close), 0.8f);
+        StartCoroutine(CloseAfterDelay());
     }
 
     private void OnTrain()
     {
         if (RunManager.instance == null || RunManager.instance.activePerks.Count == 0) return;
 
-        // Upgrade edilebilir perklerden rastgele birini seç
         var upgradeablePerks = RunManager.instance.activePerks.FindAll(
             p => p != null && p.currentLevel < p.maxLevel
         );
@@ -95,7 +112,7 @@ public class RestNodeUI : MonoBehaviour
         }
 
         DisableButtons();
-        Invoke(nameof(Close), 0.8f);
+        StartCoroutine(CloseAfterDelay());
     }
 
     private void DisableButtons()
@@ -104,12 +121,37 @@ public class RestNodeUI : MonoBehaviour
         if (trainButton != null) trainButton.interactable = false;
     }
 
+    private System.Collections.IEnumerator CloseAfterDelay()
+    {
+        Debug.Log("[REST] CloseAfterDelay started — waiting 0.8s realtime");
+        // Time.timeScale=0 iken Invoke çalışmaz, WaitForSecondsRealtime kullan
+        yield return new WaitForSecondsRealtime(0.8f);
+        Debug.Log("[REST] CloseAfterDelay wait done — calling Close()");
+        Close();
+    }
+
     private void Close()
     {
+        Debug.Log("[REST] Close called — setting timeScale=1, hiding panel, calling OnNodeComplete");
         Time.timeScale = 1f;
-        if (restPanel != null) restPanel.SetActive(false);
+
+        // Panel'i ve parent canvas'ı kapat — yoksa map'in üstünde kalır
+        if (restPanel != null)
+        {
+            restPanel.SetActive(false);
+            // Canvas'ı da gizle ki map'in üstünde raycast bloklama kalmasın
+            if (restPanel.transform.parent != null)
+                restPanel.transform.parent.gameObject.SetActive(false);
+        }
 
         if (MapManager.instance != null)
+        {
+            Debug.Log("[REST] MapManager.OnNodeComplete() calling...");
             MapManager.instance.OnNodeComplete();
+        }
+        else
+        {
+            Debug.LogWarning("[REST] MapManager.instance is NULL — cannot return to map!");
+        }
     }
 }
