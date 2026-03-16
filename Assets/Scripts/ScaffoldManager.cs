@@ -3,6 +3,16 @@ using UnityEngine.Tilemaps;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Scaffold (İskele) Sistemi — ITrapTile uyumlu, event-driven, state-machine tabanlı.
+///
+/// Mekanik:
+///   1. Entity (oyuncu/düşman) scaffold üzerine basınca → State: Triggered → Titreşim başlar.
+///   2. Entity scaffold'dan ayrılınca → State: Collapsing → Çökme animasyonu oynar.
+///   3. Çökme bitince → State: Destroyed → Tile kaldırılır, boşluk kalır.
+///
+/// Evrensel: Player/Enemy fark etmez, aynı OnEntityEnter/OnEntityLeave çağrıları ile çalışır.
+/// </summary>
 public class ScaffoldManager : MonoBehaviour
 {
     public static ScaffoldManager instance;
@@ -11,15 +21,18 @@ public class ScaffoldManager : MonoBehaviour
     [Tooltip("Çökme animasyonu süresi (saniye).")]
     public float collapseDuration = 0.35f;
 
+    // ──────── State Machine: Her scaffold hücresinin durumu ────────
+    private Dictionary<Vector3Int, TrapTileState> scaffoldStates = new Dictionary<Vector3Int, TrapTileState>();
+
     // Aktif scaffold'lar: hücre -> titreşim coroutine
     private Dictionary<Vector3Int, Coroutine> shakeCoroutines = new Dictionary<Vector3Int, Coroutine>();
-    // Şu anda çökmekte olan scaffold'lar (tekrar tetikleme önleme)
-    private HashSet<Vector3Int> collapsingScaffolds = new HashSet<Vector3Int>();
 
     void Awake()
     {
         if (instance == null) instance = this;
     }
+
+    // ──────── Public Sorgular ────────
 
     public bool IsScaffoldCell(Vector3Int cell)
     {
@@ -30,46 +43,89 @@ public class ScaffoldManager : MonoBehaviour
 
     public bool IsCollapsing(Vector3Int cell)
     {
-        return collapsingScaffolds.Contains(cell);
+        return scaffoldStates.ContainsKey(cell) && scaffoldStates[cell] == TrapTileState.Collapsing;
     }
 
+    public bool IsDestroyed(Vector3Int cell)
+    {
+        return scaffoldStates.ContainsKey(cell) && scaffoldStates[cell] == TrapTileState.Destroyed;
+    }
+
+    public TrapTileState GetState(Vector3Int cell)
+    {
+        if (scaffoldStates.ContainsKey(cell)) return scaffoldStates[cell];
+        if (IsScaffoldCell(cell)) return TrapTileState.Idle;
+        return TrapTileState.Destroyed;
+    }
+
+    // ──────── Entity Etkileşimleri ────────
+
     /// <summary>
-    /// Oyuncu scaffold'a bastığında çağrılır. Titreşim başlar.
+    /// Bir varlık (oyuncu veya düşman) scaffold üzerine bastığında çağrılır.
+    /// State: Idle → Triggered. Titreşim başlar.
     /// </summary>
     public void OnEntityEnter(Vector3Int cell)
     {
         if (!IsScaffoldCell(cell)) return;
-        if (shakeCoroutines.ContainsKey(cell)) return;
-        if (collapsingScaffolds.Contains(cell)) return;
 
-        Coroutine shake = StartCoroutine(ShakeCoroutine(cell));
-        shakeCoroutines[cell] = shake;
+        TrapTileState currentState = GetState(cell);
+        if (currentState != TrapTileState.Idle) return;
+
+        // State geçişi: Idle → Triggered
+        SetState(cell, TrapTileState.Triggered);
+
+        // Titreşim başlat
+        if (!shakeCoroutines.ContainsKey(cell))
+        {
+            Coroutine shake = StartCoroutine(ShakeCoroutine(cell));
+            shakeCoroutines[cell] = shake;
+        }
+
+        // Event yayınla
+        TrapTileEvents.FireTileTriggered(cell, TrapTileState.Triggered);
+        TrapTileEvents.FireTileShakeStarted(cell);
     }
 
     /// <summary>
-    /// Oyuncu scaffold'dan ayrıldığında çağrılır. Titreşim durur, scaffold düşer.
+    /// Bir varlık scaffold'dan ayrıldığında çağrılır.
+    /// State: Triggered → Collapsing → Destroyed.
     /// </summary>
     public void OnEntityLeave(Vector3Int cell)
     {
-        if (!shakeCoroutines.ContainsKey(cell)) return;
-        if (collapsingScaffolds.Contains(cell)) return;
+        TrapTileState currentState = GetState(cell);
 
+        // Sadece Triggered state'den çökme başlatılabilir
+        if (currentState != TrapTileState.Triggered) return;
+
+        // Titreşimi durdur
         StopShakeCoroutine(cell);
         ResetTileTransform(cell);
+        TrapTileEvents.FireTileShakeStopped(cell);
 
+        // Oyuncu hâlâ scaffold üstünde mi kontrol et
         HexMovement playerMovement = TurnManager.instance?.player;
-
-        // Oyuncu artık scaffold'ın üstünde değilse, knockback olsun olmasın çök
         bool playerStillOnScaffold = playerMovement != null && playerMovement.GetCurrentCellPosition() == cell;
-        
+
         if (!playerStillOnScaffold)
         {
+            // State geçişi: Triggered → Collapsing
             StartCoroutine(CollapseCoroutine(cell));
         }
     }
 
+    // ──────── State Yönetimi ────────
+
+    private void SetState(Vector3Int cell, TrapTileState newState)
+    {
+        scaffoldStates[cell] = newState;
+    }
+
+    // ──────── Titreşim (Shake) Coroutine ────────
+
     /// <summary>
-    /// Süresiz titreşim. Oyuncu üstünde durduğu sürece devam eder.
+    /// Süresiz tile titreşimi. State Triggered olduğu sürece devam eder.
+    /// Scaffold ve background tilemap'lerini titretir.
+    /// Oyuncunun transform.position'ına dokunmaz — hareket sistemini bloklamaz.
     /// </summary>
     private IEnumerator ShakeCoroutine(Vector3Int cell)
     {
@@ -77,17 +133,14 @@ public class ScaffoldManager : MonoBehaviour
         Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
         if (scaffoldMap == null) yield break;
 
-        HexMovement player = TurnManager.instance?.player;
-        Vector3 originalPlayerPos = player != null ? player.transform.position : Vector3.zero;
-
         float elapsed = 0f;
         float intensity = 0.005f;
         float speed = 45f;
 
         while (true)
         {
-            // Oyuncu scaffold'dan ayrıldıysa (başka cell'e taşındıysa) shake'i durdur
-            if (player != null && player.GetCurrentCellPosition() != cell)
+            // State artık Triggered değilse (çökme başladı vs.) durdur
+            if (GetState(cell) != TrapTileState.Triggered)
             {
                 break;
             }
@@ -100,7 +153,7 @@ public class ScaffoldManager : MonoBehaviour
             Matrix4x4 shakeMatrix = Matrix4x4.TRS(
                 new Vector3(ox, oy, 0f), Quaternion.identity, Vector3.one);
 
-            // Üst katmanı titret
+            // Scaffold tile'ı titret
             if (scaffoldMap.HasTile(cell))
             {
                 scaffoldMap.SetTransformMatrix(cell, shakeMatrix);
@@ -112,27 +165,30 @@ public class ScaffoldManager : MonoBehaviour
                 backgroundMap.SetTransformMatrix(cell, shakeMatrix);
             }
 
-            // Oyuncuyu da titret
-            if (player != null && player.GetCurrentCellPosition() == cell)
-            {
-                player.transform.position = originalPlayerPos + new Vector3(ox, oy, 0f);
-            }
-
             yield return null;
         }
     }
 
+    // ──────── Çökme (Collapse) Coroutine ────────
+
     /// <summary>
-    /// Scaffold çökme animasyonu. Tile'ları kaldırır.
+    /// Scaffold çökme animasyonu. Tile'ları kaldırır, hücreyi boşluk yapar.
+    /// State: Collapsing → Destroyed.
     /// </summary>
     private IEnumerator CollapseCoroutine(Vector3Int cell)
     {
-        if (collapsingScaffolds.Contains(cell)) yield break;
-        collapsingScaffolds.Add(cell);
+        TrapTileState currentState = GetState(cell);
+        if (currentState == TrapTileState.Collapsing || currentState == TrapTileState.Destroyed)
+            yield break;
+
+        // State geçişi: → Collapsing
+        SetState(cell, TrapTileState.Collapsing);
+        TrapTileEvents.FireTileCollapsing(cell);
 
         Tilemap scaffoldMap = LevelGenerator.instance.scaffoldMap;
         Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
 
+        // Ses efekti — event üzerinden de dinlenebilir ama mevcut entegrasyon korunuyor
         if (AudioManager.instance != null) AudioManager.instance.PlayWall();
 
         float elapsed = 0f;
@@ -161,14 +217,21 @@ public class ScaffoldManager : MonoBehaviour
             yield return null;
         }
 
+        // Tile'ları tamamen kaldır (scaffold + background)
+        // groundMap'te tile yok — scaffold hücreleri groundTile almadan spawn oluyor
         RemoveTile(scaffoldMap, cell);
         RemoveTile(backgroundMap, cell);
 
+        // LevelGenerator'dan scaffold kaydını sil
         if (LevelGenerator.instance != null)
             LevelGenerator.instance.scaffoldCells.Remove(cell);
 
-        collapsingScaffolds.Remove(cell);
+        // State geçişi: Collapsing → Destroyed
+        SetState(cell, TrapTileState.Destroyed);
+        TrapTileEvents.FireTileDestroyed(cell);
     }
+
+    // ──────── Yardımcı Metotlar ────────
 
     private void StopShakeCoroutine(Vector3Int cell)
     {
@@ -202,12 +265,15 @@ public class ScaffoldManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Tüm scaffold state'lerini ve coroutine'leri temizler. Level geçişlerinde çağrılır.
+    /// </summary>
     public void ClearAll()
     {
         foreach (var coroutine in shakeCoroutines.Values)
             if (coroutine != null) StopCoroutine(coroutine);
         shakeCoroutines.Clear();
-        collapsingScaffolds.Clear();
+        scaffoldStates.Clear();
         StopAllCoroutines();
     }
 }

@@ -193,11 +193,30 @@ public class LevelGenerator : MonoBehaviour
                         groundMap.SetTile(cell, groundTile);
                         groundMap.SetColor(cell, Color.white);
 
-                        // Merkeze asla diken koyma
-                        if (roll < scaffoldSpawnChance + 0.10f && cell != Vector3Int.zero)
+                        // Merkeze asla tehlikeli tile koyma
+                        if (cell != Vector3Int.zero)
                         {
-                            if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
-                            hazardCells.Add(cell);
+                            float hazardThreshold = scaffoldSpawnChance + 0.10f;
+                            float scaffoldThreshold = hazardThreshold + scaffoldSpawnChance;
+
+                            if (roll < hazardThreshold)
+                            {
+                                // Diken (Hazard) tile
+                                if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
+                                hazardCells.Add(cell);
+                            }
+                            else if (roll < scaffoldThreshold)
+                            {
+                                // Scaffold (Çöken Platform) tile
+                                // groundMap'ten zemin kaldır — scaffold kendi tilemap'inde duruyor
+                                // Hareket sistemi scaffold hücrelerini IsScaffoldCell ile tanır
+                                if (scaffoldMap != null && scaffoldTile != null)
+                                {
+                                    groundMap.SetTile(cell, null);
+                                    scaffoldMap.SetTile(cell, scaffoldTile);
+                                    scaffoldCells.Add(cell);
+                                }
+                            }
                         }
 
                         validCells.Add(cell);
