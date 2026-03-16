@@ -324,20 +324,20 @@ public static class MapGenerator
             {
                 MapNode node = currentRow[i];
 
-                float ratio = currentRow.Count <= 1 ? 0.5f : (float)i / (currentRow.Count - 1);
-                int targetCol = Mathf.RoundToInt(ratio * (nextRow.Count - 1));
+                // En yakın child'ı bul — sadece komşu sütunlara bağlan
+                int bestCol = FindClosestColumn(i, currentRow.Count, nextRow.Count);
+                bestCol = Mathf.Clamp(bestCol, 0, nextRow.Count - 1);
 
-                int primaryChild = Mathf.Clamp(targetCol, 0, nextRow.Count - 1);
-                node.childIds.Add(nextRow[primaryChild].id);
-                connectedChildren.Add(nextRow[primaryChild].id);
+                node.childIds.Add(nextRow[bestCol].id);
+                connectedChildren.Add(nextRow[bestCol].id);
 
-                // 60% şansla ikinci bağlantı
+                // 60% şansla ikinci bağlantı (sadece bitişik sütuna)
                 if (Random.value < 0.6f && nextRow.Count > 1)
                 {
-                    int secondaryCol = primaryChild + (Random.value < 0.5f ? -1 : 1);
+                    int secondaryCol = bestCol + (Random.value < 0.5f ? -1 : 1);
                     secondaryCol = Mathf.Clamp(secondaryCol, 0, nextRow.Count - 1);
 
-                    if (secondaryCol != primaryChild && !WouldCross(currentRow, node, nextRow, secondaryCol))
+                    if (secondaryCol != bestCol && !WouldCross(currentRow, node, nextRow, secondaryCol))
                     {
                         node.childIds.Add(nextRow[secondaryCol].id);
                         connectedChildren.Add(nextRow[secondaryCol].id);
@@ -345,17 +345,44 @@ public static class MapGenerator
                 }
             }
 
-            // Her next-row node'un en az 1 parent'ı olsun
+            // Her next-row node'un en az 1 parent'ı olsun — en yakın parent'a bağla
             for (int j = 0; j < nextRow.Count; j++)
             {
                 if (!connectedChildren.Contains(nextRow[j].id))
                 {
-                    float ratio = nextRow.Count <= 1 ? 0.5f : (float)j / (nextRow.Count - 1);
-                    int closestParent = Mathf.Clamp(Mathf.RoundToInt(ratio * (currentRow.Count - 1)), 0, currentRow.Count - 1);
+                    int closestParent = FindClosestColumn(j, nextRow.Count, currentRow.Count);
+                    closestParent = Mathf.Clamp(closestParent, 0, currentRow.Count - 1);
                     currentRow[closestParent].childIds.Add(nextRow[j].id);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Bir node'un sütun pozisyonuna göre hedef row'daki en yakın sütunu hesaplar.
+    /// 3→2 veya 2→3 geçişlerinde uzak çapraz bağlantıları engeller.
+    /// </summary>
+    private static int FindClosestColumn(int sourceCol, int sourceCount, int targetCount)
+    {
+        if (sourceCount <= 1 || targetCount <= 1) return 0;
+
+        // Kaynak node'un normalize pozisyonu (0.0 = en sol, 1.0 = en sağ)
+        float sourcePos = (float)sourceCol / (sourceCount - 1);
+
+        // Hedef row'daki her sütunun mesafesini hesapla, en yakını seç
+        int bestCol = 0;
+        float bestDist = float.MaxValue;
+        for (int t = 0; t < targetCount; t++)
+        {
+            float targetPos = (float)t / (targetCount - 1);
+            float dist = Mathf.Abs(sourcePos - targetPos);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestCol = t;
+            }
+        }
+        return bestCol;
     }
 
     private static bool WouldCross(List<MapNode> currentRow, MapNode fromNode, List<MapNode> nextRow, int targetCol)
