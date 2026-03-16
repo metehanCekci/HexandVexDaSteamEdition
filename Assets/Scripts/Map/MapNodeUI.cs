@@ -75,7 +75,7 @@ public class MapNodeUI : MonoBehaviour
 
     private Color baseColor; // Setup'ta atanan node rengi
 
-    public void SetState(bool isReachable, bool isVisited, bool isCurrent)
+    public void SetState(bool isReachable, bool isVisited, bool isCurrent, bool isFutureReachable = true)
     {
         if (button != null)
             button.interactable = isReachable && !isVisited;
@@ -95,13 +95,19 @@ public class MapNodeUI : MonoBehaviour
             }
             else if (isReachable)
             {
-                // Normal node rengi + hafif parlama
+                // Seçilebilir — normal node rengi + hafif parlama
                 backgroundImage.color = baseColor * 1.2f;
                 backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 1f);
             }
+            else if (!isFutureReachable)
+            {
+                // Artık ulaşılamaz — çok karanlık, öldü bu yol
+                backgroundImage.color = baseColor * 0.15f;
+                backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0.2f);
+            }
             else
             {
-                // Kilitli — çok soluk
+                // Henüz kilitli ama ileride ulaşılabilir — orta soluk
                 backgroundImage.color = baseColor * 0.25f;
                 backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0.35f);
             }
@@ -109,12 +115,22 @@ public class MapNodeUI : MonoBehaviour
 
         if (labelText != null)
         {
-            labelText.color = (isVisited && !isCurrent) ? new Color(0.7f, 0.7f, 0.7f, 0.4f) : Color.white;
+            if (!isFutureReachable && !isVisited)
+                labelText.color = new Color(0.5f, 0.5f, 0.5f, 0.15f);
+            else if (isVisited && !isCurrent)
+                labelText.color = new Color(0.7f, 0.7f, 0.7f, 0.4f);
+            else
+                labelText.color = Color.white;
         }
 
         if (iconImage != null)
         {
-            iconImage.color = (isVisited && !isCurrent) ? new Color(1f, 1f, 1f, 0.3f) : Color.white;
+            if (!isFutureReachable && !isVisited)
+                iconImage.color = new Color(1f, 1f, 1f, 0.1f);
+            else if (isVisited && !isCurrent)
+                iconImage.color = new Color(1f, 1f, 1f, 0.3f);
+            else
+                iconImage.color = Color.white;
         }
     }
 

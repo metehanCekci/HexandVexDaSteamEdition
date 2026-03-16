@@ -34,6 +34,15 @@ public class MapUI : MonoBehaviour
     private List<GameObject> spawnedLines = new List<GameObject>();
     private Dictionary<int, RectTransform> nodeTransforms = new Dictionary<int, RectTransform>();
 
+    // Çizgi → hangi node'dan hangi node'a gidiyor (dim/bright için)
+    private struct LineEdge
+    {
+        public int fromId;
+        public int toId;
+        public Image image;
+    }
+    private List<LineEdge> lineEdges = new List<LineEdge>();
+
     void Start()
     {
         MapNodeUI.SetIcons(combatIcon, eliteIcon, shopIcon, perkIcon, restIcon, eventIcon, bossIcon);
@@ -107,13 +116,14 @@ public class MapUI : MonoBehaviour
     {
         if (map == null) return;
 
-        HashSet<int> reachableIds = new HashSet<int>();
+        // ─── Bir sonraki adımda seçilebilecek node'lar ───
+        HashSet<int> nextStepIds = new HashSet<int>();
 
         if (map.currentNodeId == -1)
         {
             foreach (var node in map.nodes)
             {
-                if (node.row == 0) reachableIds.Add(node.id);
+                if (node.row == 0) nextStepIds.Add(node.id);
             }
         }
         else
@@ -122,20 +132,83 @@ public class MapUI : MonoBehaviour
             if (current != null)
             {
                 foreach (int childId in current.childIds)
-                    reachableIds.Add(childId);
+                    nextStepIds.Add(childId);
             }
         }
 
+        // ─── Gelecekte ulaşılabilir tüm node'ları hesapla (BFS) ───
+        // current node'dan ileriye doğru tüm olası yollar
+        HashSet<int> futureReachable = new HashSet<int>();
+        Queue<int> bfsQueue = new Queue<int>();
+
+        if (map.currentNodeId == -1)
+        {
+            // Henüz başlanmadı — tüm node'lar potansiyel olarak erişilebilir
+            foreach (var node in map.nodes)
+                futureReachable.Add(node.id);
+        }
+        else
+        {
+            // Current node + ondan ileriye gidilebilecek her şey
+            futureReachable.Add(map.currentNodeId);
+            foreach (int childId in map.GetNode(map.currentNodeId).childIds)
+            {
+                bfsQueue.Enqueue(childId);
+                futureReachable.Add(childId);
+            }
+            while (bfsQueue.Count > 0)
+            {
+                int nodeId = bfsQueue.Dequeue();
+                MapNode n = map.GetNode(nodeId);
+                if (n == null) continue;
+                foreach (int childId in n.childIds)
+                {
+                    if (!futureReachable.Contains(childId))
+                    {
+                        futureReachable.Add(childId);
+                        bfsQueue.Enqueue(childId);
+                    }
+                }
+            }
+        }
+
+        // ─── Node durumlarını güncelle ───
         foreach (var nodeUI in spawnedNodes)
         {
             MapNode node = map.GetNode(nodeUI.nodeId);
             if (node == null) continue;
 
-            bool isReachable = reachableIds.Contains(node.id);
+            bool isNextStep = nextStepIds.Contains(node.id);
             bool isVisited = node.visited;
             bool isCurrent = node.id == map.currentNodeId;
+            bool isFutureReachable = futureReachable.Contains(node.id);
 
-            nodeUI.SetState(isReachable, isVisited, isCurrent);
+            nodeUI.SetState(isNextStep, isVisited, isCurrent, isFutureReachable);
+        }
+
+        // ─── Çizgi renklerini güncelle ───
+        foreach (var edge in lineEdges)
+        {
+            if (edge.image == null) continue;
+
+            bool fromReachable = futureReachable.Contains(edge.fromId);
+            bool toReachable = futureReachable.Contains(edge.toId);
+
+            if (fromReachable && toReachable)
+            {
+                // Aktif yol — normal parlak çizgi
+                bool isNextEdge = nextStepIds.Contains(edge.toId) &&
+                    (edge.fromId == map.currentNodeId || map.currentNodeId == -1);
+                if (isNextEdge)
+                    edge.image.color = new Color(0.9f, 0.9f, 0.9f, 0.7f);
+                else
+                    edge.image.color = new Color(0.6f, 0.6f, 0.6f, 0.5f);
+            }
+            else
+            {
+                // Artık ulaşılamaz — soluk
+                edge.image.color = new Color(0.3f, 0.3f, 0.3f, 0.15f);
+            }
         }
     }
 
@@ -231,6 +304,7 @@ public class MapUI : MonoBehaviour
             if (line != null) Destroy(line);
         }
         spawnedLines.Clear();
+        lineEdges.Clear();
 
         nodeTransforms.Clear();
     }
@@ -278,6 +352,13 @@ public class MapUI : MonoBehaviour
                 if (lineImg != null)
                 {
                     lineImg.color = new Color(0.6f, 0.6f, 0.6f, 0.5f);
+
+                    lineEdges.Add(new LineEdge
+                    {
+                        fromId = node.id,
+                        toId = childId,
+                        image = lineImg
+                    });
                 }
 
                 spawnedLines.Add(lineGO);
