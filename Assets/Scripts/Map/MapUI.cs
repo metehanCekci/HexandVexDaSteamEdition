@@ -11,14 +11,15 @@ public class MapUI : MonoBehaviour
 
     [Header("Node Layout")]
     public RectTransform nodeContainer;
-    public GameObject mapNodePrefab;
+    public GameObject mapNodePrefab; // MapNodeUI component'li prefab
 
     [Header("Layout Settings")]
     public float rowSpacing = 120f;
     public float columnSpacing = 140f;
+    public float nodeJitter = 15f;
 
     [Header("Connection Lines")]
-    public GameObject linePrefab;
+    public GameObject linePrefab; // Basit Image (stretched) prefab
 
     [Header("Node Icons (opsiyonel)")]
     public Sprite combatIcon;
@@ -33,18 +34,6 @@ public class MapUI : MonoBehaviour
     private List<GameObject> spawnedLines = new List<GameObject>();
     private Dictionary<int, RectTransform> nodeTransforms = new Dictionary<int, RectTransform>();
 
-    // Bağlantı çizgisi metadata — hangi node'dan hangi node'a
-    private struct LineInfo
-    {
-        public GameObject lineGO;
-        public int fromId;
-        public int toId;
-    }
-    private List<LineInfo> lineInfos = new List<LineInfo>();
-
-    // Çizgi animasyon coroutine'leri
-    private Coroutine lineAnimCoroutine;
-
     void Start()
     {
         MapNodeUI.SetIcons(combatIcon, eliteIcon, shopIcon, perkIcon, restIcon, eventIcon, bossIcon);
@@ -58,12 +47,14 @@ public class MapUI : MonoBehaviour
 
         MapNodeUI.SetIcons(combatIcon, eliteIcon, shopIcon, perkIcon, restIcon, eventIcon, bossIcon);
 
+        // ─── Max row bul ───
         int maxRow = 0;
         foreach (var node in map.nodes)
         {
             if (node.row > maxRow) maxRow = node.row;
         }
 
+        // ─── Row'daki node sayılarını hesapla ───
         Dictionary<int, List<MapNode>> rowMap = new Dictionary<int, List<MapNode>>();
         foreach (var node in map.nodes)
         {
@@ -72,9 +63,14 @@ public class MapUI : MonoBehaviour
             rowMap[node.row].Add(node);
         }
 
+        // ─── Container boyutunu ayarla ───
         float totalHeight = (maxRow + 1) * rowSpacing + 300f;
         nodeContainer.sizeDelta = new Vector2(nodeContainer.sizeDelta.x, totalHeight);
+        Debug.Log($"[MAP] Container height={totalHeight}, maxRow={maxRow}, rowSpacing={rowSpacing}");
 
+        // ─── Node'ları yerleştir ───
+        // Container pivot=bottom: y=0 en alt, pozitif y yukarı
+        // Row 0 (start) en altta, boss (maxRow) en üstte
         foreach (var node in map.nodes)
         {
             GameObject nodeGO = Instantiate(mapNodePrefab, nodeContainer);
@@ -92,6 +88,8 @@ public class MapUI : MonoBehaviour
             {
                 int nodesInRow = rowMap.ContainsKey(node.row) ? rowMap[node.row].Count : 1;
                 float xPos = CalculateXPosition(node.column, nodesInRow);
+
+                // Bottom-up: row 0 → y=150, row 1 → y=150+spacing, ... boss → y=150+maxRow*spacing
                 float yPos = node.row * rowSpacing + 150f;
 
                 rt.anchoredPosition = new Vector2(xPos, yPos);
@@ -99,7 +97,9 @@ public class MapUI : MonoBehaviour
             }
         }
 
+        // ─── Bağlantı çizgilerini çiz ───
         DrawConnections(map);
+
         RefreshNodeStates(map);
     }
 
@@ -137,9 +137,6 @@ public class MapUI : MonoBehaviour
 
             nodeUI.SetState(isReachable, isVisited, isCurrent);
         }
-
-        // Bağlantı çizgilerini güncelle
-        UpdateLineStates(map, reachableIds);
     }
 
     public void Show()
@@ -152,10 +149,16 @@ public class MapUI : MonoBehaviour
             canvasGroup.blocksRaycasts = true;
         }
 
+        // Perk yan panelini göster
         if (PerkInventoryUI.instance != null)
             PerkInventoryUI.instance.Show();
     }
 
+    /// <summary>
+    /// Scroll'u doğru pozisyona getir:
+    /// İlk açılış → row 0 (en alt) görünsün
+    /// Bölüm bittikten sonra → seçilebilecek node'lar ortada
+    /// </summary>
     public void CenterOnCurrentNode(MapData map)
     {
         if (map == null || nodeContainer == null) return;
@@ -167,10 +170,12 @@ public class MapUI : MonoBehaviour
 
         if (map.currentNodeId == -1)
         {
+            // İlk açılış: en alta scroll — row 0 görünsün
             dragScroll.ScrollToBottom();
         }
         else
         {
+            // Bitirilen node'un child'larını bul, ortalama Y'sine scroll et
             MapNode current = map.GetNode(map.currentNodeId);
             if (current != null && current.childIds.Count > 0)
             {
@@ -192,6 +197,7 @@ public class MapUI : MonoBehaviour
             }
             else if (nodeTransforms.ContainsKey(map.currentNodeId))
             {
+                // Child yoksa (boss?) current node'u ortala
                 float nodeY = nodeTransforms[map.currentNodeId].anchoredPosition.y;
                 dragScroll.ScrollToNodeY(nodeY, true);
             }
@@ -207,99 +213,13 @@ public class MapUI : MonoBehaviour
             canvasGroup.blocksRaycasts = false;
         }
 
+        // Perk yan panelini gizle
         if (PerkInventoryUI.instance != null)
             PerkInventoryUI.instance.Hide();
-
-        // Çizgi animasyonlarını durdur
-        if (lineAnimCoroutine != null) { StopCoroutine(lineAnimCoroutine); lineAnimCoroutine = null; }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // BAĞLANTI ÇİZGİLERİ
-    // ═══════════════════════════════════════════════════════
-
-    private void UpdateLineStates(MapData map, HashSet<int> reachableIds)
-    {
-        // Eski animasyonu durdur
-        if (lineAnimCoroutine != null) { StopCoroutine(lineAnimCoroutine); lineAnimCoroutine = null; }
-
-        List<Image> glowLines = new List<Image>();
-
-        foreach (var info in lineInfos)
-        {
-            if (info.lineGO == null) continue;
-            Image img = info.lineGO.GetComponent<Image>();
-            if (img == null) continue;
-
-            MapNode fromNode = map.GetNode(info.fromId);
-            MapNode toNode = map.GetNode(info.toId);
-            if (fromNode == null || toNode == null) continue;
-
-            bool isVisitedPath = fromNode.visited && toNode.visited;
-            bool isCurrentPath = (fromNode.id == map.currentNodeId && reachableIds.Contains(info.toId));
-            bool isReachablePath = reachableIds.Contains(info.toId) || reachableIds.Contains(info.fromId);
-
-            if (isCurrentPath)
-            {
-                // Aktif yol — parlak, animasyonlu
-                img.color = new Color(0.4f, 1f, 0.6f, 0.8f);
-                // Çizgiyi kalınlaştır
-                RectTransform lrt = info.lineGO.GetComponent<RectTransform>();
-                if (lrt != null) lrt.sizeDelta = new Vector2(lrt.sizeDelta.x, 5f);
-                glowLines.Add(img);
-            }
-            else if (isVisitedPath)
-            {
-                // Geçilmiş yol — soluk
-                img.color = new Color(0.4f, 0.4f, 0.4f, 0.25f);
-                RectTransform lrt = info.lineGO.GetComponent<RectTransform>();
-                if (lrt != null) lrt.sizeDelta = new Vector2(lrt.sizeDelta.x, 2f);
-            }
-            else if (isReachablePath)
-            {
-                // Erişilebilir ama mevcut değil
-                img.color = new Color(0.6f, 0.6f, 0.6f, 0.45f);
-                RectTransform lrt = info.lineGO.GetComponent<RectTransform>();
-                if (lrt != null) lrt.sizeDelta = new Vector2(lrt.sizeDelta.x, 3f);
-            }
-            else
-            {
-                // Kilitli yol — çok soluk
-                img.color = new Color(0.3f, 0.3f, 0.3f, 0.15f);
-                RectTransform lrt = info.lineGO.GetComponent<RectTransform>();
-                if (lrt != null) lrt.sizeDelta = new Vector2(lrt.sizeDelta.x, 2f);
-            }
-        }
-
-        // Aktif yolları animasyonla
-        if (glowLines.Count > 0)
-        {
-            lineAnimCoroutine = StartCoroutine(LineGlowLoop(glowLines));
-        }
-    }
-
-    /// <summary>Aktif bağlantı çizgilerinde pulse glow</summary>
-    private IEnumerator LineGlowLoop(List<Image> lines)
-    {
-        while (true)
-        {
-            float t = (Mathf.Sin(Time.unscaledTime * 3f) + 1f) / 2f;
-            float alpha = Mathf.Lerp(0.5f, 1f, t);
-            Color glowColor = new Color(0.4f, 1f, 0.6f, alpha);
-
-            foreach (var img in lines)
-            {
-                if (img != null) img.color = glowColor;
-            }
-
-            yield return null;
-        }
     }
 
     private void ClearMap()
     {
-        if (lineAnimCoroutine != null) { StopCoroutine(lineAnimCoroutine); lineAnimCoroutine = null; }
-
         foreach (var nodeUI in spawnedNodes)
         {
             if (nodeUI != null) Destroy(nodeUI.gameObject);
@@ -311,7 +231,6 @@ public class MapUI : MonoBehaviour
             if (line != null) Destroy(line);
         }
         spawnedLines.Clear();
-        lineInfos.Clear();
 
         nodeTransforms.Clear();
     }
@@ -358,11 +277,10 @@ public class MapUI : MonoBehaviour
                 Image lineImg = lineGO.GetComponent<Image>();
                 if (lineImg != null)
                 {
-                    lineImg.color = new Color(0.4f, 0.4f, 0.4f, 0.3f);
+                    lineImg.color = new Color(0.6f, 0.6f, 0.6f, 0.5f);
                 }
 
                 spawnedLines.Add(lineGO);
-                lineInfos.Add(new LineInfo { lineGO = lineGO, fromId = node.id, toId = childId });
             }
         }
     }

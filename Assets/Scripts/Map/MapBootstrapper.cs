@@ -139,6 +139,7 @@ public class MapBootstrapper : MonoBehaviour
         mapUI.linePrefab = linePrefab;
         mapUI.rowSpacing = 120f;
         mapUI.columnSpacing = 140f;
+        mapUI.nodeJitter = 15f;
 
         // İkonları ata
         mapUI.combatIcon = combatIcon;
