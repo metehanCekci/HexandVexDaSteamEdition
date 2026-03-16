@@ -13,6 +13,18 @@ public class MapManager : MonoBehaviour
     [Header("Map UI")]
     public MapUI mapUI;
 
+    [Header("Parallax Background")]
+    public Texture mapBackgroundTexture; // Inspector'dan kendi arkaplan dokunuzu atayın
+
+    [Header("Node Icons")]
+    public Sprite combatIcon;
+    public Sprite eliteIcon;
+    public Sprite shopIcon;
+    public Sprite perkIcon;
+    public Sprite restIcon;
+    public Sprite eventIcon;
+    public Sprite bossIcon;
+
     [Header("Runtime State")]
     public MapData currentMap;
 
@@ -90,44 +102,50 @@ public class MapManager : MonoBehaviour
         // Canvas
         GameObject canvasGO = new GameObject("MapCanvas");
         Canvas canvas = canvasGO.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = Camera.main;
         canvas.sortingOrder = 90;
+        canvas.planeDistance = 10f;
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // Panel (arka plan)
+        // Panel (saydam — arkaplan parallax'tan gelecek)
         GameObject panelGO = MakeUIObj("MapPanel", canvasGO.transform);
         StretchFull(panelGO.GetComponent<RectTransform>());
         Image panelBG = panelGO.AddComponent<Image>();
-        panelBG.color = Color.black; // Siyah arka plan (ileride sprite ile değiştirilebilir)
+        panelBG.color = new Color(0f, 0f, 0f, 0f);
         CanvasGroup cg = panelGO.AddComponent<CanvasGroup>();
 
-        // Başlık — üstte sabit, scroll'dan bağımsız
-        GameObject titleGO = MakeUIObj("Title", panelGO.transform);
-        RectTransform titleRT = titleGO.GetComponent<RectTransform>();
-        titleRT.anchorMin = new Vector2(0.5f, 1f);
-        titleRT.anchorMax = new Vector2(0.5f, 1f);
-        titleRT.pivot = new Vector2(0.5f, 1f);
-        titleRT.anchoredPosition = new Vector2(0f, -10f);
-        titleRT.sizeDelta = new Vector2(400f, 50f);
-        var titleTxt = titleGO.AddComponent<TextMeshProUGUI>();
-        titleTxt.text = "MAP";
-        titleTxt.fontSize = 36;
-        titleTxt.alignment = TextAlignmentOptions.Center;
-        titleTxt.color = new Color(0.9f, 0.85f, 0.7f);
-
         // ─── ScrollRect tabanlı scroll sistemi ───
-        // Viewport (scroll alanı) — başlığın altından başlasın
+        // Viewport (scroll alanı) — tam ekran
         GameObject scrollGO = MakeUIObj("Scroll", panelGO.transform);
         RectTransform scrollRT = scrollGO.GetComponent<RectTransform>();
         scrollRT.anchorMin = Vector2.zero;
         scrollRT.anchorMax = Vector2.one;
         scrollRT.offsetMin = Vector2.zero;
-        scrollRT.offsetMax = new Vector2(0f, -60f); // Başlık için üstten 60px boşluk
+        scrollRT.offsetMax = Vector2.zero;
         scrollGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // Raycast almak için
-        scrollGO.AddComponent<Mask>().showMaskGraphic = true; // İçeriği kırp
+        scrollGO.AddComponent<Mask>().showMaskGraphic = true;
+
+        // ─── Parallax arkaplan (inspector'dan sprite atanacak) ───
+        GameObject parallaxGO = MakeUIObj("ParallaxBG", scrollGO.transform);
+        RectTransform parallaxRT = parallaxGO.GetComponent<RectTransform>();
+        StretchFull(parallaxRT);
+        RawImage parallaxImg = parallaxGO.AddComponent<RawImage>();
+        parallaxImg.raycastTarget = false;
+        if (mapBackgroundTexture != null)
+        {
+            parallaxImg.texture = mapBackgroundTexture;
+            parallaxImg.color = new Color(0.07f, 0.07f, 0.07f, 1f);
+            parallaxImg.uvRect = new Rect(0f, 0f, 16f, 9f); // 16:9 oran, 2x tile
+        }
+        else
+        {
+            // Texture atanmamışsa tamamen gizle
+            parallaxImg.color = new Color(0f, 0f, 0f, 0f);
+        }
 
         // NodeContainer (scroll content) — alttan başlar, yukarı doğru büyür
         GameObject containerGO = MakeUIObj("NodeContainer", scrollGO.transform);
@@ -152,6 +170,12 @@ public class MapManager : MonoBehaviour
 
         // MapDragScroll — sol tık sürüklemeyi engelle, sağ tık/orta tuş ile pan
         scrollGO.AddComponent<MapDragScroll>();
+
+        // Parallax component
+        MapParallaxBG parallax = scrollGO.AddComponent<MapParallaxBG>();
+        parallax.scrollRect = scrollRect;
+        parallax.bgImage = parallaxImg;
+        parallax.parallaxFactor = 0.3f;
 
         // Node prefab
         GameObject nodePrefab = BuildNodePrefab();
@@ -178,6 +202,15 @@ public class MapManager : MonoBehaviour
         ui.columnSpacing = 190f;
         ui.nodeJitter = 15f;
 
+        // Node icon'larını ata
+        ui.combatIcon = combatIcon;
+        ui.eliteIcon = eliteIcon;
+        ui.shopIcon = shopIcon;
+        ui.perkIcon = perkIcon;
+        ui.restIcon = restIcon;
+        ui.eventIcon = eventIcon;
+        ui.bossIcon = bossIcon;
+
         mapUI = ui;
         canvasGO.SetActive(false); // Başlangıçta tüm canvas'ı kapat
 
@@ -189,7 +222,7 @@ public class MapManager : MonoBehaviour
         GameObject go = new GameObject("NodePrefab");
         go.SetActive(false);
         var rt = go.AddComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(110f, 110f);
+        rt.sizeDelta = new Vector2(80f, 80f);
         // Container pivot=bottom: anchor bottom-center
         rt.anchorMin = new Vector2(0.5f, 0f);
         rt.anchorMax = new Vector2(0.5f, 0f);
@@ -202,13 +235,13 @@ public class MapManager : MonoBehaviour
         btn.transition = Selectable.Transition.None;
         btn.targetGraphic = bg;
 
-        // Outline (ince çerçeve — #00050C renk, başlangıçta gizli)
+        // Outline — icon'dan sadece 2px büyük ince beyaz çerçeve
         GameObject outlineGO = MakeUIObj("Outline", go.transform);
         var outlineRT = outlineGO.GetComponent<RectTransform>();
-        outlineRT.anchorMin = Vector2.zero;
-        outlineRT.anchorMax = Vector2.one;
-        outlineRT.offsetMin = new Vector2(-1f, -1f);
-        outlineRT.offsetMax = new Vector2(1f, 1f);
+        outlineRT.anchorMin = new Vector2(0.15f, 0.15f);
+        outlineRT.anchorMax = new Vector2(0.85f, 0.85f);
+        outlineRT.offsetMin = new Vector2(-2f, -2f);
+        outlineRT.offsetMax = new Vector2(2f, 2f);
         Image outlineImg = outlineGO.AddComponent<Image>();
         outlineImg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta tamamen gizli
         outlineImg.raycastTarget = false;
@@ -735,6 +768,17 @@ public class MapManager : MonoBehaviour
         if (HotbarUI.instance != null)
             HotbarUI.instance.SetVisible(false);
 
+        // Player'ı gizle — ScreenSpaceCamera modunda kamera arkasından görünür
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+            TurnManager.instance.player.gameObject.SetActive(false);
+
+        // Düşmanları da gizle
+        if (TurnManager.instance != null)
+        {
+            foreach (var enemy in TurnManager.instance.enemies)
+                if (enemy != null) enemy.gameObject.SetActive(false);
+        }
+
         if (mapUI != null)
         {
             mapUI.RefreshNodeStates(currentMap);
@@ -746,6 +790,10 @@ public class MapManager : MonoBehaviour
     public void HideMap()
     {
         if (mapUI != null) mapUI.Hide();
+
+        // Player'ı geri getir
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+            TurnManager.instance.player.gameObject.SetActive(true);
     }
 
     // ─── Layer config'i güvenli al (fallback: son config) ───

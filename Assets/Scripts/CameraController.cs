@@ -37,6 +37,10 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
+        // Map açıkken kamera sabit kalsın
+        if (MapManager.instance != null && MapManager.instance.mapUI != null && MapManager.instance.mapUI.IsMapVisible())
+            return;
+
         // Pause sırasında kamera girişi ve shake dursun
         if (PauseManager.isPaused)
         {

@@ -31,6 +31,14 @@ public class PerkInventoryUI : MonoBehaviour
     public TextMeshProUGUI tooltipDescText;
     public CanvasGroup tooltipCanvasGroup;
 
+    // Stash toggle
+    private bool stashOpen = false;
+    private GameObject stashSection;     // stash title + grid container
+    private GameObject stashScrollGO;
+    private TextMeshProUGUI stashArrowText;
+    private float panelCollapsedH;
+    private float panelExpandedH;
+
     // Spawnlanan slot objeleri
     private readonly List<GameObject> spawnedActiveSlots = new List<GameObject>();
     private readonly List<GameObject> spawnedStashSlots = new List<GameObject>();
@@ -111,6 +119,28 @@ public class PerkInventoryUI : MonoBehaviour
     {
         CancelDrag();
         if (canvasGO != null) canvasGO.SetActive(false);
+    }
+
+    // ======================================================
+    // STASH TOGGLE
+    // ======================================================
+
+    private void ToggleStash()
+    {
+        stashOpen = !stashOpen;
+
+        if (stashSection != null)
+            stashSection.SetActive(stashOpen);
+
+        if (stashArrowText != null)
+            stashArrowText.text = stashOpen ? "▲" : "▼";
+
+        // Panel boyutunu güncelle
+        if (panelRoot != null)
+        {
+            RectTransform panelRT = panelRoot.GetComponent<RectTransform>();
+            panelRT.sizeDelta = new Vector2(PANEL_WIDTH, stashOpen ? panelExpandedH : panelCollapsedH);
+        }
     }
 
     // ======================================================
@@ -360,21 +390,65 @@ public class PerkInventoryUI : MonoBehaviour
         // Kısa separator
         MakeShortSeparator(panelRoot.transform);
 
-        // Stash section
-        GameObject stashSectionGO = MakeText("StashTitle", panelRoot.transform, "STASH", 14, TextAlignmentOptions.Left);
-        stashTitleText = stashSectionGO.GetComponent<TextMeshProUGUI>();
-        stashTitleText.color = Color.white;
-        stashSectionGO.AddComponent<LayoutElement>().preferredHeight = 20f;
+        // ─── Stash header row: "STASH" text + ▼ toggle button ───
+        GameObject stashHeaderGO = new GameObject("StashHeader", typeof(RectTransform));
+        stashHeaderGO.transform.SetParent(panelRoot.transform, false);
+        stashHeaderGO.AddComponent<LayoutElement>().preferredHeight = 20f;
 
-        // Stash grid
-        GameObject stashScrollGO = new GameObject("StashScroll", typeof(RectTransform));
-        stashScrollGO.transform.SetParent(panelRoot.transform, false);
-        var stashScrollLE = stashScrollGO.AddComponent<LayoutElement>();
-        stashScrollLE.preferredHeight = stashGridH;
-        stashScrollLE.flexibleWidth = 1f;
+        // Stash title (sol taraf)
+        GameObject stashSectionGO = new GameObject("StashTitle", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        stashSectionGO.transform.SetParent(stashHeaderGO.transform, false);
+        RectTransform stashTitleRT = stashSectionGO.GetComponent<RectTransform>();
+        stashTitleRT.anchorMin = Vector2.zero;
+        stashTitleRT.anchorMax = Vector2.one;
+        stashTitleRT.offsetMin = Vector2.zero;
+        stashTitleRT.offsetMax = new Vector2(-30f, 0f);
+        stashTitleText = stashSectionGO.GetComponent<TextMeshProUGUI>();
+        stashTitleText.text = "STASH";
+        stashTitleText.fontSize = 14;
+        stashTitleText.alignment = TextAlignmentOptions.Left;
+        stashTitleText.color = Color.white;
+        stashTitleText.raycastTarget = false;
+
+        // Toggle button (sağ taraf — ▼/▲)
+        GameObject arrowBtnGO = new GameObject("StashToggle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        arrowBtnGO.transform.SetParent(stashHeaderGO.transform, false);
+        RectTransform arrowRT = arrowBtnGO.GetComponent<RectTransform>();
+        arrowRT.anchorMin = new Vector2(1f, 0f);
+        arrowRT.anchorMax = new Vector2(1f, 1f);
+        arrowRT.pivot = new Vector2(1f, 0.5f);
+        arrowRT.offsetMin = new Vector2(-28f, 0f);
+        arrowRT.offsetMax = Vector2.zero;
+        arrowBtnGO.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f); // Saydam arkaplan
+        Button arrowBtn = arrowBtnGO.GetComponent<Button>();
+        arrowBtn.transition = Selectable.Transition.None;
+        arrowBtn.onClick.AddListener(ToggleStash);
+
+        GameObject arrowTxtGO = new GameObject("ArrowText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        arrowTxtGO.transform.SetParent(arrowBtnGO.transform, false);
+        RectTransform arrowTxtRT = arrowTxtGO.GetComponent<RectTransform>();
+        arrowTxtRT.anchorMin = Vector2.zero;
+        arrowTxtRT.anchorMax = Vector2.one;
+        arrowTxtRT.offsetMin = Vector2.zero;
+        arrowTxtRT.offsetMax = Vector2.zero;
+        stashArrowText = arrowTxtGO.GetComponent<TextMeshProUGUI>();
+        stashArrowText.text = "▼";
+        stashArrowText.fontSize = 14;
+        stashArrowText.alignment = TextAlignmentOptions.Center;
+        stashArrowText.color = Color.white;
+        stashArrowText.raycastTarget = false;
+
+        // ─── Stash content (gizlenebilir bölüm) ───
+        stashSection = new GameObject("StashSection", typeof(RectTransform));
+        stashSection.transform.SetParent(panelRoot.transform, false);
+        var stashSectionLE = stashSection.AddComponent<LayoutElement>();
+        stashSectionLE.preferredHeight = stashGridH;
+        stashSectionLE.flexibleWidth = 1f;
+
+        stashScrollGO = stashSection;
 
         GameObject stashContainerGO = new GameObject("StashGrid", typeof(RectTransform));
-        stashContainerGO.transform.SetParent(stashScrollGO.transform, false);
+        stashContainerGO.transform.SetParent(stashSection.transform, false);
         stashGrid = stashContainerGO.GetComponent<RectTransform>();
         stashGrid.anchorMin = Vector2.zero;
         stashGrid.anchorMax = Vector2.one;
@@ -387,6 +461,16 @@ public class PerkInventoryUI : MonoBehaviour
         glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         glg.constraintCount = 3;
         glg.childAlignment = TextAnchor.UpperCenter;
+
+        // Panel boyutlarını hesapla
+        panelExpandedH = panelH;
+        // Collapsed = panelH - stashGridH (stash grid gizli)
+        panelCollapsedH = panelH - stashGridH;
+
+        // Başlangıçta stash kapalı
+        stashOpen = false;
+        stashSection.SetActive(false);
+        panelRT.sizeDelta = new Vector2(PANEL_WIDTH, panelCollapsedH);
 
         // Tooltip
         BuildTooltip(canvasGO.transform);
