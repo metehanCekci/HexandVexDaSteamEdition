@@ -100,6 +100,9 @@ public static class MapGenerator
         // Bağlantılar belli olduktan sonra, her patikada ritmi garanti et
         AssignTypesPathAware(map, config, totalRows);
 
+        // ─── Her oda tipinden en az 1 garanti ───
+        EnforceMinimumRoomTypes(map, totalRows);
+
         return map;
     }
 
@@ -787,6 +790,56 @@ public static class MapGenerator
                     child.nodeType = MapNodeType.Combat;
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Haritada her kritik oda tipinden en az 1 tane olmasını garanti eder.
+    /// Eksik tipler için uygun Combat node'larını dönüştürür.
+    /// </summary>
+    private static void EnforceMinimumRoomTypes(MapData map, int totalRows)
+    {
+        // Garanti edilecek tipler (row 0 ve boss hariç node'larda)
+        MapNodeType[] requiredTypes = new MapNodeType[]
+        {
+            MapNodeType.Shop,
+            MapNodeType.PerkSelection,
+            MapNodeType.EliteCombat
+        };
+
+        // Rest sadece yeterli row varsa garanti
+        if (totalRows >= 4)
+            requiredTypes = new MapNodeType[]
+            {
+                MapNodeType.Shop,
+                MapNodeType.PerkSelection,
+                MapNodeType.EliteCombat,
+                MapNodeType.Rest
+            };
+
+        foreach (var reqType in requiredTypes)
+        {
+            bool exists = false;
+            foreach (var node in map.nodes)
+            {
+                if (node.nodeType == reqType) { exists = true; break; }
+            }
+            if (exists) continue;
+
+            // Bu tip yok — uygun bir Combat node'u dönüştür
+            // İlk ve son row'u (row 0, boss row) atla
+            MapNode bestCandidate = null;
+            foreach (var node in map.nodes)
+            {
+                if (node.nodeType != MapNodeType.Combat) continue;
+                if (node.row <= 0 || node.row >= totalRows) continue;
+                // Ortaya yakın row'ları tercih et
+                if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
+                    bestCandidate = node;
+            }
+
+            if (bestCandidate != null)
+                bestCandidate.nodeType = reqType;
         }
     }
 }

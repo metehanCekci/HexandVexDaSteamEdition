@@ -72,6 +72,12 @@ public class MapDragScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
                     pos.x += dx;
                     pos.y += dy;
                     content.anchoredPosition = pos;
+
+                    // ScrollRect'in normalizedPosition'ını clamp et (0-1 arası)
+                    Vector2 norm = scrollRect.normalizedPosition;
+                    norm.x = Mathf.Clamp01(norm.x);
+                    norm.y = Mathf.Clamp01(norm.y);
+                    scrollRect.normalizedPosition = norm;
                 }
             }
         }

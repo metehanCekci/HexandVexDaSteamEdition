@@ -132,26 +132,38 @@ public class RestNodeUI : MonoBehaviour
 
     private void Close()
     {
-        Debug.Log("[REST] Close called — setting timeScale=1, hiding panel, calling OnNodeComplete");
         Time.timeScale = 1f;
+        StartCoroutine(CloseWithFade());
+    }
 
-        // Panel'i ve parent canvas'ı kapat — yoksa map'in üstünde kalır
+    private System.Collections.IEnumerator CloseWithFade()
+    {
+        // Önce ScreenFader'ı siyaha çek — arkaplan flash'ını engelle
+        if (ScreenFader.instance != null && ScreenFader.instance.faderGroup != null)
+        {
+            CanvasGroup fader = ScreenFader.instance.faderGroup;
+            fader.blocksRaycasts = true;
+            float fadeDur = 0.2f;
+            float fadeElapsed = 0f;
+            float startAlpha = fader.alpha;
+            while (fadeElapsed < fadeDur)
+            {
+                fadeElapsed += Time.unscaledDeltaTime;
+                fader.alpha = Mathf.Lerp(startAlpha, 1f, fadeElapsed / fadeDur);
+                yield return null;
+            }
+            fader.alpha = 1f;
+        }
+
+        // Ekran tamamen siyah — paneli güvenle kapat
         if (restPanel != null)
         {
             restPanel.SetActive(false);
-            // Canvas'ı da gizle ki map'in üstünde raycast bloklama kalmasın
             if (restPanel.transform.parent != null)
                 restPanel.transform.parent.gameObject.SetActive(false);
         }
 
         if (MapManager.instance != null)
-        {
-            Debug.Log("[REST] MapManager.OnNodeComplete() calling...");
             MapManager.instance.OnNodeComplete();
-        }
-        else
-        {
-            Debug.LogWarning("[REST] MapManager.instance is NULL — cannot return to map!");
-        }
     }
 }
