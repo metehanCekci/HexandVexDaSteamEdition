@@ -661,7 +661,6 @@ public class PerkInventoryUI : MonoBehaviour
         string desc = string.IsNullOrEmpty(perk.description) ? "" : $"\n<color=#AAAAAA>{perk.description}</color>";
         string prioText = "";
 
-        // Aktif perk ise priority göster
         if (RunManager.instance != null)
         {
             int idx = RunManager.instance.activePerks.IndexOf(perk);
@@ -673,12 +672,14 @@ public class PerkInventoryUI : MonoBehaviour
 
         tooltipObj.SetActive(true);
 
-        // Panelin solunda göster (slot'un yanında)
+        // Slot'un world position'ını screen position'a çevir, sonra canvas local'ine dönüştür
         RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
-        Vector3 slotWorldPos = slotRT.position;
+        RectTransform parentRT = ttRT.parent as RectTransform;
+        Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(null, slotRT.position);
         Vector2 localPoint;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            ttRT.parent as RectTransform, slotWorldPos, null, out localPoint);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRT, screenPos, null, out localPoint);
+
+        // Slot'un solunda göster
         ttRT.anchoredPosition = new Vector2(localPoint.x - SLOT_SIZE / 2f - 10f, localPoint.y);
 
         if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 1f;
