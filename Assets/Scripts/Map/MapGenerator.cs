@@ -3,6 +3,18 @@ using UnityEngine;
 
 public static class MapGenerator
 {
+    // Ödül node'ları — combat olmayan, oyuncuya fayda sağlayan
+    private static readonly HashSet<MapNodeType> rewardTypes = new HashSet<MapNodeType>
+    {
+        MapNodeType.Shop, MapNodeType.PerkSelection, MapNodeType.Rest
+    };
+
+    // Risk node'ları — düşmanlı
+    private static readonly HashSet<MapNodeType> riskTypes = new HashSet<MapNodeType>
+    {
+        MapNodeType.Combat, MapNodeType.EliteCombat
+    };
+
     public static MapData Generate(MapLayerData config, int layerIndex)
     {
         MapData map = new MapData();
@@ -26,21 +38,24 @@ public static class MapGenerator
         for (int r = 1; r < totalRows; r++)
         {
             int nodeCount = Random.Range(config.minNodesPerRow, config.maxNodesPerRow + 1);
+            List<MapNode> rowNodes = new List<MapNode>();
 
             for (int c = 0; c < nodeCount; c++)
             {
-                MapNodeType type = PickNodeType(config, r, totalRows);
-
                 MapNode node = new MapNode
                 {
                     id = nextId++,
                     row = r,
                     column = c,
-                    nodeType = type,
+                    nodeType = MapNodeType.Combat, // Placeholder — aşağıda atanacak
                     visited = false
                 };
+                rowNodes.Add(node);
                 map.nodes.Add(node);
             }
+
+            // Node tiplerini dengeli ata
+            AssignRowTypes(rowNodes, config, r, totalRows);
         }
 
         // ─── Final row: Boss node ───
@@ -61,49 +76,236 @@ public static class MapGenerator
         // ─── Prune orphans ───
         PruneUnreachable(map);
 
-        // ─── Enforce no consecutive shops on any path ───
+        // ─── Post-processing: patika dengeleme ───
+        BalancePaths(map, totalRows);
+
+        // ─── Enforce: elite arkasında ödül garanti ───
+        EnforceEliteReward(map);
+
+        // ─── Enforce: ardışık ödül yasağı ───
+        EnforceNoConsecutiveRewards(map);
+
+        // ─── Enforce: ardışık shop yasağı ───
         EnforceNoConsecutiveShops(map);
 
         return map;
     }
 
-    private static MapNodeType PickNodeType(MapLayerData config, int row, int totalRows)
-    {
-        // Row 1: always combat
-        if (row <= 1) return MapNodeType.Combat;
+    // ═══════════════════════════════════════════════════════
+    // ROW TİP ATAMASI — Dengeli dağılım
+    // ═══════════════════════════════════════════════════════
 
-        // Pre-boss row: always combat or elite
+    /// <summary>
+    /// Bir row'daki node'lara tip atar.
+    /// Kurallar:
+    /// - Row 1: hep combat
+    /// - Boss öncesi (totalRows-1): combat veya elite
+    /// - Rest sadece row 3+
+    /// - Bir row'da en fazla 1 ödül node
+    /// - Ödül node varsa, geri kalanı combat/elite karışık
+    /// </summary>
+    private static void AssignRowTypes(List<MapNode> rowNodes, MapLayerData config, int row, int totalRows)
+    {
+        int count = rowNodes.Count;
+
+        // Row 1: hep combat
+        if (row <= 1)
+        {
+            foreach (var n in rowNodes) n.nodeType = MapNodeType.Combat;
+            return;
+        }
+
+        // Boss öncesi row: combat veya elite
         if (row == totalRows - 1)
         {
-            return Random.value < config.eliteChance * 2f ? MapNodeType.EliteCombat : MapNodeType.Combat;
+            foreach (var n in rowNodes)
+                n.nodeType = Random.value < config.eliteChance * 2.5f ? MapNodeType.EliteCombat : MapNodeType.Combat;
+            return;
         }
 
-        // Rest only from row 3+
+        // ─── Normal row: en fazla 1 ödül node ───
+        // Önce hepsini combat yap
+        foreach (var n in rowNodes) n.nodeType = MapNodeType.Combat;
+
+        // Ödül node verilecek mi? (toplam ödül şansı)
         bool canRest = row >= 3;
+        float rewardChance = config.shopChance + config.perkChance + (canRest ? config.restChance : 0f);
 
-        float roll = Random.value;
-        float cumulative = 0f;
-
-        cumulative += config.eliteChance;
-        if (roll < cumulative) return MapNodeType.EliteCombat;
-
-        cumulative += config.shopChance;
-        if (roll < cumulative) return MapNodeType.Shop;
-
-        cumulative += config.perkChance;
-        if (roll < cumulative) return MapNodeType.PerkSelection;
-
-        if (canRest)
+        if (count >= 2 && Random.value < rewardChance * 1.5f)
         {
-            cumulative += config.restChance;
-            if (roll < cumulative) return MapNodeType.Rest;
+            // Rastgele bir slot'a ödül ver
+            int rewardSlot = Random.Range(0, count);
+            rowNodes[rewardSlot].nodeType = PickRewardType(config, canRest);
+
+            // Kalan slotlardan birine elite şansı
+            if (Random.value < config.eliteChance * 2f)
+            {
+                // Ödül olmayan bir slot seç
+                List<int> combatSlots = new List<int>();
+                for (int i = 0; i < count; i++)
+                    if (i != rewardSlot) combatSlots.Add(i);
+
+                if (combatSlots.Count > 0)
+                {
+                    int eliteSlot = combatSlots[Random.Range(0, combatSlots.Count)];
+                    rowNodes[eliteSlot].nodeType = MapNodeType.EliteCombat;
+                }
+            }
         }
-
-        cumulative += config.eventChance;
-        if (roll < cumulative) return MapNodeType.Event;
-
-        return MapNodeType.Combat;
+        else
+        {
+            // Ödül yok — sadece combat + muhtemel elite
+            if (Random.value < config.eliteChance * 2f && count >= 2)
+            {
+                int eliteSlot = Random.Range(0, count);
+                rowNodes[eliteSlot].nodeType = MapNodeType.EliteCombat;
+            }
+        }
     }
+
+    /// <summary>Ağırlıklı rastgele bir ödül tipi seç.</summary>
+    private static MapNodeType PickRewardType(MapLayerData config, bool canRest)
+    {
+        float total = config.shopChance + config.perkChance + (canRest ? config.restChance : 0f);
+        if (total <= 0f) return MapNodeType.PerkSelection;
+
+        float roll = Random.value * total;
+        float cum = 0f;
+
+        cum += config.shopChance;
+        if (roll < cum) return MapNodeType.Shop;
+
+        cum += config.perkChance;
+        if (roll < cum) return MapNodeType.PerkSelection;
+
+        if (canRest) return MapNodeType.Rest;
+
+        return MapNodeType.PerkSelection;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // PATİKA DENGELEME — Her yol ayrımında seçim anlamlı olsun
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Her parent node'un child'larını kontrol et.
+    /// Eğer birden fazla child varsa ve hepsi aynı "kategori"deyse
+    /// (hepsi reward veya hepsi risk), birini değiştir.
+    /// Bu sayede yol ayrımlarında her zaman bir risk/ödül dengesi olur.
+    /// </summary>
+    private static void BalancePaths(MapData map, int totalRows)
+    {
+        for (int r = 0; r < totalRows; r++)
+        {
+            List<MapNode> row = map.GetRow(r);
+            foreach (var parent in row)
+            {
+                if (parent.childIds.Count < 2) continue;
+
+                List<MapNode> children = new List<MapNode>();
+                foreach (int cid in parent.childIds)
+                {
+                    MapNode c = map.GetNode(cid);
+                    if (c != null) children.Add(c);
+                }
+
+                if (children.Count < 2) continue;
+
+                // Boss node'lara dokunma
+                if (children.Exists(c => c.nodeType == MapNodeType.Boss)) continue;
+
+                int rewardCount = 0;
+                int riskCount = 0;
+                foreach (var c in children)
+                {
+                    if (rewardTypes.Contains(c.nodeType)) rewardCount++;
+                    else if (riskTypes.Contains(c.nodeType)) riskCount++;
+                }
+
+                // Hepsi ödül? → birini combat'a çevir
+                if (rewardCount == children.Count)
+                {
+                    int idx = Random.Range(0, children.Count);
+                    children[idx].nodeType = MapNodeType.Combat;
+                }
+                // Hepsi risk ve 3+ child? → birini ödüle çevir
+                else if (riskCount == children.Count && children.Count >= 3)
+                {
+                    int idx = Random.Range(0, children.Count);
+                    bool canRest = children[idx].row >= 3;
+                    children[idx].nodeType = PickRewardType(
+                        GetDefaultRewardWeights(), canRest);
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // ELİTE → ÖDÜL GARANTİSİ
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Elite node'un child'larından en az biri ödül olmalı.
+    /// Yoksa, bir combat child'ı ödüle çevir.
+    /// Risk aldın → ödül hak ettin.
+    /// </summary>
+    private static void EnforceEliteReward(MapData map)
+    {
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType != MapNodeType.EliteCombat) continue;
+            if (node.childIds.Count == 0) continue;
+
+            // Child'lardan biri zaten ödül mü?
+            bool hasReward = false;
+            List<MapNode> combatChildren = new List<MapNode>();
+
+            foreach (int cid in node.childIds)
+            {
+                MapNode child = map.GetNode(cid);
+                if (child == null) continue;
+                if (rewardTypes.Contains(child.nodeType)) hasReward = true;
+                else if (child.nodeType == MapNodeType.Combat) combatChildren.Add(child);
+            }
+
+            // Ödül yoksa, bir combat child'ı ödüle çevir
+            if (!hasReward && combatChildren.Count > 0)
+            {
+                MapNode target = combatChildren[Random.Range(0, combatChildren.Count)];
+                bool canRest = target.row >= 3;
+                target.nodeType = PickRewardType(GetDefaultRewardWeights(), canRest);
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // ARDIŞIK ÖDÜL YASAĞI
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Ödül node'unun child'ı da ödülse → child'ı combat'a çevir.
+    /// Art arda bedava ödül yok.
+    /// </summary>
+    private static void EnforceNoConsecutiveRewards(MapData map)
+    {
+        foreach (var node in map.nodes)
+        {
+            if (!rewardTypes.Contains(node.nodeType)) continue;
+
+            foreach (int childId in node.childIds)
+            {
+                MapNode child = map.GetNode(childId);
+                if (child != null && rewardTypes.Contains(child.nodeType))
+                {
+                    child.nodeType = MapNodeType.Combat;
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // BAĞLANTILAR
+    // ═══════════════════════════════════════════════════════
 
     private static void GenerateConnections(MapData map, int totalRows)
     {
@@ -114,24 +316,20 @@ public static class MapGenerator
 
             if (currentRow.Count == 0 || nextRow.Count == 0) continue;
 
-            // Track which next-row nodes have at least one parent
             HashSet<int> connectedChildren = new HashSet<int>();
 
-            // For each node in current row, connect to 1-2 nodes in next row
             for (int i = 0; i < currentRow.Count; i++)
             {
                 MapNode node = currentRow[i];
 
-                // Calculate the "natural" column range this node maps to in the next row
                 float ratio = currentRow.Count <= 1 ? 0.5f : (float)i / (currentRow.Count - 1);
                 int targetCol = Mathf.RoundToInt(ratio * (nextRow.Count - 1));
 
-                // Always connect to the closest node
                 int primaryChild = Mathf.Clamp(targetCol, 0, nextRow.Count - 1);
                 node.childIds.Add(nextRow[primaryChild].id);
                 connectedChildren.Add(nextRow[primaryChild].id);
 
-                // 60% chance to also connect to an adjacent node (if it doesn't cross)
+                // 60% şansla ikinci bağlantı
                 if (Random.value < 0.6f && nextRow.Count > 1)
                 {
                     int secondaryCol = primaryChild + (Random.value < 0.5f ? -1 : 1);
@@ -145,15 +343,13 @@ public static class MapGenerator
                 }
             }
 
-            // Ensure every next-row node has at least one parent
+            // Her next-row node'un en az 1 parent'ı olsun
             for (int j = 0; j < nextRow.Count; j++)
             {
                 if (!connectedChildren.Contains(nextRow[j].id))
                 {
-                    // Find closest parent in current row
                     float ratio = nextRow.Count <= 1 ? 0.5f : (float)j / (nextRow.Count - 1);
                     int closestParent = Mathf.Clamp(Mathf.RoundToInt(ratio * (currentRow.Count - 1)), 0, currentRow.Count - 1);
-
                     currentRow[closestParent].childIds.Add(nextRow[j].id);
                 }
             }
@@ -179,9 +375,6 @@ public static class MapGenerator
                 if (child == null) continue;
 
                 int otherCol = child.column;
-
-                // Check crossing: if fromIdx < i, then targetCol should not be < otherCol
-                // and vice versa
                 if (fromIdx < i && targetCol > otherCol) return true;
                 if (fromIdx > i && targetCol < otherCol) return true;
             }
@@ -189,13 +382,15 @@ public static class MapGenerator
         return false;
     }
 
+    // ═══════════════════════════════════════════════════════
+    // YARDIMCI
+    // ═══════════════════════════════════════════════════════
+
     private static void PruneUnreachable(MapData map)
     {
-        // BFS from start to find all reachable nodes
         HashSet<int> reachable = new HashSet<int>();
         Queue<int> queue = new Queue<int>();
 
-        // Start node is always id 0
         queue.Enqueue(0);
         reachable.Add(0);
 
@@ -215,10 +410,8 @@ public static class MapGenerator
             }
         }
 
-        // Remove unreachable nodes
         map.nodes.RemoveAll(n => !reachable.Contains(n.id));
 
-        // Clean up child references to removed nodes
         foreach (var node in map.nodes)
         {
             node.childIds.RemoveAll(id => !reachable.Contains(id));
@@ -227,7 +420,6 @@ public static class MapGenerator
 
     private static void EnforceNoConsecutiveShops(MapData map)
     {
-        // For each shop node, check if any of its children are also shops
         foreach (var node in map.nodes)
         {
             if (node.nodeType != MapNodeType.Shop) continue;
@@ -241,5 +433,15 @@ public static class MapGenerator
                 }
             }
         }
+    }
+
+    /// <summary>Varsayılan ödül ağırlıkları (config olmadan kullanılır).</summary>
+    private static MapLayerData GetDefaultRewardWeights()
+    {
+        MapLayerData d = ScriptableObject.CreateInstance<MapLayerData>();
+        d.shopChance = 0.30f;
+        d.perkChance = 0.40f;
+        d.restChance = 0.30f;
+        return d;
     }
 }
