@@ -35,11 +35,32 @@ public static class MapGenerator
         map.nodes.Add(startNode);
 
         // ─── Rows 1 through totalRows-1: Middle rows ───
+        // Kural: Arka arkaya max 2 çoklu (2-3 node) row olabilir,
+        // sonra zorunlu 1 node row gelir. Kısa-uzun ritmi.
+        int multiRowStreak = 0; // Ardışık çoklu row sayacı
+
         for (int r = 1; r < totalRows; r++)
         {
-            // %40 tek node, %50 iki node, %10 üç node
-            float roll = Random.value;
-            int nodeCount = roll < 0.40f ? 1 : roll < 0.90f ? 2 : 3;
+            int nodeCount;
+
+            if (multiRowStreak >= 2)
+            {
+                // 2 ardışık çoklu row'dan sonra → zorunlu tek node
+                nodeCount = 1;
+                multiRowStreak = 0;
+            }
+            else
+            {
+                // %40 tek node, %50 iki node, %10 üç node
+                float roll = Random.value;
+                nodeCount = roll < 0.40f ? 1 : roll < 0.90f ? 2 : 3;
+
+                if (nodeCount == 1)
+                    multiRowStreak = 0;
+                else
+                    multiRowStreak++;
+            }
+
             List<MapNode> rowNodes = new List<MapNode>();
 
             for (int c = 0; c < nodeCount; c++)
