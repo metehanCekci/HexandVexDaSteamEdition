@@ -32,7 +32,7 @@ public class PerkInventorySetup : EditorWindow
         // ─── BuildUI ile tüm alt objeleri oluştur ───
         ui.BuildUI();
 
-        // ─── Font uygula ───
+        // ─── Font uygula (panel + tooltip dahil tüm TMP'lere) ───
         if (font != null)
         {
             var allTMP = rootGO.GetComponentsInChildren<TextMeshProUGUI>(true);
@@ -50,6 +50,7 @@ public class PerkInventorySetup : EditorWindow
                   "• Sağ tarafta yan panel olarak gösterilir\n" +
                   "• Map ekranında otomatik açılır/kapanır\n" +
                   "• Drag & drop ile perk yönetimi\n" +
-                  "• Inspector'dan pozisyon, boyut, renk ayarlanabilir");
+                  "• Hover ile tooltip gösterir\n" +
+                  "• Tooltip objesini Inspector'dan düzenleyebilirsin");
     }
 }

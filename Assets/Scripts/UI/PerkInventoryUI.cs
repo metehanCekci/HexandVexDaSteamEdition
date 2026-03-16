@@ -24,6 +24,11 @@ public class PerkInventoryUI : MonoBehaviour
     public TextMeshProUGUI activeTitleText;
     public TextMeshProUGUI stashTitleText;
 
+    [Header("Tooltip (Editor Tool Atar)")]
+    public GameObject tooltipObj;
+    public TextMeshProUGUI tooltipText;
+    public CanvasGroup tooltipCanvasGroup;
+
     // Spawnlanan slot objeleri
     private readonly List<GameObject> spawnedActiveSlots = new List<GameObject>();
     private readonly List<GameObject> spawnedStashSlots = new List<GameObject>();
@@ -114,6 +119,7 @@ public class PerkInventoryUI : MonoBehaviour
     {
         if (perk == null) return;
 
+        HideTooltip();
         isDragging = true;
         dragIsActiveSlot = isActiveSlot;
         dragIndex = index;
@@ -377,6 +383,9 @@ public class PerkInventoryUI : MonoBehaviour
         glg.constraintCount = 3;
         glg.childAlignment = TextAnchor.UpperCenter;
 
+        // Tooltip
+        BuildTooltip(canvasGO.transform);
+
         canvasGO.SetActive(false);
     }
 
@@ -573,6 +582,16 @@ public class PerkInventoryUI : MonoBehaviour
             var endEntry = new EventTrigger.Entry { eventID = EventTriggerType.EndDrag };
             endEntry.callback.AddListener((data) => EndDrag((PointerEventData)data));
             trigger.triggers.Add(endEntry);
+
+            // Hover: tooltip
+            RectTransform hoverRT = iconGO.GetComponent<RectTransform>();
+            var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enterEntry.callback.AddListener((_) => { if (!isDragging) ShowTooltip(cp, hoverRT); });
+            trigger.triggers.Add(enterEntry);
+
+            var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exitEntry.callback.AddListener((_) => HideTooltip());
+            trigger.triggers.Add(exitEntry);
         }
         else
         {
@@ -581,6 +600,95 @@ public class PerkInventoryUI : MonoBehaviour
         }
 
         return slot;
+    }
+
+    // ======================================================
+    // TOOLTIP
+    // ======================================================
+
+    public void BuildTooltip(Transform canvasTransform)
+    {
+        tooltipObj = new GameObject("PerkTooltip", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        tooltipObj.transform.SetParent(canvasTransform, false);
+        RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
+        ttRT.sizeDelta = new Vector2(240f, 70f);
+        ttRT.anchorMin = new Vector2(0f, 0.5f);
+        ttRT.anchorMax = new Vector2(0f, 0.5f);
+        ttRT.pivot = new Vector2(1f, 0.5f);
+        ttRT.anchoredPosition = new Vector2(-10f, 0f);
+
+        Image bg = tooltipObj.GetComponent<Image>();
+        bg.color = new Color(0.08f, 0.08f, 0.12f, 0.92f);
+        bg.raycastTarget = false;
+
+        tooltipCanvasGroup = tooltipObj.AddComponent<CanvasGroup>();
+        tooltipCanvasGroup.alpha = 0f;
+        tooltipCanvasGroup.blocksRaycasts = false;
+        tooltipCanvasGroup.interactable = false;
+
+        GameObject textGO = new GameObject("TooltipText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textGO.transform.SetParent(tooltipObj.transform, false);
+        RectTransform textRT = textGO.GetComponent<RectTransform>();
+        textRT.anchorMin = Vector2.zero;
+        textRT.anchorMax = Vector2.one;
+        textRT.offsetMin = new Vector2(8f, 6f);
+        textRT.offsetMax = new Vector2(-8f, -6f);
+
+        tooltipText = textGO.GetComponent<TextMeshProUGUI>();
+        tooltipText.fontSize = 13;
+        tooltipText.color = Color.white;
+        tooltipText.alignment = TextAlignmentOptions.TopLeft;
+        tooltipText.enableWordWrapping = true;
+        tooltipText.richText = true;
+        tooltipText.raycastTarget = false;
+
+        var ttCSF = tooltipObj.AddComponent<ContentSizeFitter>();
+        ttCSF.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        ttCSF.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        var ttLE = tooltipObj.AddComponent<LayoutElement>();
+        ttLE.preferredWidth = 240f;
+
+        tooltipObj.SetActive(false);
+    }
+
+    private void ShowTooltip(BasePerk perk, RectTransform slotRT)
+    {
+        if (tooltipObj == null || tooltipText == null || perk == null) return;
+
+        string rarityHex = PerkListUI.GetRarityHex(perk.rarity);
+        string lvText = $"<color=#CCCCCC>Lv {perk.currentLevel}/{perk.maxLevel}</color>";
+        string desc = string.IsNullOrEmpty(perk.description) ? "" : $"\n<color=#AAAAAA>{perk.description}</color>";
+        string prioText = "";
+
+        // Aktif perk ise priority göster
+        if (RunManager.instance != null)
+        {
+            int idx = RunManager.instance.activePerks.IndexOf(perk);
+            if (idx >= 0)
+                prioText = $"  <color=#888888>#{idx + 1}</color>";
+        }
+
+        tooltipText.text = $"<color={rarityHex}>{perk.perkName}</color>  {lvText}{prioText}{desc}";
+
+        tooltipObj.SetActive(true);
+
+        // Panelin solunda göster (slot'un yanında)
+        RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
+        Vector3 slotWorldPos = slotRT.position;
+        Vector2 localPoint;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            ttRT.parent as RectTransform, slotWorldPos, null, out localPoint);
+        ttRT.anchoredPosition = new Vector2(localPoint.x - SLOT_SIZE / 2f - 10f, localPoint.y);
+
+        if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 1f;
+    }
+
+    private void HideTooltip()
+    {
+        if (tooltipObj == null) return;
+        if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 0f;
+        tooltipObj.SetActive(false);
     }
 
     // ======================================================
