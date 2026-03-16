@@ -1,16 +1,24 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class MapNodeUI : MonoBehaviour
+public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("UI References")]
     public Image iconImage;
     public Image backgroundImage;
+    public Image outlineImage;
     public Button button;
     public TMP_Text labelText;
 
     [HideInInspector] public int nodeId;
+
+    private RectTransform outlineRT;
+    private Vector3 normalScale = Vector3.one;
+    private const float hoverScale = 1.08f;
+    private const float normalOutline = 3f;
+    private const float hoverOutline = 5f;
 
     // ─── Node tipine göre icon sprite'ları (MapUI'dan atanacak) ───
     private static Sprite combatIcon;
@@ -36,6 +44,9 @@ public class MapNodeUI : MonoBehaviour
     {
         nodeId = node.id;
 
+        if (outlineImage != null)
+            outlineRT = outlineImage.GetComponent<RectTransform>();
+
         // Node tipini label olarak yaz (sprite yoksa okunabilsin)
         if (labelText != null)
             labelText.text = GetNodeLabel(node.nodeType);
@@ -56,6 +67,27 @@ public class MapNodeUI : MonoBehaviour
                     MapManager.instance.SelectNode(nodeId);
             });
         }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (button != null && !button.interactable) return;
+
+        transform.localScale = normalScale * hoverScale;
+        SetOutlineSize(hoverOutline);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        transform.localScale = normalScale;
+        SetOutlineSize(normalOutline);
+    }
+
+    private void SetOutlineSize(float size)
+    {
+        if (outlineRT == null) return;
+        outlineRT.offsetMin = new Vector2(-size, -size);
+        outlineRT.offsetMax = new Vector2(size, size);
     }
 
     private string GetNodeLabel(MapNodeType type)
@@ -132,6 +164,22 @@ public class MapNodeUI : MonoBehaviour
             else
                 iconImage.color = Color.white;
         }
+
+        // Outline: seçilebilir node'larda görünür, diğerlerinde soluk/gizli
+        if (outlineImage != null)
+        {
+            Color outlineBase = new Color(0f / 255f, 5f / 255f, 12f / 255f); // #00050C
+            if (isReachable && !isVisited)
+                outlineImage.color = new Color(outlineBase.r, outlineBase.g, outlineBase.b, 1f);
+            else if (isCurrent)
+                outlineImage.color = new Color(outlineBase.r, outlineBase.g, outlineBase.b, 0.8f);
+            else
+                outlineImage.color = new Color(outlineBase.r, outlineBase.g, outlineBase.b, 0.1f);
+        }
+
+        // Hover'dan kalan scale'i resetle
+        transform.localScale = normalScale;
+        SetOutlineSize(normalOutline);
     }
 
     private void UpdateIcon(MapNodeType type)

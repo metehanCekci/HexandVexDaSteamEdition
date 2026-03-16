@@ -199,11 +199,20 @@ public class MapManager : MonoBehaviour
         bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
 
         Button btn = go.AddComponent<Button>();
-        ColorBlock cb = btn.colors;
-        cb.highlightedColor = new Color(1f, 0.9f, 0.5f);
-        cb.pressedColor = new Color(0.8f, 0.7f, 0.3f);
-        cb.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
-        btn.colors = cb;
+        btn.transition = Selectable.Transition.None;
+        btn.targetGraphic = bg;
+
+        // Outline (ince çerçeve — #00050C renk)
+        GameObject outlineGO = MakeUIObj("Outline", go.transform);
+        var outlineRT = outlineGO.GetComponent<RectTransform>();
+        outlineRT.anchorMin = Vector2.zero;
+        outlineRT.anchorMax = Vector2.one;
+        outlineRT.offsetMin = new Vector2(-3f, -3f);
+        outlineRT.offsetMax = new Vector2(3f, 3f);
+        Image outlineImg = outlineGO.AddComponent<Image>();
+        outlineImg.color = new Color(0f / 255f, 5f / 255f, 12f / 255f, 1f); // #00050C
+        outlineImg.raycastTarget = false;
+        outlineGO.transform.SetAsFirstSibling(); // BG'nin arkasında
 
         // Icon
         GameObject iconGO = MakeUIObj("Icon", go.transform);
@@ -233,6 +242,7 @@ public class MapManager : MonoBehaviour
         nodeUI.backgroundImage = bg;
         nodeUI.button = btn;
         nodeUI.labelText = labelTxt;
+        nodeUI.outlineImage = outlineImg;
 
         return go;
     }
