@@ -22,8 +22,8 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     private float hoverT; // 0 = normal, 1 = full hover
     private const float lerpSpeed = 8f;
     private const float hoverScale = 1.06f;
-    private const float normalOutline = 2f;
-    private const float hoverOutline = 4f;
+    private const float normalOutline = 1f;
+    private const float hoverOutline = 2.5f;
 
     // ─── Node tipine göre icon sprite'ları (MapUI'dan atanacak) ───
     private static Sprite combatIcon;

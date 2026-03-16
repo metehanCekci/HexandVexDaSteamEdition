@@ -202,15 +202,15 @@ public class MapManager : MonoBehaviour
         btn.transition = Selectable.Transition.None;
         btn.targetGraphic = bg;
 
-        // Outline (ince çerçeve — #00050C renk)
+        // Outline (ince çerçeve — #00050C renk, başlangıçta gizli)
         GameObject outlineGO = MakeUIObj("Outline", go.transform);
         var outlineRT = outlineGO.GetComponent<RectTransform>();
         outlineRT.anchorMin = Vector2.zero;
         outlineRT.anchorMax = Vector2.one;
-        outlineRT.offsetMin = new Vector2(-2f, -2f);
-        outlineRT.offsetMax = new Vector2(2f, 2f);
+        outlineRT.offsetMin = new Vector2(-1f, -1f);
+        outlineRT.offsetMax = new Vector2(1f, 1f);
         Image outlineImg = outlineGO.AddComponent<Image>();
-        outlineImg.color = new Color(0f / 255f, 5f / 255f, 12f / 255f, 1f); // #00050C
+        outlineImg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta tamamen gizli
         outlineImg.raycastTarget = false;
         outlineGO.transform.SetAsFirstSibling(); // BG'nin arkasında
 
