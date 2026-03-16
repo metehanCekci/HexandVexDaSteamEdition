@@ -216,7 +216,8 @@ public static class MapGenerator
 
     /// <summary>
     /// Bir row'daki node'lara tip atar — parent'lardan gelen savaş streak'ini dikkate alarak.
-    /// Kural: Bir node'a 2+ ardışık savaştan sonra geliniyorsa → ödül olmalı.
+    /// EN ÖNEMLİ KURAL: Çoklu row'da node'lar ASLA aynı tip olamaz.
+    /// Seçimin her zaman anlamı olmalı.
     /// </summary>
     private static void AssignRowTypesPathAware(
         List<MapNode> rowNodes, MapLayerData config,
@@ -226,57 +227,125 @@ public static class MapGenerator
         int count = rowNodes.Count;
         bool canRest = row >= 3;
 
-        // Boss öncesi → sadece combat/elite (zaten atandı ama güvenlik)
+        // Boss öncesi → combat/elite ama yine farklı olsunlar
         if (row == totalRows - 1)
         {
-            foreach (var n in rowNodes)
-                n.nodeType = Random.value < config.eliteChance * 2.5f
+            if (count == 1)
+            {
+                rowNodes[0].nodeType = Random.value < config.eliteChance * 2.5f
                     ? MapNodeType.EliteCombat : MapNodeType.Combat;
+            }
+            else
+            {
+                // En az biri elite, en az biri normal combat — seçim anlamlı
+                int eliteIdx = Random.Range(0, count);
+                for (int i = 0; i < count; i++)
+                    rowNodes[i].nodeType = (i == eliteIdx) ? MapNodeType.EliteCombat : MapNodeType.Combat;
+            }
             return;
         }
 
-        // ─── Önce zorunlu ödülleri belirle ───
-        // 2+ ardışık savaş streak'i olan node'lar ödül OLMALI
-        List<MapNode> mustReward = new List<MapNode>();
-        List<MapNode> canBeAnything = new List<MapNode>();
+        // ─── Tek node → basit karar ───
+        if (count == 1)
+        {
+            int streak = incomingMaxStreak.ContainsKey(rowNodes[0].id) ? incomingMaxStreak[rowNodes[0].id] : 0;
+            if (streak >= 2)
+            {
+                rowNodes[0].nodeType = PickDiverseRewardType(config, canRest, new List<MapNodeType>());
+            }
+            else if (streak == 1 && Random.value < 0.2f)
+            {
+                rowNodes[0].nodeType = PickDiverseRewardType(config, canRest, new List<MapNodeType>());
+            }
+            else
+            {
+                rowNodes[0].nodeType = Random.value < config.eliteChance * 2f
+                    ? MapNodeType.EliteCombat : MapNodeType.Combat;
+            }
+            return;
+        }
 
+        // ═══════════════════════════════════════════════════════
+        // ÇOKLU NODE — HER NODE FARKLI TİP OLMALI
+        // Oyuncuya her zaman anlamlı bir seçim sun.
+        // ═══════════════════════════════════════════════════════
+
+        // Streak'e göre kaç tanesinin ödül olması gerektiğini hesapla
+        int mustRewardCount = 0;
+        foreach (var node in rowNodes)
+        {
+            int streak = incomingMaxStreak.ContainsKey(node.id) ? incomingMaxStreak[node.id] : 0;
+            if (streak >= 2) mustRewardCount++;
+        }
+
+        // Tüm node'lar ödül olmak zorundaysa → farklı ödül tipleri ver
+        if (mustRewardCount >= count)
+        {
+            List<MapNodeType> used = new List<MapNodeType>();
+            foreach (var node in rowNodes)
+            {
+                node.nodeType = PickDiverseRewardType(config, canRest, used);
+                used.Add(node.nodeType);
+            }
+            return;
+        }
+
+        // Karışık row: bazıları ödül, bazıları risk
+        // Ama hiçbiri aynı tip olmayacak!
+        List<MapNodeType> assignedTypes = new List<MapNodeType>();
+
+        // Önce zorunlu ödülleri ata
         foreach (var node in rowNodes)
         {
             int streak = incomingMaxStreak.ContainsKey(node.id) ? incomingMaxStreak[node.id] : 0;
             if (streak >= 2)
-                mustReward.Add(node);
-            else
-                canBeAnything.Add(node);
+            {
+                node.nodeType = PickDiverseRewardType(config, canRest, assignedTypes);
+                assignedTypes.Add(node.nodeType);
+            }
         }
 
-        // ─── Zorunlu ödülleri ata ───
-        // Aynı row'da farklı ödül tipleri ver
-        List<MapNodeType> usedRewardTypes = new List<MapNodeType>();
-        foreach (var node in mustReward)
-        {
-            node.nodeType = PickDiverseRewardType(config, canRest, usedRewardTypes);
-            usedRewardTypes.Add(node.nodeType);
-        }
-
-        // ─── Geri kalan node'lar ───
-        foreach (var node in canBeAnything)
+        // Geri kalanları ata — zaten atanmış tiplerden FARKLI olacak şekilde
+        foreach (var node in rowNodes)
         {
             int streak = incomingMaxStreak.ContainsKey(node.id) ? incomingMaxStreak[node.id] : 0;
+            if (streak >= 2) continue; // Zaten atandı
 
-            // Streak 1 ise (1 savaş yapılmış): %30 ödül şansı ver (erken ödül bazen güzel)
-            // Streak 0 ise (yeni başlangıç veya ödülden sonra): combat veya elite
-            if (streak == 1 && count >= 2 && Random.value < 0.25f)
+            // Ödül verilmemiş node'a ne verelim?
+            // Streak 1 + çoklu row → %30 şansla ödül (ama farklı tip)
+            if (streak == 1 && Random.value < 0.30f && !AllRewardsUsed(assignedTypes, canRest))
             {
-                node.nodeType = PickDiverseRewardType(config, canRest, usedRewardTypes);
-                usedRewardTypes.Add(node.nodeType);
+                node.nodeType = PickDiverseRewardType(config, canRest, assignedTypes);
+                assignedTypes.Add(node.nodeType);
             }
             else
             {
-                // Combat veya Elite
-                node.nodeType = Random.value < config.eliteChance * 2f
-                    ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                // Risk node: combat veya elite — ama zaten atanmış tipten farklı
+                if (assignedTypes.Contains(MapNodeType.Combat) && !assignedTypes.Contains(MapNodeType.EliteCombat))
+                {
+                    node.nodeType = MapNodeType.EliteCombat;
+                }
+                else if (assignedTypes.Contains(MapNodeType.EliteCombat) && !assignedTypes.Contains(MapNodeType.Combat))
+                {
+                    node.nodeType = MapNodeType.Combat;
+                }
+                else
+                {
+                    node.nodeType = Random.value < config.eliteChance * 2f
+                        ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                }
+                assignedTypes.Add(node.nodeType);
             }
         }
+    }
+
+    /// <summary>Tüm ödül tipleri kullanıldı mı?</summary>
+    private static bool AllRewardsUsed(List<MapNodeType> used, bool canRest)
+    {
+        if (!used.Contains(MapNodeType.Shop)) return false;
+        if (!used.Contains(MapNodeType.PerkSelection)) return false;
+        if (canRest && !used.Contains(MapNodeType.Rest)) return false;
+        return true;
     }
 
     /// <summary>
