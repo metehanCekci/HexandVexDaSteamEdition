@@ -59,6 +59,12 @@ public class MapManager : MonoBehaviour
             BuildUIFromCode();
         }
 
+        // Perk side panel yoksa otomatik oluştur
+        if (PerkInventoryUI.instance == null)
+        {
+            PerkInventoryUI.CreateFromCode();
+        }
+
         // Rest UI yoksa otomatik oluştur
         if (RestNodeUI.instance == null)
         {

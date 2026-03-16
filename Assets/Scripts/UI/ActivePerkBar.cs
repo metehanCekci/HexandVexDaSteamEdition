@@ -9,6 +9,7 @@ using System.Collections.Generic;
 /// Ekranin ust-ortasinda aktif perk ikonlarini gosteren kalici bar.
 /// Editor tool ile sahnede olusturulur (Tools > Setup Active Perk Bar).
 /// Sahnede yoksa runtime'da otomatik olusturulur (fallback).
+/// Drag ile perk sıralama — sıra priority'yi belirler.
 /// </summary>
 public class ActivePerkBar : MonoBehaviour
 {
@@ -20,11 +21,16 @@ public class ActivePerkBar : MonoBehaviour
     public GameObject tooltipObj;
     public TextMeshProUGUI tooltipText;
     public CanvasGroup tooltipCanvasGroup;
-    public GameObject inventoryButton;
 
     // Spawnlanan ikon objeleri — RefreshBar'da yeniden olusturulur
     private readonly List<GameObject> spawnedIcons = new List<GameObject>();
     private readonly List<BasePerk> spawnedPerks = new List<BasePerk>();
+
+    // Drag reorder state
+    private bool isDragging;
+    private int dragIndex = -1;
+    private GameObject dragGhost;
+    private Canvas rootCanvas;
 
     private const float ICON_SIZE = 48f;
     private const float ICON_SPACING = 8f;
@@ -44,34 +50,20 @@ public class ActivePerkBar : MonoBehaviour
 
     void Start()
     {
-        // Editor tool'dan oluşturulan butonların onClick listener'ları
-        // serialize edilmez — runtime'da tekrar bağla
-        if (inventoryButton != null)
-        {
-            Button btn = inventoryButton.GetComponent<Button>();
-            if (btn != null)
-            {
-                btn.onClick.RemoveAllListeners();
-                btn.onClick.AddListener(OnInventoryButtonClicked);
-                Debug.Log("[PERKBAR] INV button listener attached in Start()");
-            }
-            else
-            {
-                Debug.LogError("[PERKBAR] INV button has no Button component!");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("[PERKBAR] inventoryButton is NULL in Start() — INV button missing!");
-        }
+        // rootCanvas referansı al
+        if (barCanvas != null)
+            rootCanvas = barCanvas;
     }
 
     void Update()
     {
-        // I tuşu ile perk inventory aç/kapat
-        if (Input.GetKeyDown(KeyCode.I))
+        // Ghost mouse takibi
+        if (isDragging && dragGhost != null && rootCanvas != null)
         {
-            OnInventoryButtonClicked();
+            Vector2 pos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                rootCanvas.transform as RectTransform, Input.mousePosition, null, out pos);
+            dragGhost.GetComponent<RectTransform>().anchoredPosition = pos;
         }
     }
 
@@ -137,9 +129,6 @@ public class ActivePerkBar : MonoBehaviour
 
         // Tooltip
         bar.BuildTooltip(canvasGO.transform);
-
-        // Envanter butonu
-        bar.BuildInventoryButton(canvasGO.transform);
     }
 
     // Editor tool'dan da cagrilabilmesi icin public yapildi
@@ -189,62 +178,133 @@ public class ActivePerkBar : MonoBehaviour
         tooltipObj.SetActive(false);
     }
 
-    public void BuildInventoryButton(Transform canvasTransform)
+    // ======================================================
+    // DRAG REORDER
+    // ======================================================
+
+    private void BeginDragIcon(int index, PointerEventData eventData)
     {
-        inventoryButton = new GameObject("InventoryButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-        inventoryButton.transform.SetParent(canvasTransform, false);
+        if (RunManager.instance == null) return;
+        if (index < 0 || index >= RunManager.instance.activePerks.Count) return;
 
-        RectTransform btnRT = inventoryButton.GetComponent<RectTransform>();
-        btnRT.anchorMin = new Vector2(1f, 1f);
-        btnRT.anchorMax = new Vector2(1f, 1f);
-        btnRT.pivot = new Vector2(1f, 1f);
-        btnRT.anchoredPosition = new Vector2(-20f, -15f);
-        btnRT.sizeDelta = new Vector2(40f, 40f);
+        isDragging = true;
+        dragIndex = index;
+        HideTooltip();
 
-        Image btnImg = inventoryButton.GetComponent<Image>();
-        btnImg.color = new Color(0.2f, 0.2f, 0.3f, 0.85f);
+        BasePerk perk = RunManager.instance.activePerks[index];
 
-        Button btn = inventoryButton.GetComponent<Button>();
-        ColorBlock cb = btn.colors;
-        cb.normalColor = new Color(0.2f, 0.2f, 0.3f, 0.85f);
-        cb.highlightedColor = new Color(0.3f, 0.3f, 0.5f, 1f);
-        cb.pressedColor = new Color(0.15f, 0.15f, 0.25f, 1f);
-        btn.colors = cb;
-        btn.onClick.AddListener(OnInventoryButtonClicked);
+        // Ghost oluştur
+        if (rootCanvas == null && barCanvas != null) rootCanvas = barCanvas;
+        if (rootCanvas == null) return;
 
-        GameObject btnTextGO = new GameObject("BtnText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        btnTextGO.transform.SetParent(inventoryButton.transform, false);
-        RectTransform textRT = btnTextGO.GetComponent<RectTransform>();
-        textRT.anchorMin = Vector2.zero;
-        textRT.anchorMax = Vector2.one;
-        textRT.offsetMin = Vector2.zero;
-        textRT.offsetMax = Vector2.zero;
+        dragGhost = new GameObject("DragGhost", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        dragGhost.transform.SetParent(rootCanvas.transform, false);
+        RectTransform ghostRT = dragGhost.GetComponent<RectTransform>();
+        ghostRT.sizeDelta = new Vector2(ICON_SIZE, ICON_SIZE);
 
-        TextMeshProUGUI btnTMP = btnTextGO.GetComponent<TextMeshProUGUI>();
-        btnTMP.text = "INV";
-        btnTMP.fontSize = 14;
-        btnTMP.alignment = TextAlignmentOptions.Center;
-        btnTMP.color = new Color(0.85f, 0.85f, 0.9f);
-        btnTMP.raycastTarget = false;
-    }
-
-    private void OnInventoryButtonClicked()
-    {
-        Debug.Log("[PERKBAR] OnInventoryButtonClicked called!");
-        if (PerkInventoryUI.instance != null && PerkInventoryUI.instance.IsOpen)
+        Image ghostImg = dragGhost.GetComponent<Image>();
+        if (perk.icon != null)
         {
-            Debug.Log("[PERKBAR] Closing inventory...");
-            PerkInventoryUI.instance.Close();
+            ghostImg.sprite = perk.icon;
+            ghostImg.color = new Color(1f, 1f, 1f, 0.8f);
         }
         else
         {
-            if (PerkInventoryUI.instance == null)
+            ghostImg.color = new Color(0.5f, 0.5f, 0.6f, 0.8f);
+        }
+        ghostImg.raycastTarget = false;
+
+        // Rarity outline
+        Color rarityColor;
+        ColorUtility.TryParseHtmlString(PerkListUI.GetRarityHex(perk.rarity), out rarityColor);
+        Outline outline = dragGhost.AddComponent<Outline>();
+        outline.effectColor = rarityColor;
+        outline.effectDistance = new Vector2(2f, 2f);
+
+        dragGhost.transform.SetAsLastSibling();
+
+        // Kaynak ikonu soluk yap
+        if (dragIndex >= 0 && dragIndex < spawnedIcons.Count && spawnedIcons[dragIndex] != null)
+        {
+            CanvasGroup cg = spawnedIcons[dragIndex].GetComponent<CanvasGroup>();
+            if (cg == null) cg = spawnedIcons[dragIndex].AddComponent<CanvasGroup>();
+            cg.alpha = 0.35f;
+        }
+    }
+
+    private void EndDragIcon(PointerEventData eventData)
+    {
+        if (!isDragging) return;
+
+        // En yakın slot'u bul — mouse X pozisyonuna göre
+        int targetIndex = FindClosestIconIndex(eventData.position);
+
+        if (targetIndex >= 0 && targetIndex != dragIndex && RunManager.instance != null)
+        {
+            var perks = RunManager.instance.activePerks;
+            if (dragIndex >= 0 && dragIndex < perks.Count && targetIndex < perks.Count)
             {
-                Debug.Log("[PERKBAR] PerkInventoryUI.instance is null — creating...");
-                PerkInventoryUI.CreateFromCode();
+                // Perk'i listede taşı (insert, remove mantığı)
+                BasePerk moving = perks[dragIndex];
+                perks.RemoveAt(dragIndex);
+                perks.Insert(targetIndex, moving);
+
+                // Priority güncelle
+                UpdatePerkPriorities();
             }
-            Debug.Log("[PERKBAR] Opening inventory...");
-            PerkInventoryUI.instance.Open();
+        }
+
+        CancelDrag();
+        RunManager.instance?.RefreshPerkUI();
+    }
+
+    private int FindClosestIconIndex(Vector2 screenPos)
+    {
+        if (container == null || spawnedIcons.Count == 0) return -1;
+
+        float minDist = float.MaxValue;
+        int closest = -1;
+
+        for (int i = 0; i < spawnedIcons.Count; i++)
+        {
+            if (spawnedIcons[i] == null) continue;
+            RectTransform rt = spawnedIcons[i].GetComponent<RectTransform>();
+            Vector3 worldPos = rt.position;
+            Vector2 iconScreenPos = RectTransformUtility.WorldToScreenPoint(null, worldPos);
+            float dist = Mathf.Abs(iconScreenPos.x - screenPos.x);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                closest = i;
+            }
+        }
+
+        return closest;
+    }
+
+    private void CancelDrag()
+    {
+        // Kaynak ikonu eski haline getir
+        if (dragIndex >= 0 && dragIndex < spawnedIcons.Count && spawnedIcons[dragIndex] != null)
+        {
+            CanvasGroup cg = spawnedIcons[dragIndex].GetComponent<CanvasGroup>();
+            if (cg != null) cg.alpha = 1f;
+        }
+
+        if (dragGhost != null) Destroy(dragGhost);
+        dragGhost = null;
+        isDragging = false;
+        dragIndex = -1;
+    }
+
+    /// <summary>Aktif perklerin priority'sini liste sırasına göre günceller.</summary>
+    private void UpdatePerkPriorities()
+    {
+        if (RunManager.instance == null) return;
+        for (int i = 0; i < RunManager.instance.activePerks.Count; i++)
+        {
+            if (RunManager.instance.activePerks[i] != null)
+                RunManager.instance.activePerks[i].priority = i;
         }
     }
 
@@ -344,19 +404,32 @@ public class ActivePerkBar : MonoBehaviour
         Image raycastImg = iconGO.AddComponent<Image>();
         raycastImg.color = new Color(0f, 0f, 0f, 0f);
 
-        // Hover event'leri
+        // Event triggers — hover (tooltip) + drag (reorder)
         EventTrigger trigger = iconGO.AddComponent<EventTrigger>();
-
-        EventTrigger.Entry enterEntry = new EventTrigger.Entry();
-        enterEntry.eventID = EventTriggerType.PointerEnter;
         BasePerk capturedPerk = perk;
-        enterEntry.callback.AddListener((_) => ShowTooltip(capturedPerk, iconGO.GetComponent<RectTransform>()));
+        int capturedIndex = spawnedPerks.Count; // Henüz eklenmedi, Count = index olacak
+
+        // Hover: tooltip
+        var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+        enterEntry.callback.AddListener((_) => { if (!isDragging) ShowTooltip(capturedPerk, iconGO.GetComponent<RectTransform>()); });
         trigger.triggers.Add(enterEntry);
 
-        EventTrigger.Entry exitEntry = new EventTrigger.Entry();
-        exitEntry.eventID = EventTriggerType.PointerExit;
+        var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
         exitEntry.callback.AddListener((_) => HideTooltip());
         trigger.triggers.Add(exitEntry);
+
+        // Drag: reorder
+        var beginDragEntry = new EventTrigger.Entry { eventID = EventTriggerType.BeginDrag };
+        beginDragEntry.callback.AddListener((data) => BeginDragIcon(capturedIndex, (PointerEventData)data));
+        trigger.triggers.Add(beginDragEntry);
+
+        var dragEntry = new EventTrigger.Entry { eventID = EventTriggerType.Drag };
+        dragEntry.callback.AddListener((data) => { }); // Update() handles ghost
+        trigger.triggers.Add(dragEntry);
+
+        var endDragEntry = new EventTrigger.Entry { eventID = EventTriggerType.EndDrag };
+        endDragEntry.callback.AddListener((data) => EndDragIcon((PointerEventData)data));
+        trigger.triggers.Add(endDragEntry);
 
         return iconGO;
     }
@@ -371,7 +444,8 @@ public class ActivePerkBar : MonoBehaviour
 
         string rarityHex = PerkListUI.GetRarityHex(perk.rarity);
         string desc = string.IsNullOrEmpty(perk.description) ? "" : $"\n<color=#AAAAAA>{perk.description}</color>";
-        tooltipText.text = $"<color={rarityHex}>{perk.perkName}</color>  <color=#CCCCCC>Lv {perk.currentLevel}</color>{desc}";
+        string prioText = $"  <color=#888888>#{perk.priority + 1}</color>";
+        tooltipText.text = $"<color={rarityHex}>{perk.perkName}</color>  <color=#CCCCCC>Lv {perk.currentLevel}</color>{prioText}{desc}";
 
         tooltipObj.SetActive(true);
 
@@ -393,7 +467,7 @@ public class ActivePerkBar : MonoBehaviour
     }
 
     // ======================================================
-    // GORSEL ANIMASYONLAR
+    // GÖRSEL ANİMASYONLAR
     // ======================================================
 
     public void TriggerPopForPerk(BasePerk perk)

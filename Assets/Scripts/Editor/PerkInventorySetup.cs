@@ -5,22 +5,23 @@ using TMPro;
 
 /// <summary>
 /// Tools > Setup Perk Inventory
-/// Sahnede PerkInventoryUI canvas'ini olusturur.
-/// Inspector'dan duzenlenebilir — pozisyon, boyut, renk vs.
+/// Sahnede PerkInventoryUI yan panelini oluşturur.
+/// Map ekranında sağ tarafta her zaman görünür.
+/// Inspector'dan düzenlenebilir — pozisyon, boyut, renk vs.
 /// </summary>
 public class PerkInventorySetup : EditorWindow
 {
     [MenuItem("Tools/Setup Perk Inventory")]
     public static void Setup()
     {
-        // 1. Eski PerkInventoryUI varsa kaldir
+        // 1. Eski PerkInventoryUI varsa kaldır
         foreach (var old in Object.FindObjectsByType<PerkInventoryUI>(FindObjectsSortMode.None))
         {
-            Debug.Log($"Eski PerkInventoryUI kaldiriliyor: {old.gameObject.name}");
+            Debug.Log($"Eski PerkInventoryUI kaldırılıyor: {old.gameObject.name}");
             Undo.DestroyObjectImmediate(old.gameObject);
         }
 
-        // 2. Font yukle
+        // 2. Font yükle
         TMP_FontAsset font = UIStyle.LoadFont();
 
         // ─── ROOT: PerkInventoryUI ───
@@ -45,10 +46,10 @@ public class PerkInventorySetup : EditorWindow
         Selection.activeGameObject = rootGO;
         EditorUtility.SetDirty(rootGO);
 
-        Debug.Log("✅ PerkInventoryUI sahnede oluşturuldu!\n" +
-                  "• Inspector'dan pozisyon, boyut, renk ayarlayabilirsin\n" +
-                  "• Runtime'da I tuşu veya INV butonu ile açılır\n" +
-                  "• ESC ile kapatılır\n" +
-                  "• Başlangıçta kapalı — Open() çağrılınca açılır");
+        Debug.Log("PerkInventoryUI sahnede oluşturuldu!\n" +
+                  "• Sağ tarafta yan panel olarak gösterilir\n" +
+                  "• Map ekranında otomatik açılır/kapanır\n" +
+                  "• Drag & drop ile perk yönetimi\n" +
+                  "• Inspector'dan pozisyon, boyut, renk ayarlanabilir");
     }
 }

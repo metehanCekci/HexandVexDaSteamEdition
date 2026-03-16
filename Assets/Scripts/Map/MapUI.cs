@@ -155,6 +155,10 @@ public class MapUI : MonoBehaviour
             canvasGroup.interactable = true;
             canvasGroup.blocksRaycasts = true;
         }
+
+        // Perk yan panelini göster
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.Show();
     }
 
     /// <summary>
@@ -215,6 +219,10 @@ public class MapUI : MonoBehaviour
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
         }
+
+        // Perk yan panelini gizle
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.Hide();
     }
 
     private void ClearMap()
