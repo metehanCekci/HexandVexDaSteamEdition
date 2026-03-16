@@ -37,7 +37,7 @@ public static class MapGenerator
         // ─── Rows 1 through totalRows-1: Middle rows ───
         for (int r = 1; r < totalRows; r++)
         {
-            int nodeCount = Random.Range(config.minNodesPerRow, config.maxNodesPerRow + 1);
+            int nodeCount = Random.value < config.threeNodeChance ? 3 : 2;
             List<MapNode> rowNodes = new List<MapNode>();
 
             for (int c = 0; c < nodeCount; c++)

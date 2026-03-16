@@ -44,7 +44,8 @@ public class MapManager : MonoBehaviour
             defaultConfig.layerName = "Layer 1";
             defaultConfig.totalRows = 8;
             defaultConfig.minNodesPerRow = 2;
-            defaultConfig.maxNodesPerRow = 4;
+            defaultConfig.maxNodesPerRow = 3;
+            defaultConfig.threeNodeChance = 0.15f;
             defaultConfig.shopChance = 0.12f;
             defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
