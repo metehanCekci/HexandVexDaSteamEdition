@@ -173,7 +173,7 @@ public class LevelGenerator : MonoBehaviour
         bool isPostBossLevel = RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1;
         bool isEliteNode = RunManager.instance.currentNodeType == MapNodeType.EliteCombat;
         int currentRadius = baseMapRadius + (RunManager.instance.currentLevel / 6);
-        int enemyCountToSpawn = 3 + (RunManager.instance.currentLevel / 3);
+        int enemyCountToSpawn = 3 + (RunManager.instance.currentLevel / 6);
 
         // Elite node'larda daha fazla ve güçlü düşman
         if (isEliteNode) enemyCountToSpawn += 2;

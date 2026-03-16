@@ -77,6 +77,10 @@ public class MapUI : MonoBehaviour
         nodeContainer.sizeDelta = new Vector2(nodeContainer.sizeDelta.x, totalHeight);
         Debug.Log($"[MAP] Container height={totalHeight}, maxRow={maxRow}, rowSpacing={rowSpacing}");
 
+        // Parallax arkaplanı güncelle
+        var parallax = nodeContainer.parent.GetComponent<MapParallaxBG>();
+        if (parallax != null) parallax.Refresh();
+
         // ─── Node'ları yerleştir ───
         // Container pivot=bottom: y=0 en alt, pozitif y yukarı
         // Row 0 (start) en altta, boss (maxRow) en üstte
@@ -210,6 +214,11 @@ public class MapUI : MonoBehaviour
                 edge.image.color = new Color(0.3f, 0.3f, 0.3f, 0.15f);
             }
         }
+    }
+
+    public bool IsMapVisible()
+    {
+        return mapPanel != null && mapPanel.activeSelf;
     }
 
     public void Show()
