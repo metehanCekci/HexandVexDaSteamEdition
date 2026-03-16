@@ -190,29 +190,35 @@ public class MapManager : MonoBehaviour
         go.SetActive(false);
         var rt = go.AddComponent<RectTransform>();
         rt.sizeDelta = new Vector2(110f, 110f);
-        // Container pivot=bottom: anchor bottom-center
         rt.anchorMin = new Vector2(0.5f, 0f);
         rt.anchorMax = new Vector2(0.5f, 0f);
         rt.pivot = new Vector2(0.5f, 0.5f);
 
-        // ─── Glow Ring (dış parlama — arka planda) ───
+        // Root'a şeffaf raycast Image — Button tıklama alanı
+        Image rootImg = go.AddComponent<Image>();
+        rootImg.color = new Color(0f, 0f, 0f, 0f);
+
+        Button btn = go.AddComponent<Button>();
+        btn.transition = Selectable.Transition.None;
+        btn.targetGraphic = rootImg;
+
+        // ─── Glow Ring (dış parlama — arka planda, en altta) ───
         GameObject glowGO = MakeUIObj("GlowRing", go.transform);
         var glowRT = glowGO.GetComponent<RectTransform>();
         glowRT.anchorMin = Vector2.zero;
         glowRT.anchorMax = Vector2.one;
-        glowRT.offsetMin = new Vector2(-12f, -12f);
-        glowRT.offsetMax = new Vector2(12f, 12f);
+        glowRT.offsetMin = new Vector2(-14f, -14f);
+        glowRT.offsetMax = new Vector2(14f, 14f);
         Image glowImg = glowGO.AddComponent<Image>();
         glowImg.color = new Color(1f, 1f, 1f, 0f);
         glowImg.raycastTarget = false;
 
-        // ─── Background ───
-        Image bg = go.AddComponent<Image>();
+        // ─── Background (ayrı child — rengi MapNodeUI kontrol eder) ───
+        GameObject bgGO = MakeUIObj("BG", go.transform);
+        StretchFull(bgGO.GetComponent<RectTransform>());
+        Image bg = bgGO.AddComponent<Image>();
         bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
-
-        Button btn = go.AddComponent<Button>();
-        // Transition = None: renkleri MapNodeUI yönetecek, Button karışmasın
-        btn.transition = Selectable.Transition.None;
+        bg.raycastTarget = false;
 
         // ─── Icon ───
         GameObject iconGO = MakeUIObj("Icon", go.transform);
@@ -227,11 +233,7 @@ public class MapManager : MonoBehaviour
 
         // ─── Inner Shine (iç parlama overlay) ───
         GameObject shineGO = MakeUIObj("InnerShine", go.transform);
-        var shineRT = shineGO.GetComponent<RectTransform>();
-        shineRT.anchorMin = Vector2.zero;
-        shineRT.anchorMax = Vector2.one;
-        shineRT.offsetMin = new Vector2(3f, 3f);
-        shineRT.offsetMax = new Vector2(-3f, -3f);
+        StretchFull(shineGO.GetComponent<RectTransform>());
         Image shineImg = shineGO.AddComponent<Image>();
         shineImg.color = new Color(1f, 1f, 1f, 0f);
         shineImg.raycastTarget = false;
@@ -241,33 +243,19 @@ public class MapManager : MonoBehaviour
         var pulseRT = pulseGO.GetComponent<RectTransform>();
         pulseRT.anchorMin = Vector2.zero;
         pulseRT.anchorMax = Vector2.one;
-        pulseRT.offsetMin = new Vector2(-6f, -6f);
-        pulseRT.offsetMax = new Vector2(6f, 6f);
+        pulseRT.offsetMin = new Vector2(-8f, -8f);
+        pulseRT.offsetMax = new Vector2(8f, 8f);
         Image pulseImg = pulseGO.AddComponent<Image>();
         pulseImg.color = new Color(1f, 1f, 1f, 0f);
         pulseImg.raycastTarget = false;
 
         // ─── Checkmark (visited göstergesi) ───
-        GameObject checkGO = new GameObject("Checkmark", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        checkGO.transform.SetParent(go.transform, false);
-        var checkRT = checkGO.GetComponent<RectTransform>();
-        checkRT.anchorMin = new Vector2(0.5f, 0.5f);
-        checkRT.anchorMax = new Vector2(0.5f, 0.5f);
-        checkRT.sizeDelta = new Vector2(36f, 36f);
-        Image checkImg = checkGO.GetComponent<Image>();
-        checkImg.color = new Color(0.5f, 1f, 0.5f, 0.6f);
+        GameObject checkGO = MakeUIObj("Checkmark", go.transform);
+        StretchFull(checkGO.GetComponent<RectTransform>());
+        Image checkImg = checkGO.AddComponent<Image>();
+        checkImg.color = new Color(0f, 0f, 0f, 0.5f);
         checkImg.raycastTarget = false;
         checkImg.enabled = false;
-        // Checkmark sembolü — text child (ASCII uyumlu)
-        GameObject checkTxtGO = MakeUIObj("CheckText", checkGO.transform);
-        StretchFull(checkTxtGO.GetComponent<RectTransform>());
-        var checkTxtComp = checkTxtGO.AddComponent<TextMeshProUGUI>();
-        checkTxtComp.text = "OK";
-        checkTxtComp.fontSize = 16;
-        checkTxtComp.fontStyle = TMPro.FontStyles.Bold;
-        checkTxtComp.alignment = TextAlignmentOptions.Center;
-        checkTxtComp.color = new Color(0.3f, 0.9f, 0.4f, 0.8f);
-        checkTxtComp.raycastTarget = false;
 
         // ─── Label ───
         GameObject labelGO = MakeUIObj("Label", go.transform);
