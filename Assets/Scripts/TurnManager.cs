@@ -1453,6 +1453,31 @@ public class TurnManager : MonoBehaviour
             {
                 yield return new WaitUntil(() => pullTargets.All(e => e == null || !e.IsMoving()));
                 yield return new WaitForSeconds(0.1f);
+
+                // Mayın kontrolü: çekilen düşman mayının üstüne geldiyse hemen patlat
+                if (activeMineCell.y != -999)
+                {
+                    EnemyAI mineVictim = GetEnemyAtCell(activeMineCell);
+                    if (mineVictim != null && mineVictim.health.currentHP > 0)
+                    {
+                        var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
+                        float mineDmgPct = phantomPerk != null ? phantomPerk.currentLevel * 0.25f : 0.25f;
+                        TriggerExplosion(activeMineCell, mineDmgPct);
+
+                        if (mineVictim != null && mineVictim.health.currentHP > 0)
+                            mineVictim.ApplyStun(2, true);
+
+                        if (activeMineObj != null) Destroy(activeMineObj);
+                        activeMineCell = new Vector3Int(-999, -999, -999);
+
+                        List<EnemyAI> mineKills = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
+                        foreach (var deadEnemy in mineKills)
+                            coinService.ProcessKillRewards(deadEnemy);
+                        UpdateCoinUI();
+                        if (CleanupDeadAndCheckLevelClear()) yield break;
+                    }
+                }
+
                 targets = GetAdjacentEnemies(pCell);
                 var perk = RunManager.instance.activePerks.Find(p => p is BioMagnetismPerk);
                 if (perk != null) perk.TriggerVisualPop();
