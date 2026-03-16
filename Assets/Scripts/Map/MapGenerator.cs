@@ -37,7 +37,9 @@ public static class MapGenerator
         // ─── Rows 1 through totalRows-1: Middle rows ───
         for (int r = 1; r < totalRows; r++)
         {
-            int nodeCount = Random.value < config.threeNodeChance ? 3 : 2;
+            // %40 tek node, %50 iki node, %10 üç node
+            float roll = Random.value;
+            int nodeCount = roll < 0.40f ? 1 : roll < 0.90f ? 2 : 3;
             List<MapNode> rowNodes = new List<MapNode>();
 
             for (int c = 0; c < nodeCount; c++)
