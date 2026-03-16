@@ -37,6 +37,10 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
+        // Map açıkken kamera sabit kalsın
+        if (MapManager.instance != null && MapManager.instance.mapUI != null && MapManager.instance.mapUI.IsMapVisible())
+            return;
+
         // Pause sırasında kamera girişi ve shake dursun
         if (PauseManager.isPaused)
         {
@@ -129,7 +133,7 @@ public class CameraController : MonoBehaviour
 
     public static void ShakeLight()
     {
-        CameraController controller = FindObjectOfType<CameraController>();
+        CameraController controller = FindFirstObjectByType<CameraController>();
         if (controller != null)
             controller.Shake(0.1f, 0.075f);
     }

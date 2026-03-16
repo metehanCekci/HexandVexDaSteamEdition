@@ -584,7 +584,7 @@ public class SpawnerBossAI : MonoBehaviour
     private IEnumerator CameraShake(float duration, float magnitude)
     {
         // CameraController üzerinden shake yap — kendi konum yönetimini bozmasın
-        CameraController controller = FindObjectOfType<CameraController>();
+        CameraController controller = FindFirstObjectByType<CameraController>();
         if (controller != null)
             controller.Shake(duration, magnitude);
         yield return new WaitForSeconds(duration);

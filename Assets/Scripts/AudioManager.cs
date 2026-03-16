@@ -53,7 +53,7 @@ public class AudioManager : MonoBehaviour
         
         // AudioMixer'ı Resources'tan yükle (yolunu kontrol et)
         audioMixer = Resources.Load<AudioMixer>("NewAudioMixer");
-        if (audioMixer == null) audioMixer = FindObjectOfType<AudioMixer>();
+        if (audioMixer == null) audioMixer = FindFirstObjectByType<AudioMixer>();
         
         // Saved ses ayarlarını yükle
         LoadAudioSettings();
