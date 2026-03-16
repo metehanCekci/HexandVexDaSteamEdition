@@ -211,12 +211,8 @@ public class MapManager : MonoBehaviour
         bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
 
         Button btn = go.AddComponent<Button>();
-        ColorBlock cb = btn.colors;
-        cb.normalColor = Color.white;
-        cb.highlightedColor = Color.white; // Hover rengi MapNodeUI yönetecek
-        cb.pressedColor = Color.white;
-        cb.disabledColor = Color.white;
-        btn.colors = cb;
+        // Transition = None: renkleri MapNodeUI yönetecek, Button karışmasın
+        btn.transition = Selectable.Transition.None;
 
         // ─── Icon ───
         GameObject iconGO = MakeUIObj("Icon", go.transform);
@@ -262,12 +258,13 @@ public class MapManager : MonoBehaviour
         checkImg.color = new Color(0.5f, 1f, 0.5f, 0.6f);
         checkImg.raycastTarget = false;
         checkImg.enabled = false;
-        // Checkmark sembolü — text child
+        // Checkmark sembolü — text child (ASCII uyumlu)
         GameObject checkTxtGO = MakeUIObj("CheckText", checkGO.transform);
         StretchFull(checkTxtGO.GetComponent<RectTransform>());
         var checkTxtComp = checkTxtGO.AddComponent<TextMeshProUGUI>();
-        checkTxtComp.text = "\u2713";
-        checkTxtComp.fontSize = 26;
+        checkTxtComp.text = "OK";
+        checkTxtComp.fontSize = 16;
+        checkTxtComp.fontStyle = TMPro.FontStyles.Bold;
         checkTxtComp.alignment = TextAlignmentOptions.Center;
         checkTxtComp.color = new Color(0.3f, 0.9f, 0.4f, 0.8f);
         checkTxtComp.raycastTarget = false;

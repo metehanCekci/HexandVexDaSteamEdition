@@ -67,12 +67,6 @@ public class MapNodeUI : MonoBehaviour
         originalScale = Vector3.one;
     }
 
-    void OnEnable()
-    {
-        RectTransform rt = GetComponent<RectTransform>();
-        if (rt != null) originalPos = rt.anchoredPosition;
-    }
-
     public void Setup(MapNode node)
     {
         nodeId = node.id;
@@ -151,7 +145,39 @@ public class MapNodeUI : MonoBehaviour
             ApplyLockedState();
         }
 
-        // Boss her zaman kendi efektini çalıştırır (visited değilse)
+        // Coroutine'leri sadece aktif objede başlat
+        if (gameObject.activeInHierarchy)
+            StartAnimations();
+    }
+
+    void OnEnable()
+    {
+        RectTransform rt = GetComponent<RectTransform>();
+        if (rt != null) originalPos = rt.anchoredPosition;
+
+        // OnEnable'da animasyonları başlat (canvas açıldığında)
+        StartAnimations();
+    }
+
+    private void StartAnimations()
+    {
+        // Önce mevcut olanları durdur
+        if (pulseCoroutine != null) { StopCoroutine(pulseCoroutine); pulseCoroutine = null; }
+        if (floatCoroutine != null) { StopCoroutine(floatCoroutine); floatCoroutine = null; }
+        if (bossCoroutine != null) { StopCoroutine(bossCoroutine); bossCoroutine = null; }
+
+        if (!gameObject.activeInHierarchy) return;
+
+        if (isCurrent)
+        {
+            pulseCoroutine = StartCoroutine(CurrentPulseLoop());
+        }
+        else if (isReachable && !isVisited)
+        {
+            floatCoroutine = StartCoroutine(IdleFloatLoop());
+            pulseCoroutine = StartCoroutine(ReachableShimmerLoop());
+        }
+
         if (isBoss && !isVisited)
         {
             bossCoroutine = StartCoroutine(BossPulseLoop());
@@ -171,8 +197,6 @@ public class MapNodeUI : MonoBehaviour
             iconImage.color = Color.white;
         if (checkmark != null)
             checkmark.enabled = false;
-
-        pulseCoroutine = StartCoroutine(CurrentPulseLoop());
     }
 
     // ─── Visited: soluk + checkmark ───
@@ -213,9 +237,6 @@ public class MapNodeUI : MonoBehaviour
             iconImage.color = Color.white;
         if (checkmark != null)
             checkmark.enabled = false;
-
-        floatCoroutine = StartCoroutine(IdleFloatLoop());
-        pulseCoroutine = StartCoroutine(ReachableShimmerLoop());
     }
 
     // ─── Locked: çok soluk, efekt yok ───
