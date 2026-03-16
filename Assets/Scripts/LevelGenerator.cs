@@ -208,9 +208,15 @@ public class LevelGenerator : MonoBehaviour
                             else if (roll < scaffoldThreshold)
                             {
                                 // Scaffold (Çöken Platform) tile
-                                // groundMap'ten zemin kaldır — scaffold kendi tilemap'inde duruyor
-                                // Hareket sistemi scaffold hücrelerini IsScaffoldCell ile tanır
-                                if (scaffoldMap != null && scaffoldTile != null)
+                                // Komşusunda zaten scaffold varsa spawn etme → kümeleme ve adacık oluşumunu engelle
+                                bool hasAdjacentScaffold = false;
+                                Vector3Int[] cellOffsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+                                foreach (var off in cellOffsets)
+                                {
+                                    if (scaffoldCells.Contains(cell + off)) { hasAdjacentScaffold = true; break; }
+                                }
+
+                                if (!hasAdjacentScaffold && scaffoldMap != null && scaffoldTile != null)
                                 {
                                     groundMap.SetTile(cell, null);
                                     scaffoldMap.SetTile(cell, scaffoldTile);
@@ -638,7 +644,10 @@ public class LevelGenerator : MonoBehaviour
 
     private void EnsureSafeConnectivity()
     {
-        List<Vector3Int> safeCells = validCells.Where(c => !hazardCells.Contains(c)).ToList();
+        // Güvenli hücreler: hazard ve scaffold OLMAYAN hücreler.
+        // Scaffold çökebilir → bağlantıda güvenilmez köprü sayılır.
+        // Scaffold hariç tutularak, sadece kalıcı zemin üzerinden bağlantı kontrol edilir.
+        List<Vector3Int> safeCells = validCells.Where(c => !hazardCells.Contains(c) && !scaffoldCells.Contains(c)).ToList();
         if (safeCells.Count == 0) return;
 
         List<List<Vector3Int>> safeIslands = new List<List<Vector3Int>>();
@@ -686,6 +695,19 @@ public class LevelGenerator : MonoBehaviour
         {
             if (hazardCells.Contains(cell))
             {
+                // Diken: ana adaya komşuysa kalsın
+                bool touchesMain = false;
+                Vector3Int[] offsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+                foreach (var off in offsets)
+                {
+                    if (mainSafeSet.Contains(cell + off)) { touchesMain = true; break; }
+                }
+                if (!touchesMain) cellsToRemove.Add(cell);
+            }
+            else if (scaffoldCells.Contains(cell))
+            {
+                // Scaffold: en az 1 komşusu ana adadaysa kalsın, yoksa sil.
+                // Ayrıca scaffold'un sağlam zemin ile bağlantı kopması yaratmamasını garanti et.
                 bool touchesMain = false;
                 Vector3Int[] offsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
                 foreach (var off in offsets)
@@ -696,6 +718,7 @@ public class LevelGenerator : MonoBehaviour
             }
             else
             {
+                // Normal zemin: ana adada değilse sil
                 if (!mainSafeSet.Contains(cell)) cellsToRemove.Add(cell);
             }
         }
@@ -703,8 +726,8 @@ public class LevelGenerator : MonoBehaviour
         foreach (var cell in cellsToRemove)
         {
             groundMap.SetTile(cell, null);
-            if (hazardMap != null) hazardMap.SetTile(cell, null); 
-            if (scaffoldMap != null) scaffoldMap.SetTile(cell, null); 
+            if (hazardMap != null) hazardMap.SetTile(cell, null);
+            if (scaffoldMap != null) scaffoldMap.SetTile(cell, null);
             validCells.Remove(cell);
             hazardCells.Remove(cell);
             scaffoldCells.Remove(cell);

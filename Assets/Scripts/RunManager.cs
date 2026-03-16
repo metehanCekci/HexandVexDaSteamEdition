@@ -54,6 +54,9 @@ public class RunManager : MonoBehaviour
     [HideInInspector] public bool surgeBootActive = false;
     public bool hasPerkReroll = false; // Bu tur 2 hex hareket edebilir mi?
 
+    [Header("Silah Seçimi")]
+    public WeaponType selectedWeapon = WeaponType.Greatsword;
+
     [Header("Hiz Ayari")]
     public bool fastMode = false;
 
