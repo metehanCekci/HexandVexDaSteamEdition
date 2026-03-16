@@ -121,7 +121,8 @@ public static class MapGenerator
         {
             if (node.nodeType == MapNodeType.Boss) continue;
             if (node.row == 0) { node.nodeType = MapNodeType.Combat; continue; }
-            if (node.row <= 1) { node.nodeType = MapNodeType.Combat; continue; }
+            // Row 1: combat — ama çoklu row'daysa EnforceNoDuplicatesInRow farklılaştıracak
+            if (node.row == 1) { node.nodeType = MapNodeType.Combat; continue; }
             if (node.row == totalRows - 1)
             {
                 node.nodeType = Random.value < config.eliteChance * 2.5f
@@ -201,9 +202,6 @@ public static class MapGenerator
 
         // ─── Adım 3: Post-processing kuralları ───
 
-        // Yol ayrımlarında farklı ödül tipleri garanti et
-        EnforceDiverseRewards(map, config, totalRows);
-
         // Elite arkasında ödül garanti
         EnforceEliteReward(map, config);
 
@@ -212,6 +210,10 @@ public static class MapGenerator
 
         // Ardışık shop yasağı
         EnforceNoConsecutiveShops(map);
+
+        // ─── SON GÜVENLİK: Çoklu row'da aynı tip ASLA olamaz ───
+        // Post-processing kuralları tip değiştirebilir, bu yüzden en sonda tekrar kontrol
+        EnforceNoDuplicatesInRow(map, config, totalRows);
     }
 
     /// <summary>
@@ -500,6 +502,69 @@ public static class MapGenerator
                 {
                     child.nodeType = MapNodeType.Combat;
                 }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SON GÜVENLİK — AYNI ROW'DA AYNI TİP YASAK
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Post-processing sonrası çoklu row'larda aynı tip oluşmuş olabilir.
+    /// Bu geçiş en sonda çalışır ve aynı tipteki node'ları zorla değiştirir.
+    /// Row bağlamına göre uygun alternatif seçer.
+    /// </summary>
+    private static void EnforceNoDuplicatesInRow(MapData map, MapLayerData config, int totalRows)
+    {
+        for (int r = 0; r <= totalRows; r++)
+        {
+            List<MapNode> rowNodes = map.GetRow(r);
+            if (rowNodes.Count < 2) continue;
+
+            // Boss row'a ve row 0'a dokunma (tek node zaten)
+            if (rowNodes.Exists(n => n.nodeType == MapNodeType.Boss)) continue;
+
+            HashSet<MapNodeType> seen = new HashSet<MapNodeType>();
+            foreach (var node in rowNodes)
+            {
+                if (seen.Contains(node.nodeType))
+                {
+                    // Duplikat! Row'a göre uygun farklı bir tip seç.
+                    bool canRest = node.row >= 3;
+                    bool earlyRow = node.row <= 1; // Row 0-1: sadece combat/elite
+                    bool preBoss = node.row == totalRows - 1;
+
+                    if (earlyRow || preBoss)
+                    {
+                        // Erken row / boss öncesi: Combat ↔ Elite arası değiştir
+                        if (!seen.Contains(MapNodeType.EliteCombat))
+                            node.nodeType = MapNodeType.EliteCombat;
+                        else if (!seen.Contains(MapNodeType.Combat))
+                            node.nodeType = MapNodeType.Combat;
+                        // 3 node ve ikisi de kullanıldıysa — Event fallback
+                        else
+                            node.nodeType = MapNodeType.Event;
+                    }
+                    else
+                    {
+                        // Normal row: ödül veya risk — kullanılmamış olanı seç
+                        // Önce ödül tipleri (çeşitlilik için)
+                        if (!seen.Contains(MapNodeType.Shop))
+                            node.nodeType = MapNodeType.Shop;
+                        else if (!seen.Contains(MapNodeType.PerkSelection))
+                            node.nodeType = MapNodeType.PerkSelection;
+                        else if (canRest && !seen.Contains(MapNodeType.Rest))
+                            node.nodeType = MapNodeType.Rest;
+                        else if (!seen.Contains(MapNodeType.EliteCombat))
+                            node.nodeType = MapNodeType.EliteCombat;
+                        else if (!seen.Contains(MapNodeType.Combat))
+                            node.nodeType = MapNodeType.Combat;
+                        else
+                            node.nodeType = MapNodeType.Event;
+                    }
+                }
+                seen.Add(node.nodeType);
             }
         }
     }
