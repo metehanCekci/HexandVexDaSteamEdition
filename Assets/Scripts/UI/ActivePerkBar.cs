@@ -53,7 +53,25 @@ public class ActivePerkBar : MonoBehaviour
             {
                 btn.onClick.RemoveAllListeners();
                 btn.onClick.AddListener(OnInventoryButtonClicked);
+                Debug.Log("[PERKBAR] INV button listener attached in Start()");
             }
+            else
+            {
+                Debug.LogError("[PERKBAR] INV button has no Button component!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[PERKBAR] inventoryButton is NULL in Start() — INV button missing!");
+        }
+    }
+
+    void Update()
+    {
+        // I tuşu ile perk inventory aç/kapat
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            OnInventoryButtonClicked();
         }
     }
 
@@ -212,14 +230,20 @@ public class ActivePerkBar : MonoBehaviour
 
     private void OnInventoryButtonClicked()
     {
+        Debug.Log("[PERKBAR] OnInventoryButtonClicked called!");
         if (PerkInventoryUI.instance != null && PerkInventoryUI.instance.IsOpen)
         {
+            Debug.Log("[PERKBAR] Closing inventory...");
             PerkInventoryUI.instance.Close();
         }
         else
         {
             if (PerkInventoryUI.instance == null)
+            {
+                Debug.Log("[PERKBAR] PerkInventoryUI.instance is null — creating...");
                 PerkInventoryUI.CreateFromCode();
+            }
+            Debug.Log("[PERKBAR] Opening inventory...");
             PerkInventoryUI.instance.Open();
         }
     }

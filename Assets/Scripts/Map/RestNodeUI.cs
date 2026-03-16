@@ -27,7 +27,13 @@ public class RestNodeUI : MonoBehaviour
     public void Show()
     {
         Debug.Log($"[REST] Show() called — restPanel={restPanel != null}, restButton={restButton != null}, trainButton={trainButton != null}");
-        if (restPanel != null) restPanel.SetActive(true);
+        if (restPanel != null)
+        {
+            // Parent canvas'ı da aktif et (Close'da kapatılmış olabilir)
+            if (restPanel.transform.parent != null)
+                restPanel.transform.parent.gameObject.SetActive(true);
+            restPanel.SetActive(true);
+        }
 
         Time.timeScale = 0f;
 
@@ -128,7 +134,15 @@ public class RestNodeUI : MonoBehaviour
     {
         Debug.Log("[REST] Close called — setting timeScale=1, hiding panel, calling OnNodeComplete");
         Time.timeScale = 1f;
-        if (restPanel != null) restPanel.SetActive(false);
+
+        // Panel'i ve parent canvas'ı kapat — yoksa map'in üstünde kalır
+        if (restPanel != null)
+        {
+            restPanel.SetActive(false);
+            // Canvas'ı da gizle ki map'in üstünde raycast bloklama kalmasın
+            if (restPanel.transform.parent != null)
+                restPanel.transform.parent.gameObject.SetActive(false);
+        }
 
         if (MapManager.instance != null)
         {
