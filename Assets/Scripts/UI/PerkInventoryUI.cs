@@ -7,6 +7,8 @@ using System.Collections.Generic;
 /// Perk envanter paneli. Aktif slotlari ve stash'i gosterir.
 /// Buton tiklayarak perkler arasi takas yapilabilir.
 /// Oyunu duraklatir (Time.timeScale = 0) acikken.
+/// Editor tool ile sahnede olusturulur (Tools > Setup Perk Inventory).
+/// Sahnede yoksa runtime'da otomatik olusturulur (fallback).
 /// </summary>
 public class PerkInventoryUI : MonoBehaviour
 {
@@ -14,13 +16,15 @@ public class PerkInventoryUI : MonoBehaviour
 
     public bool IsOpen => canvasGO != null && canvasGO.activeSelf;
 
-    // UI referanslari — runtime'da olusturulur
-    private GameObject canvasGO;
-    private GameObject panelRoot;
-    private RectTransform activeSlotsContainer;
-    private RectTransform stashGrid;
-    private TextMeshProUGUI activeTitleText;
-    private TextMeshProUGUI stashTitleText;
+    [Header("Referanslar (Editor Tool Atar)")]
+    public GameObject canvasGO;
+    public GameObject panelRoot;
+    public GameObject overlayGO;
+    public RectTransform activeSlotsContainer;
+    public RectTransform stashGrid;
+    public TextMeshProUGUI activeTitleText;
+    public TextMeshProUGUI stashTitleText;
+    public Button closeButton;
 
     // Swap mekanigi icin secili aktif perk index'i
     private int selectedActiveIndex = -1;
@@ -45,6 +49,21 @@ public class PerkInventoryUI : MonoBehaviour
             return;
         }
         instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    void Start()
+    {
+        // Editor tool'dan oluşturulan butonların onClick listener'ları
+        // serialize edilmez — runtime'da tekrar bağla
+        if (closeButton != null)
+        {
+            closeButton.onClick.RemoveAllListeners();
+            closeButton.onClick.AddListener(Close);
+        }
+
+        // Başlangıçta kapalı olsun
+        if (canvasGO != null) canvasGO.SetActive(false);
     }
 
     void OnDestroy()
@@ -61,14 +80,25 @@ public class PerkInventoryUI : MonoBehaviour
         }
     }
 
-    /// <summary>Koddan PerkInventoryUI olusturur.</summary>
+    /// <summary>Koddan PerkInventoryUI olusturur (fallback).</summary>
     public static void CreateFromCode()
     {
         if (instance != null) return;
 
+        // Sahnede zaten var mi?
+        var existing = Object.FindFirstObjectByType<PerkInventoryUI>();
+        if (existing != null)
+        {
+            instance = existing;
+            DontDestroyOnLoad(existing.gameObject);
+            return;
+        }
+
         GameObject rootGO = new GameObject("PerkInventoryUI");
-        DontDestroyOnLoad(rootGO);
-        rootGO.AddComponent<PerkInventoryUI>();
+        PerkInventoryUI ui = rootGO.AddComponent<PerkInventoryUI>();
+        // Awake zaten instance + DontDestroyOnLoad yapar
+
+        ui.BuildUI();
     }
 
     // ======================================================
@@ -83,7 +113,7 @@ public class PerkInventoryUI : MonoBehaviour
         previousTimeScale = Time.timeScale;
         Time.timeScale = 0f;
         canvasGO.SetActive(true);
-        panelRoot.SetActive(true);
+        if (panelRoot != null) panelRoot.SetActive(true);
         RefreshUI();
     }
 
@@ -95,10 +125,10 @@ public class PerkInventoryUI : MonoBehaviour
     }
 
     // ======================================================
-    // UI OLUSTURMA (KODDAN)
+    // UI OLUSTURMA (KODDAN — editor tool veya runtime fallback)
     // ======================================================
 
-    private void BuildUI()
+    public void BuildUI()
     {
         // Canvas
         canvasGO = new GameObject("PerkInventoryCanvas");
@@ -111,8 +141,8 @@ public class PerkInventoryUI : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920, 1080);
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // Fullscreen overlay (koyu arka plan, tiklaninca kapanmaz)
-        GameObject overlayGO = new GameObject("Overlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        // Fullscreen overlay (koyu arka plan)
+        overlayGO = new GameObject("Overlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         overlayGO.transform.SetParent(canvasGO.transform, false);
         RectTransform overlayRT = overlayGO.GetComponent<RectTransform>();
         StretchFull(overlayRT);
@@ -132,7 +162,7 @@ public class PerkInventoryUI : MonoBehaviour
         Image panelBG = panelRoot.GetComponent<Image>();
         panelBG.color = new Color(0.1f, 0.1f, 0.15f, 0.96f);
 
-        // VerticalLayoutGroup icin iç padding
+        // VerticalLayoutGroup
         VerticalLayoutGroup vlg = panelRoot.AddComponent<VerticalLayoutGroup>();
         vlg.padding = new RectOffset(20, 20, 15, 15);
         vlg.spacing = 12f;
@@ -151,8 +181,7 @@ public class PerkInventoryUI : MonoBehaviour
         MakeSeparator(panelRoot.transform);
 
         // ── Active Section ──
-        GameObject activeSectionGO = MakeText("ActiveTitle", panelRoot.transform,
-            $"ACTIVE ({RunManager.instance?.activePerks.Count ?? 0}/{RunManager.MAX_ACTIVE_PERKS})", 16, TextAlignmentOptions.Left);
+        GameObject activeSectionGO = MakeText("ActiveTitle", panelRoot.transform, "ACTIVE (0/6)", 16, TextAlignmentOptions.Left);
         activeTitleText = activeSectionGO.GetComponent<TextMeshProUGUI>();
         activeTitleText.color = new Color(0.6f, 0.9f, 0.6f);
         activeSectionGO.AddComponent<LayoutElement>().preferredHeight = 24f;
@@ -169,7 +198,7 @@ public class PerkInventoryUI : MonoBehaviour
         activeHLG.childForceExpandWidth = false;
         activeHLG.childForceExpandHeight = false;
         var activeLE = activeContainerGO.AddComponent<LayoutElement>();
-        activeLE.preferredHeight = SLOT_SIZE + 26f; // slot + isim alani
+        activeLE.preferredHeight = SLOT_SIZE + 26f;
         activeLE.flexibleWidth = 1f;
 
         // ── Separator ──
@@ -199,7 +228,6 @@ public class PerkInventoryUI : MonoBehaviour
         // ── Kapat butonu — sag ust kose ──
         GameObject closeBtnGO = new GameObject("CloseButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         closeBtnGO.transform.SetParent(panelRoot.transform, false);
-        // Close butonunu layout'tan cikar, kendi pozisyonunu kullan
         closeBtnGO.AddComponent<LayoutElement>().ignoreLayout = true;
         RectTransform closeBtnRT = closeBtnGO.GetComponent<RectTransform>();
         closeBtnRT.anchorMin = new Vector2(1f, 1f);
@@ -211,13 +239,13 @@ public class PerkInventoryUI : MonoBehaviour
         Image closeBtnImg = closeBtnGO.GetComponent<Image>();
         closeBtnImg.color = new Color(0.6f, 0.2f, 0.2f, 0.9f);
 
-        Button closeBtn = closeBtnGO.GetComponent<Button>();
-        ColorBlock closeCB = closeBtn.colors;
+        closeButton = closeBtnGO.GetComponent<Button>();
+        ColorBlock closeCB = closeButton.colors;
         closeCB.normalColor = new Color(0.6f, 0.2f, 0.2f, 0.9f);
         closeCB.highlightedColor = new Color(0.8f, 0.3f, 0.3f, 1f);
         closeCB.pressedColor = new Color(0.5f, 0.15f, 0.15f, 1f);
-        closeBtn.colors = closeCB;
-        closeBtn.onClick.AddListener(Close);
+        closeButton.colors = closeCB;
+        closeButton.onClick.AddListener(Close);
 
         GameObject closeTxtGO = MakeText("X", closeBtnGO.transform, "X", 18, TextAlignmentOptions.Center);
         closeTxtGO.GetComponent<TextMeshProUGUI>().color = Color.white;
@@ -239,18 +267,15 @@ public class PerkInventoryUI : MonoBehaviour
     {
         if (panelRoot == null || RunManager.instance == null) return;
 
-        // Aktif perk basligini guncelle
         if (activeTitleText != null)
             activeTitleText.text = $"ACTIVE ({RunManager.instance.activePerks.Count}/{RunManager.MAX_ACTIVE_PERKS})";
 
-        // Stash basligini guncelle
         if (stashTitleText != null)
         {
             int stashCount = RunManager.instance.inventoryPerks.Count;
             stashTitleText.text = stashCount > 0 ? $"STASH ({stashCount})" : "STASH";
         }
 
-        // Aktif slotlari temizle ve yeniden olustur
         ClearSlots(spawnedActiveSlots);
         for (int i = 0; i < RunManager.MAX_ACTIVE_PERKS; i++)
         {
@@ -261,7 +286,6 @@ public class PerkInventoryUI : MonoBehaviour
             spawnedActiveSlots.Add(slot);
         }
 
-        // Stash slotlarini temizle ve yeniden olustur
         ClearSlots(spawnedStashSlots);
         for (int i = 0; i < RunManager.instance.inventoryPerks.Count; i++)
         {
@@ -287,7 +311,6 @@ public class PerkInventoryUI : MonoBehaviour
 
     private GameObject CreateSlot(BasePerk perk, bool isActiveSlot, int index)
     {
-        // Dis kapsayici
         GameObject slot = new GameObject("Slot", typeof(RectTransform));
         VerticalLayoutGroup slotVLG = slot.AddComponent<VerticalLayoutGroup>();
         slotVLG.spacing = 2f;
@@ -297,7 +320,6 @@ public class PerkInventoryUI : MonoBehaviour
         slotVLG.childForceExpandWidth = false;
         slotVLG.childForceExpandHeight = false;
 
-        // Ikon alani + buton
         GameObject iconGO = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         iconGO.transform.SetParent(slot.transform, false);
         RectTransform iconRT = iconGO.GetComponent<RectTransform>();
@@ -311,7 +333,6 @@ public class PerkInventoryUI : MonoBehaviour
 
         if (perk != null)
         {
-            // Perkli slot
             if (perk.icon != null)
             {
                 iconImg.sprite = perk.icon;
@@ -322,31 +343,26 @@ public class PerkInventoryUI : MonoBehaviour
                 iconImg.color = new Color(0.35f, 0.35f, 0.4f, 0.8f);
             }
 
-            // Rarity kenarligi
             Color rarityColor;
             ColorUtility.TryParseHtmlString(PerkListUI.GetRarityHex(perk.rarity), out rarityColor);
 
-            // Kenarligi outline olarak cizdirmek icin Outline componenti ekle
             Outline outline = iconGO.AddComponent<Outline>();
             outline.effectColor = rarityColor;
             outline.effectDistance = new Vector2(2f, 2f);
 
-            // Secili aktif slot vurgulama
             if (isActiveSlot && index == selectedActiveIndex)
             {
-                iconImg.color = new Color(1f, 1f, 0.7f, 1f); // Sarims vurgu
+                iconImg.color = new Color(1f, 1f, 0.7f, 1f);
                 outline.effectColor = Color.yellow;
                 outline.effectDistance = new Vector2(3f, 3f);
             }
 
-            // Buton renkleri
             ColorBlock cb = iconBtn.colors;
             cb.normalColor = Color.white;
             cb.highlightedColor = new Color(0.9f, 0.95f, 1f);
             cb.pressedColor = new Color(0.7f, 0.7f, 0.8f);
             iconBtn.colors = cb;
 
-            // Level gosterge
             if (perk.currentLevel > 1)
             {
                 GameObject lvGO = new GameObject("Lv", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
@@ -365,7 +381,6 @@ public class PerkInventoryUI : MonoBehaviour
                 lvTMP.raycastTarget = false;
             }
 
-            // Isim etiketi
             GameObject nameGO = new GameObject("Name", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
             nameGO.transform.SetParent(slot.transform, false);
             RectTransform nameRT = nameGO.GetComponent<RectTransform>();
@@ -382,18 +397,15 @@ public class PerkInventoryUI : MonoBehaviour
             nameTMP.overflowMode = TextOverflowModes.Ellipsis;
             nameTMP.raycastTarget = false;
 
-            // Tiklanma event'i
             int capturedIndex = index;
             bool capturedIsActive = isActiveSlot;
             iconBtn.onClick.AddListener(() => OnSlotClicked(capturedIsActive, capturedIndex));
         }
         else
         {
-            // Bos slot (sadece aktif slotlarda gosterilir)
             iconImg.color = new Color(0.15f, 0.15f, 0.2f, 0.5f);
             iconBtn.interactable = false;
 
-            // Bos isim alani (spacing icin)
             GameObject emptyNameGO = new GameObject("EmptyName", typeof(RectTransform));
             emptyNameGO.transform.SetParent(slot.transform, false);
             var emptyLE = emptyNameGO.AddComponent<LayoutElement>();
@@ -414,10 +426,8 @@ public class PerkInventoryUI : MonoBehaviour
 
         if (isActiveSlot)
         {
-            // Aktif slot tiklandi
             if (selectedActiveIndex == index)
             {
-                // Ayni slota tekrar tiklanirsa secimi iptal et
                 selectedActiveIndex = -1;
                 RefreshUI();
                 return;
@@ -425,26 +435,20 @@ public class PerkInventoryUI : MonoBehaviour
 
             if (selectedActiveIndex >= 0)
             {
-                // Zaten baska bir aktif slot secili — secimi iptal et
                 selectedActiveIndex = -1;
                 RefreshUI();
                 return;
             }
 
-            // Envanterde perk var mi kontrol et — yoksa bir sey yapma (aktif perki korumak isteriz)
             if (RunManager.instance.inventoryPerks.Count > 0)
             {
-                // Aktif perki sec — envanterdeki bir perke tiklanmasini bekle
                 selectedActiveIndex = index;
                 RefreshUI();
             }
             else
             {
-                // Envanter bos — aktif perki envantere tasima girisimine gerek yok
-                // Eger tek perk varsa bir sey yapma
                 if (RunManager.instance.activePerks.Count > 1 && index < RunManager.instance.activePerks.Count)
                 {
-                    // Aktif perki envantere tasi
                     RunManager.instance.MoveToInventory(index);
                     selectedActiveIndex = -1;
                 }
@@ -452,23 +456,18 @@ public class PerkInventoryUI : MonoBehaviour
         }
         else
         {
-            // Stash slot tiklandi
             if (selectedActiveIndex >= 0 && selectedActiveIndex < RunManager.instance.activePerks.Count)
             {
-                // Secili bir aktif slot var — swap yap
                 RunManager.instance.SwapPerk(selectedActiveIndex, index);
                 selectedActiveIndex = -1;
             }
             else if (RunManager.instance.activePerks.Count < RunManager.MAX_ACTIVE_PERKS)
             {
-                // Aktif slotlarda yer var — direkt aktife tasi
                 RunManager.instance.MoveToActive(index);
                 selectedActiveIndex = -1;
             }
             else
             {
-                // Aktif slotlar dolu, once bir aktif slot secilmesi lazim — bilgilendirme
-                // Bir sey yapma, kullanici once aktif bir slota tiklamali
                 selectedActiveIndex = -1;
                 RefreshUI();
             }
