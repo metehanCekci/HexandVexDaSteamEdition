@@ -5,8 +5,9 @@ using TMPro;
 using System.Collections.Generic;
 
 /// <summary>
-/// Perk envanter paneli — drag & drop ile perk yönetimi.
-/// Aktif slotlar (üst) ve stash (alt) arasında sürükle-bırak.
+/// Perk envanter yan paneli — map ekranında her zaman görünür.
+/// Drag & drop ile aktif slotlar ve stash arasında perk yönetimi.
+/// MapUI.Show/Hide ile birlikte açılır/kapanır.
 /// Editor tool ile sahnede olusturulur (Tools > Setup Perk Inventory).
 /// </summary>
 public class PerkInventoryUI : MonoBehaviour
@@ -18,12 +19,15 @@ public class PerkInventoryUI : MonoBehaviour
     [Header("Referanslar (Editor Tool Atar)")]
     public GameObject canvasGO;
     public GameObject panelRoot;
-    public GameObject overlayGO;
     public RectTransform activeSlotsContainer;
     public RectTransform stashGrid;
     public TextMeshProUGUI activeTitleText;
     public TextMeshProUGUI stashTitleText;
-    public Button closeButton;
+
+    [Header("Tooltip (Editor Tool Atar)")]
+    public GameObject tooltipObj;
+    public TextMeshProUGUI tooltipText;
+    public CanvasGroup tooltipCanvasGroup;
 
     // Spawnlanan slot objeleri
     private readonly List<GameObject> spawnedActiveSlots = new List<GameObject>();
@@ -36,13 +40,9 @@ public class PerkInventoryUI : MonoBehaviour
     private int dragIndex;
     private Canvas rootCanvas;
 
-    // Onceki timeScale
-    private float previousTimeScale = 1f;
-
-    private const float SLOT_SIZE = 64f;
-    private const float SLOT_SPACING = 10f;
-    private const float PANEL_WIDTH = 700f;
-    private const float PANEL_HEIGHT = 520f;
+    private const float SLOT_SIZE = 56f;
+    private const float SLOT_SPACING = 6f;
+    private const float PANEL_WIDTH = 280f;
 
     void Awake()
     {
@@ -57,11 +57,7 @@ public class PerkInventoryUI : MonoBehaviour
 
     void Start()
     {
-        if (closeButton != null)
-        {
-            closeButton.onClick.RemoveAllListeners();
-            closeButton.onClick.AddListener(Close);
-        }
+        // Başlangıçta gizli — MapUI.Show() açacak
         if (canvasGO != null) canvasGO.SetActive(false);
     }
 
@@ -72,10 +68,7 @@ public class PerkInventoryUI : MonoBehaviour
 
     void Update()
     {
-        if (IsOpen && Input.GetKeyDown(KeyCode.Escape))
-            Close();
-
-        // Ghost mouse takibi (unscaled çünkü timeScale=0)
+        // Ghost mouse takibi
         if (isDragging && dragGhost != null)
         {
             Vector2 pos;
@@ -101,25 +94,21 @@ public class PerkInventoryUI : MonoBehaviour
     }
 
     // ======================================================
-    // ACMA / KAPAMA
+    // GÖSTER / GİZLE (MapUI tarafından çağrılır)
     // ======================================================
 
-    public void Open()
+    public void Show()
     {
         if (canvasGO == null) BuildUI();
-        previousTimeScale = Time.timeScale;
-        Time.timeScale = 0f;
         canvasGO.SetActive(true);
-        if (panelRoot != null) panelRoot.SetActive(true);
         rootCanvas = canvasGO.GetComponent<Canvas>();
         RefreshUI();
     }
 
-    public void Close()
+    public void Hide()
     {
         CancelDrag();
         if (canvasGO != null) canvasGO.SetActive(false);
-        Time.timeScale = previousTimeScale;
     }
 
     // ======================================================
@@ -130,6 +119,7 @@ public class PerkInventoryUI : MonoBehaviour
     {
         if (perk == null) return;
 
+        HideTooltip();
         isDragging = true;
         dragIsActiveSlot = isActiveSlot;
         dragIndex = index;
@@ -159,7 +149,6 @@ public class PerkInventoryUI : MonoBehaviour
         outline.effectColor = rarityColor;
         outline.effectDistance = new Vector2(2f, 2f);
 
-        // Ghost'u en üste getir
         dragGhost.transform.SetAsLastSibling();
 
         // Kaynak slot'u soluk yap
@@ -231,12 +220,10 @@ public class PerkInventoryUI : MonoBehaviour
             // Stash → Aktif slot: hedef dolu ise swap, boş ise taşı
             if (targetIndex < RunManager.instance.activePerks.Count)
             {
-                // Aktif slot dolu — swap
                 RunManager.instance.SwapPerk(targetIndex, dragIndex);
             }
             else
             {
-                // Aktif slot boş — taşı
                 if (RunManager.instance.activePerks.Count < RunManager.MAX_ACTIVE_PERKS)
                     RunManager.instance.MoveToActive(dragIndex);
             }
@@ -256,6 +243,8 @@ public class PerkInventoryUI : MonoBehaviour
         var temp = perks[indexA];
         perks[indexA] = perks[indexB];
         perks[indexB] = temp;
+        // Priority güncelle — sıra = priority
+        UpdatePerkPriorities();
         RunManager.instance.RefreshPerkUI();
     }
 
@@ -267,6 +256,17 @@ public class PerkInventoryUI : MonoBehaviour
         var temp = perks[indexA];
         perks[indexA] = perks[indexB];
         perks[indexB] = temp;
+    }
+
+    /// <summary>Aktif perklerin priority'sini liste sırasına göre günceller.</summary>
+    private void UpdatePerkPriorities()
+    {
+        if (RunManager.instance == null) return;
+        for (int i = 0; i < RunManager.instance.activePerks.Count; i++)
+        {
+            if (RunManager.instance.activePerks[i] != null)
+                RunManager.instance.activePerks[i].priority = i;
+        }
     }
 
     private void CancelDrag()
@@ -289,129 +289,108 @@ public class PerkInventoryUI : MonoBehaviour
     }
 
     // ======================================================
-    // UI OLUSTURMA
+    // UI OLUŞTURMA — Sağ tarafta dikey yan panel
     // ======================================================
 
     public void BuildUI()
     {
-        canvasGO = new GameObject("PerkInventoryCanvas");
+        // Canvas — map canvas'ının üzerinde
+        canvasGO = new GameObject("PerkSidePanelCanvas");
         canvasGO.transform.SetParent(transform, false);
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 100;
+        canvas.sortingOrder = 91; // Map canvas (90) üzerinde
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        overlayGO = new GameObject("Overlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        overlayGO.transform.SetParent(canvasGO.transform, false);
-        StretchFull(overlayGO.GetComponent<RectTransform>());
-        Image overlayImg = overlayGO.GetComponent<Image>();
-        overlayImg.color = new Color(0f, 0f, 0f, 0.65f);
-        overlayImg.raycastTarget = true;
-
-        panelRoot = new GameObject("Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        // Panel — sağ tarafa sabitlenmiş dikey panel
+        panelRoot = new GameObject("SidePanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         panelRoot.transform.SetParent(canvasGO.transform, false);
         RectTransform panelRT = panelRoot.GetComponent<RectTransform>();
-        panelRT.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRT.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRT.pivot = new Vector2(0.5f, 0.5f);
-        panelRT.sizeDelta = new Vector2(PANEL_WIDTH, PANEL_HEIGHT);
-        panelRoot.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 0.96f);
+        panelRT.anchorMin = new Vector2(1f, 0f);
+        panelRT.anchorMax = new Vector2(1f, 1f);
+        panelRT.pivot = new Vector2(1f, 0.5f);
+        panelRT.offsetMin = new Vector2(-PANEL_WIDTH, 60f);  // alttan 60px boşluk (perk bar)
+        panelRT.offsetMax = new Vector2(0f, -10f);            // üstten 10px boşluk
+        panelRoot.GetComponent<Image>().color = new Color(0.08f, 0.08f, 0.12f, 0.88f);
 
         VerticalLayoutGroup vlg = panelRoot.AddComponent<VerticalLayoutGroup>();
-        vlg.padding = new RectOffset(20, 20, 15, 15);
-        vlg.spacing = 12f;
+        vlg.padding = new RectOffset(12, 12, 10, 10);
+        vlg.spacing = 8f;
         vlg.childAlignment = TextAnchor.UpperCenter;
         vlg.childControlWidth = true;
         vlg.childControlHeight = false;
         vlg.childForceExpandWidth = true;
         vlg.childForceExpandHeight = false;
 
-        // Baslik
-        GameObject titleGO = MakeText("Title", panelRoot.transform, "PERK INVENTORY", 24, TextAlignmentOptions.Center);
+        // Başlık
+        GameObject titleGO = MakeText("Title", panelRoot.transform, "PERKS", 20, TextAlignmentOptions.Center);
         titleGO.GetComponent<TextMeshProUGUI>().color = new Color(0.9f, 0.85f, 0.6f);
-        titleGO.AddComponent<LayoutElement>().preferredHeight = 35f;
+        titleGO.AddComponent<LayoutElement>().preferredHeight = 28f;
 
         MakeSeparator(panelRoot.transform);
 
         // Active section
-        GameObject activeSectionGO = MakeText("ActiveTitle", panelRoot.transform, "ACTIVE (0/6)", 16, TextAlignmentOptions.Left);
+        GameObject activeSectionGO = MakeText("ActiveTitle", panelRoot.transform, "ACTIVE (0/6)", 14, TextAlignmentOptions.Left);
         activeTitleText = activeSectionGO.GetComponent<TextMeshProUGUI>();
         activeTitleText.color = new Color(0.6f, 0.9f, 0.6f);
-        activeSectionGO.AddComponent<LayoutElement>().preferredHeight = 24f;
+        activeSectionGO.AddComponent<LayoutElement>().preferredHeight = 20f;
 
+        // Active slots — 2 satır 3 sütun grid
         GameObject activeContainerGO = new GameObject("ActiveSlots", typeof(RectTransform));
         activeContainerGO.transform.SetParent(panelRoot.transform, false);
         activeSlotsContainer = activeContainerGO.GetComponent<RectTransform>();
-        HorizontalLayoutGroup activeHLG = activeContainerGO.AddComponent<HorizontalLayoutGroup>();
-        activeHLG.spacing = SLOT_SPACING;
-        activeHLG.childAlignment = TextAnchor.MiddleCenter;
-        activeHLG.childControlWidth = false;
-        activeHLG.childControlHeight = false;
-        activeHLG.childForceExpandWidth = false;
-        activeHLG.childForceExpandHeight = false;
+        GridLayoutGroup activeGLG = activeContainerGO.AddComponent<GridLayoutGroup>();
+        activeGLG.cellSize = new Vector2(SLOT_SIZE + 20f, SLOT_SIZE + 20f);
+        activeGLG.spacing = new Vector2(SLOT_SPACING, SLOT_SPACING);
+        activeGLG.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        activeGLG.constraintCount = 3;
+        activeGLG.childAlignment = TextAnchor.UpperCenter;
         var activeLE = activeContainerGO.AddComponent<LayoutElement>();
-        activeLE.preferredHeight = SLOT_SIZE + 26f;
+        activeLE.preferredHeight = (SLOT_SIZE + 20f) * 2 + SLOT_SPACING + 4f;
         activeLE.flexibleWidth = 1f;
 
         MakeSeparator(panelRoot.transform);
 
         // Stash section
-        GameObject stashSectionGO = MakeText("StashTitle", panelRoot.transform, "STASH", 16, TextAlignmentOptions.Left);
+        GameObject stashSectionGO = MakeText("StashTitle", panelRoot.transform, "STASH", 14, TextAlignmentOptions.Left);
         stashTitleText = stashSectionGO.GetComponent<TextMeshProUGUI>();
         stashTitleText.color = new Color(0.7f, 0.7f, 0.9f);
-        stashSectionGO.AddComponent<LayoutElement>().preferredHeight = 24f;
+        stashSectionGO.AddComponent<LayoutElement>().preferredHeight = 20f;
+
+        // Stash grid — scrollable area
+        GameObject stashScrollGO = new GameObject("StashScroll", typeof(RectTransform));
+        stashScrollGO.transform.SetParent(panelRoot.transform, false);
+        var stashScrollLE = stashScrollGO.AddComponent<LayoutElement>();
+        stashScrollLE.flexibleHeight = 1f;
+        stashScrollLE.flexibleWidth = 1f;
 
         GameObject stashContainerGO = new GameObject("StashGrid", typeof(RectTransform));
-        stashContainerGO.transform.SetParent(panelRoot.transform, false);
+        stashContainerGO.transform.SetParent(stashScrollGO.transform, false);
         stashGrid = stashContainerGO.GetComponent<RectTransform>();
+        // Stretch to parent
+        stashGrid.anchorMin = Vector2.zero;
+        stashGrid.anchorMax = Vector2.one;
+        stashGrid.offsetMin = Vector2.zero;
+        stashGrid.offsetMax = Vector2.zero;
+
         GridLayoutGroup glg = stashContainerGO.AddComponent<GridLayoutGroup>();
-        glg.cellSize = new Vector2(SLOT_SIZE + 40f, SLOT_SIZE + 26f);
+        glg.cellSize = new Vector2(SLOT_SIZE + 20f, SLOT_SIZE + 20f);
         glg.spacing = new Vector2(SLOT_SPACING, SLOT_SPACING);
         glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        glg.constraintCount = 6;
+        glg.constraintCount = 3;
         glg.childAlignment = TextAnchor.UpperCenter;
-        var stashLE = stashContainerGO.AddComponent<LayoutElement>();
-        stashLE.preferredHeight = 200f;
-        stashLE.flexibleHeight = 1f;
-        stashLE.flexibleWidth = 1f;
 
-        // Close button
-        GameObject closeBtnGO = new GameObject("CloseButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-        closeBtnGO.transform.SetParent(panelRoot.transform, false);
-        closeBtnGO.AddComponent<LayoutElement>().ignoreLayout = true;
-        RectTransform closeBtnRT = closeBtnGO.GetComponent<RectTransform>();
-        closeBtnRT.anchorMin = new Vector2(1f, 1f);
-        closeBtnRT.anchorMax = new Vector2(1f, 1f);
-        closeBtnRT.pivot = new Vector2(1f, 1f);
-        closeBtnRT.anchoredPosition = new Vector2(-5f, -5f);
-        closeBtnRT.sizeDelta = new Vector2(32f, 32f);
-        closeBtnGO.GetComponent<Image>().color = new Color(0.6f, 0.2f, 0.2f, 0.9f);
-
-        closeButton = closeBtnGO.GetComponent<Button>();
-        ColorBlock closeCB = closeButton.colors;
-        closeCB.normalColor = new Color(0.6f, 0.2f, 0.2f, 0.9f);
-        closeCB.highlightedColor = new Color(0.8f, 0.3f, 0.3f, 1f);
-        closeCB.pressedColor = new Color(0.5f, 0.15f, 0.15f, 1f);
-        closeButton.colors = closeCB;
-        closeButton.onClick.AddListener(Close);
-
-        GameObject closeTxtGO = MakeText("X", closeBtnGO.transform, "X", 18, TextAlignmentOptions.Center);
-        closeTxtGO.GetComponent<TextMeshProUGUI>().color = Color.white;
-        closeTxtGO.GetComponent<TextMeshProUGUI>().raycastTarget = false;
-        RectTransform closeTxtRT = closeTxtGO.GetComponent<RectTransform>();
-        closeTxtRT.anchorMin = Vector2.zero;
-        closeTxtRT.anchorMax = Vector2.one;
-        closeTxtRT.offsetMin = Vector2.zero;
-        closeTxtRT.offsetMax = Vector2.zero;
+        // Tooltip
+        BuildTooltip(canvasGO.transform);
 
         canvasGO.SetActive(false);
     }
 
     // ======================================================
-    // UI YENILEME
+    // UI YENİLEME
     // ======================================================
 
     public void RefreshUI()
@@ -455,28 +434,22 @@ public class PerkInventoryUI : MonoBehaviour
     }
 
     // ======================================================
-    // SLOT OLUSTURMA
+    // SLOT OLUŞTURMA
     // ======================================================
 
     private GameObject CreateSlot(BasePerk perk, bool isActiveSlot, int index)
     {
         GameObject slot = new GameObject("Slot", typeof(RectTransform));
-        VerticalLayoutGroup slotVLG = slot.AddComponent<VerticalLayoutGroup>();
-        slotVLG.spacing = 2f;
-        slotVLG.childAlignment = TextAnchor.UpperCenter;
-        slotVLG.childControlWidth = false;
-        slotVLG.childControlHeight = false;
-        slotVLG.childForceExpandWidth = false;
-        slotVLG.childForceExpandHeight = false;
 
         // İkon alanı
         GameObject iconGO = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         iconGO.transform.SetParent(slot.transform, false);
         RectTransform iconRT = iconGO.GetComponent<RectTransform>();
+        iconRT.anchorMin = new Vector2(0.5f, 1f);
+        iconRT.anchorMax = new Vector2(0.5f, 1f);
+        iconRT.pivot = new Vector2(0.5f, 1f);
+        iconRT.anchoredPosition = Vector2.zero;
         iconRT.sizeDelta = new Vector2(SLOT_SIZE, SLOT_SIZE);
-        var iconLE = iconGO.AddComponent<LayoutElement>();
-        iconLE.preferredWidth = SLOT_SIZE;
-        iconLE.preferredHeight = SLOT_SIZE;
 
         Image iconImg = iconGO.GetComponent<Image>();
 
@@ -517,35 +490,87 @@ public class PerkInventoryUI : MonoBehaviour
                 lvRT.sizeDelta = new Vector2(22f, 16f);
                 TextMeshProUGUI lvTMP = lvGO.GetComponent<TextMeshProUGUI>();
                 lvTMP.text = perk.currentLevel.ToString();
-                lvTMP.fontSize = 12;
+                lvTMP.fontSize = 11;
                 lvTMP.alignment = TextAlignmentOptions.BottomRight;
                 lvTMP.color = new Color(1f, 0.9f, 0.4f);
                 lvTMP.raycastTarget = false;
             }
 
+            // Priority gösterge (aktif slotlar için)
+            if (isActiveSlot)
+            {
+                GameObject prioGO = new GameObject("Prio", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                prioGO.transform.SetParent(iconGO.transform, false);
+                RectTransform prioRT = prioGO.GetComponent<RectTransform>();
+                prioRT.anchorMin = new Vector2(0f, 0f);
+                prioRT.anchorMax = new Vector2(0f, 0f);
+                prioRT.pivot = new Vector2(0f, 0f);
+                prioRT.anchoredPosition = new Vector2(-2f, -2f);
+                prioRT.sizeDelta = new Vector2(18f, 14f);
+                TextMeshProUGUI prioTMP = prioGO.GetComponent<TextMeshProUGUI>();
+                prioTMP.text = (index + 1).ToString();
+                prioTMP.fontSize = 9;
+                prioTMP.alignment = TextAlignmentOptions.BottomLeft;
+                prioTMP.color = new Color(0.7f, 0.7f, 0.7f, 0.6f);
+                prioTMP.raycastTarget = false;
+            }
+
             // İsim etiketi
             GameObject nameGO = new GameObject("Name", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
             nameGO.transform.SetParent(slot.transform, false);
-            nameGO.GetComponent<RectTransform>().sizeDelta = new Vector2(SLOT_SIZE + 40f, 20f);
-            var nameLE = nameGO.AddComponent<LayoutElement>();
-            nameLE.preferredWidth = SLOT_SIZE + 40f;
-            nameLE.preferredHeight = 20f;
+            RectTransform nameRT = nameGO.GetComponent<RectTransform>();
+            nameRT.anchorMin = new Vector2(0.5f, 1f);
+            nameRT.anchorMax = new Vector2(0.5f, 1f);
+            nameRT.pivot = new Vector2(0.5f, 1f);
+            nameRT.anchoredPosition = new Vector2(0f, -(SLOT_SIZE + 1f));
+            nameRT.sizeDelta = new Vector2(SLOT_SIZE + 20f, 16f);
             TextMeshProUGUI nameTMP = nameGO.GetComponent<TextMeshProUGUI>();
             nameTMP.text = perk.perkName;
-            nameTMP.fontSize = 10;
+            nameTMP.fontSize = 9;
             nameTMP.alignment = TextAlignmentOptions.Center;
             nameTMP.color = rarityColor;
             nameTMP.enableWordWrapping = false;
             nameTMP.overflowMode = TextOverflowModes.Ellipsis;
             nameTMP.raycastTarget = false;
 
-            // Drag event'leri
+            // Sağ tık: aktif perk'i stash'e / stash perk'i aktife taşı
             EventTrigger trigger = iconGO.AddComponent<EventTrigger>();
 
             int ci = index;
             bool cia = isActiveSlot;
             BasePerk cp = perk;
 
+            var clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            clickEntry.callback.AddListener((data) =>
+            {
+                PointerEventData ped = (PointerEventData)data;
+                if (ped.button == PointerEventData.InputButton.Right)
+                {
+                    if (cia)
+                    {
+                        // Aktif → Stash'e gönder
+                        if (RunManager.instance != null && ci < RunManager.instance.activePerks.Count)
+                        {
+                            RunManager.instance.MoveToInventory(ci);
+                            UpdatePerkPriorities();
+                            RunManager.instance.RefreshPerkUI();
+                        }
+                    }
+                    else
+                    {
+                        // Stash → Aktife taşı (yer varsa)
+                        if (RunManager.instance != null && RunManager.instance.activePerks.Count < RunManager.MAX_ACTIVE_PERKS)
+                        {
+                            RunManager.instance.MoveToActive(ci);
+                            UpdatePerkPriorities();
+                            RunManager.instance.RefreshPerkUI();
+                        }
+                    }
+                }
+            });
+            trigger.triggers.Add(clickEntry);
+
+            // Drag event'leri
             var beginEntry = new EventTrigger.Entry { eventID = EventTriggerType.BeginDrag };
             beginEntry.callback.AddListener((data) => BeginDrag(cia, ci, cp, (PointerEventData)data));
             trigger.triggers.Add(beginEntry);
@@ -557,20 +582,114 @@ public class PerkInventoryUI : MonoBehaviour
             var endEntry = new EventTrigger.Entry { eventID = EventTriggerType.EndDrag };
             endEntry.callback.AddListener((data) => EndDrag((PointerEventData)data));
             trigger.triggers.Add(endEntry);
+
+            // Hover: tooltip
+            RectTransform hoverRT = iconGO.GetComponent<RectTransform>();
+            var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enterEntry.callback.AddListener((_) => { if (!isDragging) ShowTooltip(cp, hoverRT); });
+            trigger.triggers.Add(enterEntry);
+
+            var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exitEntry.callback.AddListener((_) => HideTooltip());
+            trigger.triggers.Add(exitEntry);
         }
         else
         {
             // Boş slot
             iconImg.color = new Color(0.15f, 0.15f, 0.2f, 0.5f);
-
-            GameObject emptyNameGO = new GameObject("EmptyName", typeof(RectTransform));
-            emptyNameGO.transform.SetParent(slot.transform, false);
-            var emptyLE = emptyNameGO.AddComponent<LayoutElement>();
-            emptyLE.preferredWidth = SLOT_SIZE + 40f;
-            emptyLE.preferredHeight = 20f;
         }
 
         return slot;
+    }
+
+    // ======================================================
+    // TOOLTIP
+    // ======================================================
+
+    public void BuildTooltip(Transform canvasTransform)
+    {
+        tooltipObj = new GameObject("PerkTooltip", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        tooltipObj.transform.SetParent(canvasTransform, false);
+        RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
+        ttRT.sizeDelta = new Vector2(240f, 70f);
+        ttRT.anchorMin = new Vector2(0f, 0.5f);
+        ttRT.anchorMax = new Vector2(0f, 0.5f);
+        ttRT.pivot = new Vector2(1f, 0.5f);
+        ttRT.anchoredPosition = new Vector2(-10f, 0f);
+
+        Image bg = tooltipObj.GetComponent<Image>();
+        bg.color = new Color(0.08f, 0.08f, 0.12f, 0.92f);
+        bg.raycastTarget = false;
+
+        tooltipCanvasGroup = tooltipObj.AddComponent<CanvasGroup>();
+        tooltipCanvasGroup.alpha = 0f;
+        tooltipCanvasGroup.blocksRaycasts = false;
+        tooltipCanvasGroup.interactable = false;
+
+        GameObject textGO = new GameObject("TooltipText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textGO.transform.SetParent(tooltipObj.transform, false);
+        RectTransform textRT = textGO.GetComponent<RectTransform>();
+        textRT.anchorMin = Vector2.zero;
+        textRT.anchorMax = Vector2.one;
+        textRT.offsetMin = new Vector2(8f, 6f);
+        textRT.offsetMax = new Vector2(-8f, -6f);
+
+        tooltipText = textGO.GetComponent<TextMeshProUGUI>();
+        tooltipText.fontSize = 13;
+        tooltipText.color = Color.white;
+        tooltipText.alignment = TextAlignmentOptions.TopLeft;
+        tooltipText.enableWordWrapping = true;
+        tooltipText.richText = true;
+        tooltipText.raycastTarget = false;
+
+        var ttCSF = tooltipObj.AddComponent<ContentSizeFitter>();
+        ttCSF.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        ttCSF.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        var ttLE = tooltipObj.AddComponent<LayoutElement>();
+        ttLE.preferredWidth = 240f;
+
+        tooltipObj.SetActive(false);
+    }
+
+    private void ShowTooltip(BasePerk perk, RectTransform slotRT)
+    {
+        if (tooltipObj == null || tooltipText == null || perk == null) return;
+
+        string rarityHex = PerkListUI.GetRarityHex(perk.rarity);
+        string lvText = $"<color=#CCCCCC>Lv {perk.currentLevel}/{perk.maxLevel}</color>";
+        string desc = string.IsNullOrEmpty(perk.description) ? "" : $"\n<color=#AAAAAA>{perk.description}</color>";
+        string prioText = "";
+
+        if (RunManager.instance != null)
+        {
+            int idx = RunManager.instance.activePerks.IndexOf(perk);
+            if (idx >= 0)
+                prioText = $"  <color=#888888>#{idx + 1}</color>";
+        }
+
+        tooltipText.text = $"<color={rarityHex}>{perk.perkName}</color>  {lvText}{prioText}{desc}";
+
+        tooltipObj.SetActive(true);
+
+        // Slot'un world position'ını screen position'a çevir, sonra canvas local'ine dönüştür
+        RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
+        RectTransform parentRT = ttRT.parent as RectTransform;
+        Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(null, slotRT.position);
+        Vector2 localPoint;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRT, screenPos, null, out localPoint);
+
+        // Slot'un solunda göster
+        ttRT.anchoredPosition = new Vector2(localPoint.x - SLOT_SIZE / 2f - 10f, localPoint.y);
+
+        if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 1f;
+    }
+
+    private void HideTooltip()
+    {
+        if (tooltipObj == null) return;
+        if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 0f;
+        tooltipObj.SetActive(false);
     }
 
     // ======================================================
@@ -600,14 +719,6 @@ public class PerkInventoryUI : MonoBehaviour
         var sepLE = sepGO.AddComponent<LayoutElement>();
         sepLE.preferredHeight = 1f;
         sepLE.flexibleWidth = 1f;
-    }
-
-    private static void StretchFull(RectTransform rt)
-    {
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
     }
 }
 

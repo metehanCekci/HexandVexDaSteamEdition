@@ -7,6 +7,7 @@ using TMPro;
 /// Tools > Setup Active Perk Bar
 /// Sahnede ActivePerkBar canvas'ini olusturur.
 /// Inspector'dan duzenlenebilir — pozisyon, boyut, renk vs. hep gorunur.
+/// Drag ile perk sıralama — sıra combat priority'yi belirler.
 /// </summary>
 public class ActivePerkBarSetup : EditorWindow
 {
@@ -77,22 +78,13 @@ public class ActivePerkBarSetup : EditorWindow
         if (font != null && bar.tooltipText != null)
             bar.tooltipText.font = font;
 
-        // ─── INV BUTONU ───
-        bar.BuildInventoryButton(canvasGO.transform);
-        // Font'u INV butonuna da uygula
-        if (font != null)
-        {
-            var btnTMP = bar.inventoryButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (btnTMP != null) btnTMP.font = font;
-        }
-
         // ─── SELECTION ───
         Selection.activeGameObject = rootGO;
         EditorUtility.SetDirty(rootGO);
 
-        Debug.Log("✅ ActivePerkBar sahnede oluşturuldu!\n" +
+        Debug.Log("ActivePerkBar sahnede oluşturuldu!\n" +
                   "• Inspector'dan pozisyon, boyut, renk ayarlayabilirsin\n" +
                   "• Runtime'da ikonlar otomatik dolar\n" +
-                  "• INV butonu sağ üstte — PerkInventoryUI'ı açar");
+                  "• Drag ile perk sıralama — sıra combat priority'yi belirler");
     }
 }

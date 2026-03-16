@@ -44,7 +44,8 @@ public class MapManager : MonoBehaviour
             defaultConfig.layerName = "Layer 1";
             defaultConfig.totalRows = 8;
             defaultConfig.minNodesPerRow = 2;
-            defaultConfig.maxNodesPerRow = 4;
+            defaultConfig.maxNodesPerRow = 3;
+            defaultConfig.threeNodeChance = 0.15f;
             defaultConfig.shopChance = 0.12f;
             defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
@@ -57,6 +58,12 @@ public class MapManager : MonoBehaviour
         if (mapUI == null)
         {
             BuildUIFromCode();
+        }
+
+        // Perk side panel yoksa otomatik oluştur
+        if (PerkInventoryUI.instance == null)
+        {
+            PerkInventoryUI.CreateFromCode();
         }
 
         // Rest UI yoksa otomatik oluştur
@@ -192,11 +199,20 @@ public class MapManager : MonoBehaviour
         bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
 
         Button btn = go.AddComponent<Button>();
-        ColorBlock cb = btn.colors;
-        cb.highlightedColor = new Color(1f, 0.9f, 0.5f);
-        cb.pressedColor = new Color(0.8f, 0.7f, 0.3f);
-        cb.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
-        btn.colors = cb;
+        btn.transition = Selectable.Transition.None;
+        btn.targetGraphic = bg;
+
+        // Outline (ince çerçeve — #00050C renk, başlangıçta gizli)
+        GameObject outlineGO = MakeUIObj("Outline", go.transform);
+        var outlineRT = outlineGO.GetComponent<RectTransform>();
+        outlineRT.anchorMin = Vector2.zero;
+        outlineRT.anchorMax = Vector2.one;
+        outlineRT.offsetMin = new Vector2(-1f, -1f);
+        outlineRT.offsetMax = new Vector2(1f, 1f);
+        Image outlineImg = outlineGO.AddComponent<Image>();
+        outlineImg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta tamamen gizli
+        outlineImg.raycastTarget = false;
+        outlineGO.transform.SetAsFirstSibling(); // BG'nin arkasında
 
         // Icon
         GameObject iconGO = MakeUIObj("Icon", go.transform);
@@ -226,6 +242,7 @@ public class MapManager : MonoBehaviour
         nodeUI.backgroundImage = bg;
         nodeUI.button = btn;
         nodeUI.labelText = labelTxt;
+        nodeUI.outlineImage = outlineImg;
 
         return go;
     }

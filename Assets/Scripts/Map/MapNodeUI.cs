@@ -1,16 +1,29 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class MapNodeUI : MonoBehaviour
+public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("UI References")]
     public Image iconImage;
     public Image backgroundImage;
+    public Image outlineImage;
     public Button button;
     public TMP_Text labelText;
 
     [HideInInspector] public int nodeId;
+
+    private RectTransform outlineRT;
+    private static readonly Color outlineColor = new Color(0f / 255f, 5f / 255f, 12f / 255f, 1f); // #00050C
+
+    // Hover lerp
+    private bool isHovered;
+    private float hoverT; // 0 = normal, 1 = full hover
+    private const float lerpSpeed = 8f;
+    private const float hoverScale = 1.06f;
+    private const float normalOutline = 1f;
+    private const float hoverOutline = 2.5f;
 
     // ─── Node tipine göre icon sprite'ları (MapUI'dan atanacak) ───
     private static Sprite combatIcon;
@@ -36,6 +49,9 @@ public class MapNodeUI : MonoBehaviour
     {
         nodeId = node.id;
 
+        if (outlineImage != null)
+            outlineRT = outlineImage.GetComponent<RectTransform>();
+
         // Node tipini label olarak yaz (sprite yoksa okunabilsin)
         if (labelText != null)
             labelText.text = GetNodeLabel(node.nodeType);
@@ -58,6 +74,40 @@ public class MapNodeUI : MonoBehaviour
         }
     }
 
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (button != null && !button.interactable) return;
+        isHovered = true;
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isHovered = false;
+    }
+
+    void Update()
+    {
+        // Lerp hover
+        float target = isHovered ? 1f : 0f;
+        if (Mathf.Abs(hoverT - target) < 0.001f)
+        {
+            hoverT = target;
+            return;
+        }
+
+        hoverT = Mathf.Lerp(hoverT, target, Time.unscaledDeltaTime * lerpSpeed);
+
+        float scale = Mathf.Lerp(1f, hoverScale, hoverT);
+        transform.localScale = new Vector3(scale, scale, 1f);
+
+        if (outlineRT != null && showOutline)
+        {
+            float size = Mathf.Lerp(normalOutline, hoverOutline, hoverT);
+            outlineRT.offsetMin = new Vector2(-size, -size);
+            outlineRT.offsetMax = new Vector2(size, size);
+        }
+    }
+
     private string GetNodeLabel(MapNodeType type)
     {
         switch (type)
@@ -73,9 +123,10 @@ public class MapNodeUI : MonoBehaviour
         }
     }
 
-    private Color baseColor; // Setup'ta atanan node rengi
+    private Color baseColor;
+    private bool showOutline; // Outline sadece seçilebilir node'larda
 
-    public void SetState(bool isReachable, bool isVisited, bool isCurrent)
+    public void SetState(bool isReachable, bool isVisited, bool isCurrent, bool isFutureReachable = true)
     {
         if (button != null)
             button.interactable = isReachable && !isVisited;
@@ -84,24 +135,25 @@ public class MapNodeUI : MonoBehaviour
         {
             if (isCurrent)
             {
-                // Yeşil parlak çerçeve efekti — node rengini koru ama parlaklık ekle
                 backgroundImage.color = Color.Lerp(baseColor, new Color(0.2f, 1f, 0.4f), 0.5f);
             }
             else if (isVisited)
             {
-                // Soluk / karartılmış
                 backgroundImage.color = baseColor * 0.35f;
                 backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0.5f);
             }
             else if (isReachable)
             {
-                // Normal node rengi + hafif parlama
                 backgroundImage.color = baseColor * 1.2f;
                 backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 1f);
             }
+            else if (!isFutureReachable)
+            {
+                backgroundImage.color = baseColor * 0.15f;
+                backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0.2f);
+            }
             else
             {
-                // Kilitli — çok soluk
                 backgroundImage.color = baseColor * 0.25f;
                 backgroundImage.color = new Color(backgroundImage.color.r, backgroundImage.color.g, backgroundImage.color.b, 0.35f);
             }
@@ -109,12 +161,43 @@ public class MapNodeUI : MonoBehaviour
 
         if (labelText != null)
         {
-            labelText.color = (isVisited && !isCurrent) ? new Color(0.7f, 0.7f, 0.7f, 0.4f) : Color.white;
+            if (!isFutureReachable && !isVisited)
+                labelText.color = new Color(0.5f, 0.5f, 0.5f, 0.15f);
+            else if (isVisited && !isCurrent)
+                labelText.color = new Color(0.7f, 0.7f, 0.7f, 0.4f);
+            else
+                labelText.color = Color.white;
         }
 
         if (iconImage != null)
         {
-            iconImage.color = (isVisited && !isCurrent) ? new Color(1f, 1f, 1f, 0.3f) : Color.white;
+            if (!isFutureReachable && !isVisited)
+                iconImage.color = new Color(1f, 1f, 1f, 0.1f);
+            else if (isVisited && !isCurrent)
+                iconImage.color = new Color(1f, 1f, 1f, 0.3f);
+            else
+                iconImage.color = Color.white;
+        }
+
+        // Outline: SADECE seçilebilir node'larda görünür
+        showOutline = isReachable && !isVisited;
+        if (outlineImage != null)
+        {
+            if (showOutline)
+                outlineImage.color = outlineColor;
+            else
+                outlineImage.color = new Color(0f, 0f, 0f, 0f); // Tamamen gizli
+        }
+
+        // Hover resetle
+        isHovered = false;
+        hoverT = 0f;
+        transform.localScale = Vector3.one;
+        if (outlineRT != null)
+        {
+            float size = normalOutline;
+            outlineRT.offsetMin = new Vector2(-size, -size);
+            outlineRT.offsetMax = new Vector2(size, size);
         }
     }
 
@@ -141,7 +224,6 @@ public class MapNodeUI : MonoBehaviour
         }
         else
         {
-            // Icon yoksa node tipine göre renk ver
             iconImage.sprite = null;
             iconImage.color = GetFallbackColor(type);
         }
@@ -151,13 +233,13 @@ public class MapNodeUI : MonoBehaviour
     {
         switch (type)
         {
-            case MapNodeType.Combat:       return new Color(0.8f, 0.2f, 0.2f); // Kırmızı
-            case MapNodeType.EliteCombat:   return new Color(1f, 0.4f, 0f);     // Turuncu
-            case MapNodeType.Shop:          return new Color(1f, 0.85f, 0.2f);  // Altın
-            case MapNodeType.PerkSelection: return new Color(0.6f, 0.2f, 1f);   // Mor
-            case MapNodeType.Rest:          return new Color(0.2f, 0.8f, 0.4f); // Yeşil
-            case MapNodeType.Event:         return new Color(0.2f, 0.6f, 1f);   // Mavi
-            case MapNodeType.Boss:          return new Color(1f, 0f, 0f);        // Parlak Kırmızı
+            case MapNodeType.Combat:       return new Color(0.8f, 0.2f, 0.2f);
+            case MapNodeType.EliteCombat:   return new Color(1f, 0.4f, 0f);
+            case MapNodeType.Shop:          return new Color(1f, 0.85f, 0.2f);
+            case MapNodeType.PerkSelection: return new Color(0.6f, 0.2f, 1f);
+            case MapNodeType.Rest:          return new Color(0.2f, 0.8f, 0.4f);
+            case MapNodeType.Event:         return new Color(0.2f, 0.6f, 1f);
+            case MapNodeType.Boss:          return new Color(1f, 0f, 0f);
             default:                        return Color.white;
         }
     }
