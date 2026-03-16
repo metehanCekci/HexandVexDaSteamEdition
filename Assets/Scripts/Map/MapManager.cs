@@ -195,17 +195,30 @@ public class MapManager : MonoBehaviour
         rt.anchorMax = new Vector2(0.5f, 0f);
         rt.pivot = new Vector2(0.5f, 0.5f);
 
+        // ─── Glow Ring (dış parlama — arka planda) ───
+        GameObject glowGO = MakeUIObj("GlowRing", go.transform);
+        var glowRT = glowGO.GetComponent<RectTransform>();
+        glowRT.anchorMin = Vector2.zero;
+        glowRT.anchorMax = Vector2.one;
+        glowRT.offsetMin = new Vector2(-12f, -12f);
+        glowRT.offsetMax = new Vector2(12f, 12f);
+        Image glowImg = glowGO.AddComponent<Image>();
+        glowImg.color = new Color(1f, 1f, 1f, 0f);
+        glowImg.raycastTarget = false;
+
+        // ─── Background ───
         Image bg = go.AddComponent<Image>();
         bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
 
         Button btn = go.AddComponent<Button>();
         ColorBlock cb = btn.colors;
-        cb.highlightedColor = new Color(1f, 0.9f, 0.5f);
-        cb.pressedColor = new Color(0.8f, 0.7f, 0.3f);
-        cb.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
+        cb.normalColor = Color.white;
+        cb.highlightedColor = Color.white; // Hover rengi MapNodeUI yönetecek
+        cb.pressedColor = Color.white;
+        cb.disabledColor = Color.white;
         btn.colors = cb;
 
-        // Icon
+        // ─── Icon ───
         GameObject iconGO = MakeUIObj("Icon", go.transform);
         var iconRT = iconGO.GetComponent<RectTransform>();
         iconRT.anchorMin = new Vector2(0.15f, 0.15f);
@@ -214,8 +227,52 @@ public class MapManager : MonoBehaviour
         iconRT.offsetMax = Vector2.zero;
         Image iconImg = iconGO.AddComponent<Image>();
         iconImg.preserveAspect = true;
+        iconImg.raycastTarget = false;
 
-        // Label
+        // ─── Inner Shine (iç parlama overlay) ───
+        GameObject shineGO = MakeUIObj("InnerShine", go.transform);
+        var shineRT = shineGO.GetComponent<RectTransform>();
+        shineRT.anchorMin = Vector2.zero;
+        shineRT.anchorMax = Vector2.one;
+        shineRT.offsetMin = new Vector2(3f, 3f);
+        shineRT.offsetMax = new Vector2(-3f, -3f);
+        Image shineImg = shineGO.AddComponent<Image>();
+        shineImg.color = new Color(1f, 1f, 1f, 0f);
+        shineImg.raycastTarget = false;
+
+        // ─── Pulse Ring (click burst + current pulse) ───
+        GameObject pulseGO = MakeUIObj("PulseRing", go.transform);
+        var pulseRT = pulseGO.GetComponent<RectTransform>();
+        pulseRT.anchorMin = Vector2.zero;
+        pulseRT.anchorMax = Vector2.one;
+        pulseRT.offsetMin = new Vector2(-6f, -6f);
+        pulseRT.offsetMax = new Vector2(6f, 6f);
+        Image pulseImg = pulseGO.AddComponent<Image>();
+        pulseImg.color = new Color(1f, 1f, 1f, 0f);
+        pulseImg.raycastTarget = false;
+
+        // ─── Checkmark (visited göstergesi) ───
+        GameObject checkGO = new GameObject("Checkmark", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        checkGO.transform.SetParent(go.transform, false);
+        var checkRT = checkGO.GetComponent<RectTransform>();
+        checkRT.anchorMin = new Vector2(0.5f, 0.5f);
+        checkRT.anchorMax = new Vector2(0.5f, 0.5f);
+        checkRT.sizeDelta = new Vector2(36f, 36f);
+        Image checkImg = checkGO.GetComponent<Image>();
+        checkImg.color = new Color(0.5f, 1f, 0.5f, 0.6f);
+        checkImg.raycastTarget = false;
+        checkImg.enabled = false;
+        // Checkmark sembolü — text child
+        GameObject checkTxtGO = MakeUIObj("CheckText", checkGO.transform);
+        StretchFull(checkTxtGO.GetComponent<RectTransform>());
+        var checkTxtComp = checkTxtGO.AddComponent<TextMeshProUGUI>();
+        checkTxtComp.text = "\u2713";
+        checkTxtComp.fontSize = 26;
+        checkTxtComp.alignment = TextAlignmentOptions.Center;
+        checkTxtComp.color = new Color(0.3f, 0.9f, 0.4f, 0.8f);
+        checkTxtComp.raycastTarget = false;
+
+        // ─── Label ───
         GameObject labelGO = MakeUIObj("Label", go.transform);
         var labelRT = labelGO.GetComponent<RectTransform>();
         labelRT.anchorMin = new Vector2(0.5f, 0f);
@@ -227,12 +284,17 @@ public class MapManager : MonoBehaviour
         labelTxt.fontSize = 14;
         labelTxt.alignment = TextAlignmentOptions.Center;
         labelTxt.color = new Color(0.7f, 0.7f, 0.7f);
+        labelTxt.raycastTarget = false;
 
         MapNodeUI nodeUI = go.AddComponent<MapNodeUI>();
         nodeUI.iconImage = iconImg;
         nodeUI.backgroundImage = bg;
         nodeUI.button = btn;
         nodeUI.labelText = labelTxt;
+        nodeUI.glowRing = glowImg;
+        nodeUI.innerShine = shineImg;
+        nodeUI.checkmark = checkImg;
+        nodeUI.pulseRing = pulseImg;
 
         return go;
     }
