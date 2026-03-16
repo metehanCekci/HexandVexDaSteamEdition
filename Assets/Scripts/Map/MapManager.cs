@@ -176,7 +176,7 @@ public class MapManager : MonoBehaviour
         ui.linePrefab = linePrefab;
         ui.rowSpacing = 170f;
         ui.columnSpacing = 190f;
-        ui.nodeJitter = 15f;
+
 
         mapUI = ui;
         canvasGO.SetActive(false); // Başlangıçta tüm canvas'ı kapat
