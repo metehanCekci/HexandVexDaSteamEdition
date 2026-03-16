@@ -92,13 +92,6 @@ public class MapUI : MonoBehaviour
                 // Bottom-up: row 0 → y=150, row 1 → y=150+spacing, ... boss → y=150+maxRow*spacing
                 float yPos = node.row * rowSpacing + 150f;
 
-                // Jitter (start ve boss hariç)
-                if (node.row > 0 && node.row < maxRow)
-                {
-                    xPos += Random.Range(-nodeJitter, nodeJitter);
-                    yPos += Random.Range(-nodeJitter * 0.5f, nodeJitter * 0.5f);
-                }
-
                 rt.anchoredPosition = new Vector2(xPos, yPos);
                 nodeTransforms[node.id] = rt;
             }
