@@ -223,7 +223,7 @@ public class RunManager : MonoBehaviour
     }
 
     /// <summary>Perk UI'larini yeniler (ActivePerkBar + PerkInventoryUI).</summary>
-    private void RefreshPerkUI()
+    public void RefreshPerkUI()
     {
         if (ActivePerkBar.instance != null)
             ActivePerkBar.instance.RefreshBar();

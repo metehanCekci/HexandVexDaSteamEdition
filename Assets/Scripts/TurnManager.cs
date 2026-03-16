@@ -177,6 +177,13 @@ public class TurnManager : MonoBehaviour
 #if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.F6))
         {
+            // Cheat: tüm state'leri resetle ki level clear akışı takılmasın
+            isAttackAnimationPlaying = false;
+            isLevelClearTriggered = false;
+
+            // Boss kalkanını kaldır yoksa TakeDamage işlemez
+            if (SpawnerBossAI.instance != null) SpawnerBossAI.instance.isShielded = false;
+
             foreach (var e in new List<EnemyAI>(enemies))
                 if (e != null && e.health.currentHP > 0) e.health.TakeDamage(4444);
             enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
@@ -790,10 +797,25 @@ public class TurnManager : MonoBehaviour
             if (CleanupDeadAndCheckLevelClear()) yield break;
         }
 
-        // Highlight ve ok'ları yeni konuma göre güncelle
-        player.UpdateHighlights();
-        LockAllEnemyIntents();
-        ShowAllEnemyIntents();
+        // Teleport sonrası: saldırı varsa yap, sonra düşman fazına geç
+        isPlayerTurn = false;
+        if (RunManager.instance != null) RunManager.instance.remainingMoves = 0;
+        player.ClearHighlights();
+
+        // Bitişik düşmanlara otomatik saldırı
+        List<EnemyAI> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
+        if (adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
+        {
+            hasAttackedThisTurn = true;
+            isAttackAnimationPlaying = true;
+            yield return StartCoroutine(MultiAttack(adjacentEnemies));
+        }
+
+        if (!CleanupDeadAndCheckLevelClear())
+        {
+            yield return new WaitForSeconds(0.1f);
+            StartCoroutine(EnemyPhase());
+        }
     }
 
     public void StartThornPlacement()
