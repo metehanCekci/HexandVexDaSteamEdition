@@ -12,6 +12,7 @@ public class SecretPerkOrb : BaseItem
         itemName = "??? Orb";
         description = "A mysterious orb pulsing with unknown energy. Grants a secret mutation.";
         price = 8;
+        itemType = ItemType.Instant;
     }
 
     public override bool Use()

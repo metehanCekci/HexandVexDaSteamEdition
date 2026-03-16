@@ -42,9 +42,12 @@ public class LevelGenerator : MonoBehaviour
     public GameObject bossPrefab;
     public GameObject totemPrefab;
 
+    [Header("Shop Arena")]
+    public GameObject shopDealerPrefab; // Optional — if null, creates a placeholder sprite
+
     [Header("Warlock Düşman")]
     public GameObject warlockEnemyPrefab;
-    public int warlockStartLevel = 6; // İlk bosstan sonra (level 6+)
+    public int warlockStartLevel = 1; // Her bölümde çıkabilir
     [Range(0f, 1f)] public float warlockSpawnChance = 0.10f;
     private static float bossLegendaryMultiplier = 1f;  // Her bosstan sonra 2 ile çarpılır
 
@@ -59,7 +62,7 @@ public class LevelGenerator : MonoBehaviour
     }
 
     public int baseMapRadius = 3;
-    public int aoeStartLevel = 3;
+    public int aoeStartLevel = 1; // Her bölümde çıkabilir
 
     private List<Vector3Int> validCells = new List<Vector3Int>();
     public HashSet<Vector3Int> hazardCells = new HashSet<Vector3Int>();
@@ -100,27 +103,38 @@ public class LevelGenerator : MonoBehaviour
     {
         yield return null;
 
-        // Fader'ın animasyonunu beklemeye veya callback'ine güvenmeye gerek yok!
-        // Vibe'ı bozmadan leveli doğrudan üretiyoruz.
-        GenerateNextLevel();
-
-        if (ScreenFader.instance != null)
+        // Map sistemi aktifse: ilk level'i üretme, haritayı göster
+        if (MapManager.instance != null)
         {
-            Debug.Log("Harita çizildi. Ekran karartması (veya aydınlanması) arka planda çalışıyor.");
+            // ScreenFader'ın otomatik fade'lerini durdur — MapManager kontrol edecek
+            if (ScreenFader.instance != null)
+                ScreenFader.instance.StopAllCoroutines();
+
+            MapManager.instance.StartNewRun();
+            Debug.Log("Map sistemi aktif — harita gösteriliyor.");
+        }
+        else
+        {
+            // Legacy flow: direkt level üret
+            GenerateNextLevel();
+
+            if (ScreenFader.instance != null)
+            {
+                Debug.Log("Harita çizildi. Ekran karartması (veya aydınlanması) arka planda çalışıyor.");
+            }
         }
     }
 
     public void GenerateNextLevel()
     {
-        // Yeni oyun başlıyorsa (level 0 veya 1) multiplier'ı reset et
-        if (RunManager.instance.currentLevel <= 1)
+        // Yeni oyun başlıyorsa (level 0) multiplier'ı reset et
+        if (RunManager.instance.currentLevel == 0)
         {
             bossLegendaryMultiplier = 1f;
         }
 
-        // Boss hezimetini algıla ve legendary multiplier'ı artır
-        // currentLevel > 1 kontrolü: ilk level'da (yeni oyun) yanlışlıkla 2x olmasını engeller
-        if (RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1)
+        // Boss hezimetini algıla ve legendary multiplier'ı artır (sadece legacy modda)
+        if (MapManager.instance == null && RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 1)
         {
             bossLegendaryMultiplier *= 2f;
             Debug.Log($"🏆 Boss yenildi! Legendary multiplier şimdi: {bossLegendaryMultiplier}x");
@@ -133,7 +147,8 @@ public class LevelGenerator : MonoBehaviour
             if (perk != null) perk.OnLevelStart();
         }
 
-        if (RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0)
+        // Map sistemi aktifse boss kontrolü MapManager'a ait — burada tetikleme
+        if (MapManager.instance == null && RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0)
         {
             GenerateBossArena();
             return;
@@ -156,8 +171,12 @@ public class LevelGenerator : MonoBehaviour
         TurnManager.instance.enemies.Clear();
 
         bool isPostBossLevel = RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1;
+        bool isEliteNode = RunManager.instance.currentNodeType == MapNodeType.EliteCombat;
         int currentRadius = baseMapRadius + (RunManager.instance.currentLevel / 6);
         int enemyCountToSpawn = 3 + (RunManager.instance.currentLevel / 3);
+
+        // Elite node'larda daha fazla ve güçlü düşman
+        if (isEliteNode) enemyCountToSpawn += 2;
 
         for (int x = -currentRadius; x <= currentRadius; x++)
         {
@@ -174,11 +193,36 @@ public class LevelGenerator : MonoBehaviour
                         groundMap.SetTile(cell, groundTile);
                         groundMap.SetColor(cell, Color.white);
 
-                        // Merkeze asla diken koyma
-                        if (roll < scaffoldSpawnChance + 0.10f && cell != Vector3Int.zero)
+                        // Merkeze asla tehlikeli tile koyma
+                        if (cell != Vector3Int.zero)
                         {
-                            if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
-                            hazardCells.Add(cell);
+                            float hazardThreshold = scaffoldSpawnChance + 0.10f;
+                            float scaffoldThreshold = hazardThreshold + scaffoldSpawnChance;
+
+                            if (roll < hazardThreshold)
+                            {
+                                // Diken (Hazard) tile
+                                if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
+                                hazardCells.Add(cell);
+                            }
+                            else if (roll < scaffoldThreshold)
+                            {
+                                // Scaffold (Çöken Platform) tile
+                                // Komşusunda zaten scaffold varsa spawn etme → kümeleme ve adacık oluşumunu engelle
+                                bool hasAdjacentScaffold = false;
+                                Vector3Int[] cellOffsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+                                foreach (var off in cellOffsets)
+                                {
+                                    if (scaffoldCells.Contains(cell + off)) { hasAdjacentScaffold = true; break; }
+                                }
+
+                                if (!hasAdjacentScaffold && scaffoldMap != null && scaffoldTile != null)
+                                {
+                                    groundMap.SetTile(cell, null);
+                                    scaffoldMap.SetTile(cell, scaffoldTile);
+                                    scaffoldCells.Add(cell);
+                                }
+                            }
                         }
 
                         validCells.Add(cell);
@@ -357,28 +401,39 @@ public class LevelGenerator : MonoBehaviour
             float randomMultiplier = Random.Range(0.8f, 1.25f);
 
             // ========================================================
-            // ELITE DÜŞMAN GÖRSELLİĞİ: "Altın Aura" ve Büyüme
+            // ELITE DÜŞMAN: Elite node'da ilk düşman garanti elite, geri kalan %20
+            // Normal node'larda: %10 şans (level 6+)
             // ========================================================
-            if (Random.value < 0.10f && RunManager.instance.currentLevel >= 6)
+            bool makeElite = false;
+            if (isEliteNode)
+            {
+                // Elite node: ilk düşman garanti, geri kalanı %20
+                makeElite = (i == 0) || (Random.value < 0.20f);
+            }
+            else if (RunManager.instance.currentLevel >= 6)
+            {
+                makeElite = Random.value < 0.10f;
+            }
+
+            if (makeElite)
             {
                 randomMultiplier *= 2.0f;
                 newEnemyObj.name = "ELITE " + newEnemyObj.name;
-                
+
                 SpriteRenderer eliteSpriteRenderer = newEnemyObj.GetComponent<SpriteRenderer>();
                 if (eliteSpriteRenderer == null) eliteSpriteRenderer = newEnemyObj.GetComponentInChildren<SpriteRenderer>();
 
                 if (eliteSpriteRenderer != null)
                 {
-                    // 1. Karakterin kendisini parlat (Sarı/Altın Tonu)
-                    eliteSpriteRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);                 
-                    
+                    eliteSpriteRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);
                 }
             }
             // ========================================================
 
             float postBossMultiplier = isPostBossLevel ? 2.4f : 1f;
+            float eliteNodeMultiplier = isEliteNode ? 1.5f : 1f;
             // Dikkat: bossLegendaryMultiplier zaten CurrentEnemyHealth'te uygulandığı için postBossMultiplier KULLANMA!
-            int finalHP = Mathf.RoundToInt(CurrentEnemyHealth * randomMultiplier);
+            int finalHP = Mathf.RoundToInt(CurrentEnemyHealth * randomMultiplier * eliteNodeMultiplier);
             enemyAI.health.maxHP = Mathf.Max(1, finalHP);
             enemyAI.health.currentHP = enemyAI.health.maxHP;
 
@@ -416,6 +471,9 @@ public class LevelGenerator : MonoBehaviour
     public void GenerateBossArena()
     {
         Debug.Log("🔥 BOSS BÖLÜMÜ YÜKLENİYOR! 🔥");
+
+        // isLevelClearTriggered reset — yoksa boss ölünce WaitAndTriggerLevelClear tetiklenmez
+        if (TurnManager.instance != null) TurnManager.instance.isLevelClearTriggered = false;
         groundMap.ClearAllTiles();
         if (backgroundMap != null) backgroundMap.ClearAllTiles();
         if (hazardMap != null) hazardMap.ClearAllTiles();
@@ -599,7 +657,10 @@ public class LevelGenerator : MonoBehaviour
 
     private void EnsureSafeConnectivity()
     {
-        List<Vector3Int> safeCells = validCells.Where(c => !hazardCells.Contains(c)).ToList();
+        // Güvenli hücreler: hazard ve scaffold OLMAYAN hücreler.
+        // Scaffold çökebilir → bağlantıda güvenilmez köprü sayılır.
+        // Scaffold hariç tutularak, sadece kalıcı zemin üzerinden bağlantı kontrol edilir.
+        List<Vector3Int> safeCells = validCells.Where(c => !hazardCells.Contains(c) && !scaffoldCells.Contains(c)).ToList();
         if (safeCells.Count == 0) return;
 
         List<List<Vector3Int>> safeIslands = new List<List<Vector3Int>>();
@@ -647,6 +708,19 @@ public class LevelGenerator : MonoBehaviour
         {
             if (hazardCells.Contains(cell))
             {
+                // Diken: ana adaya komşuysa kalsın
+                bool touchesMain = false;
+                Vector3Int[] offsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+                foreach (var off in offsets)
+                {
+                    if (mainSafeSet.Contains(cell + off)) { touchesMain = true; break; }
+                }
+                if (!touchesMain) cellsToRemove.Add(cell);
+            }
+            else if (scaffoldCells.Contains(cell))
+            {
+                // Scaffold: en az 1 komşusu ana adadaysa kalsın, yoksa sil.
+                // Ayrıca scaffold'un sağlam zemin ile bağlantı kopması yaratmamasını garanti et.
                 bool touchesMain = false;
                 Vector3Int[] offsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
                 foreach (var off in offsets)
@@ -657,6 +731,7 @@ public class LevelGenerator : MonoBehaviour
             }
             else
             {
+                // Normal zemin: ana adada değilse sil
                 if (!mainSafeSet.Contains(cell)) cellsToRemove.Add(cell);
             }
         }
@@ -664,8 +739,8 @@ public class LevelGenerator : MonoBehaviour
         foreach (var cell in cellsToRemove)
         {
             groundMap.SetTile(cell, null);
-            if (hazardMap != null) hazardMap.SetTile(cell, null); 
-            if (scaffoldMap != null) scaffoldMap.SetTile(cell, null); 
+            if (hazardMap != null) hazardMap.SetTile(cell, null);
+            if (scaffoldMap != null) scaffoldMap.SetTile(cell, null);
             validCells.Remove(cell);
             hazardCells.Remove(cell);
             scaffoldCells.Remove(cell);
@@ -746,5 +821,172 @@ public class LevelGenerator : MonoBehaviour
         int bz = b.y;
         int by = -bx - bz;
         return Mathf.Max(Mathf.Abs(ax - bx), Mathf.Abs(ay - by), Mathf.Abs(az - bz));
+    }
+
+    // ═══════════════════════════════════════════
+    // SHOP ARENA — Büyük hexagon, dealer arkada, itemler önünde
+    // ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Generates a large hexagon arena (radius 3) for the shop scene.
+    /// Dealer (capsule) sits at the back (top). 3 item hexes are in front of dealer.
+    /// Exit hex is on the right edge. Player spawns at the bottom.
+    /// </summary>
+    public ShopDealer GenerateShopArena()
+    {
+        groundMap.ClearAllTiles();
+        if (backgroundMap != null) backgroundMap.ClearAllTiles();
+        if (hazardMap != null) hazardMap.ClearAllTiles();
+        if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
+        if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
+
+        validCells.Clear();
+        hazardCells.Clear();
+        scaffoldCells.Clear();
+
+        // Destroy all enemies (shop has none)
+        if (TurnManager.instance != null)
+        {
+            foreach (var enemy in TurnManager.instance.enemies)
+                if (enemy != null) Destroy(enemy.gameObject);
+            TurnManager.instance.enemies.Clear();
+        }
+
+        // ─── Big hexagon (radius 3) ───
+        int shopRadius = 3;
+        for (int x = -shopRadius; x <= shopRadius; x++)
+        {
+            for (int y = -shopRadius; y <= shopRadius; y++)
+            {
+                if (Mathf.Abs(x + y) <= shopRadius)
+                {
+                    Vector3Int cell = new Vector3Int(x, y, 0);
+                    groundMap.SetTile(cell, groundTile);
+                    groundMap.SetColor(cell, Color.white);
+                    validCells.Add(cell);
+                }
+            }
+        }
+
+        GenerateColumns();
+
+        // ─── Key cells ───
+        // Dealer sits at top-center (visual only — remove from walkable)
+        Vector3Int dealerVisualCell = new Vector3Int(0, 3, 0);
+
+        // Item hexes: row in front of dealer (row y=2, side by side)
+        Vector3Int[] itemCells = new Vector3Int[]
+        {
+            new Vector3Int(-1, 2, 0),  // Item 0 (left)
+            new Vector3Int(0, 2, 0),   // Item 1 (center)
+            new Vector3Int(1, 2, 0),   // Item 2 (right)
+        };
+
+        // Exit hex: right edge of the hexagon
+        Vector3Int exitCell = new Vector3Int(3, 0, 0);
+
+        // Player spawns at bottom
+        Vector3Int playerCell = new Vector3Int(0, -3, 0);
+
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            TurnManager.instance.player.transform.position = groundMap.GetCellCenterWorld(playerCell);
+            TurnManager.instance.player.StartKnockbackMovement(playerCell);
+            TurnManager.instance.isPlayerTurn = true;
+            TurnManager.instance.player.UpdateHighlights();
+        }
+
+        // ─── Spawn dealer (capsule) at top ───
+        if (ShopDealer.instance != null)
+            Destroy(ShopDealer.instance.gameObject);
+
+        Vector3 dealerWorldPos = groundMap.GetCellCenterWorld(dealerVisualCell);
+
+        GameObject dealerGO;
+        if (shopDealerPrefab != null)
+        {
+            dealerGO = Instantiate(shopDealerPrefab, dealerWorldPos, Quaternion.identity);
+        }
+        else
+        {
+            // Capsule placeholder dealer
+            dealerGO = new GameObject("ShopDealer");
+            dealerGO.transform.position = dealerWorldPos;
+            SpriteRenderer sr = dealerGO.AddComponent<SpriteRenderer>();
+            sr.sprite = CreateCapsuleSprite();
+            sr.color = new Color(1f, 0.85f, 0.2f, 1f);
+            sr.sortingOrder = 5;
+        }
+
+        ShopDealer dealer = dealerGO.GetComponent<ShopDealer>();
+        if (dealer == null)
+            dealer = dealerGO.AddComponent<ShopDealer>();
+
+        dealer.dealerCell = dealerVisualCell;
+        dealer.SetupShopArena(itemCells, exitCell);
+
+        return dealer;
+    }
+
+    /// <summary>
+    /// Creates a capsule-shaped sprite for the dealer NPC placeholder.
+    /// </summary>
+    private Sprite CreateCapsuleSprite()
+    {
+        int w = 24, h = 48;
+        Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        Color32[] pixels = new Color32[w * h];
+        float halfW = w / 2f;
+        float capRadius = w / 2f; // Semicircle radius = half width
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                bool inside = false;
+
+                if (y < capRadius) // Bottom semicircle
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(halfW - 0.5f, capRadius));
+                    inside = dist <= capRadius;
+                }
+                else if (y >= h - capRadius) // Top semicircle
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(halfW - 0.5f, h - capRadius - 1));
+                    inside = dist <= capRadius;
+                }
+                else // Middle rectangle
+                {
+                    inside = x >= 0 && x < w;
+                }
+
+                pixels[y * w + x] = inside ? new Color32(255, 255, 255, 255) : new Color32(0, 0, 0, 0);
+            }
+        }
+
+        tex.SetPixels32(pixels);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 32f);
+    }
+
+    /// <summary>
+    /// Creates a simple white circle sprite for placeholder NPCs.
+    /// </summary>
+    private Sprite CreatePlaceholderSprite()
+    {
+        Texture2D tex = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+        Color[] pixels = new Color[32 * 32];
+        Vector2 center = new Vector2(15.5f, 15.5f);
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            int x = i % 32;
+            int y = i / 32;
+            float dist = Vector2.Distance(new Vector2(x, y), center);
+            pixels[i] = dist < 14f ? Color.white : Color.clear;
+        }
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
     }
 }

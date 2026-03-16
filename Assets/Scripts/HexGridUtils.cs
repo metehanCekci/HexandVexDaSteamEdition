@@ -48,4 +48,42 @@ public static class HexGridUtils
                 return centerCell + offsets[(i + 3) % 6];
         return centerCell;
     }
+
+    /// <summary>
+    /// Uzak mesafeli saldırılarda knockback yönünü hesaplar.
+    /// awayFromCell bitişik olmasa bile, yön vektörüne göre en uygun karşı komşuyu bulur.
+    /// </summary>
+    public static Vector3Int GetKnockbackCellRanged(Vector3Int enemyCell, Vector3Int playerCell)
+    {
+        // Önce normal adjacent kontrolü dene
+        Vector3Int normal = GetRawOppositeCell(enemyCell, playerCell);
+        if (normal != enemyCell) return normal;
+
+        // Uzak mesafe: cube koordinatlarıyla yön hesapla
+        Vector3Int eCube = OffsetToCube(enemyCell);
+        Vector3Int pCube = OffsetToCube(playerCell);
+        // Yön vektörü: player → enemy
+        float dx = eCube.x - pCube.x;
+        float dy = eCube.y - pCube.y;
+        float dz = eCube.z - pCube.z;
+
+        // Düşmanın 6 komşusundan, player'dan en uzak olanı seç
+        Vector3Int[] offsets = GetOffsets(enemyCell);
+        Vector3Int bestCell = enemyCell;
+        float bestDot = float.MinValue;
+
+        for (int i = 0; i < 6; i++)
+        {
+            Vector3Int neighbor = enemyCell + offsets[i];
+            Vector3Int nCube = OffsetToCube(neighbor);
+            // Bu komşunun player → enemy yönüne ne kadar hizalı olduğunu ölç (dot product)
+            float ndx = nCube.x - eCube.x;
+            float ndy = nCube.y - eCube.y;
+            float ndz = nCube.z - eCube.z;
+            float dot = ndx * dx + ndy * dy + ndz * dz;
+            if (dot > bestDot) { bestDot = dot; bestCell = neighbor; }
+        }
+
+        return bestCell;
+    }
 }

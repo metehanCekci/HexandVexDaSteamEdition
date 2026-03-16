@@ -64,11 +64,12 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public bool isBombPlacementTargeting = false;
     [HideInInspector] public bool isPhaseShiftTargeting = false;
     [HideInInspector] public bool isThornPlacementTargeting = false;
+    [HideInInspector] public bool isMitsuriTargeting = false;
 
     // Thorn preview
     private GameObject thornPreviewObj;
 
-    public bool IsAnyTargetingActive => isNecroShotTargeting || isBombPlacementTargeting || isPhaseShiftTargeting || isThornPlacementTargeting;
+    public bool IsAnyTargetingActive => isNecroShotTargeting || isBombPlacementTargeting || isPhaseShiftTargeting || isThornPlacementTargeting || isMitsuriTargeting;
 
     public int hexesMovedThisTurn = 0;
 
@@ -119,6 +120,20 @@ public class TurnManager : MonoBehaviour
         HideDiceResults();
         SetupCoinIcon();
         UpdateCoinUI();
+
+        // Scaffold yıkıldığında warning tile'ı temizle
+        TrapTileEvents.OnTileDestroyed += OnScaffoldDestroyed;
+    }
+
+    void OnDestroy()
+    {
+        TrapTileEvents.OnTileDestroyed -= OnScaffoldDestroyed;
+    }
+
+    private void OnScaffoldDestroyed(Vector3Int cell)
+    {
+        if (warningMap != null && warningMap.HasTile(cell))
+            warningMap.SetTile(cell, null);
         Invoke("StartPlayerTurn", 0.5f);
     }
 
@@ -133,6 +148,46 @@ public class TurnManager : MonoBehaviour
         if (RunManager.instance != null)
             skipDiceVisuals = RunManager.instance.fastMode || manualDiceSkip;
 
+        // Mitsuri Blade: turu sırasında istediği zaman düşmana tıklayarak saldırabilir
+        if (isMitsuriTargeting)
+        {
+            HandleMitsuriTargetingClick();
+        }
+        else if (!isMitsuriTargeting && isPlayerTurn && !hasAttackedThisTurn && !isAttackAnimationPlaying
+            && RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade
+            && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject()
+            && player != null && !player.IsMoving())
+        {
+            // Oyuncu hareket etmeden de düşmana tıklayarak saldırabilir
+            Vector3 mPos = Input.mousePosition;
+            mPos.z = Mathf.Abs(Camera.main.transform.position.z);
+            Vector3 wPoint = Camera.main.ScreenToWorldPoint(mPos);
+            wPoint.z = 0;
+            Vector3Int cCell = groundMap.WorldToCell(wPoint);
+            EnemyAI directTarget = GetEnemyAtCell(cCell);
+            // Proximity fallback
+            if (directTarget == null)
+            {
+                float best = 1.5f;
+                foreach (var e in enemies)
+                {
+                    if (e == null || e.health.currentHP <= 0) continue;
+                    float d = Vector3.Distance(wPoint, e.transform.position);
+                    if (d < best) { best = d; directTarget = e; }
+                }
+            }
+            if (directTarget != null && directTarget.health.currentHP > 0)
+            {
+                isPlayerTurn = false;
+                hasAttackedThisTurn = true;
+                isAttackAnimationPlaying = true;
+                RunManager.instance.remainingMoves = 0;
+                player.ClearHighlights();
+                List<EnemyAI> singleTarget = new List<EnemyAI> { directTarget };
+                StartCoroutine(MitsuriAttackSequence(singleTarget));
+            }
+        }
+
         if ((isBombPlacementTargeting || isThornPlacementTargeting) && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
             Vector3 mousePos = Input.mousePosition;
@@ -141,7 +196,7 @@ public class TurnManager : MonoBehaviour
             worldPoint.z = 0;
             Vector3Int clickedCell = groundMap.WorldToCell(worldPoint);
 
-            if (groundMap.HasTile(clickedCell))
+            if (HasWalkableTile(clickedCell))
             {
                 if (isBombPlacementTargeting) StartCoroutine(ExecuteBombAt(clickedCell));
                 else if (isThornPlacementTargeting) ExecuteThornAt(clickedCell);
@@ -157,7 +212,7 @@ public class TurnManager : MonoBehaviour
             wp.z = 0;
             Vector3Int hoverCell = groundMap.WorldToCell(wp);
 
-            if (groundMap.HasTile(hoverCell) && !IsThornCellBlocked(hoverCell))
+            if (HasWalkableTile(hoverCell) && !IsThornCellBlocked(hoverCell))
             {
                 Vector3 snapPos = groundMap.GetCellCenterWorld(hoverCell);
                 snapPos.z = 0;
@@ -173,6 +228,13 @@ public class TurnManager : MonoBehaviour
 #if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.F6))
         {
+            // Cheat: tüm state'leri resetle ki level clear akışı takılmasın
+            isAttackAnimationPlaying = false;
+            isLevelClearTriggered = false;
+
+            // Boss kalkanını kaldır yoksa TakeDamage işlemez
+            if (SpawnerBossAI.instance != null) SpawnerBossAI.instance.isShielded = false;
+
             foreach (var e in new List<EnemyAI>(enemies))
                 if (e != null && e.health.currentHP > 0) e.health.TakeDamage(4444);
             enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
@@ -209,11 +271,11 @@ public class TurnManager : MonoBehaviour
         {
             Vector3Int c1 = playerCell + offsets[pair[0]];
             Vector3Int c2 = playerCell + offsets[pair[1]];
-            if (groundMap.HasTile(c1) && groundMap.HasTile(c2) && !IsEnemyAtCell(c1) && !IsEnemyAtCell(c2))
+            if (HasWalkableTile(c1) && HasWalkableTile(c2) && !IsEnemyAtCell(c1) && !IsEnemyAtCell(c2))
             {
                 Vector3Int[] off1 = (c1.y % 2 != 0) ? evenOff : oddOff; Vector3Int far1 = c1 + off1[pair[0]];
                 Vector3Int[] off2 = (c2.y % 2 != 0) ? evenOff : oddOff; Vector3Int far2 = c2 + off2[pair[1]];
-                if (groundMap.HasTile(far1) && groundMap.HasTile(far2) && !IsEnemyAtCell(far1) && !IsEnemyAtCell(far2)) { spawnCells.Add(far1); spawnCells.Add(far2); break; }
+                if (HasWalkableTile(far1) && HasWalkableTile(far2) && !IsEnemyAtCell(far1) && !IsEnemyAtCell(far2)) { spawnCells.Add(far1); spawnCells.Add(far2); break; }
                 spawnCells.Add(c1); spawnCells.Add(c2); break;
             }
         }
@@ -284,6 +346,10 @@ public class TurnManager : MonoBehaviour
         }
         player.UpdateHighlights();
         StartCoroutine(LockIntentsNextFrame());
+
+        // MitsuriBlade: tur başında menzil göstergelerini aç
+        if (RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade)
+            ShowMitsuriRangeIndicators();
     }
 
     // ========================================================
@@ -345,6 +411,7 @@ public class TurnManager : MonoBehaviour
             rm.surgeBootNextTurn = false;
             rm.surgeBootActive = false;
             rm.hasPerkReroll = false;
+            // selectedWeapon sıfırlanMAZ — silah seçimi MainMenu'de yapılır, ResetGame silahı ezmesin
 
             // Perkleri temizle (Sahnedeki objeleri yok et)
             foreach (BasePerk perk in rm.activePerks)
@@ -367,6 +434,7 @@ public class TurnManager : MonoBehaviour
         enemies.Clear();
         isLevelClearTriggered = false;
         hasAttackedThisTurn = false;
+        isMitsuriTargeting = false;
 
     }
     public void ClearWarningMap()
@@ -465,7 +533,12 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        if (Shopmanager.instance != null)
+        // Map sistemi aktifse → haritaya dön
+        if (MapManager.instance != null)
+        {
+            MapManager.instance.OnNodeComplete();
+        }
+        else if (Shopmanager.instance != null)
         {
             bool isBossLevel = RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0;
             if (isBossLevel) Shopmanager.instance.OnBossCleared(); else Shopmanager.instance.OnDungeonCleared();
@@ -503,6 +576,214 @@ public class TurnManager : MonoBehaviour
 
     public void RegisterEnemy(EnemyAI enemy) { if (!enemies.Contains(enemy)) enemies.Add(enemy); }
     public void StartNecroShotTargeting() { isNecroShotTargeting = true; }
+
+    // ──────── Mitsuri Blade Range Indicators ────────
+
+    private List<Vector3Int> mitsuriRangeIndicatorCells = new List<Vector3Int>();
+    private Coroutine mitsuriPulseCoroutine;
+
+    /// <summary>
+    /// Oyuncunun turu başlayınca tüm düşmanların altını renklendirir:
+    /// Yeşil = tam hasar (1-2 hex), Kırmızı = cezalı (3+ hex, 1 zar)
+    /// </summary>
+    public void ShowMitsuriRangeIndicators()
+    {
+        ClearMitsuriRangeIndicators();
+        if (warningMap == null || warningTile == null) return;
+        if (player == null) return;
+
+        Vector3Int playerCell = player.GetCurrentCellPosition();
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null || enemy.health.currentHP <= 0) continue;
+            Vector3Int eCell = enemy.GetCurrentCellPosition();
+            float dist = HexGridUtils.DistanceCube(playerCell, eCell);
+            bool isPenalty = dist >= 3f;
+
+            warningMap.SetTile(eCell, warningTile);
+            warningMap.SetTileFlags(eCell, TileFlags.None);
+            warningMap.SetColor(eCell, isPenalty
+                ? new Color(1f, 0.25f, 0.25f, 0.6f)
+                : new Color(0.25f, 1f, 0.4f, 0.6f));
+            mitsuriRangeIndicatorCells.Add(eCell);
+
+            // Düşman sprite tint
+            if (enemy.visualRenderer != null)
+            {
+                enemy.visualRenderer.color = isPenalty
+                    ? new Color(1f, 0.6f, 0.6f, 1f)   // kırmızımsı tint
+                    : new Color(0.7f, 1f, 0.7f, 1f);   // yeşilimsi tint
+            }
+        }
+
+        // Pulse animasyonu başlat
+        if (mitsuriPulseCoroutine != null) StopCoroutine(mitsuriPulseCoroutine);
+        mitsuriPulseCoroutine = StartCoroutine(MitsuriRangePulse());
+    }
+
+    public void ClearMitsuriRangeIndicators()
+    {
+        if (mitsuriPulseCoroutine != null) { StopCoroutine(mitsuriPulseCoroutine); mitsuriPulseCoroutine = null; }
+        if (warningMap != null)
+        {
+            foreach (var cell in mitsuriRangeIndicatorCells)
+                if (warningMap.HasTile(cell)) warningMap.SetTile(cell, null);
+        }
+        mitsuriRangeIndicatorCells.Clear();
+
+        // Düşman sprite renklerini resetle
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && enemy.visualRenderer != null && enemy.health.currentHP > 0)
+                enemy.visualRenderer.color = Color.white;
+        }
+    }
+
+    private IEnumerator MitsuriRangePulse()
+    {
+        float time = 0f;
+        while (true)
+        {
+            time += Time.deltaTime * 2.5f;
+            float pulse = Mathf.Sin(time) * 0.15f + 0.55f; // 0.4 ~ 0.7 arası alpha
+
+            Vector3Int playerCell = player != null ? player.GetCurrentCellPosition() : Vector3Int.zero;
+            foreach (var cell in mitsuriRangeIndicatorCells)
+            {
+                if (!warningMap.HasTile(cell)) continue;
+                // Rengi tekrar hesapla (oyuncu hareket etmiş olabilir)
+                Color base_col = warningMap.GetColor(cell);
+                warningMap.SetColor(cell, new Color(base_col.r, base_col.g, base_col.b, pulse));
+            }
+            yield return null;
+        }
+    }
+
+    /// <summary>
+    /// Oyuncu hareket ettiğinde mitsuri range indicator'larını güncelle
+    /// </summary>
+    public void RefreshMitsuriRangeIndicators()
+    {
+        if (RunManager.instance == null || RunManager.instance.selectedWeapon != WeaponType.MitsuriBlade) return;
+        if (!isPlayerTurn || hasAttackedThisTurn) return;
+        ShowMitsuriRangeIndicators();
+    }
+
+    // ──────── Mitsuri Blade Targeting ────────
+
+    /// <summary>
+    /// MitsuriBlade ile düşman seçme modunu başlatır. Tüm düşmanları warningMap'te highlight eder.
+    /// </summary>
+    public void StartMitsuriTargeting()
+    {
+        isMitsuriTargeting = true;
+        ShowMitsuriHighlights();
+    }
+
+    // Mitsuri targeting sırasında highlight edilen hücreler
+    private List<Vector3Int> mitsuriHighlightedCells = new List<Vector3Int>();
+
+    private void ShowMitsuriHighlights()
+    {
+        if (warningMap == null || warningTile == null) return;
+
+        mitsuriHighlightedCells.Clear();
+        Vector3Int playerCell = player.GetCurrentCellPosition();
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null || enemy.health.currentHP <= 0) continue;
+            Vector3Int eCell = enemy.GetCurrentCellPosition();
+            float dist = HexGridUtils.DistanceCube(playerCell, eCell);
+
+            warningMap.SetTile(eCell, warningTile);
+            warningMap.SetTileFlags(eCell, TileFlags.None);
+
+            // 3+ hex mesafede kırmızımsı (ceza var), yakında yeşilimsi
+            bool isPenaltyRange = dist >= 3f;
+            Color col = isPenaltyRange
+                ? new Color(1f, 0.3f, 0.3f, 0.75f)   // kırmızı — cezalı menzil
+                : new Color(0.3f, 1f, 0.4f, 0.75f);   // yeşil — normal menzil
+            warningMap.SetColor(eCell, col);
+
+            mitsuriHighlightedCells.Add(eCell);
+        }
+    }
+
+    private void ClearMitsuriHighlights()
+    {
+        if (warningMap == null) return;
+
+        foreach (var cell in mitsuriHighlightedCells)
+        {
+            if (warningMap.HasTile(cell))
+                warningMap.SetTile(cell, null);
+        }
+        mitsuriHighlightedCells.Clear();
+    }
+
+    /// <summary>
+    /// MitsuriBlade targeting modunda düşmana tıklandığında çağrılır.
+    /// Düşmanın tam üstüne değil, düşmana yakın herhangi bir yere tıklamayı da kabul eder.
+    /// </summary>
+    private void HandleMitsuriTargetingClick()
+    {
+        if (!isMitsuriTargeting) return;
+        if (!Input.GetMouseButtonDown(0)) return;
+        if (EventSystem.current.IsPointerOverGameObject()) return;
+
+        Vector3 mousePos = Input.mousePosition;
+        mousePos.z = Mathf.Abs(Camera.main.transform.position.z);
+        Vector3 worldPoint = Camera.main.ScreenToWorldPoint(mousePos);
+        worldPoint.z = 0;
+        Vector3Int clickedCell = groundMap.WorldToCell(worldPoint);
+
+        // Önce tıklanan hücrede düşman var mı bak
+        EnemyAI target = GetEnemyAtCell(clickedCell);
+
+        // Tıklanan hücrede düşman yoksa, düşmanların world pozisyonuna yakınlık kontrolü yap
+        if (target == null)
+        {
+            float bestDist = 1.5f; // Maksimum tıklama toleransı (world unit)
+            foreach (var enemy in enemies)
+            {
+                if (enemy == null || enemy.health.currentHP <= 0) continue;
+                float d = Vector3.Distance(worldPoint, enemy.transform.position);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    target = enemy;
+                }
+            }
+        }
+
+        if (target == null || target.health.currentHP <= 0) return;
+
+        // Hedef seçildi — saldırıyı başlat
+        isMitsuriTargeting = false;
+        ClearMitsuriHighlights();
+
+        hasAttackedThisTurn = true;
+        isAttackAnimationPlaying = true;
+        RunManager.instance.remainingMoves = 0;
+
+        // Tek hedefli saldırı
+        List<EnemyAI> singleTarget = new List<EnemyAI> { target };
+        StartCoroutine(MitsuriAttackSequence(singleTarget));
+    }
+
+    private IEnumerator MitsuriAttackSequence(List<EnemyAI> targets)
+    {
+        ClearMitsuriRangeIndicators();
+        yield return StartCoroutine(MultiAttack(targets));
+
+        if (player != null && player.health.currentHP > 0)
+        {
+            player.ClearHighlights();
+            yield return new WaitForSeconds(0.1f);
+            StartCoroutine(EnemyPhase());
+        }
+    }
 
     public void TryNecroShotKill(EnemyAI target)
     {
@@ -664,10 +945,25 @@ public class TurnManager : MonoBehaviour
             if (CleanupDeadAndCheckLevelClear()) yield break;
         }
 
-        // Highlight ve ok'ları yeni konuma göre güncelle
-        player.UpdateHighlights();
-        LockAllEnemyIntents();
-        ShowAllEnemyIntents();
+        // Teleport sonrası: saldırı varsa yap, sonra düşman fazına geç
+        isPlayerTurn = false;
+        if (RunManager.instance != null) RunManager.instance.remainingMoves = 0;
+        player.ClearHighlights();
+
+        // Bitişik düşmanlara otomatik saldırı
+        List<EnemyAI> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
+        if (adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
+        {
+            hasAttackedThisTurn = true;
+            isAttackAnimationPlaying = true;
+            yield return StartCoroutine(MultiAttack(adjacentEnemies));
+        }
+
+        if (!CleanupDeadAndCheckLevelClear())
+        {
+            yield return new WaitForSeconds(0.1f);
+            StartCoroutine(EnemyPhase());
+        }
     }
 
     public void StartThornPlacement()
@@ -769,7 +1065,11 @@ public class TurnManager : MonoBehaviour
         UpdateCoinUI();
 
         List<EnemyAI> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
-        if (adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
+        bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
+
+        // Greatsword: skip sonrası bitişik düşmana otomatik saldır
+        // MitsuriBlade: skip = tur geçir, otomatik saldırı yok
+        if (!isMitsuri && adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
         {
             RunManager.instance.remainingMoves = 0;
             hasAttackedThisTurn = true; isAttackAnimationPlaying = true;
@@ -860,6 +1160,9 @@ public class TurnManager : MonoBehaviour
     {
         hexesMovedThisTurn++;
 
+        // Notify listeners (ShopDealer uses this to detect player stepping on its tile)
+        GameEvents.PlayerMoved(playerCell);
+
         // Surge Boot: hareketten sonra kapat
         if (RunManager.instance != null)
             RunManager.instance.surgeBootActive = false;
@@ -888,7 +1191,11 @@ public class TurnManager : MonoBehaviour
         }
 
         List<EnemyAI> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
-        if (adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
+        bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
+
+        // Greatsword: bitişik düşmana otomatik saldır
+        // MitsuriBlade: bitişik düşmana otomatik saldırma — oyuncu tıklayarak seçecek
+        if (!isMitsuri && adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
         {
             RunManager.instance.remainingMoves = 0;
             hasAttackedThisTurn = true; isAttackAnimationPlaying = true;
@@ -898,10 +1205,14 @@ public class TurnManager : MonoBehaviour
 
         if (RunManager.instance.remainingMoves > 0 && player != null && player.health.currentHP > 0 && enemies.Count > 0)
         {
+            // Hâlâ hareket hakkı var → devam et
             RunManager.instance.remainingMoves--; isPlayerTurn = true; player.UpdateHighlights(); ShowAllEnemyIntents();
+            // MitsuriBlade: hareket sonrası mesafeler değişti, göstergeleri güncelle
+            RefreshMitsuriRangeIndicators();
         }
         else if (player != null && player.health.currentHP > 0)
         {
+            // Hareketler bitti → EnemyPhase (MitsuriBlade saldırısı Update'teki direct click ile yapılıyor)
             player.ClearHighlights(); yield return new WaitForSeconds(0.1f); StartCoroutine(EnemyPhase());
         }
     }
@@ -912,7 +1223,7 @@ public class TurnManager : MonoBehaviour
         foreach (var off in offsets)
         {
             Vector3Int n = centerCell + off;
-            if (groundMap.HasTile(n) && !IsEnemyAtCell(n) && !LevelGenerator.instance.hazardCells.Contains(n)) return n;
+            if (HasWalkableTile(n) && !IsEnemyAtCell(n) && !LevelGenerator.instance.hazardCells.Contains(n)) return n;
         }
         return centerCell;
     }
@@ -946,6 +1257,7 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator EnemyPhase()
     {
+        ClearMitsuriRangeIndicators();
         yield return new WaitForSeconds(0.2f);
         enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
 
@@ -1129,7 +1441,7 @@ public class TurnManager : MonoBehaviour
                     Vector3Int neighborToPlayer = pCell + off;
                     if (IsNeighbor(neighborToPlayer, eCell))
                     {
-                        if (groundMap.HasTile(neighborToPlayer) && !IsEnemyAtCell(neighborToPlayer) && (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(neighborToPlayer)))
+                        if (HasWalkableTile(neighborToPlayer) && !IsEnemyAtCell(neighborToPlayer) && (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(neighborToPlayer)))
                         {
                             bestPullCell = neighborToPlayer; break;
                         }
@@ -1175,6 +1487,22 @@ public class TurnManager : MonoBehaviour
         if (!skipDiceVisuals) yield return new WaitForSeconds(0.3f);
         List<int> currentRolls = new List<int>();
         int diceCount = RunManager.instance != null ? RunManager.instance.baseDiceCount : 2;
+
+        // MitsuriBlade: 3+ hex mesafedeki düşmana saldırırken zar cezası
+        if (RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade && targets.Count > 0)
+        {
+            Vector3Int pCell = player.GetCurrentCellPosition();
+            // En uzak hedefin mesafesine bak (tek hedef olacak genelde ama güvenlik için)
+            float maxDist = 0f;
+            foreach (var t in targets)
+            {
+                if (t == null) continue;
+                float d = HexGridUtils.DistanceCube(pCell, t.GetCurrentCellPosition());
+                if (d > maxDist) maxDist = d;
+            }
+            if (maxDist >= 3f) diceCount = 1;
+        }
+
         int extraDices = 0;
         foreach (var p in RunManager.instance.activePerks) if (p is DormantSporePerk ambushPerk) { extraDices += ambushPerk.storedExtraDices; ambushPerk.storedExtraDices = 0; }
         if (RunManager.instance.bonusDiceNextCombat > 0) { extraDices += RunManager.instance.bonusDiceNextCombat; RunManager.instance.bonusDiceNextCombat = 0; }
@@ -1316,7 +1644,13 @@ public class TurnManager : MonoBehaviour
         foreach (var e in knockedEnemies)
         {
             if (e == null) continue;
-            Vector3Int rawTargetCell = GetRawOppositeCell(e.GetCurrentCellPosition(), player.GetCurrentCellPosition());
+            // MitsuriBlade uzak saldırıda yön hesabı farklı
+            Vector3Int rawTargetCell;
+            bool isRangedAttack = !IsNeighbor(e.GetCurrentCellPosition(), player.GetCurrentCellPosition());
+            if (isRangedAttack)
+                rawTargetCell = HexGridUtils.GetKnockbackCellRanged(e.GetCurrentCellPosition(), player.GetCurrentCellPosition());
+            else
+                rawTargetCell = GetRawOppositeCell(e.GetCurrentCellPosition(), player.GetCurrentCellPosition());
             EnemyAI enemyBehind = GetEnemyAtCell(rawTargetCell);
 
             if (enemyBehind != null)
@@ -1326,7 +1660,7 @@ public class TurnManager : MonoBehaviour
                 cPos.z = 0; pPos.z = 0; Vector3 bumpDir = (cPos - pPos).normalized;
                 e.StartWallBump(bumpDir); enemyBehind.StartWallBump(bumpDir);
             }
-            else if (!groundMap.HasTile(rawTargetCell) || player.GetCurrentCellPosition() == rawTargetCell)
+            else if (!HasWalkableTile(rawTargetCell) || player.GetCurrentCellPosition() == rawTargetCell)
             {
                 e.ApplyStun(2, true);
                 Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
@@ -1364,7 +1698,7 @@ public class TurnManager : MonoBehaviour
                 foreach (var off in offsets)
                 {
                     Vector3Int neighbor = playerOriginal + off;
-                    if (!groundMap.HasTile(neighbor) || IsEnemyAtCell(neighbor) || neighbor == player.GetCurrentCellPosition()) continue;
+                    if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor) || neighbor == player.GetCurrentCellPosition()) continue;
                     Vector3 nWorld = groundMap.GetCellCenterWorld(neighbor); nWorld.z = 0;
                     Vector2 nDir = (Vector2)(nWorld - playerWorld).normalized;
                     float dot = Vector2.Dot(recoilDir, nDir);
@@ -1509,6 +1843,13 @@ public class TurnManager : MonoBehaviour
         return false;
     }
 
+    /// <summary>Ground VEYA scaffold tile'ı var mı? Scaffold hücrelerinde groundMap boş olabilir.</summary>
+    public bool HasWalkableTile(Vector3Int cell)
+    {
+        if (groundMap.HasTile(cell)) return true;
+        return ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(cell);
+    }
+
     public EnemyAI GetEnemyAtCell(Vector3Int cell)
     {
         foreach (var e in enemies) if (e != null && e.health.currentHP > 0 && e.GetCurrentCellPosition() == cell) return e;
@@ -1533,8 +1874,7 @@ public class TurnManager : MonoBehaviour
             {
                 int oppositeIndex = (i + 3) % 6;
                 Vector3Int strictKnockbackCell = centerCell + offsets[oppositeIndex];
-                bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(strictKnockbackCell);
-                if ((!groundMap.HasTile(strictKnockbackCell) && !isScaffold) || IsEnemyAtCell(strictKnockbackCell) || player.GetCurrentCellPosition() == strictKnockbackCell)
+                if (!HasWalkableTile(strictKnockbackCell) || IsEnemyAtCell(strictKnockbackCell) || player.GetCurrentCellPosition() == strictKnockbackCell)
                     return centerCell;
                 return strictKnockbackCell;
             }
@@ -1551,8 +1891,7 @@ public class TurnManager : MonoBehaviour
         foreach (var off in offsets)
         {
             Vector3Int neighbor = centerCell + off;
-            bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(neighbor);
-            if ((groundMap.HasTile(neighbor) || isScaffold) && !IsEnemyAtCell(neighbor) && player.GetCurrentCellPosition() != neighbor && !LevelGenerator.instance.hazardCells.Contains(neighbor))
+            if (HasWalkableTile(neighbor) && !IsEnemyAtCell(neighbor) && player.GetCurrentCellPosition() != neighbor && !LevelGenerator.instance.hazardCells.Contains(neighbor))
                 safeNeighbors.Add(neighbor);
         }
         if (safeNeighbors.Count > 0) return safeNeighbors[Random.Range(0, safeNeighbors.Count)];

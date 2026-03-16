@@ -106,7 +106,15 @@ public class PauseManager : MonoBehaviour
     public void PlayButton(int sceneIndex)
     {
         Time.timeScale = 1f; // Zamanı açmayı unutma!
-        
+
+        // Silah seçme paneli varsa önce onu göster, sahneyi oradan yükle
+        if (WeaponSelectUI.instance != null)
+        {
+            WeaponSelectUI.instance.gameSceneIndex = sceneIndex;
+            WeaponSelectUI.instance.Show();
+            return;
+        }
+
         if (ScreenFader.instance != null)
         {
             ScreenFader.instance.FadeAndLoad(() =>

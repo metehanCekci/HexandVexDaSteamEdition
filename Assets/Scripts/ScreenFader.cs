@@ -55,12 +55,12 @@ public class ScreenFader : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         InitializeFader();
+        // Map sistemi aktifse fade'i MapManager kontrol ediyor — burada yapma
+        if (MapManager.instance != null) return;
+
         // EĞER FadeAndLoad ile gelmiyorsak (direkt Play dediysek veya başka bir geçişse)
         if (!isTransitioning)
         {
-            // DİKKAT: Burada alpha = 1f YAPMIYORUZ! 
-            // Titremeyi engellemek için sildiğin için o pürüzsüz vibe korundu. 
-            // Ekran FadeAndLoad ile zaten siyah kalmış olduğu için buradan sakince açılacak.
             StartCoroutine(Fade(0f));
         }
     }

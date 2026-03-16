@@ -81,6 +81,7 @@ public class HexMovement : MonoBehaviour
         {
             HandleMovementInput();
         }
+
     }
 
     void LateUpdate()

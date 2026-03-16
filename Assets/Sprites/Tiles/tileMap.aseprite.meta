@@ -473,7 +473,7 @@ ScriptedImporter:
         x: 22
         y: 831
         width: 529
-        height: 136
+        height: 135
       spriteId: aec95940af7647e41a49cadbfba2f7b0
     - name: Frame_2
       frameIndex: 2

@@ -3,6 +3,18 @@ using UnityEngine.Tilemaps;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Scaffold (İskele) Sistemi — event-driven.
+///
+/// Mekanik (basit ve kesin):
+///   1. Entity (oyuncu/düşman fark etmez) scaffold üzerine basınca → Titreşim başlar.
+///   2. Entity scaffold'dan ayrılınca → Scaffold anında çökmeye başlar.
+///   3. Çökme bitince → Tile kaldırılır, boşluk kalır. Geri dönüş yok.
+///
+/// Kurallar:
+///   - Kim girerse girsin, kim çıkarsa çıksın, scaffold çöker.
+///   - Zaten çökmekte olan veya çökmüş scaffold'a bir şey olmaz.
+/// </summary>
 public class ScaffoldManager : MonoBehaviour
 {
     public static ScaffoldManager instance;
@@ -11,15 +23,18 @@ public class ScaffoldManager : MonoBehaviour
     [Tooltip("Çökme animasyonu süresi (saniye).")]
     public float collapseDuration = 0.35f;
 
-    // Aktif scaffold'lar: hücre -> titreşim coroutine
+    // Çökmekte veya çökmüş scaffold'lar — tekrar tetiklemeyi önler
+    private HashSet<Vector3Int> collapsingOrDestroyed = new HashSet<Vector3Int>();
+
+    // Aktif titreşim coroutine'leri
     private Dictionary<Vector3Int, Coroutine> shakeCoroutines = new Dictionary<Vector3Int, Coroutine>();
-    // Şu anda çökmekte olan scaffold'lar (tekrar tetikleme önleme)
-    private HashSet<Vector3Int> collapsingScaffolds = new HashSet<Vector3Int>();
 
     void Awake()
     {
         if (instance == null) instance = this;
     }
+
+    // ──────── Public Sorgular ────────
 
     public bool IsScaffoldCell(Vector3Int cell)
     {
@@ -30,46 +45,54 @@ public class ScaffoldManager : MonoBehaviour
 
     public bool IsCollapsing(Vector3Int cell)
     {
-        return collapsingScaffolds.Contains(cell);
+        return collapsingOrDestroyed.Contains(cell);
     }
 
+    // ──────── Entity Etkileşimleri ────────
+
     /// <summary>
-    /// Oyuncu scaffold'a bastığında çağrılır. Titreşim başlar.
+    /// Herhangi bir varlık scaffold üzerine bastığında çağrılır.
+    /// Titreşim başlar. Zaten çökmekte/çökmüşse hiçbir şey olmaz.
     /// </summary>
     public void OnEntityEnter(Vector3Int cell)
     {
         if (!IsScaffoldCell(cell)) return;
-        if (shakeCoroutines.ContainsKey(cell)) return;
-        if (collapsingScaffolds.Contains(cell)) return;
+        if (collapsingOrDestroyed.Contains(cell)) return;
 
-        Coroutine shake = StartCoroutine(ShakeCoroutine(cell));
-        shakeCoroutines[cell] = shake;
+        // Titreşim başlat (zaten titreşiyorsa tekrar başlatma)
+        if (!shakeCoroutines.ContainsKey(cell))
+        {
+            Coroutine shake = StartCoroutine(ShakeCoroutine(cell));
+            shakeCoroutines[cell] = shake;
+        }
+
+        TrapTileEvents.FireTileTriggered(cell, TrapTileState.Triggered);
+        TrapTileEvents.FireTileShakeStarted(cell);
     }
 
     /// <summary>
-    /// Oyuncu scaffold'dan ayrıldığında çağrılır. Titreşim durur, scaffold düşer.
+    /// Herhangi bir varlık scaffold'dan ayrıldığında çağrılır.
+    /// Scaffold anında çökmeye başlar. Kim çıkarsa çıksın.
     /// </summary>
     public void OnEntityLeave(Vector3Int cell)
     {
-        if (!shakeCoroutines.ContainsKey(cell)) return;
-        if (collapsingScaffolds.Contains(cell)) return;
+        if (!IsScaffoldCell(cell)) return;
+        if (collapsingOrDestroyed.Contains(cell)) return;
 
+        // Titreşimi durdur
         StopShakeCoroutine(cell);
         ResetTileTransform(cell);
+        TrapTileEvents.FireTileShakeStopped(cell);
 
-        HexMovement playerMovement = TurnManager.instance?.player;
-
-        // Oyuncu artık scaffold'ın üstünde değilse, knockback olsun olmasın çök
-        bool playerStillOnScaffold = playerMovement != null && playerMovement.GetCurrentCellPosition() == cell;
-        
-        if (!playerStillOnScaffold)
-        {
-            StartCoroutine(CollapseCoroutine(cell));
-        }
+        // Çökmeyi başlat
+        StartCoroutine(CollapseCoroutine(cell));
     }
 
+    // ──────── Titreşim (Shake) Coroutine ────────
+
     /// <summary>
-    /// Süresiz titreşim. Oyuncu üstünde durduğu sürece devam eder.
+    /// Süresiz tile titreşimi. Scaffold ve background tilemap'lerini titretir.
+    /// Oyuncunun transform.position'ına dokunmaz — hareket sistemini bloklamaz.
     /// </summary>
     private IEnumerator ShakeCoroutine(Vector3Int cell)
     {
@@ -77,20 +100,14 @@ public class ScaffoldManager : MonoBehaviour
         Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
         if (scaffoldMap == null) yield break;
 
-        HexMovement player = TurnManager.instance?.player;
-        Vector3 originalPlayerPos = player != null ? player.transform.position : Vector3.zero;
-
         float elapsed = 0f;
         float intensity = 0.005f;
         float speed = 45f;
 
         while (true)
         {
-            // Oyuncu scaffold'dan ayrıldıysa (başka cell'e taşındıysa) shake'i durdur
-            if (player != null && player.GetCurrentCellPosition() != cell)
-            {
-                break;
-            }
+            // Çökme başladıysa durdur
+            if (collapsingOrDestroyed.Contains(cell)) break;
 
             elapsed += Time.deltaTime;
 
@@ -100,35 +117,27 @@ public class ScaffoldManager : MonoBehaviour
             Matrix4x4 shakeMatrix = Matrix4x4.TRS(
                 new Vector3(ox, oy, 0f), Quaternion.identity, Vector3.one);
 
-            // Üst katmanı titret
             if (scaffoldMap.HasTile(cell))
-            {
                 scaffoldMap.SetTransformMatrix(cell, shakeMatrix);
-            }
 
-            // Alt katmanı (background) da aynı şekilde titret
             if (backgroundMap != null && backgroundMap.HasTile(cell))
-            {
                 backgroundMap.SetTransformMatrix(cell, shakeMatrix);
-            }
-
-            // Oyuncuyu da titret
-            if (player != null && player.GetCurrentCellPosition() == cell)
-            {
-                player.transform.position = originalPlayerPos + new Vector3(ox, oy, 0f);
-            }
 
             yield return null;
         }
     }
 
+    // ──────── Çökme (Collapse) Coroutine ────────
+
     /// <summary>
-    /// Scaffold çökme animasyonu. Tile'ları kaldırır.
+    /// Scaffold çökme animasyonu. Tile'ları kaldırır, hücreyi boşluk yapar.
     /// </summary>
     private IEnumerator CollapseCoroutine(Vector3Int cell)
     {
-        if (collapsingScaffolds.Contains(cell)) yield break;
-        collapsingScaffolds.Add(cell);
+        if (collapsingOrDestroyed.Contains(cell)) yield break;
+        collapsingOrDestroyed.Add(cell);
+
+        TrapTileEvents.FireTileCollapsing(cell);
 
         Tilemap scaffoldMap = LevelGenerator.instance.scaffoldMap;
         Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
@@ -167,8 +176,10 @@ public class ScaffoldManager : MonoBehaviour
         if (LevelGenerator.instance != null)
             LevelGenerator.instance.scaffoldCells.Remove(cell);
 
-        collapsingScaffolds.Remove(cell);
+        TrapTileEvents.FireTileDestroyed(cell);
     }
+
+    // ──────── Yardımcı Metotlar ────────
 
     private void StopShakeCoroutine(Vector3Int cell)
     {
@@ -186,7 +197,6 @@ public class ScaffoldManager : MonoBehaviour
         if (scaffoldMap != null && scaffoldMap.HasTile(cell))
             scaffoldMap.SetTransformMatrix(cell, Matrix4x4.identity);
 
-        // Alt katmanın (background) da pozisyonunu sıfırla
         Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
         if (backgroundMap != null && backgroundMap.HasTile(cell))
             backgroundMap.SetTransformMatrix(cell, Matrix4x4.identity);
@@ -202,12 +212,15 @@ public class ScaffoldManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Tüm scaffold state'lerini ve coroutine'leri temizler. Level geçişlerinde çağrılır.
+    /// </summary>
     public void ClearAll()
     {
         foreach (var coroutine in shakeCoroutines.Values)
             if (coroutine != null) StopCoroutine(coroutine);
         shakeCoroutines.Clear();
-        collapsingScaffolds.Clear();
+        collapsingOrDestroyed.Clear();
         StopAllCoroutines();
     }
 }
