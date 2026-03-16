@@ -207,8 +207,8 @@ public class MapManager : MonoBehaviour
         var outlineRT = outlineGO.GetComponent<RectTransform>();
         outlineRT.anchorMin = Vector2.zero;
         outlineRT.anchorMax = Vector2.one;
-        outlineRT.offsetMin = new Vector2(-3f, -3f);
-        outlineRT.offsetMax = new Vector2(3f, 3f);
+        outlineRT.offsetMin = new Vector2(-2f, -2f);
+        outlineRT.offsetMax = new Vector2(2f, 2f);
         Image outlineImg = outlineGO.AddComponent<Image>();
         outlineImg.color = new Color(0f / 255f, 5f / 255f, 12f / 255f, 1f); // #00050C
         outlineImg.raycastTarget = false;
