@@ -76,7 +76,8 @@ public class LevelUpManager : MonoBehaviour
         if (levelUpCanvasGroup != null) levelUpCanvasGroup.gameObject.SetActive(true);
         currentChoices.Clear();
 
-        bool isBossReward = (RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0);
+        // Boss node'unda legendary garanti, eski % 5 mantığı kaldırıldı
+        bool isBossReward = RunManager.instance.currentNodeType == MapNodeType.Boss;
 
         for (int i = 0; i < 3; i++)
         {
@@ -221,20 +222,53 @@ public class LevelUpManager : MonoBehaviour
 
     public GameObject GetRandomPerkByRarity(bool isBossReward)
     {
-        if (isBossReward && legendaryPerks.Count > 0) return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
+        // Boss reward → legendary garanti
+        if (isBossReward && legendaryPerks.Count > 0)
+            return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
 
-        // Lv0: Epic %10 / Rare %30 / Common %60
-        // Lv1: Epic %17 / Rare %33 / Common %50
-        // Lv2: Epic %25 / Rare %33 / Common %42
-        // Lv3: Epic %33 / Rare %33 / Common %33
+        // Yüzdelik sistem: Legendary dahil
+        // Level ilerledikçe legendary şansı artar
+        int level = RunManager.instance != null ? RunManager.instance.currentLevel : 1;
         int cloverLv = RunManager.instance != null ? RunManager.instance.luckyCloverLevel : 0;
-        float epicThresh = cloverLv == 0 ? 10f : cloverLv == 1 ? 17f : cloverLv == 2 ? 25f : 33f;
-        float rareThresh = cloverLv == 0 ? 40f : cloverLv == 1 ? 50f : cloverLv == 2 ? 58f : 66f;
+
+        // Legendary: level 3'ten sonra açılır, giderek artar
+        //   Base: %0 (lv1-2), %3 (lv3-4), %5 (lv5-6), %8 (lv7+)
+        //   Clover bonus: +2% per level
+        float legendaryChance = 0f;
+        if (level >= 7) legendaryChance = 8f;
+        else if (level >= 5) legendaryChance = 5f;
+        else if (level >= 3) legendaryChance = 3f;
+        legendaryChance += cloverLv * 2f;
+
+        // Epic / Rare / Common (legendary yüzdesi düşüldükten sonra kalan)
+        //   Clover Lv0: Epic %10 / Rare %30 / Common %kalan
+        //   Clover Lv1: Epic %17 / Rare %33 / Common %kalan
+        //   Clover Lv2: Epic %25 / Rare %33 / Common %kalan
+        //   Clover Lv3: Epic %33 / Rare %33 / Common %kalan
+        float epicBase = cloverLv == 0 ? 10f : cloverLv == 1 ? 17f : cloverLv == 2 ? 25f : 33f;
+        float rareBase = cloverLv == 0 ? 30f : cloverLv == 1 ? 33f : cloverLv == 2 ? 33f : 33f;
 
         float roll = Random.Range(0f, 100f);
-        if (roll < epicThresh && epicPerks.Count > 0) return epicPerks[Random.Range(0, epicPerks.Count)];
-        else if (roll < rareThresh && rarePerks.Count > 0) return rarePerks[Random.Range(0, rarePerks.Count)];
-        else if (commonPerks.Count > 0) return commonPerks[Random.Range(0, commonPerks.Count)];
+        float cursor = 0f;
+
+        // Legendary
+        cursor += legendaryChance;
+        if (roll < cursor && legendaryPerks.Count > 0)
+            return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
+
+        // Epic
+        cursor += epicBase;
+        if (roll < cursor && epicPerks.Count > 0)
+            return epicPerks[Random.Range(0, epicPerks.Count)];
+
+        // Rare
+        cursor += rareBase;
+        if (roll < cursor && rarePerks.Count > 0)
+            return rarePerks[Random.Range(0, rarePerks.Count)];
+
+        // Common (kalan)
+        if (commonPerks.Count > 0)
+            return commonPerks[Random.Range(0, commonPerks.Count)];
         return null;
     }
 

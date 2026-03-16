@@ -117,6 +117,13 @@ public class RunManager : MonoBehaviour
         {
             ActivePerkBar.CreateFromCode();
         }
+
+        // Silah seçimini PlayerPrefs'ten oku (WeaponSelectUI MainMenu'de kaydetmiş olabilir)
+        if (PlayerPrefs.HasKey("SelectedWeapon"))
+        {
+            selectedWeapon = (WeaponType)PlayerPrefs.GetInt("SelectedWeapon", 0);
+            Debug.Log($"[MITSURI-DEBUG] RunManager.Start: Loaded selectedWeapon={selectedWeapon} from PlayerPrefs");
+        }
     }
 
     // Called when the player selects a perk from the Level Up screen

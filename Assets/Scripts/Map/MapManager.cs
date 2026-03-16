@@ -640,15 +640,15 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator ReturnToMapWithFade()
     {
-        // Re-enable player if it was hidden (e.g. shop)
-        if (TurnManager.instance != null && TurnManager.instance.player != null)
-            TurnManager.instance.player.gameObject.SetActive(true);
-
         // ScreenFader'ın mevcut fade'i bitmesini bekle
         if (ScreenFader.instance != null)
         {
-            // Ekranı karart
+            // Ekranı karart — player henüz aktif değil, flash olmaz
             yield return StartCoroutine(FadeToBlack());
+
+            // Ekran tamamen siyahken player'ı aktif et
+            if (TurnManager.instance != null && TurnManager.instance.player != null)
+                TurnManager.instance.player.gameObject.SetActive(true);
 
             // Map'i arkada hazırla
             if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
@@ -666,6 +666,8 @@ public class MapManager : MonoBehaviour
         }
         else
         {
+            if (TurnManager.instance != null && TurnManager.instance.player != null)
+                TurnManager.instance.player.gameObject.SetActive(true);
             ShowMapInstant();
         }
     }

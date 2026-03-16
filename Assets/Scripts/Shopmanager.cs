@@ -42,6 +42,7 @@ public class Shopmanager : MonoBehaviour
     // ─── Internal State ───
     private List<BaseItem> currentItems = new List<BaseItem>();
     private List<bool> purchased = new List<bool>();
+    private HashSet<string> shownItemNames = new HashSet<string>(); // Reroll'da tekrar gelmesin
 
     private int rerollCount = 0;
     private int currentRerollCost;
@@ -430,6 +431,7 @@ public class Shopmanager : MonoBehaviour
     {
         rerollCount = 0;
         currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
+        shownItemNames.Clear(); // Yeni shop ziyareti — temiz başla
         GenerateShopItems();
         RefreshCoinDisplay();
 
@@ -470,22 +472,13 @@ public class Shopmanager : MonoBehaviour
 
     private IEnumerator ShopOpenAnimation()
     {
-        if (shopCanvasGroup != null) shopCanvasGroup.alpha = 0f;
+        // Alpha'yı 0'a düşürme — arkaplan flash'ına neden oluyor
+        // Sadece kartları sıfırla ve pop-in yap, shop arka planı hep görünür kalsın
+        if (shopCanvasGroup != null) shopCanvasGroup.alpha = 1f;
 
         for (int i = 0; i < cardUIs.Count; i++)
             if (i < currentItems.Count && cardUIs[i].root.activeSelf)
                 cardUIs[i].root.transform.localScale = Vector3.zero;
-
-        float fadeDur = 0.2f;
-        float elapsed = 0f;
-        while (elapsed < fadeDur)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            if (shopCanvasGroup != null)
-                shopCanvasGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / fadeDur);
-            yield return null;
-        }
-        if (shopCanvasGroup != null) shopCanvasGroup.alpha = 1f;
 
         for (int i = 0; i < cardUIs.Count; i++)
         {
@@ -501,16 +494,24 @@ public class Shopmanager : MonoBehaviour
 
     private IEnumerator ShopCloseAnimation()
     {
-        float duration = 0.2f;
-        float elapsed = 0f;
-        while (elapsed < duration)
+        // Önce ScreenFader'ı siyaha çek — böylece shop kapandığında arkaplan görünmez
+        if (ScreenFader.instance != null && ScreenFader.instance.faderGroup != null)
         {
-            elapsed += Time.unscaledDeltaTime;
-            if (shopCanvasGroup != null)
-                shopCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed * elapsed / (duration * duration));
-            yield return null;
+            CanvasGroup fader = ScreenFader.instance.faderGroup;
+            fader.blocksRaycasts = true;
+            float fadeDur = 0.2f;
+            float fadeElapsed = 0f;
+            float startAlpha = fader.alpha;
+            while (fadeElapsed < fadeDur)
+            {
+                fadeElapsed += Time.unscaledDeltaTime;
+                fader.alpha = Mathf.Lerp(startAlpha, 1f, fadeElapsed / fadeDur);
+                yield return null;
+            }
+            fader.alpha = 1f;
         }
 
+        // Ekran tamamen siyah — artık shop'u güvenle kapat
         CloseShop();
 
         if (MapManager.instance != null)
@@ -612,6 +613,10 @@ public class Shopmanager : MonoBehaviour
 
     public void GenerateShopItems()
     {
+        // Mevcut itemleri "gösterildi" olarak kaydet (reroll'da tekrar gelmesin)
+        foreach (var item in currentItems)
+            if (item != null) shownItemNames.Add(item.itemName);
+
         currentItems.Clear();
         purchased.Clear();
         if (itemPool.Count == 0) return;
@@ -621,6 +626,13 @@ public class Shopmanager : MonoBehaviour
                                 && !hasBoughtSecretItem && rerollCount == 0);
         if (secretItem != null && !hasBoughtSecretItem && (guaranteeSecret || Random.value < secretItemChance))
             secretSlotIndex = Random.Range(0, shopSlotCount);
+
+        // Havuzda yeterli yeni item kalmadıysa gösterilmiş listesini sıfırla
+        int availableCount = 0;
+        foreach (var item in itemPool)
+            if (!shownItemNames.Contains(item.itemName)) availableCount++;
+        if (availableCount < shopSlotCount)
+            shownItemNames.Clear();
 
         List<int> usedIndices = new List<int>();
         for (int i = 0; i < shopSlotCount; i++)
@@ -641,6 +653,7 @@ public class Shopmanager : MonoBehaviour
                     if (++safety > 100) break;
                 }
                 while (usedIndices.Contains(poolIdx) ||
+                       (selectedItem != null && shownItemNames.Contains(selectedItem.itemName)) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
                        (RunManager.instance != null && RunManager.instance.hasPerkReroll && selectedItem is MutationCatalyst));
                 usedIndices.Add(poolIdx);

@@ -43,8 +43,15 @@ public class WeaponSelectUI : MonoBehaviour
 
     public void SelectWeapon(WeaponType type)
     {
+        Debug.Log($"[MITSURI-DEBUG] WeaponSelectUI.SelectWeapon: type={type}, RunManager.instance null={RunManager.instance == null}");
+
+        // RunManager varsa direkt ata, yoksa PlayerPrefs ile sahne arası taşı
         if (RunManager.instance != null)
             RunManager.instance.selectedWeapon = type;
+
+        // Her durumda PlayerPrefs'e kaydet — gameplay sahnesinde RunManager okuyacak
+        PlayerPrefs.SetInt("SelectedWeapon", (int)type);
+        PlayerPrefs.Save();
 
         if (panelRoot != null) panelRoot.SetActive(false);
 
