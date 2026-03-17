@@ -246,20 +246,19 @@ public class Shopmanager : MonoBehaviour
 
     private IEnumerator ShopCloseAnimation()
     {
-        if (ScreenFader.instance != null && ScreenFader.instance.faderGroup != null)
+        // Shop panelini smooth fade out (siyah ekran fade yok — map arkaplanı zaten görünüyor)
+        if (shopCanvasGroupRef != null)
         {
-            CanvasGroup fader = ScreenFader.instance.faderGroup;
-            fader.blocksRaycasts = true;
-            float fadeDur = 0.2f;
-            float fadeElapsed = 0f;
-            float startAlpha = fader.alpha;
-            while (fadeElapsed < fadeDur)
+            float fadeDur = 0.25f;
+            float elapsed = 0f;
+            float startAlpha = shopCanvasGroupRef.alpha;
+            while (elapsed < fadeDur)
             {
-                fadeElapsed += Time.unscaledDeltaTime;
-                fader.alpha = Mathf.Lerp(startAlpha, 1f, fadeElapsed / fadeDur);
+                elapsed += Time.unscaledDeltaTime;
+                shopCanvasGroupRef.alpha = Mathf.Lerp(startAlpha, 0f, elapsed / fadeDur);
                 yield return null;
             }
-            fader.alpha = 1f;
+            shopCanvasGroupRef.alpha = 0f;
         }
 
         CloseShop();

@@ -75,21 +75,22 @@ public abstract class BasePerk : MonoBehaviour
     {
         if (AudioManager.instance != null) AudioManager.instance.PlayTextEffect();
         CameraController.ShakeLight();
-        Transform t = transform;
-        Vector3 startScale = new Vector3(1.5f, 1.5f, 1.5f);
+        Transform tr = transform;
         Vector3 endScale = Vector3.one;
 
-        float duration = 0.2f;
+        float duration = 0.12f;
         float elapsed = 0f;
+
+        tr.localScale = new Vector3(1.5f, 1.5f, 1.5f);
 
         while (elapsed < duration)
         {
             float tParam = elapsed / duration;
-            tParam = 1f - (1f - tParam) * (1f - tParam); // Ease-out efekti
-            t.localScale = Vector3.Lerp(startScale, endScale, tParam);
+            tParam = 1f - (1f - tParam) * (1f - tParam);
+            tr.localScale = Vector3.Lerp(new Vector3(1.5f, 1.5f, 1.5f), endScale, tParam);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        t.localScale = endScale;
+        tr.localScale = endScale;
     }
 }

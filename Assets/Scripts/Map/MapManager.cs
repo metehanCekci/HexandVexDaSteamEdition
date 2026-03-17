@@ -25,6 +25,9 @@ public class MapManager : MonoBehaviour
     public Sprite eventIcon;
     public Sprite bossIcon;
 
+    [Header("Rest UI")]
+    public GameObject restCanvasPrefab; // Inspector'dan RestCanvas prefab'ını sürükle
+
     [Header("Runtime State")]
     public MapData currentMap;
 
@@ -78,10 +81,10 @@ public class MapManager : MonoBehaviour
             PerkInventoryUI.CreateFromCode();
         }
 
-        // Rest UI yoksa otomatik oluştur
+        // Rest UI yoksa prefab'dan yükle
         if (RestNodeUI.instance == null)
         {
-            BuildRestUIFromCode();
+            LoadRestUIFromPrefab();
         }
 
         // Auto-spawn Inventory & Hotbar if not present
@@ -282,63 +285,30 @@ public class MapManager : MonoBehaviour
 
     private static bool restUIBuilt = false;
 
-    private void BuildRestUIFromCode()
+    private void LoadRestUIFromPrefab()
     {
         if (restUIBuilt) return;
         restUIBuilt = true;
 
-        GameObject canvasGO = new GameObject("RestCanvas");
-        Canvas c = canvasGO.AddComponent<Canvas>();
-        c.renderMode = RenderMode.ScreenSpaceOverlay;
-        c.sortingOrder = 95;
-        var sc = canvasGO.AddComponent<CanvasScaler>();
-        sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        sc.referenceResolution = new Vector2(1920, 1080);
-        canvasGO.AddComponent<GraphicRaycaster>();
+        if (restCanvasPrefab == null)
+        {
+            Debug.LogError("[MapManager] restCanvasPrefab atanmamış! Inspector'dan RestCanvas prefab'ını sürükle.");
+            return;
+        }
 
-        GameObject panelGO = MakeUIObj("RestPanel", canvasGO.transform);
-        StretchFull(panelGO.GetComponent<RectTransform>());
-        Image bg = panelGO.AddComponent<Image>();
-        bg.color = new Color(0.05f, 0.08f, 0.05f, 0.92f);
+        GameObject canvasGO = Instantiate(restCanvasPrefab);
+        canvasGO.name = "RestCanvas";
 
-        // Başlık
-        GameObject titleGO = MakeUIObj("Title", panelGO.transform);
-        var titleRT = titleGO.GetComponent<RectTransform>();
-        titleRT.anchorMin = new Vector2(0.5f, 0.7f);
-        titleRT.anchorMax = new Vector2(0.5f, 0.7f);
-        titleRT.sizeDelta = new Vector2(400f, 60f);
-        var titleTxt = titleGO.AddComponent<TextMeshProUGUI>();
-        titleTxt.text = "Campfire";
-        titleTxt.fontSize = 42;
-        titleTxt.alignment = TextAlignmentOptions.Center;
-        titleTxt.color = new Color(1f, 0.7f, 0.3f);
-
-        // Rest butonu
-        GameObject restBtn = MakeButton("Rest", panelGO.transform, new Vector2(-120f, -30f), new Color(0.2f, 0.6f, 0.3f));
-        // Train butonu
-        GameObject trainBtn = MakeButton("Train", panelGO.transform, new Vector2(120f, -30f), new Color(0.3f, 0.3f, 0.7f));
-
-        // Info text
-        GameObject infoGO = MakeUIObj("Info", panelGO.transform);
-        var infoRT = infoGO.GetComponent<RectTransform>();
-        infoRT.anchorMin = new Vector2(0.5f, 0.25f);
-        infoRT.anchorMax = new Vector2(0.5f, 0.25f);
-        infoRT.sizeDelta = new Vector2(400f, 40f);
-        var infoTxt = infoGO.AddComponent<TextMeshProUGUI>();
-        infoTxt.fontSize = 24;
-        infoTxt.alignment = TextAlignmentOptions.Center;
-        infoTxt.color = Color.white;
-
-        RestNodeUI restUI = panelGO.AddComponent<RestNodeUI>();
-        restUI.restPanel = panelGO;
-        restUI.restButton = restBtn.GetComponent<Button>();
-        restUI.trainButton = trainBtn.GetComponent<Button>();
-        restUI.titleText = titleTxt;
-        restUI.restButtonText = restBtn.GetComponentInChildren<TMP_Text>();
-        restUI.trainButtonText = trainBtn.GetComponentInChildren<TMP_Text>();
-        restUI.infoText = infoTxt;
-
-        panelGO.SetActive(false);
+        // RestPanel inactive olduğu için Awake çalışmaz — instance'ı elle bul
+        RestNodeUI restUI = canvasGO.GetComponentInChildren<RestNodeUI>(true);
+        if (restUI != null)
+        {
+            RestNodeUI.instance = restUI;
+        }
+        else
+        {
+            Debug.LogError("[MapManager] RestCanvas prefab'ında RestNodeUI component'i bulunamadı!");
+        }
     }
 
     // ─── Inventory & Hotbar auto-spawn ───
@@ -402,8 +372,43 @@ public class MapManager : MonoBehaviour
         StartCoroutine(StartNewRunDelayed());
     }
 
+    /// <summary>
+    /// Sahne yeniden yüklendiğinde yok olan UI referanslarını kontrol eder,
+    /// gerekirse static flag'leri sıfırlayıp UI'ı yeniden oluşturur.
+    /// </summary>
+    private void RebuildUIIfDestroyed()
+    {
+        // MapUI veya Canvas'ı sahne geçişinde yok olmuş olabilir
+        if (mapUI == null || mapUI.mapPanel == null)
+        {
+            uiBuilt = false;
+            mapUI = null;
+            BuildUIFromCode();
+        }
+
+        // RestNodeUI yok olmuş olabilir
+        if (RestNodeUI.instance == null || RestNodeUI.instance.gameObject == null)
+        {
+            restUIBuilt = false;
+            RestNodeUI.instance = null;
+            LoadRestUIFromPrefab();
+        }
+
+        // PerkInventoryUI yok olmuş olabilir
+        if (PerkInventoryUI.instance == null)
+        {
+            PerkInventoryUI.CreateFromCode();
+        }
+
+        // Inventory & Hotbar yok olmuş olabilir
+        EnsureInventoryAndHotbar();
+    }
+
     private IEnumerator StartNewRunDelayed()
     {
+        // Sahne geçişinde yok olan UI'ları yeniden oluştur
+        RebuildUIIfDestroyed();
+
         // UI'ın oluşması için 1 frame bekle
         yield return null;
 
@@ -483,7 +488,8 @@ public class MapManager : MonoBehaviour
         node.visited = true;
         currentMap.currentNodeId = nodeId;
 
-        if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
+        // Hemen transition'a geç — üst node'ların outline'ı gözükmesin
+        isTransitioning = true;
 
         // Node tipine göre dispatch
         ExecuteNode(node);
@@ -504,13 +510,29 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator ExecuteNodeSequence(MapNode node)
     {
-        // 1. Ekranı karart
-        yield return StartCoroutine(FadeToBlack());
+        bool isCombatNode = node.nodeType == MapNodeType.Combat
+                         || node.nodeType == MapNodeType.EliteCombat
+                         || node.nodeType == MapNodeType.Boss
+                         || node.nodeType == MapNodeType.Event;
 
-        // 2. Map'i gizle
-        HideMap();
+        if (isCombatNode)
+        {
+            // Combat/Event: klasik fade in/out
+            yield return StartCoroutine(FadeToBlack());
+            HideMap();
 
-        // 3. İçeriği yükle + hotbar visibility
+            // Savaşta perk inventory gizle
+            if (PerkInventoryUI.instance != null)
+                PerkInventoryUI.instance.Hide();
+        }
+        else
+        {
+            // Non-combat (Shop, Perk, Rest): node'ları smooth küçültüp kaybet
+            yield return StartCoroutine(SmoothDismissMapNodes());
+            HideGameplayElements();
+        }
+
+        // İçeriği yükle + hotbar visibility
         bool showHotbar = false;
 
         switch (node.nodeType)
@@ -519,64 +541,26 @@ public class MapManager : MonoBehaviour
             case MapNodeType.EliteCombat:
                 RunManager.instance.currentLevel++;
                 LevelGenerator.instance.GenerateNextLevel();
-                showHotbar = true; // Hotbar visible during combat
+                showHotbar = true;
                 break;
 
             case MapNodeType.Event:
-                // Event node'u level olarak sayılmaz — zorluk artmaz
                 LevelGenerator.instance.GenerateNextLevel();
                 showHotbar = true;
                 break;
 
             case MapNodeType.Shop:
-                // Full-screen canvas shop — clear EVERYTHING behind
-                if (LevelGenerator.instance != null)
-                {
-                    LevelGenerator.instance.groundMap?.ClearAllTiles();
-                    if (LevelGenerator.instance.backgroundMap != null)
-                        LevelGenerator.instance.backgroundMap.ClearAllTiles();
-                    if (LevelGenerator.instance.hazardMap != null)
-                        LevelGenerator.instance.hazardMap.ClearAllTiles();
-                    if (LevelGenerator.instance.scaffoldMap != null)
-                        LevelGenerator.instance.scaffoldMap.ClearAllTiles();
-                    if (ScaffoldManager.instance != null)
-                        ScaffoldManager.instance.ClearAll();
-                }
-                // Hide player
-                if (TurnManager.instance != null && TurnManager.instance.player != null)
-                    TurnManager.instance.player.gameObject.SetActive(false);
-                // Destroy remaining enemies
-                if (TurnManager.instance != null)
-                {
-                    foreach (var enemy in TurnManager.instance.enemies)
-                        if (enemy != null) Destroy(enemy.gameObject);
-                    TurnManager.instance.enemies.Clear();
-                }
                 if (Shopmanager.instance != null)
                     Shopmanager.instance.OpenAsMapNode();
                 showHotbar = false;
                 break;
 
             case MapNodeType.PerkSelection:
-                // Perk seçim ekranı açılmadan önce level tile'larını temizle
-                if (LevelGenerator.instance != null)
-                {
-                    LevelGenerator.instance.groundMap?.ClearAllTiles();
-                    if (LevelGenerator.instance.backgroundMap != null)
-                        LevelGenerator.instance.backgroundMap.ClearAllTiles();
-                }
                 if (LevelUpManager.instance != null)
                     LevelUpManager.instance.ShowLevelUpScreen();
                 break;
 
             case MapNodeType.Rest:
-                // Rest açılmadan önce level tile'larını temizle
-                if (LevelGenerator.instance != null)
-                {
-                    LevelGenerator.instance.groundMap?.ClearAllTiles();
-                    if (LevelGenerator.instance.backgroundMap != null)
-                        LevelGenerator.instance.backgroundMap.ClearAllTiles();
-                }
                 if (RestNodeUI.instance != null)
                     RestNodeUI.instance.Show();
                 break;
@@ -584,20 +568,49 @@ public class MapManager : MonoBehaviour
             case MapNodeType.Boss:
                 RunManager.instance.currentLevel++;
                 LevelGenerator.instance.GenerateBossArena();
-                showHotbar = true; // Hotbar visible during boss
+                showHotbar = true;
                 break;
         }
 
         if (HotbarUI.instance != null)
             HotbarUI.instance.SetVisible(showHotbar);
 
-        // 4. İçeriğin render edilmesi için kısa bekleme
-        yield return new WaitForSecondsRealtime(0.2f);
-
-        // 5. Ekranı aydınlat
-        yield return StartCoroutine(FadeFromBlack());
+        if (isCombatNode)
+        {
+            yield return new WaitForSecondsRealtime(0.2f);
+            yield return StartCoroutine(FadeFromBlack());
+        }
 
         isTransitioning = false;
+    }
+
+    /// <summary>
+    /// Map node'larını smooth saydamlaştırarak yok eder.
+    /// Arkaplan (parallax) yerinde kalır.
+    /// </summary>
+    private IEnumerator SmoothDismissMapNodes()
+    {
+        if (mapUI == null || mapUI.nodeContainer == null) yield break;
+
+        RectTransform containerRT = mapUI.nodeContainer;
+        CanvasGroup cg = containerRT.GetComponent<CanvasGroup>();
+        if (cg == null) cg = containerRT.gameObject.AddComponent<CanvasGroup>();
+
+        float startAlpha = cg.alpha;
+        float duration = 0.35f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            cg.alpha = Mathf.Lerp(startAlpha, 0f, t);
+            yield return null;
+        }
+
+        cg.alpha = 0f;
+        containerRT.gameObject.SetActive(false);
+        cg.alpha = 1f; // resetle (ShowMapNodes'da geri açılacak)
     }
 
     // ─── Kendi fade helper'larımız (ScreenFader'ın faderGroup'unu kullanır) ───
@@ -678,28 +691,43 @@ public class MapManager : MonoBehaviour
 
     private IEnumerator ReturnToMapWithFade()
     {
-        // ScreenFader'ın mevcut fade'i bitmesini bekle
-        if (ScreenFader.instance != null)
+        // Non-combat node'lardan dönüş: arkaplan zaten açık, sadece node'ları smooth geri aç
+        MapNodeType lastType = MapNodeType.Combat;
+        if (RunManager.instance != null)
+            lastType = RunManager.instance.currentNodeType;
+
+        bool wasNonCombat = lastType == MapNodeType.Shop
+                         || lastType == MapNodeType.PerkSelection
+                         || lastType == MapNodeType.Rest;
+
+        if (wasNonCombat)
         {
-            // Ekranı karart — player henüz aktif değil, flash olmaz
+            // Map arkaplanı zaten açık — node'ları smooth geri getir
+            if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
+            ShowMapNodes();
+            yield return null;
+            if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
+            yield return StartCoroutine(SmoothRevealMapNodes());
+        }
+        else if (ScreenFader.instance != null)
+        {
+            // Combat/Event dönüşü: klasik fade
             yield return StartCoroutine(FadeToBlack());
 
-            // Ekran tamamen siyahken player'ı aktif et
             if (TurnManager.instance != null && TurnManager.instance.player != null)
                 TurnManager.instance.player.gameObject.SetActive(true);
 
-            // Map'i arkada hazırla
             if (mapUI != null) mapUI.RefreshNodeStates(currentMap);
             ShowMapInstant();
 
-            // 1 frame bekle — viewport boyutu güncellensin
+            // Map'e dönünce perk inventory'yi geri aç
+            if (PerkInventoryUI.instance != null)
+                PerkInventoryUI.instance.Show();
+
             yield return null;
             if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
 
-            // Kısa bekleme (map render edilsin)
             yield return new WaitForSecondsRealtime(0.2f);
-
-            // Ekranı aydınlat
             yield return StartCoroutine(FadeFromBlack());
         }
         else
@@ -708,6 +736,34 @@ public class MapManager : MonoBehaviour
                 TurnManager.instance.player.gameObject.SetActive(true);
             ShowMapInstant();
         }
+    }
+
+    /// <summary>
+    /// Map node'larını smooth saydamdan opağa getirerek gösterir.
+    /// </summary>
+    private IEnumerator SmoothRevealMapNodes()
+    {
+        if (mapUI == null || mapUI.nodeContainer == null) yield break;
+
+        RectTransform containerRT = mapUI.nodeContainer;
+        CanvasGroup cg = containerRT.GetComponent<CanvasGroup>();
+        if (cg == null) cg = containerRT.gameObject.AddComponent<CanvasGroup>();
+
+        cg.alpha = 0f;
+        containerRT.gameObject.SetActive(true);
+
+        float duration = 0.35f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / duration;
+            cg.alpha = t;
+            yield return null;
+        }
+
+        cg.alpha = 1f;
     }
 
     // ─── Boss yenildiğinde yeni layer'a geç ───
@@ -773,6 +829,9 @@ public class MapManager : MonoBehaviour
         if (HotbarUI.instance != null)
             HotbarUI.instance.SetVisible(false);
 
+        // Map'te savaş UI'larını gizle
+        SetCombatUIVisible(false);
+
         // Player'ı gizle — ScreenSpaceCamera modunda kamera arkasından görünür
         if (TurnManager.instance != null && TurnManager.instance.player != null)
             TurnManager.instance.player.gameObject.SetActive(false);
@@ -799,6 +858,70 @@ public class MapManager : MonoBehaviour
         // Player'ı geri getir
         if (TurnManager.instance != null && TurnManager.instance.player != null)
             TurnManager.instance.player.gameObject.SetActive(true);
+
+        // Savaşa girerken combat UI'ları göster
+        SetCombatUIVisible(true);
+    }
+
+    /// <summary>
+    /// ActivePerkBar, DiceSkipController gibi savaş UI'larını göster/gizle.
+    /// Map'te gizli, savaşta görünür.
+    /// </summary>
+    private void SetCombatUIVisible(bool visible)
+    {
+        if (ActivePerkBar.instance != null && ActivePerkBar.instance.barCanvas != null)
+            ActivePerkBar.instance.barCanvas.gameObject.SetActive(visible);
+
+        if (DiceSkipController.instance != null)
+            DiceSkipController.instance.gameObject.SetActive(visible);
+    }
+
+    /// <summary>
+    /// Sadece map node'larını gizler — arkaplan/parallax görünmeye devam eder.
+    /// Rest UI gibi overlay ekranlarında kullanılır.
+    /// </summary>
+    public void HideMapNodes()
+    {
+        if (mapUI != null && mapUI.nodeContainer != null)
+            mapUI.nodeContainer.gameObject.SetActive(false);
+    }
+
+    public void ShowMapNodes()
+    {
+        if (mapUI != null && mapUI.nodeContainer != null)
+            mapUI.nodeContainer.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Savaş dışı bölümlerde çağır: player, düşmanlar, tüm tilemap'ler gizlenir.
+    /// Sadece UI overlay ekranları (shop, perk, rest) görünsün.
+    /// </summary>
+    private void HideGameplayElements()
+    {
+        // Player'ı gizle
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+            TurnManager.instance.player.gameObject.SetActive(false);
+
+        // Düşmanları gizle
+        if (TurnManager.instance != null)
+        {
+            foreach (var enemy in TurnManager.instance.enemies)
+                if (enemy != null) enemy.gameObject.SetActive(false);
+        }
+
+        // Tüm tilemap'leri temizle
+        if (LevelGenerator.instance != null)
+        {
+            LevelGenerator.instance.groundMap?.ClearAllTiles();
+            if (LevelGenerator.instance.backgroundMap != null)
+                LevelGenerator.instance.backgroundMap.ClearAllTiles();
+            if (LevelGenerator.instance.hazardMap != null)
+                LevelGenerator.instance.hazardMap.ClearAllTiles();
+            if (LevelGenerator.instance.scaffoldMap != null)
+                LevelGenerator.instance.scaffoldMap.ClearAllTiles();
+            if (ScaffoldManager.instance != null)
+                ScaffoldManager.instance.ClearAll();
+        }
     }
 
     // ─── Layer config'i güvenli al (fallback: son config) ───

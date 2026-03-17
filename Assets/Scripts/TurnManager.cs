@@ -1404,21 +1404,21 @@ public class TurnManager : MonoBehaviour
 
     public void ToggleSkipDiceVisuals()
     {
-        if (diceUI != null && diceUI.IsDiceAnimPlaying) return;
         manualDiceSkip = !manualDiceSkip;
         skipDiceVisuals = manualDiceSkip || (RunManager.instance != null && RunManager.instance.fastMode);
 
-        // Eğer skip açıldıysa ve ekranda zar varsa, hemen temizle
         if (skipDiceVisuals && diceUI != null)
+        {
+            // Animasyon devam ediyorsa hemen atla
+            diceUI.skipDiceAnim = true;
+            // Ekranda kalan zarları temizle
             HideDiceResults();
+        }
     }
     public bool GetSkipDiceVisuals() => manualDiceSkip;
 
     private IEnumerator MultiAttack(List<EnemyAI> targets)
     {
-        // Skip button'ı zarlar atılırken disable et
-        if (LevelUpManager.instance != null && LevelUpManager.instance.skipButton != null)
-            LevelUpManager.instance.skipButton.interactable = false;
 
         bool hasBioMag = RunManager.instance.activePerks.Exists(p => p is BioMagnetismPerk);
         if (hasBioMag)
@@ -1574,8 +1574,8 @@ public class TurnManager : MonoBehaviour
         if (!skipDiceVisuals)
         {
             yield return StartCoroutine(diceUI.SkippableWait(0.4f));
-            HideDiceResults();
         }
+        HideDiceResults();
         diceUI.EndDiceAnim();
 
         int damagePerEnemy = 0;

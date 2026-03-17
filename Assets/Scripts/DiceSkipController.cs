@@ -27,12 +27,7 @@ public class DiceSkipController : MonoBehaviour
 
     void Update()
     {
-        // Zar animasyonu oynarken butonu devre dışı bırak
-        bool diceAnimPlaying = TurnManager.instance != null && TurnManager.instance.IsDiceAnimPlaying;
-        if (skipDiceButton != null)
-            skipDiceButton.interactable = !diceAnimPlaying;
-
-        // E tuşu: Zar görselini atlama mekanizmasını aç/kapat
+        // E tuşu: Zar görselini atlama mekanizmasını aç/kapat (animasyon sırasında da çalışır)
         if (Input.GetKeyDown(KeyCode.E))
         {
             if (TurnManager.instance != null)
