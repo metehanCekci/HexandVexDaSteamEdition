@@ -274,18 +274,10 @@ public class WeaponSelectUI : MonoBehaviour
     /// MainMenu sahnesinde otomatik olarak WeaponSelectUI oluşturur.
     /// Herhangi bir sahne objesine bu script'i eklemeye gerek yok.
     /// </summary>
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    // Silah seçme sistemi şimdilik devre dışı
+    // [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoBootstrap()
     {
-        // Sadece MainMenu sahnesinde (index 1) otomatik oluştur
-        if (SceneManager.GetActiveScene().buildIndex == 1 && instance == null)
-        {
-            CreateInstance();
-        }
-
-        // Sahne değişikliklerini dinle
-        SceneManager.sceneLoaded -= OnSceneLoadedStatic;
-        SceneManager.sceneLoaded += OnSceneLoadedStatic;
     }
 
     private static void OnSceneLoadedStatic(Scene scene, LoadSceneMode mode)

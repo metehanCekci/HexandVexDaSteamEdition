@@ -26,6 +26,8 @@ public class EnemyAI : MonoBehaviour
     private int currentCooldown = 0;
     private bool isFirstTurn = true;
 
+    [HideInInspector] public bool isElite = false;
+
     public enum EnemyBehavior { Melee, TelegraphAoE, Totem, Boss, Warlock }
 
     [Header("AoE Uyarı Ayarları")]

@@ -104,6 +104,7 @@ public class LevelGenerator : MonoBehaviour
         yield return null;
 
         // Map sistemi aktifse: ilk level'i üretme, haritayı göster
+        Debug.Log($"[LEVEL-DEBUG] LevelBaslatmaSırası: MapManager.instance={MapManager.instance}, null={MapManager.instance == null}");
         if (MapManager.instance != null)
         {
             // ScreenFader'ın otomatik fade'lerini durdur — MapManager kontrol edecek
@@ -418,6 +419,7 @@ public class LevelGenerator : MonoBehaviour
             if (makeElite)
             {
                 randomMultiplier *= 2.0f;
+                enemyAI.isElite = true;
                 newEnemyObj.name = "ELITE " + newEnemyObj.name;
 
                 SpriteRenderer eliteSpriteRenderer = newEnemyObj.GetComponent<SpriteRenderer>();

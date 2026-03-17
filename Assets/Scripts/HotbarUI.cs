@@ -51,6 +51,11 @@ public class HotbarUI : MonoBehaviour
         }
     }
 
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
+    }
+
     void Start()
     {
         BuildUI();

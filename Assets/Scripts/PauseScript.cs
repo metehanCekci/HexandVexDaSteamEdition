@@ -79,22 +79,35 @@ public class PauseManager : MonoBehaviour
     // PauseManager.cs içindeki LoadMainMenu fonksiyonu
     public void LoadMainMenu()
     {
-        Time.timeScale = 1f; // Zamanı açmak şart, yoksa sahneler sapıtır
+        Time.timeScale = 1f;
 
-        // Ölüm menüsünü kapat
         if (deathMenuUI != null) deathMenuUI.SetActive(false);
 
         if (TurnManager.instance != null)
-        {
             TurnManager.instance.ResetGame();
-        }
 
-        // ScreenFader instance'ı üzerinden çağırmalıyız
+        // Tüm DontDestroyOnLoad singleton'ları yok et — yeni oyunda sıfırdan oluşacaklar
+        if (HotbarUI.instance != null)
+            Destroy(HotbarUI.instance.gameObject);
+        if (ActivePerkBar.instance != null)
+            Destroy(ActivePerkBar.instance.gameObject);
+        if (MapManager.instance != null)
+            Destroy(MapManager.instance.gameObject);
+        if (RunManager.instance != null)
+            Destroy(RunManager.instance.gameObject);
+        if (InventoryManager.instance != null)
+            Destroy(InventoryManager.instance.gameObject);
+        if (PerkInventoryUI.instance != null)
+            Destroy(PerkInventoryUI.instance.gameObject);
+
         if (ScreenFader.instance != null)
         {
-            ScreenFader.instance.FadeAndLoad(() =>
+            // ScreenFader'ı fade bittikten sonra yok et
+            var fader = ScreenFader.instance;
+            fader.FadeAndLoad(() =>
             {
-                SceneManager.LoadScene(1); // 1 = Main Menu Index
+                SceneManager.LoadScene(1);
+                Destroy(fader.gameObject);
             });
         }
         else
@@ -106,15 +119,7 @@ public class PauseManager : MonoBehaviour
     // KAYBOLAN FONKSİYON GERİ GELDİ
     public void PlayButton(int sceneIndex)
     {
-        Time.timeScale = 1f; // Zamanı açmayı unutma!
-
-        // Silah seçme paneli varsa önce onu göster, sahneyi oradan yükle
-        if (WeaponSelectUI.instance != null)
-        {
-            WeaponSelectUI.instance.gameSceneIndex = sceneIndex;
-            WeaponSelectUI.instance.Show();
-            return;
-        }
+        Time.timeScale = 1f;
 
         if (ScreenFader.instance != null)
         {
