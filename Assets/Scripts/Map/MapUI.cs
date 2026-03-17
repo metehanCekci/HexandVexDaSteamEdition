@@ -295,9 +295,7 @@ public class MapUI : MonoBehaviour
             canvasGroup.blocksRaycasts = false;
         }
 
-        // Perk yan panelini gizle
-        if (PerkInventoryUI.instance != null)
-            PerkInventoryUI.instance.Hide();
+        // Perk inventory her zaman görünür — burada kapatma
     }
 
     private void ClearMap()

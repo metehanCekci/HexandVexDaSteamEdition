@@ -46,11 +46,9 @@ public class PerkInventoryUI : MonoBehaviour
     private Canvas rootCanvas;
 
     // Animasyon state
-    private Coroutine panelSlideCoroutine;
     private Coroutine stashExpandCoroutine;
     private Coroutine tooltipFadeCoroutine;
     private bool stashWasOpen;
-    private bool skipSlotAnim; // panel slide-in kendi animasyonunu oynatır
 
     // Fly animasyonu state — perk taşınırken eski pozisyondan yenisine uçar
     private BasePerk flyingPerk;
@@ -64,7 +62,6 @@ public class PerkInventoryUI : MonoBehaviour
     private const float PANEL_WIDTH = 280f;
 
     // Animasyon sabitleri
-    private const float PANEL_SLIDE_DURATION = 0.3f;
     private const float SLOT_STAGGER_DELAY = 0.04f;
     private const float SLOT_POP_DURATION = 0.25f;
     private const float STASH_EXPAND_DURATION = 0.25f;
@@ -135,13 +132,17 @@ public class PerkInventoryUI : MonoBehaviour
         canvasGO.SetActive(true);
         rootCanvas = canvasGO.GetComponent<Canvas>();
         stashWasOpen = false;
-        skipSlotAnim = true; // PanelSlideIn kendi slot animasyonunu oynatacak
         RefreshUI();
-        skipSlotAnim = false;
 
-        // Panel sağdan kayarak gelsin
-        if (panelSlideCoroutine != null) StopCoroutine(panelSlideCoroutine);
-        panelSlideCoroutine = StartCoroutine(PanelSlideIn());
+        // Slide animasyonu yok — direkt göster
+        if (panelRoot != null)
+        {
+            RectTransform panelRT = panelRoot.GetComponent<RectTransform>();
+            panelRT.anchoredPosition = new Vector2(-10f, -10f);
+            CanvasGroup panelCG = panelRoot.GetComponent<CanvasGroup>();
+            if (panelCG == null) panelCG = panelRoot.AddComponent<CanvasGroup>();
+            panelCG.alpha = 1f;
+        }
     }
 
     public void Hide()
@@ -150,70 +151,10 @@ public class PerkInventoryUI : MonoBehaviour
         HideTooltip();
         if (canvasGO == null) return;
 
-        if (panelSlideCoroutine != null) StopCoroutine(panelSlideCoroutine);
-        panelSlideCoroutine = StartCoroutine(PanelSlideOut());
-    }
-
-    // ======================================================
-    // PANEL ANIMASYONLARI
-    // ======================================================
-
-    private IEnumerator PanelSlideIn()
-    {
-        if (panelRoot == null) yield break;
-        RectTransform panelRT = panelRoot.GetComponent<RectTransform>();
-        CanvasGroup panelCG = panelRoot.GetComponent<CanvasGroup>();
-        if (panelCG == null) panelCG = panelRoot.AddComponent<CanvasGroup>();
-
-        float targetX = -10f;
-        float startX = PANEL_WIDTH + 20f;
-
-        float elapsed = 0f;
-        while (elapsed < PANEL_SLIDE_DURATION)
-        {
-            float t = elapsed / PANEL_SLIDE_DURATION;
-            float ease = 1f - Mathf.Pow(1f - t, 3f); // EaseOutCubic
-            panelRT.anchoredPosition = new Vector2(Mathf.Lerp(startX, targetX, ease), -10f);
-            panelCG.alpha = Mathf.Lerp(0f, 1f, ease);
-            elapsed += Time.unscaledDeltaTime;
-            yield return null;
-        }
-        panelRT.anchoredPosition = new Vector2(targetX, -10f);
-        panelCG.alpha = 1f;
-
-        // Slot'ları sırayla pop-in
-        StartCoroutine(StaggerSlotPopIn(spawnedActiveSlots));
-        yield return new WaitForSecondsRealtime(spawnedActiveSlots.Count * SLOT_STAGGER_DELAY * 0.5f);
-        StartCoroutine(StaggerSlotPopIn(spawnedStashSlots));
-    }
-
-    private IEnumerator PanelSlideOut()
-    {
-        if (panelRoot == null) { canvasGO.SetActive(false); yield break; }
-        RectTransform panelRT = panelRoot.GetComponent<RectTransform>();
-        CanvasGroup panelCG = panelRoot.GetComponent<CanvasGroup>();
-        if (panelCG == null) panelCG = panelRoot.AddComponent<CanvasGroup>();
-
-        float startX = panelRT.anchoredPosition.x;
-        float targetX = PANEL_WIDTH + 20f;
-
-        float elapsed = 0f;
-        while (elapsed < PANEL_SLIDE_DURATION * 0.7f)
-        {
-            float t = elapsed / (PANEL_SLIDE_DURATION * 0.7f);
-            float ease = t * t * t; // EaseInCubic
-            panelRT.anchoredPosition = new Vector2(Mathf.Lerp(startX, targetX, ease), -10f);
-            panelCG.alpha = Mathf.Lerp(1f, 0f, ease);
-            elapsed += Time.unscaledDeltaTime;
-            yield return null;
-        }
-        panelRT.anchoredPosition = new Vector2(targetX, -10f);
-        panelCG.alpha = 0f;
         canvasGO.SetActive(false);
-        // Reset pozisyon
-        panelRT.anchoredPosition = new Vector2(-10f, -10f);
-        panelCG.alpha = 1f;
     }
+
+    // PanelSlideIn / PanelSlideOut kaldırıldı — panel artık animasyonsuz açılıp kapanıyor.
 
     // ======================================================
     // SLOT ANIMASYONLARI
@@ -241,12 +182,12 @@ public class PerkInventoryUI : MonoBehaviour
         cg.alpha = 0f;
         rt.localScale = Vector3.one * 0.5f;
 
+        float popDur = 0.12f;
         float elapsed = 0f;
-        while (elapsed < SLOT_POP_DURATION)
+        while (elapsed < popDur)
         {
             if (slotGO == null) yield break;
-            float t = elapsed / SLOT_POP_DURATION;
-            // Elastic out benzeri
+            float t = elapsed / popDur;
             float scale = 1f + Mathf.Sin(t * Mathf.PI) * 0.2f * (1f - t);
             rt.localScale = Vector3.one * Mathf.LerpUnclamped(0.5f, scale, EaseOutBack(t));
             cg.alpha = Mathf.Clamp01(t * 3f);
@@ -331,21 +272,27 @@ public class PerkInventoryUI : MonoBehaviour
 
         if (targetSlot == null) return;
 
-        // Hedef ikonun world pozisyonunu al (layout rebuild gerekebilir)
-        LayoutRebuilder.ForceRebuildLayoutImmediate(panelRoot.GetComponent<RectTransform>());
-        Canvas.ForceUpdateCanvases();
-
         Transform iconTr = targetSlot.transform.Find("Icon");
         if (iconTr == null) return;
-
-        Vector3 targetWorldPos = iconTr.position;
 
         // Hedef ikonu geçici gizle
         CanvasGroup targetCG = iconTr.GetComponent<CanvasGroup>();
         if (targetCG == null) targetCG = iconTr.gameObject.AddComponent<CanvasGroup>();
         targetCG.alpha = 0f;
 
-        // Ghost oluştur — canvas üzerinde uçacak
+        // 1 frame bekleyip layout'un oturmasını sağla, sonra fly başlat
+        StartCoroutine(DelayedFlyStart(targetCG, iconTr));
+    }
+
+    private IEnumerator DelayedFlyStart(CanvasGroup targetCG, Transform iconTr)
+    {
+        // Layout'un tam oturması için 2 frame bekle
+        yield return null;
+        yield return null;
+        LayoutRebuilder.ForceRebuildLayoutImmediate(panelRoot.GetComponent<RectTransform>());
+        Canvas.ForceUpdateCanvases();
+
+        Vector3 targetWorldPos = iconTr.position;
         StartCoroutine(FlyIconCoroutine(flyStartWorldPos, targetWorldPos, targetCG));
     }
 
@@ -402,9 +349,45 @@ public class PerkInventoryUI : MonoBehaviour
             yield return null;
         }
 
-        // Varış — hedef ikonu göster, ghost'u sil
-        if (targetCG != null) targetCG.alpha = 1f;
+        // Varış — hedef ikonu göster, ghost'u sil, pop efekti
+        if (targetCG != null)
+        {
+            targetCG.alpha = 1f;
+            // Varış pop animasyonu
+            RectTransform slotRT = targetCG.transform.parent != null
+                ? targetCG.transform.parent.GetComponent<RectTransform>()
+                : targetCG.GetComponent<RectTransform>();
+            if (slotRT != null)
+                StartCoroutine(ArrivalPop(slotRT));
+        }
         if (flyGO != null) Destroy(flyGO);
+    }
+
+    /// <summary>Slot'a varış anında ani pop efekti</summary>
+    private IEnumerator ArrivalPop(RectTransform rt)
+    {
+        if (rt == null) yield break;
+        float duration = 0.12f;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            if (rt == null) yield break;
+            float t = elapsed / duration;
+            float s = 1f + Mathf.Sin(t * Mathf.PI) * 0.3f;
+            rt.localScale = new Vector3(s, s, 1f);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        if (rt != null) rt.localScale = Vector3.one;
+    }
+
+    /// <summary>Belirli bir perkin inventory slot'unda pop animasyonu tetikler.</summary>
+    public void TriggerPopForPerk(BasePerk perk)
+    {
+        if (perk == null) return;
+        GameObject slot = FindSlotForPerk(perk);
+        if (slot != null)
+            StartCoroutine(ArrivalPop(slot.GetComponent<RectTransform>()));
     }
 
     /// <summary>Perk'in şu an hangi slot'ta olduğunu bulur.</summary>
@@ -761,7 +744,7 @@ public class PerkInventoryUI : MonoBehaviour
         panelRT.pivot = new Vector2(1f, 1f);
         panelRT.anchoredPosition = new Vector2(-10f, -10f);
         panelRT.sizeDelta = new Vector2(PANEL_WIDTH, 0f);
-        panelRoot.GetComponent<Image>().color = new Color(0.08f, 0.08f, 0.12f, 0.88f);
+        panelRoot.GetComponent<Image>().color = new Color(0f, 0.0196f, 0.047f, 0.88f);
 
         VerticalLayoutGroup vlg = panelRoot.AddComponent<VerticalLayoutGroup>();
         vlg.padding = new RectOffset(12, 12, 10, 10);
@@ -867,7 +850,7 @@ public class PerkInventoryUI : MonoBehaviour
         // Stash göster/gizle — animasyonlu
         bool shouldShowStash = stashCount > 0;
         bool stashIsShowing = stashSection != null && stashSection.activeSelf;
-        bool stashClosing = !shouldShowStash && stashIsShowing && !skipSlotAnim;
+        bool stashClosing = !shouldShowStash && stashIsShowing;
 
         if (stashClosing)
         {
@@ -898,10 +881,7 @@ public class PerkInventoryUI : MonoBehaviour
                 if (shouldShowStash != stashIsShowing)
                 {
                     if (stashExpandCoroutine != null) StopCoroutine(stashExpandCoroutine);
-                    if (skipSlotAnim)
-                        stashSection.SetActive(shouldShowStash);
-                    else
-                        stashExpandCoroutine = StartCoroutine(StashExpand(shouldShowStash));
+                    stashExpandCoroutine = StartCoroutine(StashExpand(shouldShowStash));
                 }
             }
         }

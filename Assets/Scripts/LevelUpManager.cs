@@ -350,16 +350,20 @@ public class LevelUpManager : MonoBehaviour
         GameObject chosenPerk = currentChoices[index];
         List<BasePerk> existingPerks = new List<BasePerk>(RunManager.instance.activePerks);
 
+        // Fly animasyonu bilgilerini AddPerk'ten ÖNCE kaydet (prefab'dan icon al)
+        BasePerk prefabScript = chosenPerk.GetComponent<BasePerk>();
+        GameObject flySourceIcon = (choiceIcons != null && index < choiceIcons.Length && choiceIcons[index] != null)
+            ? choiceIcons[index].gameObject : null;
+
         RunManager.instance.AddPerk(chosenPerk);
 
         // Map sistemi aktif değilse eski davranış (level++)
         if (MapManager.instance == null)
             RunManager.instance.currentLevel++;
 
-        BasePerk checkScript = chosenPerk.GetComponent<BasePerk>();
-        BasePerk activeInstance = RunManager.instance.activePerks.Find(p => p.GetType() == checkScript.GetType());
+        BasePerk activeInstance = RunManager.instance.activePerks.Find(p => p.GetType() == prefabScript.GetType());
         if (activeInstance == null)
-            activeInstance = RunManager.instance.inventoryPerks.Find(p => p.GetType() == checkScript.GetType());
+            activeInstance = RunManager.instance.inventoryPerks.Find(p => p.GetType() == prefabScript.GetType());
 
         if (activeInstance != null && activeInstance.currentLevel >= activeInstance.maxLevel)
         {
@@ -375,7 +379,16 @@ public class LevelUpManager : MonoBehaviour
         foreach (var perk in existingPerks)
             if (perk != null) perk.OnLevelStart();
 
-        StartCoroutine(FadeOutAndShrinkRoutine());
+        // Kartın ikonundan perk inventory'ye uçuş animasyonu — AddPerk sonrası RefreshUI
+        // zaten TryStartFlyAnim'i çağıracağı için burada sadece tetikle
+        if (PerkInventoryUI.instance != null && activeInstance != null && flySourceIcon != null)
+            PerkInventoryUI.instance.BeginFlyAnimExternal(activeInstance, flySourceIcon);
+
+        // RefreshUI'ı tekrar çağır ki TryStartFlyAnim tetiklensin (fly bilgileri artık set)
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.RefreshUI();
+
+        StartCoroutine(FadeOutAndShrinkRoutine(index));
     }
 
     private IEnumerator FadeInAndPopRoutine()
@@ -502,33 +515,66 @@ public class LevelUpManager : MonoBehaviour
         }
     }
 
-    private IEnumerator FadeOutAndShrinkRoutine()
+    private IEnumerator FadeOutAndShrinkRoutine(int chosenIndex = -1)
     {
-        Transform panelTransform = levelUpPanel.transform;
-        float duration = 0.2f;
+        float duration = 0.35f;
         float elapsed = 0f;
 
-        Vector3 startScale = panelTransform.localScale;
-        Vector3 endScale = new Vector3(0.2f, 0.2f, 0.2f);
+        // Başlangıç scale'lerini kaydet
+        Vector3[] startScales = new Vector3[choiceButtons.Length];
+        for (int i = 0; i < choiceButtons.Length; i++)
+        {
+            if (choiceButtons[i] != null)
+                startScales[i] = choiceButtons[i].transform.localScale;
+        }
 
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
             float t = elapsed / duration;
-            float easeInQuad = t * t;
+            float easeIn = t * t;
 
-            if (levelUpCanvasGroup != null) levelUpCanvasGroup.alpha = Mathf.Lerp(1f, 0f, easeInQuad);
-            panelTransform.localScale = Vector3.Lerp(startScale, endScale, easeInQuad);
+            for (int i = 0; i < choiceButtons.Length; i++)
+            {
+                if (choiceButtons[i] == null || !choiceButtons[i].gameObject.activeSelf) continue;
+
+                CanvasGroup cardCG = choiceButtons[i].GetComponent<CanvasGroup>();
+                if (cardCG == null) cardCG = choiceButtons[i].gameObject.AddComponent<CanvasGroup>();
+
+                if (i == chosenIndex)
+                {
+                    // Seçilen kart: sadece fade out
+                    cardCG.alpha = Mathf.Lerp(1f, 0f, t);
+                }
+                else
+                {
+                    // Diğerleri: küçülerek + fade out
+                    float scale = Mathf.Lerp(1f, 0f, easeIn);
+                    choiceButtons[i].transform.localScale = startScales[i] * scale;
+                    cardCG.alpha = Mathf.Lerp(1f, 0f, t);
+                }
+            }
             yield return null;
+        }
+
+        // Kartları resetle
+        for (int i = 0; i < choiceButtons.Length; i++)
+        {
+            if (choiceButtons[i] == null) continue;
+            choiceButtons[i].transform.localScale = startScales[i];
+            CanvasGroup cardCG = choiceButtons[i].GetComponent<CanvasGroup>();
+            if (cardCG != null) cardCG.alpha = 1f;
         }
 
         levelUpPanel.SetActive(false);
         ShowBlackBackground(false);
-        if (levelUpCanvasGroup != null) levelUpCanvasGroup.gameObject.SetActive(false);
+        if (levelUpCanvasGroup != null)
+        {
+            levelUpCanvasGroup.alpha = 1f; // resetle sonraki açılış için
+            levelUpCanvasGroup.gameObject.SetActive(false);
+        }
 
-        // Perk stash panelini gizle
-        if (PerkInventoryUI.instance != null)
-            PerkInventoryUI.instance.Hide();
+        // Perk inventory'yi burada kapatma — map'e dönünce kapanacak
         foreach (var btn in choiceButtons) btn.interactable = true;
 
         // Skip butonunu aktif yap ve rengini restore et
@@ -580,7 +626,7 @@ public class LevelUpManager : MonoBehaviour
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             UnityEngine.UI.Image img = imgGO.AddComponent<UnityEngine.UI.Image>();
-            img.color = Color.black;
+            img.color = new Color(0f, 0f, 0f, 0f); // saydam — map arkaplanı görünsün
             img.raycastTarget = false;
         }
         if (perkBlackBackground != null)

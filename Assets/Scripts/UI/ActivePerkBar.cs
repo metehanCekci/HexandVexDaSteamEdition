@@ -698,7 +698,7 @@ public class ActivePerkBar : MonoBehaviour
     {
         if (rt == null) yield break;
         Vector3 baseScale = Vector3.one;
-        float duration = 0.25f;
+        float duration = 0.12f;
         float elapsed = 0f;
         while (elapsed < duration)
         {
@@ -729,5 +729,75 @@ public class ActivePerkBar : MonoBehaviour
             yield return null;
         }
         if (rt != null) rt.localPosition = origin;
+    }
+
+    /// <summary>
+    /// GeneSplice parçalanma animasyonu — ikon titreşerek küçülür,
+    /// parçacık efektiyle dağılır ve kaybolur.
+    /// </summary>
+    public void TriggerSpliceAnimation(BasePerk perk)
+    {
+        int idx = spawnedPerks.IndexOf(perk);
+        if (idx < 0 || idx >= spawnedIcons.Count) return;
+        GameObject iconGO = spawnedIcons[idx];
+        if (iconGO != null && iconGO.activeInHierarchy)
+            StartCoroutine(SpliceAnim(iconGO));
+    }
+
+    private IEnumerator SpliceAnim(GameObject iconGO)
+    {
+        RectTransform rt = iconGO.GetComponent<RectTransform>();
+        CanvasGroup cg = iconGO.GetComponent<CanvasGroup>();
+        if (cg == null) cg = iconGO.AddComponent<CanvasGroup>();
+
+        if (AudioManager.instance != null) AudioManager.instance.PlayTextEffect();
+
+        // Faz 1: Hızlı titreşim + hafif büyüme (0.3s)
+        float phase1 = 0.3f;
+        float elapsed = 0f;
+        Vector3 origin = rt.localPosition;
+        while (elapsed < phase1)
+        {
+            if (rt == null) yield break;
+            float t = elapsed / phase1;
+            float shake = Mathf.Sin(elapsed * 50f) * 6f * (1f + t);
+            rt.localPosition = origin + new Vector3(shake, Mathf.Sin(elapsed * 40f) * 3f, 0f);
+            float s = 1f + t * 0.3f; // hafif büyü
+            rt.localScale = new Vector3(s, s, 1f);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        // Faz 2: Patlayarak küçülme + fade out (0.3s)
+        float phase2 = 0.3f;
+        elapsed = 0f;
+        // Başlangıç: büyümüş hali
+        float startScale = 1.3f;
+        while (elapsed < phase2)
+        {
+            if (rt == null) yield break;
+            float t = elapsed / phase2;
+            // Hızlı küçülme (easeInBack efekti)
+            float scale = Mathf.Lerp(startScale, 0f, t * t);
+            rt.localScale = new Vector3(scale, scale, 1f);
+            // Fade out
+            cg.alpha = 1f - t;
+            // Dönerek kaybolma
+            rt.localRotation = Quaternion.Euler(0f, 0f, t * 180f);
+            // Titreşim devam
+            float shake = Mathf.Sin(elapsed * 60f) * 4f * (1f - t);
+            rt.localPosition = origin + new Vector3(shake, shake * 0.5f, 0f);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        // Tamamen gizle
+        if (rt != null)
+        {
+            rt.localScale = Vector3.zero;
+            cg.alpha = 0f;
+        }
+
+        CameraController.ShakeLight();
     }
 }

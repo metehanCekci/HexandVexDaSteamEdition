@@ -35,16 +35,20 @@ public class RestNodeUI : MonoBehaviour
             restPanel.SetActive(true);
         }
 
+        // Butonlara animatör ekle (yoksa)
+        EnsureButtonAnimator(restButton);
+        EnsureButtonAnimator(trainButton);
+
         Time.timeScale = 0f;
 
         // Heal miktarını hesapla
-        int healAmount = 1;
+        int healAmount = 5;
         if (RunManager.instance != null)
             healAmount = Mathf.Max(1, RunManager.instance.playerMaxHealth / 3);
 
         if (titleText != null) titleText.text = "Campfire";
-        if (restButtonText != null) restButtonText.text = $"Rest\n<size=70%>+{healAmount} HP</size>";
-        if (trainButtonText != null) trainButtonText.text = "Train\n<size=70%>Upgrade Perk</size>";
+        if (restButtonText != null) restButtonText.text = $"Rest\n(Heal up)\n<size=70%>+{healAmount} HP</size>";
+        if (trainButtonText != null) trainButtonText.text = "Train\n(Upgrade Perk)";
 
         bool canTrain = RunManager.instance != null && RunManager.instance.activePerks.Count > 0;
 
@@ -105,6 +109,12 @@ public class RestNodeUI : MonoBehaviour
             BasePerk chosen = upgradeablePerks[Random.Range(0, upgradeablePerks.Count)];
             chosen.Upgrade();
             if (infoText != null) infoText.text = $"{chosen.perkName} upgraded!";
+
+            // Upgrade olan perkte pop animasyonu
+            if (PerkInventoryUI.instance != null)
+                PerkInventoryUI.instance.TriggerPopForPerk(chosen);
+            if (ActivePerkBar.instance != null)
+                ActivePerkBar.instance.TriggerPopForPerk(chosen);
         }
         else
         {
@@ -113,6 +123,12 @@ public class RestNodeUI : MonoBehaviour
 
         DisableButtons();
         StartCoroutine(CloseAfterDelay());
+    }
+
+    private void EnsureButtonAnimator(Button btn)
+    {
+        if (btn != null && btn.GetComponent<RestButtonAnimator>() == null)
+            btn.gameObject.AddComponent<RestButtonAnimator>();
     }
 
     private void DisableButtons()
@@ -138,24 +154,25 @@ public class RestNodeUI : MonoBehaviour
 
     private System.Collections.IEnumerator CloseWithFade()
     {
-        // Önce ScreenFader'ı siyaha çek — arkaplan flash'ını engelle
-        if (ScreenFader.instance != null && ScreenFader.instance.faderGroup != null)
+        // Rest panelini smooth fade out
+        CanvasGroup panelCG = restPanel != null ? restPanel.GetComponent<CanvasGroup>() : null;
+        if (panelCG == null && restPanel != null)
+            panelCG = restPanel.AddComponent<CanvasGroup>();
+
+        if (panelCG != null)
         {
-            CanvasGroup fader = ScreenFader.instance.faderGroup;
-            fader.blocksRaycasts = true;
-            float fadeDur = 0.2f;
-            float fadeElapsed = 0f;
-            float startAlpha = fader.alpha;
-            while (fadeElapsed < fadeDur)
+            float fadeDur = 0.25f;
+            float elapsed = 0f;
+            while (elapsed < fadeDur)
             {
-                fadeElapsed += Time.unscaledDeltaTime;
-                fader.alpha = Mathf.Lerp(startAlpha, 1f, fadeElapsed / fadeDur);
+                elapsed += Time.unscaledDeltaTime;
+                panelCG.alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDur);
                 yield return null;
             }
-            fader.alpha = 1f;
+            panelCG.alpha = 0f;
         }
 
-        // Ekran tamamen siyah — paneli güvenle kapat
+        // Paneli kapat
         if (restPanel != null)
         {
             restPanel.SetActive(false);
@@ -163,6 +180,10 @@ public class RestNodeUI : MonoBehaviour
                 restPanel.transform.parent.gameObject.SetActive(false);
         }
 
+        // Alpha'yı resetle (sonraki açılış için)
+        if (panelCG != null) panelCG.alpha = 1f;
+
+        // Map'e smooth dönüş
         if (MapManager.instance != null)
             MapManager.instance.OnNodeComplete();
     }
