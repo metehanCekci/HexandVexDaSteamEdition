@@ -34,6 +34,9 @@ public class ActivePerkBar : MonoBehaviour
     private GameObject dragGhost;
     private Canvas rootCanvas;
 
+    /// <summary>true iken RefreshBar bounce animasyonu atlanır.</summary>
+    [System.NonSerialized] public bool skipBounce;
+
     private const float ICON_SIZE = 48f;
     private const float ICON_SPACING = 8f;
     private const float TOOLTIP_WIDTH = 260f;
@@ -337,10 +340,17 @@ public class ActivePerkBar : MonoBehaviour
         if (RunManager.instance == null) return;
         if (index < 0 || index >= RunManager.instance.activePerks.Count) return;
 
-        RunManager.instance.MoveToInventory(index);
         HideTooltip();
-        UpdatePerkPriorities();
-        RunManager.instance.RefreshPerkUI();
+
+        // PerkInventoryUI'da fly animasyonu başlat (üst bardan stash'e uçsun)
+        BasePerk perk = RunManager.instance.activePerks[index];
+        GameObject iconGO = (index < spawnedIcons.Count) ? spawnedIcons[index] : null;
+        if (PerkInventoryUI.instance != null && iconGO != null)
+            PerkInventoryUI.instance.BeginFlyAnimExternal(perk, iconGO);
+
+        skipBounce = true;
+        RunManager.instance.MoveToInventory(index);
+        skipBounce = false;
     }
 
     /// <summary>Aktif perklerin priority'sini liste sırasına göre günceller.</summary>
@@ -370,6 +380,7 @@ public class ActivePerkBar : MonoBehaviour
 
         if (RunManager.instance == null || container == null) return;
 
+        int i = 0;
         foreach (var perk in RunManager.instance.activePerks)
         {
             if (perk == null) continue;
@@ -377,7 +388,41 @@ public class ActivePerkBar : MonoBehaviour
             iconGO.transform.SetParent(container, false);
             spawnedIcons.Add(iconGO);
             spawnedPerks.Add(perk);
+
+            // Staggered bounce-in animasyonu (skipBounce aktifse atla)
+            if (!skipBounce)
+                StartCoroutine(IconBounceIn(iconGO.GetComponent<RectTransform>(), i * 0.05f));
+            i++;
         }
+    }
+
+    private IEnumerator IconBounceIn(RectTransform rt, float delay)
+    {
+        if (rt == null) yield break;
+        rt.localScale = Vector3.zero;
+
+        if (delay > 0f)
+            yield return new WaitForSecondsRealtime(delay);
+
+        float elapsed = 0f;
+        float duration = 0.3f;
+        while (elapsed < duration)
+        {
+            if (rt == null) yield break;
+            float t = elapsed / duration;
+            float s = EaseOutBack(t);
+            rt.localScale = Vector3.one * s;
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        if (rt != null) rt.localScale = Vector3.one;
+    }
+
+    private static float EaseOutBack(float t)
+    {
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
+        return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
     }
 
     private GameObject CreatePerkIcon(BasePerk perk)
@@ -417,6 +462,7 @@ public class ActivePerkBar : MonoBehaviour
             Image spriteImg = spriteGO.GetComponent<Image>();
             spriteImg.sprite = perk.icon;
             spriteImg.preserveAspect = true;
+            spriteImg.raycastTarget = false;
             spriteImg.color = Color.white;
             spriteImg.raycastTarget = false;
         }
@@ -456,13 +502,25 @@ public class ActivePerkBar : MonoBehaviour
         BasePerk capturedPerk = perk;
         int capturedIndex = spawnedPerks.Count; // Henüz eklenmedi, Count = index olacak
 
-        // Hover: tooltip
+        // Hover: tooltip + scale
+        RectTransform hoverIconRT = iconGO.GetComponent<RectTransform>();
         var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-        enterEntry.callback.AddListener((_) => { if (!isDragging) ShowTooltip(capturedPerk, iconGO.GetComponent<RectTransform>()); });
+        enterEntry.callback.AddListener((_) =>
+        {
+            if (!isDragging)
+            {
+                ShowTooltip(capturedPerk, hoverIconRT);
+                StartCoroutine(HoverScaleAnim(hoverIconRT, true));
+            }
+        });
         trigger.triggers.Add(enterEntry);
 
         var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
-        exitEntry.callback.AddListener((_) => HideTooltip());
+        exitEntry.callback.AddListener((_) =>
+        {
+            HideTooltip();
+            StartCoroutine(HoverScaleAnim(hoverIconRT, false));
+        });
         trigger.triggers.Add(exitEntry);
 
         // Sağ tık: perk'i çıkar (stash'e gönder)
@@ -492,12 +550,45 @@ public class ActivePerkBar : MonoBehaviour
     }
 
     // ======================================================
+    // HOVER SCALE
+    // ======================================================
+
+    private IEnumerator HoverScaleAnim(RectTransform rt, bool enter)
+    {
+        if (rt == null) yield break;
+        float target = enter ? 1.12f : 1f;
+        float duration = 0.12f;
+        float elapsed = 0f;
+        Vector3 startScale = rt.localScale;
+
+        while (elapsed < duration)
+        {
+            if (rt == null) yield break;
+            float t = elapsed / duration;
+            float s = Mathf.Lerp(startScale.x, target, EaseOutBack(t));
+            rt.localScale = new Vector3(s, s, 1f);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        if (rt != null) rt.localScale = new Vector3(target, target, 1f);
+    }
+
+    // ======================================================
     // TOOLTIP
     // ======================================================
 
+    private Coroutine tooltipFadeCoroutine;
+
     private void ShowTooltip(BasePerk perk, RectTransform iconRT)
     {
-        if (tooltipObj == null || tooltipNameText == null) return;
+        if (perk == null) return;
+
+        // Tooltip yoksa yeniden oluştur
+        if (tooltipObj == null || tooltipNameText == null)
+        {
+            if (barCanvas != null) BuildTooltip(barCanvas.transform);
+            else return;
+        }
 
         string rarityHex = PerkListUI.GetRarityHex(perk.rarity);
         Color rarityColor;
@@ -513,8 +604,8 @@ public class ActivePerkBar : MonoBehaviour
             tooltipDescText.text = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
 
         tooltipObj.SetActive(true);
+        tooltipObj.transform.SetAsLastSibling();
 
-        // Arkaplan rengini zorla ayarla (sahneye kayıtlı eski değeri override et)
         Image ttBg = tooltipObj.GetComponent<Image>();
         if (ttBg != null) ttBg.color = new Color(0f, 0.02f, 0.047f, 0.95f);
 
@@ -543,14 +634,42 @@ public class ActivePerkBar : MonoBehaviour
         // Tooltip'in pivot'u (0.5, 1) = üst-orta → ikonun altına yerleş
         ttRT.localPosition = new Vector3(localPoint.x, localPoint.y - 12f, 0f);
 
-        if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 1f;
+        // Fade in
+        if (tooltipFadeCoroutine != null) StopCoroutine(tooltipFadeCoroutine);
+        tooltipFadeCoroutine = StartCoroutine(TooltipFadeAnim(true));
     }
 
     private void HideTooltip()
     {
         if (tooltipObj == null) return;
+        if (tooltipFadeCoroutine != null) StopCoroutine(tooltipFadeCoroutine);
         if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 0f;
         tooltipObj.SetActive(false);
+    }
+
+    private IEnumerator TooltipFadeAnim(bool fadeIn)
+    {
+        if (tooltipCanvasGroup == null) yield break;
+        RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
+
+        float start = tooltipCanvasGroup.alpha;
+        float target = fadeIn ? 1f : 0f;
+        Vector3 startScale = fadeIn ? Vector3.one * 0.92f : Vector3.one;
+        Vector3 targetScale = fadeIn ? Vector3.one : Vector3.one * 0.92f;
+        float elapsed = 0f;
+        float dur = 0.1f;
+
+        while (elapsed < dur)
+        {
+            float t = elapsed / dur;
+            tooltipCanvasGroup.alpha = Mathf.Lerp(start, target, t);
+            ttRT.localScale = Vector3.Lerp(startScale, targetScale, t);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        tooltipCanvasGroup.alpha = target;
+        ttRT.localScale = targetScale;
+        if (!fadeIn) tooltipObj.SetActive(false);
     }
 
     // ======================================================
