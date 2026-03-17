@@ -111,6 +111,11 @@ public class RunManager : MonoBehaviour
         }
     }
 
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
+    }
+
     void Start()
     {
         // ActivePerkBar yoksa otomatik olustur
@@ -119,12 +124,8 @@ public class RunManager : MonoBehaviour
             ActivePerkBar.CreateFromCode();
         }
 
-        // Silah seçimini PlayerPrefs'ten oku (WeaponSelectUI MainMenu'de kaydetmiş olabilir)
-        if (PlayerPrefs.HasKey("SelectedWeapon"))
-        {
-            selectedWeapon = (WeaponType)PlayerPrefs.GetInt("SelectedWeapon", 0);
-            Debug.Log($"[MITSURI-DEBUG] RunManager.Start: Loaded selectedWeapon={selectedWeapon} from PlayerPrefs");
-        }
+        // Silah seçimi kaldırıldı — her zaman Greatsword
+        selectedWeapon = WeaponType.Greatsword;
     }
 
     // Called when the player selects a perk from the Level Up screen

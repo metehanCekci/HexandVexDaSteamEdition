@@ -49,6 +49,11 @@ public class MapManager : MonoBehaviour
         }
     }
 
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
+    }
+
     void Start()
     {
         if (isDuplicate) return; // Duplikat instance ise UI oluşturma
@@ -105,10 +110,8 @@ public class MapManager : MonoBehaviour
         // Canvas
         GameObject canvasGO = new GameObject("MapCanvas");
         Canvas canvas = canvasGO.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceCamera;
-        canvas.worldCamera = Camera.main;
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 90;
-        canvas.planeDistance = 10f;
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
@@ -412,11 +415,15 @@ public class MapManager : MonoBehaviour
         // UI'ın oluşması için 1 frame bekle
         yield return null;
 
+        Debug.Log($"[MAP-DEBUG] StartNewRunDelayed: mapUI={mapUI}, mapUI is null={mapUI == null}");
+
         // Reset inventory for new run
         if (InventoryManager.instance != null)
             InventoryManager.instance.ResetForNewRun();
 
         GenerateNewMap(0);
+
+        Debug.Log($"[MAP-DEBUG] After GenerateNewMap: currentMap nodes={currentMap?.nodes?.Count}, mapUI={mapUI}");
 
         // Map'i aç
         ShowMapInstant();
@@ -825,6 +832,7 @@ public class MapManager : MonoBehaviour
 
     private void ShowMapInstant()
     {
+        Debug.Log($"[MAP-DEBUG] ShowMapInstant: mapUI={mapUI}, mapUI null={mapUI == null}, currentMap={currentMap}, nodes={currentMap?.nodes?.Count}");
         // Hide hotbar when map is shown
         if (HotbarUI.instance != null)
             HotbarUI.instance.SetVisible(false);

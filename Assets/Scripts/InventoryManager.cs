@@ -34,6 +34,11 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
+    }
+
     void OnEnable()
     {
         GameEvents.OnItemPurchased += HandleItemPurchased;
