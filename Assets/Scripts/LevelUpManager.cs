@@ -49,6 +49,7 @@ public class LevelUpManager : MonoBehaviour
 
     private int hoveredCardIndex = -1;
     private bool[] cardAnimDone;
+    private GameObject perkBlackBackground;
 
     void Awake()
     {
@@ -72,8 +73,14 @@ public class LevelUpManager : MonoBehaviour
             return;
         }
 
+        ShowBlackBackground(true);
         levelUpPanel.SetActive(true);
         if (levelUpCanvasGroup != null) levelUpCanvasGroup.gameObject.SetActive(true);
+
+        // Perk stash panelini göster
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.Show();
+
         currentChoices.Clear();
 
         // Boss node'unda legendary garanti, eski % 5 mantığı kaldırıldı
@@ -516,7 +523,12 @@ public class LevelUpManager : MonoBehaviour
         }
 
         levelUpPanel.SetActive(false);
+        ShowBlackBackground(false);
         if (levelUpCanvasGroup != null) levelUpCanvasGroup.gameObject.SetActive(false);
+
+        // Perk stash panelini gizle
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.Hide();
         foreach (var btn in choiceButtons) btn.interactable = true;
 
         // Skip butonunu aktif yap ve rengini restore et
@@ -549,6 +561,30 @@ public class LevelUpManager : MonoBehaviour
         {
             LevelGenerator.instance.GenerateNextLevel();
         }
+    }
+
+    private void ShowBlackBackground(bool show)
+    {
+        if (perkBlackBackground == null && show)
+        {
+            perkBlackBackground = new GameObject("PerkBlackBG");
+            Canvas bgCanvas = perkBlackBackground.AddComponent<Canvas>();
+            bgCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            bgCanvas.sortingOrder = 14; // Below LevelUpCanvas (15)
+            perkBlackBackground.AddComponent<CanvasScaler>();
+            GameObject imgGO = new GameObject("BlackImage", typeof(RectTransform));
+            imgGO.transform.SetParent(perkBlackBackground.transform, false);
+            RectTransform rt = imgGO.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            UnityEngine.UI.Image img = imgGO.AddComponent<UnityEngine.UI.Image>();
+            img.color = Color.black;
+            img.raycastTarget = false;
+        }
+        if (perkBlackBackground != null)
+            perkBlackBackground.SetActive(show);
     }
 
     /// <summary>Perk seçme ekranını göstermeden sonraki levele geç.</summary>

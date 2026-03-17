@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49f97b71ecf88e644810848c16e9f27a, type: 3}
+  m_Name: PersistentHUDConfig
+  m_EditorClassIdentifier: Assembly-CSharp::PersistentHUDConfig
+  sortingOrder: 10
+  containerPosition: {x: 14, y: -14}
+  containerSize: {x: 140, y: 62}
+  backgroundColor: {r: 0, g: 0.019607844, b: 0.047058824, a: 1}
+  outlineColor: {r: 1, g: 1, b: 1, a: 0}
+  outlineDistance: {x: 0, y: 0}
+  paddingLeft: 10
+  paddingRight: 10
+  paddingTop: 6
+  paddingBottom: 6
+  rowSpacing: 4
+  hpIconColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
+  hpTextColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
+  hpFontSize: 16
+  hpIconSize: 18
+  hpFontStyle: 1
+  goldIconTint: {r: 1, g: 0.8137255, b: 0, a: 1}
+  goldTextColor: {r: 1, g: 0.92, b: 0.5, a: 1}
+  goldFontSize: 16
+  goldIconSize: 18
+  goldFontStyle: 1
+  rowHeight: 22
+  iconTextSpacing: 6
+  textPreferredWidth: 80
+  pulseDuration: 0.35
+  pulseScaleMultiplier: 0.2
+  hpDamagePulseColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+  goldPulseColor: {r: 1, g: 0.95, b: 0.4, a: 1}
+  glowAlpha: 0.4

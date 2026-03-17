@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 public class RunManager : MonoBehaviour
@@ -103,10 +104,28 @@ public class RunManager : MonoBehaviour
             // If the perk container is a child of this object, it survives too!
             if (perkUIContainer != null)
                 DontDestroyOnLoad(perkUIContainer.root.gameObject);
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (instance == this)
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Her sahne yüklendiğinde PersistentHUD oluştur (DontDestroyOnLoad değil)
+        if (PersistentHUD.instance == null)
+        {
+            GameObject hudGO = new GameObject("PersistentHUD");
+            hudGO.AddComponent<PersistentHUD>();
         }
     }
 

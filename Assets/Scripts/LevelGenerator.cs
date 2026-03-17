@@ -47,8 +47,8 @@ public class LevelGenerator : MonoBehaviour
 
     [Header("Warlock Düşman")]
     public GameObject warlockEnemyPrefab;
-    public int warlockStartLevel = 1; // Her bölümde çıkabilir
-    [Range(0f, 1f)] public float warlockSpawnChance = 0.10f;
+    public int warlockStartLevel = 0; // Her bölümde çıkabilir
+    [Range(0f, 1f)] public float warlockSpawnChance = 0.15f;
     private static float bossLegendaryMultiplier = 1f;  // Her bosstan sonra 2 ile çarpılır
 
     public static void ResetBossMultiplier() { bossLegendaryMultiplier = 1f; }

@@ -12,7 +12,7 @@ public class InventoryManager : MonoBehaviour
 
     [Header("Inventory Config")]
     [Tooltip("Maximum number of hotbar slots the player has.")]
-    public int maxSlots = 5;
+    public int maxSlots = 3;
 
     /// <summary>
     /// The actual inventory. Null entries mean empty slots.
