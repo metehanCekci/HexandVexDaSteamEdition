@@ -31,6 +31,7 @@ public class CoinDropService
         {
             rm.currentGold += coinDrop;
             rm.totalGoldEarned += coinDrop;
+            GameEvents.GoldChanged(rm.currentGold);
             if (CoinDropVFX.instance != null)
                 CoinDropVFX.instance.SpawnCoins(enemy.transform.position, coinDrop);
         }

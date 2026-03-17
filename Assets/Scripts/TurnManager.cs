@@ -236,7 +236,7 @@ public class TurnManager : MonoBehaviour
             if (SpawnerBossAI.instance != null) SpawnerBossAI.instance.isShielded = false;
 
             foreach (var e in new List<EnemyAI>(enemies))
-                if (e != null && e.health.currentHP > 0) e.health.TakeDamage(99999);
+                if (e != null && e.health.currentHP > 0) e.health.TakeDamage(e.health.currentHP);
             enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
             CleanupDeadAndCheckLevelClear();
         }
@@ -572,6 +572,7 @@ public class TurnManager : MonoBehaviour
     {
         if (coinText != null && RunManager.instance != null) coinText.text = RunManager.instance.currentGold.ToString();
         if (Shopmanager.instance != null) Shopmanager.instance.RefreshAffordability();
+        if (PersistentHUD.instance != null) PersistentHUD.instance.Refresh();
     }
 
     public void RegisterEnemy(EnemyAI enemy) { if (!enemies.Contains(enemy)) enemies.Add(enemy); }
@@ -792,7 +793,7 @@ public class TurnManager : MonoBehaviour
         isNecroShotTargeting = false;
         if (player != null) player.TriggerAttackAnimation();
 
-        target.health.TakeDamage(99999);
+        target.health.TakeDamage(target.health.currentHP);
         coinService.ProcessKillRewards(target);
         UpdateCoinUI();
         CleanupDeadAndCheckLevelClear();

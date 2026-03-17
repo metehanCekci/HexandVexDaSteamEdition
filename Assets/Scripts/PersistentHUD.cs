@@ -5,21 +5,23 @@ using System.Collections;
 
 /// <summary>
 /// Persistent HUD that shows Gold and HP on every screen.
-/// DontDestroyOnLoad — always visible.
-/// Reads visual settings from PersistentHUDConfig ScriptableObject.
-/// Edit via Tools → Persistent HUD → Select Config.
+/// All UI elements are set up in the scene/prefab — nothing is created via code.
+/// Assign references in Inspector.
 /// </summary>
 public class PersistentHUD : MonoBehaviour
 {
     public static PersistentHUD instance;
 
-    [Header("Config")]
-    public PersistentHUDConfig config;
+    [Header("References (assign in Inspector)")]
+    public TMP_Text goldText;
+    public TMP_Text hpText;
+    public Image coinIconImage;
 
-    private GameObject hudCanvas;
-    private TMP_Text goldText;
-    private TMP_Text hpText;
-    private Image coinIconImage;
+    [Header("Pulse Animation")]
+    public float pulseDuration = 0.35f;
+    public float pulseScaleMultiplier = 0.2f;
+    public Color hpDamagePulseColor = new Color(1f, 0.2f, 0.2f);
+    public Color goldPulseColor = new Color(1f, 0.95f, 0.4f);
 
     private int lastHP = -1;
     private Coroutine hpPulseCoroutine;
@@ -27,7 +29,6 @@ public class PersistentHUD : MonoBehaviour
 
     void Awake()
     {
-        // Her sahne yüklendiğinde eski instance varsa yok et, yenisini al
         if (instance != null && instance != this)
         {
             Destroy(instance.gameObject);
@@ -37,9 +38,42 @@ public class PersistentHUD : MonoBehaviour
 
     void Start()
     {
-        LoadConfigIfNeeded();
-        BuildUI();
+        AutoFindReferences();
         Refresh();
+    }
+
+    private void AutoFindReferences()
+    {
+        // Find text components by parent row name if not assigned
+        if (goldText == null || hpText == null)
+        {
+            var allTexts = GetComponentsInChildren<TMP_Text>(true);
+            foreach (var t in allTexts)
+            {
+                string parentName = t.transform.parent != null ? t.transform.parent.name.ToLower() : "";
+                if (goldText == null && (parentName.Contains("gold") || parentName.Contains("coin")))
+                    goldText = t;
+                else if (hpText == null && (parentName.Contains("hp") || parentName.Contains("health")))
+                    hpText = t;
+            }
+        }
+
+        if (coinIconImage == null)
+        {
+            var allImages = GetComponentsInChildren<Image>(true);
+            foreach (var img in allImages)
+            {
+                string parentName = img.transform.parent != null ? img.transform.parent.name.ToLower() : "";
+                if (img.name.ToLower().Contains("icon") && (parentName.Contains("gold") || parentName.Contains("coin")))
+                {
+                    coinIconImage = img;
+                    break;
+                }
+            }
+        }
+
+        if (goldText == null) Debug.LogWarning("[PersistentHUD] goldText not found! Make sure GOLDRow/Value exists.");
+        if (hpText == null) Debug.LogWarning("[PersistentHUD] hpText not found! Make sure HPRow/Value exists.");
     }
 
     void OnEnable()  { GameEvents.OnGoldChanged += OnGoldChanged; }
@@ -59,13 +93,9 @@ public class PersistentHUD : MonoBehaviour
         if (curHP != lastHP && lastHP >= 0 && curHP < lastHP && hpText != null)
         {
             if (hpPulseCoroutine != null) StopCoroutine(hpPulseCoroutine);
-            hpPulseCoroutine = StartCoroutine(PulseText(hpText, C.hpDamagePulseColor));
+            hpPulseCoroutine = StartCoroutine(PulseText(hpText, hpDamagePulseColor));
         }
         lastHP = curHP;
-
-        // Try to assign coin sprite if not yet set
-        if (coinIconImage != null && coinIconImage.sprite == null)
-            TryAssignCoinSprite();
     }
 
     private void OnGoldChanged(int amount)
@@ -74,7 +104,7 @@ public class PersistentHUD : MonoBehaviour
         {
             goldText.text = amount.ToString();
             if (goldPulseCoroutine != null) StopCoroutine(goldPulseCoroutine);
-            goldPulseCoroutine = StartCoroutine(PulseText(goldText, C.goldPulseColor));
+            goldPulseCoroutine = StartCoroutine(PulseText(goldText, goldPulseColor));
         }
     }
 
@@ -87,162 +117,19 @@ public class PersistentHUD : MonoBehaviour
         lastHP = RunManager.instance.playerCurrentHealth;
     }
 
-    /// <summary>Rebuild UI from config at runtime (Tools menu).</summary>
-    public void RebuildFromConfig()
-    {
-        if (hudCanvas != null) Destroy(hudCanvas);
-        LoadConfigIfNeeded();
-        BuildUI();
-        Refresh();
-    }
-
-    // Shorthand
-    private PersistentHUDConfig C => config;
-
-    private void LoadConfigIfNeeded()
-    {
-        if (config != null) return;
-        config = Resources.Load<PersistentHUDConfig>("PersistentHUDConfig");
-        if (config == null)
-        {
-            // Fallback: create runtime defaults
-            config = ScriptableObject.CreateInstance<PersistentHUDConfig>();
-        }
-    }
-
-    private void TryAssignCoinSprite()
-    {
-        Sprite s = null;
-        if (TurnManager.instance != null && TurnManager.instance.coinSprite != null)
-            s = TurnManager.instance.coinSprite;
-        if (s == null)
-        {
-            var vfx = Object.FindFirstObjectByType<CoinDropVFX>();
-            if (vfx != null) s = vfx.coinSprite;
-        }
-        if (s != null)
-        {
-            coinIconImage.sprite = s;
-            coinIconImage.color = Color.white;
-        }
-    }
-
-    private void BuildUI()
-    {
-        // Canvas
-        hudCanvas = new GameObject("PersistentHUDCanvas");
-        hudCanvas.transform.SetParent(transform, false);
-        Canvas canvas = hudCanvas.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = C.sortingOrder;
-        var scaler = hudCanvas.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        hudCanvas.AddComponent<GraphicRaycaster>();
-
-        // Container
-        GameObject container = new GameObject("HUDContainer", typeof(RectTransform));
-        container.transform.SetParent(hudCanvas.transform, false);
-        RectTransform crt = container.GetComponent<RectTransform>();
-        crt.anchorMin = new Vector2(0f, 1f);
-        crt.anchorMax = new Vector2(0f, 1f);
-        crt.pivot = new Vector2(0f, 1f);
-        crt.anchoredPosition = C.containerPosition;
-        crt.sizeDelta = C.containerSize;
-
-        Image containerBG = container.AddComponent<Image>();
-        containerBG.color = C.backgroundColor;
-        containerBG.raycastTarget = false;
-
-        Outline containerOutline = container.AddComponent<Outline>();
-        containerOutline.effectColor = C.outlineColor;
-        containerOutline.effectDistance = C.outlineDistance;
-
-        var vlg = container.AddComponent<VerticalLayoutGroup>();
-        vlg.padding = new RectOffset(C.paddingLeft, C.paddingRight, C.paddingTop, C.paddingBottom);
-        vlg.spacing = C.rowSpacing;
-        vlg.childControlWidth = true;
-        vlg.childControlHeight = true;
-        vlg.childForceExpandWidth = true;
-        vlg.childForceExpandHeight = false;
-
-        // HP Row
-        hpText = CreateRow(container.transform, "HP",
-            C.hpIconColor, C.hpTextColor, C.hpFontSize, C.hpIconSize, C.hpFontStyle, false);
-
-        // Gold Row
-        goldText = CreateRow(container.transform, "GOLD",
-            C.goldIconTint, C.goldTextColor, C.goldFontSize, C.goldIconSize, C.goldFontStyle, true);
-    }
-
-    private TMP_Text CreateRow(Transform parent, string label,
-        Color iconColor, Color textColor, float fontSize, float iconSize,
-        FontStyles fontStyle, bool isCoin)
-    {
-        GameObject row = new GameObject(label + "Row", typeof(RectTransform));
-        row.transform.SetParent(parent, false);
-
-        var hlg = row.AddComponent<HorizontalLayoutGroup>();
-        hlg.spacing = C.iconTextSpacing;
-        hlg.childControlWidth = true;
-        hlg.childControlHeight = true;
-        hlg.childForceExpandWidth = false;
-        hlg.childForceExpandHeight = false;
-        hlg.childAlignment = TextAnchor.MiddleLeft;
-
-        var rowLE = row.AddComponent<LayoutElement>();
-        rowLE.preferredHeight = C.rowHeight;
-
-        // Icon
-        GameObject iconGO = new GameObject("Icon", typeof(RectTransform));
-        iconGO.transform.SetParent(row.transform, false);
-        Image iconImg = iconGO.AddComponent<Image>();
-        iconImg.raycastTarget = false;
-        iconImg.preserveAspect = true;
-        iconImg.color = iconColor;
-        var iconLE = iconGO.AddComponent<LayoutElement>();
-        iconLE.preferredWidth = iconSize;
-        iconLE.preferredHeight = iconSize;
-
-        if (isCoin)
-            coinIconImage = iconImg;
-
-        Shadow iconGlow = iconGO.AddComponent<Shadow>();
-        iconGlow.effectColor = new Color(iconColor.r, iconColor.g, iconColor.b, C.glowAlpha);
-        iconGlow.effectDistance = new Vector2(0f, 0f);
-
-        // Value text
-        GameObject valueGO = new GameObject("Value", typeof(RectTransform));
-        valueGO.transform.SetParent(row.transform, false);
-        TMP_Text valueText = valueGO.AddComponent<TextMeshProUGUI>();
-        valueText.text = "0";
-        valueText.fontSize = fontSize;
-        valueText.fontStyle = fontStyle;
-        valueText.color = textColor;
-        valueText.alignment = TextAlignmentOptions.Left;
-        valueText.raycastTarget = false;
-        valueText.enableWordWrapping = false;
-        var valLE = valueGO.AddComponent<LayoutElement>();
-        valLE.preferredWidth = C.textPreferredWidth;
-        valLE.flexibleWidth = 1f;
-
-        return valueText;
-    }
-
     private IEnumerator PulseText(TMP_Text text, Color flashColor)
     {
         if (text == null) yield break;
         Color original = text.color;
-        float duration = C.pulseDuration;
         float elapsed = 0f;
         Transform t = text.transform;
         Vector3 baseScale = Vector3.one;
 
-        while (elapsed < duration)
+        while (elapsed < pulseDuration)
         {
             if (text == null) yield break;
-            float p = elapsed / duration;
-            float scalePunch = 1f + Mathf.Sin(p * Mathf.PI) * C.pulseScaleMultiplier;
+            float p = elapsed / pulseDuration;
+            float scalePunch = 1f + Mathf.Sin(p * Mathf.PI) * pulseScaleMultiplier;
             t.localScale = baseScale * scalePunch;
             text.color = Color.Lerp(flashColor, original, p);
             elapsed += Time.unscaledDeltaTime;
