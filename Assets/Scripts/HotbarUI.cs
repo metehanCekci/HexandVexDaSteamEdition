@@ -16,7 +16,7 @@ public class HotbarUI : MonoBehaviour
     public static HotbarUI instance;
 
     [Header("Config")]
-    public int maxVisibleSlots = 5;
+    public int maxVisibleSlots = 3;
     public KeyCode[] hotkeys = new KeyCode[]
     {
         KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3,
@@ -254,6 +254,33 @@ public class HotbarUI : MonoBehaviour
     {
         if (InventoryManager.instance == null) return;
         InventoryManager.instance.UseItem(index);
+    }
+
+    /// <summary>
+    /// Dynamically add one slot to the hotbar (called by OrganPouch perk).
+    /// Respects a hard cap of 5 slots.
+    /// </summary>
+    public void AddSlot()
+    {
+        if (maxVisibleSlots >= 5) return;
+        if (!uiBuilt) return;
+
+        maxVisibleSlots++;
+        CreateSlotUI(maxVisibleSlots - 1);
+
+        // Recalculate panel width
+        RectTransform panelRT = hotbarPanel.GetComponent<RectTransform>();
+        float totalWidth = maxVisibleSlots * slotSize + (maxVisibleSlots - 1) * slotSpacing + 20f;
+        panelRT.sizeDelta = new Vector2(totalWidth, slotSize + 30f);
+
+        // Reposition all slots
+        for (int i = 0; i < slotUIs.Count; i++)
+        {
+            RectTransform slotRT = slotUIs[i].root.GetComponent<RectTransform>();
+            slotRT.anchoredPosition = new Vector2(10f + i * (slotSize + slotSpacing), 5f);
+        }
+
+        RefreshSlots();
     }
 
     /// <summary>

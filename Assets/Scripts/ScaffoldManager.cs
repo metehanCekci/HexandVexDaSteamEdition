@@ -179,6 +179,24 @@ public class ScaffoldManager : MonoBehaviour
         TrapTileEvents.FireTileDestroyed(cell);
     }
 
+    // ──────── Entity Ölümü ────────
+
+    /// <summary>
+    /// Bir varlık scaffold üzerindeyken öldüğünde çağrılır.
+    /// Scaffold çöker (entity ayrılmış gibi davranır).
+    /// </summary>
+    public void OnEntityDied(Vector3Int cell)
+    {
+        if (!IsScaffoldCell(cell)) return;
+        if (collapsingOrDestroyed.Contains(cell)) return;
+
+        StopShakeCoroutine(cell);
+        ResetTileTransform(cell);
+        TrapTileEvents.FireTileShakeStopped(cell);
+
+        StartCoroutine(CollapseCoroutine(cell));
+    }
+
     // ──────── Yardımcı Metotlar ────────
 
     private void StopShakeCoroutine(Vector3Int cell)

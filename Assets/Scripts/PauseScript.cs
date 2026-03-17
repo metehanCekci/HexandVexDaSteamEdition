@@ -52,6 +52,7 @@ public class PauseManager : MonoBehaviour
     public void Pause()
     {
         pauseMenuUI.SetActive(true);
+        EnsureCanvasSortingOrder(pauseMenuUI, 500);
         if (statsPanelUI != null) statsPanelUI.Refresh();
         else if (pauseStatsText != null) pauseStatsText.text = RunManager.instance.GetStatsSummary();
         Time.timeScale = 0f;
@@ -125,6 +126,21 @@ public class PauseManager : MonoBehaviour
         else
         {
             SceneManager.LoadScene(sceneIndex);
+        }
+    }
+
+    /// <summary>
+    /// Ensures the given UI object's parent Canvas has the specified sorting order.
+    /// </summary>
+    private void EnsureCanvasSortingOrder(GameObject uiObj, int order)
+    {
+        if (uiObj == null) return;
+        Canvas canvas = uiObj.GetComponentInParent<Canvas>();
+        if (canvas == null) canvas = uiObj.GetComponent<Canvas>();
+        if (canvas != null)
+        {
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = order;
         }
     }
 

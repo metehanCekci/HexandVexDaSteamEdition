@@ -199,9 +199,28 @@ public class HealthScript : MonoBehaviour
             if (deathMenuUI != null)
             {
                 deathMenuUI.SetActive(true);
+                // Ensure death canvas is on top of everything (below fade)
+                Canvas deathCanvas = deathMenuUI.GetComponentInParent<Canvas>();
+                if (deathCanvas == null) deathCanvas = deathMenuUI.GetComponent<Canvas>();
+                if (deathCanvas != null)
+                {
+                    deathCanvas.overrideSorting = true;
+                    deathCanvas.sortingOrder = 500;
+                }
                 Time.timeScale = 0f;
             }
             return;
+        }
+
+        // Scaffold: düşman scaffold üzerinde öldüyse scaffold çöksün
+        if (ScaffoldManager.instance != null)
+        {
+            EnemyAI enemyAI = GetComponent<EnemyAI>();
+            if (enemyAI != null && enemyAI.groundMap != null)
+            {
+                Vector3Int deathCell = enemyAI.GetCurrentCellPosition();
+                ScaffoldManager.instance.OnEntityDied(deathCell);
+            }
         }
 
         // Düşman: DeathAnimation ile yok et (TurnManager gold verene kadar hayatta kalır)

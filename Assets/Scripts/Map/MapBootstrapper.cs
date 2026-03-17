@@ -253,7 +253,7 @@ public class MapBootstrapper : MonoBehaviour
         RectTransform panelRT = panelGO.GetComponent<RectTransform>();
         StretchFull(panelRT);
         Image panelBG = panelGO.AddComponent<Image>();
-        panelBG.color = new Color(0.05f, 0.08f, 0.05f, 0.92f);
+        panelBG.color = new Color(0f, 0f, 0f, 1f);
 
         // ─── Başlık ───
         GameObject titleGO = CreateUIElement("Title", panelGO.transform);

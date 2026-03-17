@@ -517,10 +517,15 @@ public class MapManager : MonoBehaviour
         {
             case MapNodeType.Combat:
             case MapNodeType.EliteCombat:
-            case MapNodeType.Event:
                 RunManager.instance.currentLevel++;
                 LevelGenerator.instance.GenerateNextLevel();
                 showHotbar = true; // Hotbar visible during combat
+                break;
+
+            case MapNodeType.Event:
+                // Event node'u level olarak sayılmaz — zorluk artmaz
+                LevelGenerator.instance.GenerateNextLevel();
+                showHotbar = true;
                 break;
 
             case MapNodeType.Shop:

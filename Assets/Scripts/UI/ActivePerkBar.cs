@@ -702,13 +702,14 @@ public class ActivePerkBar : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < duration)
         {
+            if (rt == null) yield break;
             float t = elapsed / duration;
             float s = 1f + Mathf.Sin(t * Mathf.PI) * 0.35f;
             rt.localScale = new Vector3(s, s, 1f);
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
-        rt.localScale = baseScale;
+        if (rt != null) rt.localScale = baseScale;
     }
 
     private IEnumerator IconShakeAnim(RectTransform rt)
@@ -721,11 +722,12 @@ public class ActivePerkBar : MonoBehaviour
         float frequency = 35f;
         while (elapsed < duration)
         {
+            if (rt == null) yield break;
             float x = Mathf.Sin(elapsed * frequency) * magnitude * (1f - elapsed / duration);
             rt.localPosition = origin + new Vector3(x, 0f, 0f);
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
-        rt.localPosition = origin;
+        if (rt != null) rt.localPosition = origin;
     }
 }
