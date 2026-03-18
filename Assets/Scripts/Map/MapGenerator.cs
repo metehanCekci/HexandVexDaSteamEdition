@@ -545,9 +545,9 @@ public static class MapGenerator
                             node.nodeType = MapNodeType.EliteCombat;
                         else if (!seen.Contains(MapNodeType.Combat))
                             node.nodeType = MapNodeType.Combat;
-                        // 3 node ve ikisi de kullanıldıysa — Event fallback
+                        // 3 node ve ikisi de kullanıldıysa — Combat fallback
                         else
-                            node.nodeType = MapNodeType.Event;
+                            node.nodeType = MapNodeType.Combat;
                     }
                     else
                     {
@@ -564,7 +564,7 @@ public static class MapGenerator
                         else if (!seen.Contains(MapNodeType.Combat))
                             node.nodeType = MapNodeType.Combat;
                         else
-                            node.nodeType = MapNodeType.Event;
+                            node.nodeType = MapNodeType.Combat;
                     }
                 }
                 seen.Add(node.nodeType);

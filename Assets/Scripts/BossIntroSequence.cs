@@ -62,12 +62,12 @@ public class BossIntroSequence : MonoBehaviour
         camController = FindFirstObjectByType<CameraController>();
     }
 
-    public void PlayIntro(EnemyAI boss)
+    public void PlayIntro(EnemyMovement boss)
     {
         StartCoroutine(IntroRoutine(boss));
     }
 
-    private IEnumerator IntroRoutine(EnemyAI boss)
+    private IEnumerator IntroRoutine(EnemyMovement boss)
     {
         if (cam == null)           cam           = Camera.main;
         if (camController == null) camController = FindFirstObjectByType<CameraController>();

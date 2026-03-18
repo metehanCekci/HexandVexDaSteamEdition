@@ -149,6 +149,8 @@ GameObject:
   - component: {fileID: 2824485968955028456}
   - component: {fileID: 4205142481590582313}
   - component: {fileID: 9138939482391968074}
+  - component: {fileID: 7558760470034480347}
+  - component: {fileID: 7222861868491549751}
   m_Layer: 0
   m_Name: Totem
   m_TagString: Enemy
@@ -184,33 +186,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 506802351436183914}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76d1e686a045a0640b93848fc8094d30, type: 3}
+  m_Script: {fileID: 11500000, guid: 96c28e8034db77a4dbf1fa99185e1ffd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  movementStyle: 2
   groundMap: {fileID: 0}
   health: {fileID: 4205142481590582313}
-  visualRenderer: {fileID: 0}
   animator: {fileID: 0}
-  hammerImpactVFXPrefab: {fileID: 0}
-  vfxDelayBetweenCells: 0.07
-  vfxYOffset: 0.2
-  vfxXOffset: 0
-  enemyBehavior: 2
-  aoeAttackRange: 3
-  aoeCooldown: 2
   warningMap: {fileID: 0}
-  warningTile: {fileID: 11400000, guid: 25c4e2f3083975546a162f5d78863fcd, type: 2}
-  intentArrow: {fileID: 3621328375706932076}
-  arrowOffset: {x: 0, y: 0}
-  stunEffectPrefab: {fileID: 0}
-  arrowAngleOffset: -90
+  warningTile: {fileID: 0}
+  isElite: 0
   isBumping: 0
-  isFading: 0
   lockedTargetCell: {x: 0, y: 0, z: 0}
   hasLockedTarget: 0
   skipTurns: 0
-  isChargingAttack: 0
-  warningCells: []
 --- !u!114 &4205142481590582313
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -260,6 +249,36 @@ MonoBehaviour:
   hpFont: {fileID: 0}
   fontSize: 0
   sortingOrder: -1
+--- !u!114 &7558760470034480347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 506802351436183914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9eef7429e3c2e0e48869dba681c74f5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TotemEnemyAI
+--- !u!114 &7222861868491549751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 506802351436183914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf60ae932202ebe48a36b9ddbec5c867, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
+  intentArrow: {fileID: 0}
+  arrowOffset: {x: 0, y: 0}
+  arrowAngleOffset: 0
+  stunEffectPrefab: {fileID: 0}
+  visualRenderer: {fileID: 0}
+  isFading: 0
 --- !u!1 &1595757694749280500
 GameObject:
   m_ObjectHideFlags: 0

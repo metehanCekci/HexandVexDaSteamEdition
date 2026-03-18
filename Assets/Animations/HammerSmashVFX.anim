@@ -103,7 +103,7 @@ AnimationClip:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 0.15
+        time: 0.11666667
         value: 1
         inSlope: 0
         outSlope: 0
@@ -112,7 +112,7 @@ AnimationClip:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 0.33333334
+        time: 0.3
         value: 0
         inSlope: 0
         outSlope: 0
@@ -133,17 +133,17 @@ AnimationClip:
     curve:
     - time: 0
       value: {fileID: -8861799175678593878, guid: c0feeb490bd18ac48b1e2e68e851e25c, type: 3}
-    - time: 0.033333335
+    - time: 0.016666668
       value: {fileID: -4776941291019988296, guid: c0feeb490bd18ac48b1e2e68e851e25c, type: 3}
-    - time: 0.06666667
+    - time: 0.033333335
       value: {fileID: 5250173097034532377, guid: c0feeb490bd18ac48b1e2e68e851e25c, type: 3}
-    - time: 0.1
+    - time: 0.06666667
       value: {fileID: 1200982643235460266, guid: c0feeb490bd18ac48b1e2e68e851e25c, type: 3}
-    - time: 0.15
+    - time: 0.11666667
       value: {fileID: 8903608849911055221, guid: c0feeb490bd18ac48b1e2e68e851e25c, type: 3}
-    - time: 0.25
+    - time: 0.21666667
       value: {fileID: 2125233442761017299, guid: c0feeb490bd18ac48b1e2e68e851e25c, type: 3}
-    - time: 0.33333334
+    - time: 0.3
       value: {fileID: 2125233442761017299, guid: c0feeb490bd18ac48b1e2e68e851e25c, type: 3}
     attribute: m_Sprite
     path: 
@@ -215,7 +215,7 @@ AnimationClip:
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 0.35000002
+    m_StopTime: 0.3166667
     m_OrientationOffsetY: 0
     m_Level: 0
     m_CycleOffset: 0
@@ -317,7 +317,7 @@ AnimationClip:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 0.15
+        time: 0.11666667
         value: 1
         inSlope: 0
         outSlope: 0
@@ -326,7 +326,7 @@ AnimationClip:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 0.33333334
+        time: 0.3
         value: 0
         inSlope: 0
         outSlope: 0

@@ -31,7 +31,7 @@ public class WarlockEnemyAI : MonoBehaviour
     [Header("Animasyon")]
     public Animator animator;
 
-    private EnemyAI myEnemyAI;
+    private EnemyMovement myEnemyMovement;
     private Tilemap groundMap;
 
     /// <summary>Ground VEYA scaffold tile'ı var mı? Scaffold hücrelerinde groundMap boş olabilir.</summary>
@@ -51,13 +51,13 @@ public class WarlockEnemyAI : MonoBehaviour
 
     void Start()
     {
-        myEnemyAI = GetComponent<EnemyAI>();
-        groundMap = myEnemyAI.groundMap;
+        myEnemyMovement = GetComponent<EnemyMovement>();
+        groundMap = myEnemyMovement.groundMap;
 
-        if (warningTile == null && myEnemyAI != null) warningTile = myEnemyAI.warningTile;
+        if (warningTile == null && myEnemyMovement != null) warningTile = myEnemyMovement.warningTile;
         if (warningTile == null && TurnManager.instance != null) warningTile = TurnManager.instance.warningTile;
 
-        previousHP = myEnemyAI.health.currentHP;
+        previousHP = myEnemyMovement.health.currentHP;
 
         // Warlock'ları bul ve index al
         WarlockEnemyAI[] existingWarlocks = FindObjectsByType<WarlockEnemyAI>(FindObjectsSortMode.None);
@@ -101,11 +101,11 @@ public class WarlockEnemyAI : MonoBehaviour
 
     void Update()
     {
-        if (myEnemyAI == null || myEnemyAI.health.currentHP <= 0) return;
+        if (myEnemyMovement == null || myEnemyMovement.health.currentHP <= 0) return;
 
-        if (myEnemyAI.health.currentHP < previousHP && !isTransitioning)
+        if (myEnemyMovement.health.currentHP < previousHP && !isTransitioning)
         {
-            previousHP = myEnemyAI.health.currentHP;
+            previousHP = myEnemyMovement.health.currentHP;
             StartCoroutine(HitAndTeleportSequence());
         }
     }
@@ -121,44 +121,7 @@ public class WarlockEnemyAI : MonoBehaviour
 
     public Vector3Int CalculateFleeMove(Vector3Int playerCell)
     {
-        Vector3Int currentCell = myEnemyAI.GetCurrentCellPosition();
-        Vector3Int[] offsets = (currentCell.y % 2 != 0) ? evenOffsets : oddOffsets;
-
-        Vector3Int bestCell = currentCell;
-        float bestDist = myEnemyAI.Distance(currentCell, playerCell);
-
-        foreach (var off in offsets)
-        {
-            Vector3Int neighbor = currentCell + off;
-            if (!HasWalkableTile(neighbor)) continue;
-            if (TurnManager.instance.IsEnemyAtCell(neighbor)) continue;
-            if (TurnManager.instance.player.GetCurrentCellPosition() == neighbor) continue;
-            if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(neighbor)) continue;
-
-            float dist = myEnemyAI.Distance(neighbor, playerCell);
-            if (dist > bestDist)
-            {
-                bestDist = dist;
-                bestCell = neighbor;
-            }
-        }
-
-        if (bestCell == currentCell)
-        {
-            List<Vector3Int> safeCells = new List<Vector3Int>();
-            foreach (var off in offsets)
-            {
-                Vector3Int neighbor = currentCell + off;
-                if (HasWalkableTile(neighbor) && !TurnManager.instance.IsEnemyAtCell(neighbor) &&
-                    TurnManager.instance.player.GetCurrentCellPosition() != neighbor &&
-                    (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(neighbor)))
-                {
-                    safeCells.Add(neighbor);
-                }
-            }
-            if (safeCells.Count > 0) bestCell = safeCells[Random.Range(0, safeCells.Count)];
-        }
-        return bestCell;
+        return myEnemyMovement.CalculateEvadeMove(playerCell);
     }
 
     // ========================================================
@@ -166,7 +129,7 @@ public class WarlockEnemyAI : MonoBehaviour
     // ========================================================
     public IEnumerator ExecuteWarlockTurn()
     {
-        if (myEnemyAI.skipTurns > 0) yield break;
+        if (myEnemyMovement.skipTurns > 0) yield break;
         if (isTransitioning) yield break;
 
         Vector3Int playerCell = TurnManager.instance.player.GetCurrentCellPosition();
@@ -325,6 +288,10 @@ public class WarlockEnemyAI : MonoBehaviour
             yield return new WaitForSeconds(0.05f);
             SpawnImpactEffects(new List<Vector3Int> { centerCell });
 
+            // Impact: hafif hitstop + yumuşak shake
+            if (HitstopManager.instance != null) HitstopManager.instance.TriggerHitstop();
+            CameraController.ShakeLighter();
+
             // === Merkez hasarı kontrol et ===
             Vector3Int playerCell = TurnManager.instance.player.GetCurrentCellPosition();
             bool playerHit = playerCell == centerCell;
@@ -347,7 +314,7 @@ public class WarlockEnemyAI : MonoBehaviour
                 }
                 else TurnManager.instance.player.health.TakeDamage(attackDamage);
 
-                Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyAI.GetCurrentCellPosition());
+                Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyMovement.GetCurrentCellPosition());
                 TurnManager.instance.player.StartKnockbackMovement(pushTarget);
                 yield return new WaitUntil(() => !TurnManager.instance.player.IsMoving());
             }
@@ -383,6 +350,10 @@ public class WarlockEnemyAI : MonoBehaviour
                 yield return new WaitForSeconds(0.05f);
                 SpawnImpactEffects(outerCells);
 
+                // Impact: hafif hitstop + yumuşak shake (wave 2)
+                if (HitstopManager.instance != null) HitstopManager.instance.TriggerHitstop();
+                CameraController.ShakeLighter();
+
                 // === Dış hatlar hasarı ===
                 if (outerCells.Contains(playerCell))
                 {
@@ -402,7 +373,7 @@ public class WarlockEnemyAI : MonoBehaviour
                     }
                     else TurnManager.instance.player.health.TakeDamage(attackDamage);
 
-                    Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyAI.GetCurrentCellPosition());
+                    Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyMovement.GetCurrentCellPosition());
                     TurnManager.instance.player.StartKnockbackMovement(pushTarget);
                     yield return new WaitUntil(() => !TurnManager.instance.player.IsMoving());
                 }
@@ -450,7 +421,7 @@ public class WarlockEnemyAI : MonoBehaviour
             {
                 Vector3Int c = new Vector3Int(x, y, 0);
                 if (HasWalkableTile(c) && !TurnManager.instance.IsEnemyAtCell(c) &&
-                    myEnemyAI.Distance(c, playerCell) >= 4f &&
+                    myEnemyMovement.Distance(c, playerCell) >= 4f &&
                     (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(c)))
                 {
                     farCells.Add(c);
@@ -466,7 +437,7 @@ public class WarlockEnemyAI : MonoBehaviour
                 {
                     Vector3Int c = new Vector3Int(x, y, 0);
                     if (HasWalkableTile(c) && !TurnManager.instance.IsEnemyAtCell(c) &&
-                        myEnemyAI.Distance(c, playerCell) >= 3f &&
+                        myEnemyMovement.Distance(c, playerCell) >= 3f &&
                         (LevelGenerator.instance == null || !LevelGenerator.instance.hazardCells.Contains(c)))
                     {
                         farCells.Add(c);
@@ -478,7 +449,7 @@ public class WarlockEnemyAI : MonoBehaviour
         if (farCells.Count > 0)
         {
             Vector3Int randomCell = farCells[Random.Range(0, farCells.Count)];
-            myEnemyAI.TeleportTo(randomCell);
+            myEnemyMovement.TeleportTo(randomCell);
         }
 
         yield return StartCoroutine(WarlockTeleportFade(0f, 1f, 0.25f));

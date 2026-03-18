@@ -58,8 +58,8 @@ public class EnemyHealthBar : MonoBehaviour
         if (health == null || fillImage == null) { enabled = false; return; }
 
         // Totemlerin health bar'ını tamamen devre dışı bırak
-        EnemyAI enemyAI = GetComponentInParent<EnemyAI>();
-        if (enemyAI != null && enemyAI.enemyBehavior == EnemyAI.EnemyBehavior.Totem)
+        EnemyMovement enemyAI = GetComponentInParent<EnemyMovement>();
+        if (enemyAI != null && enemyAI.IsTotem)
         {
             if (barCanvas != null) barCanvas.gameObject.SetActive(false);
             this.enabled = false;

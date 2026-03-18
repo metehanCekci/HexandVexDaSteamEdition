@@ -11,7 +11,7 @@ public class PassiveEnzymePerk : BasePerk
 
     public override void OnSkip()
     {
-        // Seviye 1'de 3 altın, Seviye 2'de 6 altın, Seviye 3'te 9 altın verir!
+       
         RunManager.instance.currentGold += (2 * currentLevel);
         GameEvents.GoldChanged(RunManager.instance.currentGold);
         TriggerVisualPop();

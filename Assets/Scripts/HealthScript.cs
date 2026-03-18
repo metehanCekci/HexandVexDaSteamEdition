@@ -53,8 +53,8 @@ public class HealthScript : MonoBehaviour
         if (isDead) return;
 
         // Boss kalkanı varken hasar vurulmaz
-        EnemyAI enemyAI = GetComponentInParent<EnemyAI>();
-        if (enemyAI != null && enemyAI.enemyBehavior == EnemyAI.EnemyBehavior.Boss)
+        EnemyMovement enemyAI = GetComponentInParent<EnemyMovement>();
+        if (enemyAI != null && enemyAI.IsBoss)
         {
             var boss = enemyAI.GetComponent<SpawnerBossAI>();
             if (boss != null && boss.isShielded)
@@ -89,8 +89,8 @@ public class HealthScript : MonoBehaviour
             dmgObj.GetComponent<DamageNumber>().Setup(dmg);
         }
 
-        EnemyAI enemy = GetComponentInParent<EnemyAI>();
-        if (enemy != null && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Boss && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Totem)
+        EnemyMovement enemy = GetComponentInParent<EnemyMovement>();
+        if (enemy != null && !enemy.IsBoss && !enemy.IsTotem)
         {
             enemy.ApplyStun(1, false);
         }
@@ -215,7 +215,7 @@ public class HealthScript : MonoBehaviour
         // Scaffold: düşman scaffold üzerinde öldüyse scaffold çöksün
         if (ScaffoldManager.instance != null)
         {
-            EnemyAI enemyAI = GetComponent<EnemyAI>();
+            EnemyMovement enemyAI = GetComponent<EnemyMovement>();
             if (enemyAI != null && enemyAI.groundMap != null)
             {
                 Vector3Int deathCell = enemyAI.GetCurrentCellPosition();

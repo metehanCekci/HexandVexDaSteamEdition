@@ -137,4 +137,11 @@ public class CameraController : MonoBehaviour
         if (controller != null)
             controller.Shake(0.1f, 0.075f);
     }
+
+    public static void ShakeLighter()
+    {
+        CameraController controller = FindFirstObjectByType<CameraController>();
+        if (controller != null)
+            controller.Shake(0.1f, 0.0375f);
+    }
 }

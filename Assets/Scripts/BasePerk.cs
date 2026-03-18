@@ -36,7 +36,7 @@ public abstract class BasePerk : MonoBehaviour
     public virtual void OnLevelClear() { }
 
     // Düşman öldüğünde çalışır
-    public virtual void OnEnemyKilled(EnemyAI enemy) { }
+    public virtual void OnEnemyKilled(EnemyMovement enemy) { }
 
     // Shop reroll yapıldığında çalışır
     public virtual void OnShopReroll() { }

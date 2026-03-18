@@ -18,7 +18,7 @@ public class NecroShot : BaseItem
         bool hasNonBossEnemy = false;
         foreach (var enemy in TurnManager.instance.enemies)
         {
-            if (enemy != null && enemy.health.currentHP > 0 && enemy.enemyBehavior != EnemyAI.EnemyBehavior.Boss)
+            if (enemy != null && enemy.health.currentHP > 0 && !enemy.IsBoss)
             {
                 hasNonBossEnemy = true;
                 break;

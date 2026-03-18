@@ -27,7 +27,7 @@ public class SpawnerBossAI : MonoBehaviour
     private List<Vector3Int> aoeWarningCells = new List<Vector3Int>();
 
     [Header("Summon Ayarları")]
-    public List<EnemyAI> summonedMinions = new List<EnemyAI>();
+    public List<EnemyMovement> summonedMinions = new List<EnemyMovement>();
     
     private bool isTransitioning = false; 
     private bool isSummoning = false; 
@@ -40,13 +40,13 @@ public class SpawnerBossAI : MonoBehaviour
     [Header("BOSS'A ÖZEL UYARI KAROSU (BUNU ATAMALISIN!)")]
     public TileBase warningTile; 
     
-    private EnemyAI myEnemyAI;
+    private EnemyMovement myEnemyMovement;
 
     void Awake() { instance = this; }
 
     void Start()
     {
-        myEnemyAI = GetComponent<EnemyAI>();
+        myEnemyMovement = GetComponent<EnemyMovement>();
         groundMap = LevelGenerator.instance.groundMap;
         arenaRadius = LevelGenerator.instance.baseMapRadius + 1 + (RunManager.instance.currentLevel / 10);
 
@@ -60,8 +60,8 @@ public class SpawnerBossAI : MonoBehaviour
             if (TurnManager.instance != null) bossWarningMap = TurnManager.instance.warningMap;
         }
 
-        if (warningTile == null && myEnemyAI != null)
-            warningTile = myEnemyAI.warningTile;
+        if (warningTile == null && myEnemyMovement != null)
+            warningTile = myEnemyMovement.warningTile;
         if (warningTile == null && TurnManager.instance != null)
             warningTile = TurnManager.instance.warningTile;
 
@@ -84,7 +84,7 @@ public class SpawnerBossAI : MonoBehaviour
             StartCoroutine(ShieldPulseLoop());
         }
 
-        previousHP = myEnemyAI.health.maxHP;
+        previousHP = myEnemyMovement.health.maxHP;
 
         StartCoroutine(InitialSpawnDelay());
     }
@@ -102,17 +102,17 @@ public class SpawnerBossAI : MonoBehaviour
     {
         if (isShielded)
         {
-            if (myEnemyAI.health.currentHP < myEnemyAI.health.maxHP)
+            if (myEnemyMovement.health.currentHP < myEnemyMovement.health.maxHP)
             {
-                myEnemyAI.health.currentHP = myEnemyAI.health.maxHP;
-                myEnemyAI.health.updateHealth();
+                myEnemyMovement.health.currentHP = myEnemyMovement.health.maxHP;
+                myEnemyMovement.health.updateHealth();
             }
         }
         else
         {
-            if (myEnemyAI.health.currentHP > 0 && myEnemyAI.health.currentHP < previousHP && !isTransitioning)
+            if (myEnemyMovement.health.currentHP > 0 && myEnemyMovement.health.currentHP < previousHP && !isTransitioning)
             {
-                previousHP = myEnemyAI.health.currentHP;
+                previousHP = myEnemyMovement.health.currentHP;
                 TriggerHitSpawn();
                 StartCoroutine(HitAndTeleportSequence());
             }
@@ -148,7 +148,7 @@ public class SpawnerBossAI : MonoBehaviour
             for (int y = -radius; y <= radius; y++)
             {
                 Vector3Int c = new Vector3Int(x, y, 0);
-                if (groundMap.HasTile(c) && !TurnManager.instance.IsEnemyAtCell(c) && myEnemyAI.Distance(c, playerCell) >= 4f && !LevelGenerator.instance.hazardCells.Contains(c))
+                if (groundMap.HasTile(c) && !TurnManager.instance.IsEnemyAtCell(c) && myEnemyMovement.Distance(c, playerCell) >= 4f && !LevelGenerator.instance.hazardCells.Contains(c))
                 {
                     farCells.Add(c);
                 }
@@ -160,7 +160,7 @@ public class SpawnerBossAI : MonoBehaviour
             for (int x = -radius; x <= radius; x++) {
                 for (int y = -radius; y <= radius; y++) {
                     Vector3Int c = new Vector3Int(x, y, 0);
-                    if (groundMap.HasTile(c) && !TurnManager.instance.IsEnemyAtCell(c) && myEnemyAI.Distance(c, playerCell) >= 3f && !LevelGenerator.instance.hazardCells.Contains(c)) {
+                    if (groundMap.HasTile(c) && !TurnManager.instance.IsEnemyAtCell(c) && myEnemyMovement.Distance(c, playerCell) >= 3f && !LevelGenerator.instance.hazardCells.Contains(c)) {
                         farCells.Add(c);
                     }
                 }
@@ -170,7 +170,7 @@ public class SpawnerBossAI : MonoBehaviour
         if (farCells.Count > 0)
         {
             Vector3Int randomCell = farCells[Random.Range(0, farCells.Count)];
-            myEnemyAI.TeleportTo(randomCell);
+            myEnemyMovement.TeleportTo(randomCell);
         }
 
         yield return StartCoroutine(BossTeleportFade(0f, 1f, 0.25f));
@@ -214,7 +214,7 @@ public class SpawnerBossAI : MonoBehaviour
 
     public IEnumerator ExecuteBossTurn()
     {
-        if (myEnemyAI.skipTurns > 0)
+        if (myEnemyMovement.skipTurns > 0)
         {
             readyToExplodeThisTurn = false;
 
@@ -223,7 +223,7 @@ public class SpawnerBossAI : MonoBehaviour
             {
                 isAoEWarningActive = false;
                 aoeCycleStep = 0;
-                if (myEnemyAI.animator != null) myEnemyAI.animator.SetBool("IsCharging", false);
+                if (myEnemyMovement.animator != null) myEnemyMovement.animator.SetBool("IsCharging", false);
                 if (bossWarningMap != null)
                 {
                     foreach (var c in aoeWarningCells) bossWarningMap.SetTile(c, null);
@@ -246,7 +246,7 @@ public class SpawnerBossAI : MonoBehaviour
         else if (aoeCycleStep == 2)
         {
             if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
-            if (myEnemyAI.animator != null) myEnemyAI.animator.SetBool("IsCharging", true);
+            if (myEnemyMovement.animator != null) myEnemyMovement.animator.SetBool("IsCharging", true);
             ShowCheckerboardWarning();
             aoeCycleStep = 3; 
         }
@@ -343,7 +343,7 @@ public class SpawnerBossAI : MonoBehaviour
 
     public IEnumerator ExecuteCheckerboardAoE()
     {
-        if (myEnemyAI.animator != null) myEnemyAI.animator.SetBool("IsCharging", false);
+        if (myEnemyMovement.animator != null) myEnemyMovement.animator.SetBool("IsCharging", false);
         
         readyToExplodeThisTurn = false;
         aoeCycleStep = 0; 
@@ -363,6 +363,10 @@ public class SpawnerBossAI : MonoBehaviour
             }
 
             yield return new WaitForSeconds(0.1f);
+
+            // Impact: hafif hitstop + yumuşak shake
+            if (HitstopManager.instance != null) HitstopManager.instance.TriggerHitstop();
+            CameraController.ShakeLighter();
 
             if (lightningStrikePrefab != null)
             {
@@ -436,7 +440,7 @@ public class SpawnerBossAI : MonoBehaviour
         isSummoning = true;
 
         Vector3Int playerCell = TurnManager.instance.player.GetCurrentCellPosition();
-        Vector3Int bossCell = myEnemyAI.GetCurrentCellPosition();
+        Vector3Int bossCell = myEnemyMovement.GetCurrentCellPosition();
         List<Vector3Int> occupiedCells = new List<Vector3Int> { playerCell, bossCell };
         foreach (var e in TurnManager.instance.enemies)
         {
@@ -460,14 +464,14 @@ public class SpawnerBossAI : MonoBehaviour
 
             if (!groundMap.HasTile(cell) || 
                 occupiedCells.Contains(cell) || 
-                myEnemyAI.Distance(cell, playerCell) < 2f ||  
+                myEnemyMovement.Distance(cell, playerCell) < 2f ||  
                 LevelGenerator.instance.hazardCells.Contains(cell))
                 continue;
 
             bool tooCloseToSpawned = false;
             foreach (var spawnedCell in spawnedThisRound)
             {
-                if (myEnemyAI.Distance(cell, spawnedCell) < 2f)
+                if (myEnemyMovement.Distance(cell, spawnedCell) < 2f)
                 {
                     tooCloseToSpawned = true;
                     break;
@@ -479,7 +483,7 @@ public class SpawnerBossAI : MonoBehaviour
             Vector3 spawnPos = groundMap.GetCellCenterWorld(cell);
             GameObject minionObj = Instantiate(prefab, spawnPos, Quaternion.identity);
 
-            EnemyAI minionAI = minionObj.GetComponent<EnemyAI>();
+            EnemyMovement minionAI = minionObj.GetComponent<EnemyMovement>();
             minionAI.groundMap = this.groundMap;
 
             float randomMultiplier = Random.Range(0.8f, 1.25f);
@@ -562,7 +566,7 @@ public class SpawnerBossAI : MonoBehaviour
         {
             isShielded = false;
             StartCoroutine(ShatterShieldVisual());
-            previousHP = myEnemyAI.health.currentHP;
+            previousHP = myEnemyMovement.health.currentHP;
             countToSpawn = maxLimit; // Tüm totemler kırılınca direkt sınıra ulaşır
         }
         else
@@ -689,7 +693,7 @@ public class SpawnerBossAI : MonoBehaviour
         
         foreach (var e in TurnManager.instance.enemies.ToList())
         {
-            if (e != null && e.enemyBehavior == EnemyAI.EnemyBehavior.Totem && e.health.currentHP > 0)
+            if (e != null && e.IsTotem && e.health.currentHP > 0)
                 StartCoroutine(e.FadeDieCoroutine());
         }
     }

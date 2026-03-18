@@ -22,7 +22,7 @@ public class RetributionSplicerPerk : BasePerk
     }
 
     /// <summary>Called by TurnManager after each hit to register the target.</summary>
-    public void RegisterHit(EnemyAI target)
+    public void RegisterHit(EnemyMovement target)
     {
         if (target == null) return;
         int id = target.GetInstanceID();
@@ -31,7 +31,7 @@ public class RetributionSplicerPerk : BasePerk
     }
 
     /// <summary>Returns the flat damage bonus against this target (based on previous hits).</summary>
-    public int GetBonusFor(EnemyAI target)
+    public int GetBonusFor(EnemyMovement target)
     {
         if (target == null) return 0;
         int id = target.GetInstanceID();
@@ -40,7 +40,7 @@ public class RetributionSplicerPerk : BasePerk
         return hitCounts[id] * bonusPerHit;
     }
 
-    public override void OnEnemyKilled(EnemyAI enemy)
+    public override void OnEnemyKilled(EnemyMovement enemy)
     {
         if (enemy == null) return;
         hitCounts.Remove(enemy.GetInstanceID());

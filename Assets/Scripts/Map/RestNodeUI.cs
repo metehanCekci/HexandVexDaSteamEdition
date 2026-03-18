@@ -50,7 +50,13 @@ public class RestNodeUI : MonoBehaviour
         if (restButtonText != null) restButtonText.text = $"Rest\n(Heal up)\n<size=70%>+{healAmount} HP</size>";
         if (trainButtonText != null) trainButtonText.text = "Train\n(Upgrade Perk)";
 
-        bool canTrain = RunManager.instance != null && RunManager.instance.activePerks.Count > 0;
+        bool canTrain = false;
+        if (RunManager.instance != null)
+        {
+            canTrain = RunManager.instance.activePerks.Exists(
+                p => p != null && p.currentLevel < p.maxLevel
+            );
+        }
 
         if (restButton != null)
         {

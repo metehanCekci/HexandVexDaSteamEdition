@@ -28,6 +28,10 @@ public class MapManager : MonoBehaviour
     [Header("Rest UI")]
     public GameObject restCanvasPrefab; // Inspector'dan RestCanvas prefab'ını sürükle
 
+    [Header("UI Vignette")]
+    [Range(0f, 1f)] public float vignetteIntensity = 0.55f;
+    [Range(0.1f, 1f)] public float vignetteSmoothness = 0.7f;
+
     [Header("Runtime State")]
     public MapData currentMap;
 
@@ -94,6 +98,15 @@ public class MapManager : MonoBehaviour
 
         // Auto-spawn Inventory & Hotbar if not present
         EnsureInventoryAndHotbar();
+
+        // UI Vignette — tüm overlay ekranlarının üstünde vignette efekti
+        if (UIVignette.instance == null)
+        {
+            GameObject vignetteGO = new GameObject("UIVignette");
+            var uiVignette = vignetteGO.AddComponent<UIVignette>();
+            uiVignette.intensity = vignetteIntensity;
+            uiVignette.smoothness = vignetteSmoothness;
+        }
     }
 
     // ═══════════════════════════════════════════
@@ -791,17 +804,17 @@ public class MapManager : MonoBehaviour
     {
         Debug.Log("[MAP] BossDefeatedSequence started");
 
-        // Boss sahnesini temizle — yoksa arkada boş level gözükür
-        if (LevelGenerator.instance != null)
-        {
-            LevelGenerator.instance.groundMap?.ClearAllTiles();
-            if (LevelGenerator.instance.backgroundMap != null)
-                LevelGenerator.instance.backgroundMap.ClearAllTiles();
-        }
-
         if (ScreenFader.instance != null)
         {
             yield return StartCoroutine(FadeToBlack());
+
+            // Ekran karardıktan sonra tile'ları temizle
+            if (LevelGenerator.instance != null)
+            {
+                LevelGenerator.instance.groundMap?.ClearAllTiles();
+                if (LevelGenerator.instance.backgroundMap != null)
+                    LevelGenerator.instance.backgroundMap.ClearAllTiles();
+            }
 
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             Debug.Log($"[MAP] BossDefeatedSequence — GenerateNewMap(layerIndex={newLayerIndex})");

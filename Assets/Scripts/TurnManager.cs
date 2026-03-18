@@ -50,7 +50,7 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public bool skipDiceAnim { get => diceUI != null ? diceUI.skipDiceAnim : false; set { if (diceUI != null) diceUI.skipDiceAnim = value; } }
     [HideInInspector] public bool skipDiceVisuals { get => diceUI != null ? diceUI.skipDiceVisuals : false; set { if (diceUI != null) diceUI.skipDiceVisuals = value; } }
 
-    public List<EnemyAI> enemies = new List<EnemyAI>();
+    public List<EnemyMovement> enemies = new List<EnemyMovement>();
     private CoinDropService coinService;
     private DiceUIController diceUI;
     private PerkCombatProcessor perkProcessor;
@@ -164,7 +164,7 @@ public class TurnManager : MonoBehaviour
             Vector3 wPoint = Camera.main.ScreenToWorldPoint(mPos);
             wPoint.z = 0;
             Vector3Int cCell = groundMap.WorldToCell(wPoint);
-            EnemyAI directTarget = GetEnemyAtCell(cCell);
+            EnemyMovement directTarget = GetEnemyAtCell(cCell);
             // Proximity fallback
             if (directTarget == null)
             {
@@ -183,7 +183,7 @@ public class TurnManager : MonoBehaviour
                 isAttackAnimationPlaying = true;
                 RunManager.instance.remainingMoves = 0;
                 player.ClearHighlights();
-                List<EnemyAI> singleTarget = new List<EnemyAI> { directTarget };
+                List<EnemyMovement> singleTarget = new List<EnemyMovement> { directTarget };
                 StartCoroutine(MitsuriAttackSequence(singleTarget));
             }
         }
@@ -235,7 +235,7 @@ public class TurnManager : MonoBehaviour
             // Boss kalkanını kaldır yoksa TakeDamage işlemez
             if (SpawnerBossAI.instance != null) SpawnerBossAI.instance.isShielded = false;
 
-            foreach (var e in new List<EnemyAI>(enemies))
+            foreach (var e in new List<EnemyMovement>(enemies))
                 if (e != null && e.health.currentHP > 0) e.health.TakeDamage(e.health.currentHP);
             enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
             CleanupDeadAndCheckLevelClear();
@@ -284,7 +284,7 @@ public class TurnManager : MonoBehaviour
         {
             Vector3 spawnPos = groundMap.GetCellCenterWorld(spawnCell); spawnPos.z = 0;
             GameObject obj = Instantiate(LevelGenerator.instance.aoeEnemyPrefab, spawnPos, Quaternion.identity);
-            EnemyAI ai = obj.GetComponent<EnemyAI>(); ai.groundMap = groundMap;
+            EnemyMovement ai = obj.GetComponent<EnemyMovement>(); ai.groundMap = groundMap;
             ai.health.maxHP = 50; ai.health.currentHP = 50; ai.health.updateHealth();
             RegisterEnemy(ai); StartCoroutine(ai.FadeSpawnCoroutine());
         }
@@ -575,7 +575,7 @@ public class TurnManager : MonoBehaviour
         if (PersistentHUD.instance != null) PersistentHUD.instance.Refresh();
     }
 
-    public void RegisterEnemy(EnemyAI enemy) { if (!enemies.Contains(enemy)) enemies.Add(enemy); }
+    public void RegisterEnemy(EnemyMovement enemy) { if (!enemies.Contains(enemy)) enemies.Add(enemy); }
     public void StartNecroShotTargeting() { isNecroShotTargeting = true; }
 
     // ──────── Mitsuri Blade Range Indicators ────────
@@ -740,7 +740,7 @@ public class TurnManager : MonoBehaviour
         Vector3Int clickedCell = groundMap.WorldToCell(worldPoint);
 
         // Önce tıklanan hücrede düşman var mı bak
-        EnemyAI target = GetEnemyAtCell(clickedCell);
+        EnemyMovement target = GetEnemyAtCell(clickedCell);
 
         // Tıklanan hücrede düşman yoksa, düşmanların world pozisyonuna yakınlık kontrolü yap
         if (target == null)
@@ -769,11 +769,11 @@ public class TurnManager : MonoBehaviour
         RunManager.instance.remainingMoves = 0;
 
         // Tek hedefli saldırı
-        List<EnemyAI> singleTarget = new List<EnemyAI> { target };
+        List<EnemyMovement> singleTarget = new List<EnemyMovement> { target };
         StartCoroutine(MitsuriAttackSequence(singleTarget));
     }
 
-    private IEnumerator MitsuriAttackSequence(List<EnemyAI> targets)
+    private IEnumerator MitsuriAttackSequence(List<EnemyMovement> targets)
     {
         ClearMitsuriRangeIndicators();
         yield return StartCoroutine(MultiAttack(targets));
@@ -786,10 +786,10 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    public void TryNecroShotKill(EnemyAI target)
+    public void TryNecroShotKill(EnemyMovement target)
     {
         if (!isNecroShotTargeting || target == null) return;
-        if (target.enemyBehavior == EnemyAI.EnemyBehavior.Boss) return;
+        if (target.IsBoss) return;
         isNecroShotTargeting = false;
         if (player != null) player.TriggerAttackAnimation();
 
@@ -868,8 +868,8 @@ public class TurnManager : MonoBehaviour
         foreach (var off in offsets) blastCells.Add(cell + off);
 
         // Her düşmana aynı zarı ver (paylaştırma yok)
-        List<EnemyAI> hitEnemies = new List<EnemyAI>();
-        foreach (var bc in blastCells) { EnemyAI enemy = GetEnemyAtCell(bc); if (enemy != null && !hitEnemies.Contains(enemy)) hitEnemies.Add(enemy); }
+        List<EnemyMovement> hitEnemies = new List<EnemyMovement>();
+        foreach (var bc in blastCells) { EnemyMovement enemy = GetEnemyAtCell(bc); if (enemy != null && !hitEnemies.Contains(enemy)) hitEnemies.Add(enemy); }
 
         foreach (var enemy in hitEnemies)
         {
@@ -887,14 +887,14 @@ public class TurnManager : MonoBehaviour
     }
 
     public void StartPhaseShiftTargeting() { isPhaseShiftTargeting = true; }
-    public void TryPhaseShift(EnemyAI target)
+    public void TryPhaseShift(EnemyMovement target)
     {
         if (!isPhaseShiftTargeting || target == null) return;
         isPhaseShiftTargeting = false;
         StartCoroutine(PhaseShiftCoroutine(target));
     }
 
-    private IEnumerator PhaseShiftCoroutine(EnemyAI target)
+    private IEnumerator PhaseShiftCoroutine(EnemyMovement target)
     {
         Vector3Int playerCell = player.GetCurrentCellPosition();
         Vector3Int enemyCell = target.GetCurrentCellPosition();
@@ -939,7 +939,7 @@ public class TurnManager : MonoBehaviour
             if (activeMineObj != null) Destroy(activeMineObj);
             activeMineCell = new Vector3Int(-999, -999, -999);
 
-            List<EnemyAI> mineKills = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
+            List<EnemyMovement> mineKills = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
             foreach (var deadEnemy in mineKills)
                 coinService.ProcessKillRewards(deadEnemy);
             UpdateCoinUI();
@@ -952,7 +952,7 @@ public class TurnManager : MonoBehaviour
         player.ClearHighlights();
 
         // Bitişik düşmanlara otomatik saldırı
-        List<EnemyAI> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
+        List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
         if (adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
         {
             hasAttackedThisTurn = true;
@@ -1065,7 +1065,7 @@ public class TurnManager : MonoBehaviour
         RunManager.instance.currentGold += RunManager.instance.skipBonusGold;
         UpdateCoinUI();
 
-        List<EnemyAI> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
+        List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
         bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
 
         // Greatsword: skip sonrası bitişik düşmana otomatik saldır
@@ -1091,10 +1091,10 @@ public class TurnManager : MonoBehaviour
         List<Vector3Int> cellsToHit = includeCenter ? new List<Vector3Int> { centerCell } : new List<Vector3Int>();
         foreach (var off in offsets) cellsToHit.Add(centerCell + off);
 
-        HashSet<EnemyAI> enemiesToHit = new HashSet<EnemyAI>();
+        HashSet<EnemyMovement> enemiesToHit = new HashSet<EnemyMovement>();
         foreach (var cell in cellsToHit)
         {
-            EnemyAI e = GetEnemyAtCell(cell);
+            EnemyMovement e = GetEnemyAtCell(cell);
             if (e != null && e.health.currentHP > 0) enemiesToHit.Add(e);
         }
 
@@ -1191,7 +1191,7 @@ public class TurnManager : MonoBehaviour
             yield break;
         }
 
-        List<EnemyAI> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
+        List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
         bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
 
         // Greatsword: bitişik düşmana otomatik saldır
@@ -1271,7 +1271,7 @@ public class TurnManager : MonoBehaviour
         // ========================================================
         if (activeMineCell.y != -999)
         {
-            EnemyAI victim = GetEnemyAtCell(activeMineCell);
+            EnemyMovement victim = GetEnemyAtCell(activeMineCell);
 
             if (victim != null && victim.health.currentHP > 0)
             {
@@ -1286,7 +1286,7 @@ public class TurnManager : MonoBehaviour
                 activeMineCell = new Vector3Int(-999, -999, -999);
 
                 // Mayınla ölen düşmanlar için coin drop ve perk callback
-                List<EnemyAI> mineKills = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
+                List<EnemyMovement> mineKills = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
                 foreach (var deadEnemy in mineKills)
                     coinService.ProcessKillRewards(deadEnemy);
 
@@ -1300,9 +1300,9 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        List<EnemyAI> readyToBossAttack = new List<EnemyAI>();
-        List<EnemyAI> readyToAoEAttack = new List<EnemyAI>();
-        List<EnemyAI> readyToMeleeAttack = new List<EnemyAI>();
+        List<EnemyMovement> readyToBossAttack = new List<EnemyMovement>();
+        List<EnemyMovement> readyToAoEAttack = new List<EnemyMovement>();
+        List<EnemyMovement> readyToMeleeAttack = new List<EnemyMovement>();
         List<WarlockEnemyAI> readyWarlockAttack1 = new List<WarlockEnemyAI>();
         List<WarlockEnemyAI> readyWarlockAttack2 = new List<WarlockEnemyAI>();
 
@@ -1310,10 +1310,10 @@ public class TurnManager : MonoBehaviour
         {
             if (e != null && e.skipTurns <= 0)
             {
-                if (e.enemyBehavior == EnemyAI.EnemyBehavior.Boss && SpawnerBossAI.instance != null && SpawnerBossAI.instance.readyToExplodeThisTurn) readyToBossAttack.Add(e);
-                else if (e.enemyBehavior == EnemyAI.EnemyBehavior.TelegraphAoE && e.isChargingAttack) readyToAoEAttack.Add(e);
-                else if (e.enemyBehavior == EnemyAI.EnemyBehavior.Melee && IsNeighbor(e.GetCurrentCellPosition(), player.GetCurrentCellPosition())) readyToMeleeAttack.Add(e);
-                else if (e.enemyBehavior == EnemyAI.EnemyBehavior.Warlock)
+                if (e.IsBoss && SpawnerBossAI.instance != null && SpawnerBossAI.instance.readyToExplodeThisTurn) readyToBossAttack.Add(e);
+                else if (e.IsBruiser && e.isChargingAttack) readyToAoEAttack.Add(e);
+                else if (e.IsMelee && IsNeighbor(e.GetCurrentCellPosition(), player.GetCurrentCellPosition())) readyToMeleeAttack.Add(e);
+                else if (e.IsWarlock)
                 {
                     WarlockEnemyAI warlock = e.GetComponent<WarlockEnemyAI>();
                     if (warlock != null)
@@ -1360,7 +1360,7 @@ public class TurnManager : MonoBehaviour
         if (readyToAoEAttack.Count > 0)
         {
             List<Coroutine> aoeCoroutines = new List<Coroutine>();
-            foreach (var aoeEnemy in readyToAoEAttack) aoeCoroutines.Add(StartCoroutine(aoeEnemy.ExecuteAoEAttackCoroutine(player)));
+            foreach (var aoeEnemy in readyToAoEAttack) { var bruiser = aoeEnemy.GetComponent<BruiserEnemyAI>(); if (bruiser != null) aoeCoroutines.Add(StartCoroutine(bruiser.ExecuteAoEAttackCoroutine(player))); }
             foreach (var coroutine in aoeCoroutines) yield return coroutine;
             yield return new WaitForSeconds(0.2f);
         }
@@ -1376,7 +1376,7 @@ public class TurnManager : MonoBehaviour
         {
             foreach (var e in enemies)
             {
-                if (e != null && e.enemyBehavior == EnemyAI.EnemyBehavior.Warlock)
+                if (e != null && e.IsWarlock)
                 {
                     WarlockEnemyAI warlock = e.GetComponent<WarlockEnemyAI>();
                     if (warlock != null)
@@ -1417,14 +1417,14 @@ public class TurnManager : MonoBehaviour
     }
     public bool GetSkipDiceVisuals() => manualDiceSkip;
 
-    private IEnumerator MultiAttack(List<EnemyAI> targets)
+    private IEnumerator MultiAttack(List<EnemyMovement> targets)
     {
 
         bool hasBioMag = RunManager.instance.activePerks.Exists(p => p is BioMagnetismPerk);
         if (hasBioMag)
         {
             Vector3Int pCell = player.GetCurrentCellPosition();
-            List<EnemyAI> pullTargets = new List<EnemyAI>();
+            List<EnemyMovement> pullTargets = new List<EnemyMovement>();
             foreach (var e in enemies)
             {
                 if (e != null && e.health.currentHP > 0 && DistanceCube(e.GetCurrentCellPosition(), pCell) == 2f) pullTargets.Add(e);
@@ -1458,7 +1458,7 @@ public class TurnManager : MonoBehaviour
                 // Mayın kontrolü: çekilen düşman mayının üstüne geldiyse hemen patlat
                 if (activeMineCell.y != -999)
                 {
-                    EnemyAI mineVictim = GetEnemyAtCell(activeMineCell);
+                    EnemyMovement mineVictim = GetEnemyAtCell(activeMineCell);
                     if (mineVictim != null && mineVictim.health.currentHP > 0)
                     {
                         var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
@@ -1471,7 +1471,7 @@ public class TurnManager : MonoBehaviour
                         if (activeMineObj != null) Destroy(activeMineObj);
                         activeMineCell = new Vector3Int(-999, -999, -999);
 
-                        List<EnemyAI> mineKills = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
+                        List<EnemyMovement> mineKills = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
                         foreach (var deadEnemy in mineKills)
                             coinService.ProcessKillRewards(deadEnemy);
                         UpdateCoinUI();
@@ -1592,7 +1592,7 @@ public class TurnManager : MonoBehaviour
         isAttackAnimationPlaying = false;
         hexesMovedThisTurn = 0;
 
-        List<EnemyAI> knockedEnemies = new List<EnemyAI>(); List<EnemyAI> deadEnemiesThisTurn = new List<EnemyAI>();
+        List<EnemyMovement> knockedEnemies = new List<EnemyMovement>(); List<EnemyMovement> deadEnemiesThisTurn = new List<EnemyMovement>();
 
         var voodooPerk = RunManager.instance.activePerks.Find(p => p is VoodooParasitePerk) as VoodooParasitePerk;
         var retributionPerk = RunManager.instance.activePerks.Find(p => p is RetributionSplicerPerk) as RetributionSplicerPerk;
@@ -1627,7 +1627,7 @@ public class TurnManager : MonoBehaviour
             {
                 // Hayatta olanları candan (büyükten küçüğe) sıralayıp liste haline getir
                 var others = enemies.Where(e => e != null && e != enemy && e.health.currentHP > 0
-                                            && e.enemyBehavior != EnemyAI.EnemyBehavior.Boss)
+                                            && !e.IsBoss)
                                     .OrderByDescending(e => e.health.currentHP)
                                     .ToList();
 
@@ -1652,7 +1652,7 @@ public class TurnManager : MonoBehaviour
                 rawTargetCell = HexGridUtils.GetKnockbackCellRanged(e.GetCurrentCellPosition(), player.GetCurrentCellPosition());
             else
                 rawTargetCell = GetRawOppositeCell(e.GetCurrentCellPosition(), player.GetCurrentCellPosition());
-            EnemyAI enemyBehind = GetEnemyAtCell(rawTargetCell);
+            EnemyMovement enemyBehind = GetEnemyAtCell(rawTargetCell);
 
             if (enemyBehind != null)
             {
@@ -1719,13 +1719,13 @@ public class TurnManager : MonoBehaviour
 
         foreach (var e in knockedEnemies) if (e != null && payload.triggerExplosion) TriggerExplosion(e.GetCurrentCellPosition(), payload.explosionDamagePercent, false);
 
-        List<EnemyAI> deadFromSpikes = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
+        List<EnemyMovement> deadFromSpikes = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
         foreach (var deadEnemy in deadFromSpikes)
             coinService.ProcessKillRewards(deadEnemy);
         UpdateCoinUI();
         if (CleanupDeadAndCheckLevelClear()) yield break;
 
-        List<EnemyAI> spikedEnemies = new List<EnemyAI>(); bool anyoneBounced = false;
+        List<EnemyMovement> spikedEnemies = new List<EnemyMovement>(); bool anyoneBounced = false;
         foreach (var s in knockedEnemies) if (s != null && LevelGenerator.instance.hazardCells.Contains(s.GetCurrentCellPosition())) spikedEnemies.Add(s);
 
         if (spikedEnemies.Count > 0)
@@ -1764,15 +1764,15 @@ public class TurnManager : MonoBehaviour
 
         if (didRecoil)
         {
-            List<EnemyAI> allAdjacent = GetAdjacentEnemies(player.GetCurrentCellPosition());
-            List<EnemyAI> nextTargets = allAdjacent.Where(e => e != null && e.health.currentHP > 0).ToList();
+            List<EnemyMovement> allAdjacent = GetAdjacentEnemies(player.GetCurrentCellPosition());
+            List<EnemyMovement> nextTargets = allAdjacent.Where(e => e != null && e.health.currentHP > 0).ToList();
             if (nextTargets.Count > 0) yield return StartCoroutine(MultiAttack(nextTargets));
         }
         finalDamage = payload.GetFinalDamage();
         RunManager.instance.totalDamageDealt += finalDamage; // Toplam hasarı ekle
     }
 
-    private IEnumerator EnemyAttackCoroutine(List<EnemyAI> attackers)
+    private IEnumerator EnemyAttackCoroutine(List<EnemyMovement> attackers)
     {
         attackers.RemoveAll(a => a.skipTurns > 0);
         if (attackers.Count == 0) { yield break; }
@@ -1851,7 +1851,7 @@ public class TurnManager : MonoBehaviour
         return ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(cell);
     }
 
-    public EnemyAI GetEnemyAtCell(Vector3Int cell)
+    public EnemyMovement GetEnemyAtCell(Vector3Int cell)
     {
         foreach (var e in enemies) if (e != null && e.health.currentHP > 0 && e.GetCurrentCellPosition() == cell) return e;
         return null;
@@ -1859,9 +1859,9 @@ public class TurnManager : MonoBehaviour
 
     private Vector3Int GetRawOppositeCell(Vector3Int centerCell, Vector3Int awayFromCell) => HexGridUtils.GetRawOppositeCell(centerCell, awayFromCell);
 
-    public List<EnemyAI> GetAdjacentEnemies(Vector3Int playerCell)
+    public List<EnemyMovement> GetAdjacentEnemies(Vector3Int playerCell)
     {
-        List<EnemyAI> adjacentList = new List<EnemyAI>();
+        List<EnemyMovement> adjacentList = new List<EnemyMovement>();
         foreach (var enemy in enemies) if (enemy != null && enemy.health.currentHP > 0) if (IsNeighbor(playerCell, enemy.GetCurrentCellPosition())) adjacentList.Add(enemy);
         return adjacentList;
     }

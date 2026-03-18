@@ -16,7 +16,12 @@
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -name *rest* -o -name *Rest* -o -name *pause* -o -name *Pause*)",
       "Bash(ls -la /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
       "Bash(grep -B 2 -A 10 \"ResetForNewRun\\\\|DontDestroyOnLoad\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
-      "Bash(grep -n \"DontDestroyOnLoad\\\\|Singleton\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Map/*.cs)"
+      "Bash(grep -n \"DontDestroyOnLoad\\\\|Singleton\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Map/*.cs)",
+      "Bash(grep -E \"\\\\.cs$\")",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes -name *.unity -type f)",
+      "Bash(grep -r SceneManager.LoadScene /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts --include=*.cs)",
+      "Bash(grep -l \"GlobalVolume\\\\|Volume.*Profile\\\\|Vignette\\\\|Bloom\\\\|ChromaticAberration\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/*.unity)",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -name *VFX* -o -name *vfx* -o -name *Impact* -o -name *Lightning* -o -name *Explosion*)"
     ]
   }
 }

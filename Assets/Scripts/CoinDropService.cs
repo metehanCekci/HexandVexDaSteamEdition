@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class CoinDropService
 {
-    public int CalculateAndAwardCoins(EnemyAI enemy)
+    public int CalculateAndAwardCoins(EnemyMovement enemy)
     {
-        if (enemy.enemyBehavior == EnemyAI.EnemyBehavior.Totem) return 0;
+        if (enemy.IsTotem) return 0;
 
         RunManager rm = RunManager.instance;
         bool isBossRoom = rm.currentLevel % 5 == 0;
@@ -12,7 +12,7 @@ public class CoinDropService
 
         if (isBossRoom)
         {
-            if (enemy.enemyBehavior == EnemyAI.EnemyBehavior.Boss)
+            if (enemy.IsBoss)
                 coinDrop = 20;
             else
                 coinDrop = Random.Range(1, 3); // Minyonlar da az coin versin
@@ -40,7 +40,7 @@ public class CoinDropService
         return coinDrop;
     }
 
-    public void ProcessKillRewards(EnemyAI deadEnemy)
+    public void ProcessKillRewards(EnemyMovement deadEnemy)
     {
         CalculateAndAwardCoins(deadEnemy);
         foreach (var p in RunManager.instance.activePerks)

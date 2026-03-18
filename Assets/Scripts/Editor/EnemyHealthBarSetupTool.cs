@@ -53,13 +53,13 @@ public class EnemyHealthBarSetupTool
             if (oldBar != null) Object.DestroyImmediate(oldBar);
 
             // Düşman tipine göre boyutlar
-            EnemyAI ai = prefabRoot.GetComponent<EnemyAI>();
+            EnemyMovement ai = prefabRoot.GetComponent<EnemyMovement>();
             float barW = 0.55f, barH = 0.1f, offY = 0.18f, pad = 0.012f;
-            if (ai != null && ai.enemyBehavior == EnemyAI.EnemyBehavior.Boss)
+            if (ai != null && ai.IsBoss)
             {
                 barW = 0.8f; barH = 0.12f; offY = 0.6f; pad = 0.015f;
             }
-            else if (ai != null && ai.enemyBehavior == EnemyAI.EnemyBehavior.Totem)
+            else if (ai != null && ai.IsTotem)
             {
                 barW = 0.4f; barH = 0.07f; offY = 0.25f; pad = 0.008f;
             }

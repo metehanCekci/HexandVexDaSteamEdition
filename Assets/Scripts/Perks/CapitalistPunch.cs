@@ -8,7 +8,7 @@ public class CapitalistPunchPerk : BasePerk
     {
         if (RunManager.instance == null) return;
 
-        int bonus = RunManager.instance.currentGold / 10;
+        int bonus = RunManager.instance.currentGold / 5; // Her 5 altın için +1 hasar
         if (bonus > 0)
         {
             for (int i = 0; i < payload.diceRolls.Count; i++)

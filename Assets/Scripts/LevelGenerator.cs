@@ -396,7 +396,7 @@ public class LevelGenerator : MonoBehaviour
 
             GameObject newEnemyObj = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
             if (prefabToSpawn == warlockEnemyPrefab) spawnedWarlockCount++;
-            EnemyAI enemyAI = newEnemyObj.GetComponent<EnemyAI>();
+            EnemyMovement enemyAI = newEnemyObj.GetComponent<EnemyMovement>();
             enemyAI.groundMap = this.groundMap;
 
             float randomMultiplier = Random.Range(0.8f, 1.25f);
@@ -570,14 +570,14 @@ public class LevelGenerator : MonoBehaviour
 
         availableSpawnCells = availableSpawnCells.OrderByDescending(c => Vector3.Distance(groundMap.GetCellCenterWorld(c), worldCenter)).ToList();
 
-        EnemyAI spawnedBossAI = null;
+        EnemyMovement spawnedBossAI = null;
         if (bossPrefab != null && availableSpawnCells.Count > 0)
         {
             Vector3Int bossCell = availableSpawnCells[0];
             Vector3 bossPos = groundMap.GetCellCenterWorld(bossCell);
 
             GameObject bossObj = Instantiate(bossPrefab, bossPos, Quaternion.identity);
-            EnemyAI bossAI = bossObj.GetComponent<EnemyAI>();
+            EnemyMovement bossAI = bossObj.GetComponent<EnemyMovement>();
 
             // Boss sahnesinde legendary multiplier'ı uyguLAMA, ama normal düşmanın 3 katı HP'ye sahip
             float bossHealth = LevelGenerator.instance.CurrentEnemyHealth * 2f;
@@ -602,7 +602,7 @@ public class LevelGenerator : MonoBehaviour
                 Vector3 totemPos = groundMap.GetCellCenterWorld(totemCell);
 
                 GameObject totemObj = Instantiate(totemPrefab, totemPos, Quaternion.identity);
-                EnemyAI totemAI = totemObj.GetComponent<EnemyAI>();
+                EnemyMovement totemAI = totemObj.GetComponent<EnemyMovement>();
 
                 totemAI.health.maxHP = 1;
                 totemAI.health.currentHP = 1;
@@ -627,7 +627,7 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
-    private IEnumerator DelayedBossIntro(EnemyAI boss)
+    private IEnumerator DelayedBossIntro(EnemyMovement boss)
     {
         yield return new WaitForSeconds(0.8f);
         BossIntroSequence.instance.PlayIntro(boss);
