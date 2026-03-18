@@ -402,9 +402,6 @@ public class WarlockEnemyAI : MonoBehaviour
         {
             animator.SetBool("IsCharging", false);
             animator.SetBool("IsAttacking", false);
-            // Animator'ü zorla Idle state'e döndür — charge animasyonunda takılı kalmayı önler
-            animator.Play("Idle", 0, 0f);
-            animator.Update(0f);
         }
         ClearAllWarnings();
         cyclePhase = 0;

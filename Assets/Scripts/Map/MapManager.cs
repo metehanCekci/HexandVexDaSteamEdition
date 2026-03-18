@@ -885,16 +885,13 @@ public class MapManager : MonoBehaviour
     }
 
     /// <summary>
-    /// ActivePerkBar, DiceSkipController gibi savaş UI'larını göster/gizle.
+    /// ActivePerkBar gibi savaş UI'larını göster/gizle.
     /// Map'te gizli, savaşta görünür.
     /// </summary>
     private void SetCombatUIVisible(bool visible)
     {
         if (ActivePerkBar.instance != null && ActivePerkBar.instance.barCanvas != null)
             ActivePerkBar.instance.barCanvas.gameObject.SetActive(visible);
-
-        if (DiceSkipController.instance != null)
-            DiceSkipController.instance.gameObject.SetActive(visible);
     }
 
     /// <summary>
