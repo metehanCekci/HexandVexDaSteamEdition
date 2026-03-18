@@ -21,7 +21,11 @@
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes -name *.unity -type f)",
       "Bash(grep -r SceneManager.LoadScene /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts --include=*.cs)",
       "Bash(grep -l \"GlobalVolume\\\\|Volume.*Profile\\\\|Vignette\\\\|Bloom\\\\|ChromaticAberration\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/*.unity)",
-      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -name *VFX* -o -name *vfx* -o -name *Impact* -o -name *Lightning* -o -name *Explosion*)"
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -name *VFX* -o -name *vfx* -o -name *Impact* -o -name *Lightning* -o -name *Explosion*)",
+      "Bash(grep -r \"skipTurn\\\\|SkipTurn\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets --include=*.prefab)",
+      "Bash(grep -rn \"warningCells\\\\|DrawWarningTile\\\\|warning.*pattern\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes -name *.unity)",
+      "Bash(grep -o \"SkipTurn\\\\|skipButton\\\\|Skip Turn\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/*.unity)"
     ]
   }
 }

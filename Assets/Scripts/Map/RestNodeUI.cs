@@ -41,13 +41,13 @@ public class RestNodeUI : MonoBehaviour
 
         Time.timeScale = 0f;
 
-        // Heal miktarını hesapla
-        int healAmount = 5;
+        // Heal miktarını hesapla — canı tamamen doldur
+        int healAmount = 999;
         if (RunManager.instance != null)
-            healAmount = Mathf.Max(1, RunManager.instance.playerMaxHealth / 3);
+            healAmount = RunManager.instance.playerMaxHealth - RunManager.instance.playerCurrentHealth;
 
         if (titleText != null) titleText.text = "Campfire";
-        if (restButtonText != null) restButtonText.text = $"Rest\n(Heal up)\n<size=70%>+{healAmount} HP</size>";
+        if (restButtonText != null) restButtonText.text = "Rest\n(Heal up)\n<size=70%>Full HP</size>";
         if (trainButtonText != null) trainButtonText.text = "Train\n(Upgrade Perk)";
 
         bool canTrain = false;

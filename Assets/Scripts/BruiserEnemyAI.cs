@@ -64,25 +64,32 @@ public class BruiserEnemyAI : MonoBehaviour
 
         Vector3Int cell = movement.GetCurrentCellPosition();
 
-        // Charge attack check
+        // Charge attack check — only attack if the line actually covers the player
         if (!isFirstTurn && currentCooldown <= 0 && movement.Distance(cell, playerCell) <= aoeAttackRange)
         {
-            isChargingAttack = true;
-            movement.hasLockedTarget = false;
-            if (visuals != null) visuals.SetArrowVisibility(false);
-            if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
-            if (movement.animator != null) movement.animator.SetBool("IsCharging", true);
+            List<Vector3Int> candidateCells = GetLineOfCells(cell, playerCell, aoeAttackRange);
 
-            warningCells = GetLineOfCells(cell, playerCell, aoeAttackRange);
-
-            if (TurnManager.instance != null)
+            // Only charge if the player is actually on the attack line
+            if (candidateCells.Contains(playerCell))
             {
-                foreach (var wCell in warningCells)
+                isChargingAttack = true;
+                movement.hasLockedTarget = false;
+                if (visuals != null) visuals.SetArrowVisibility(false);
+                if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
+                if (movement.animator != null) movement.animator.SetBool("IsCharging", true);
+
+                warningCells = candidateCells;
+
+                if (TurnManager.instance != null)
                 {
-                    TurnManager.instance.DrawWarningTile(wCell);
+                    foreach (var wCell in warningCells)
+                    {
+                        TurnManager.instance.DrawWarningTile(wCell);
+                    }
                 }
+                return;
             }
-            return;
+            // Player not on the line — fall through to movement instead of wasting attack
         }
         else
         {

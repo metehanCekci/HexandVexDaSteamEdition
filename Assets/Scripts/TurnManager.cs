@@ -56,6 +56,7 @@ public class TurnManager : MonoBehaviour
     private PerkCombatProcessor perkProcessor;
     [HideInInspector] public bool isLevelClearTriggered = false;
     private bool manualDiceSkip = false;
+    [HideInInspector] public bool holdingSkip = false;
     public bool isPlayerTurn = true;
     public bool hasAttackedThisTurn = false;
     public bool isAttackAnimationPlaying = false;
@@ -147,6 +148,9 @@ public class TurnManager : MonoBehaviour
         // fastMode veya manuel skip aktifse zarları gizle
         if (RunManager.instance != null)
             skipDiceVisuals = RunManager.instance.fastMode || manualDiceSkip;
+
+        // Hold-to-skip: basılı tutunca her tur otomatik skip at
+        if (holdingSkip && isPlayerTurn) SkipTurn();
 
         // Mitsuri Blade: turu sırasında istediği zaman düşmana tıklayarak saldırabilir
         if (isMitsuriTargeting)

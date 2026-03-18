@@ -69,6 +69,7 @@ public class PerkInventoryUI : MonoBehaviour
     private const float HOVER_SCALE = 1.08f;
     private const float HOVER_LERP_SPEED = 12f;
 
+
     void Awake()
     {
         if (instance != null && instance != this)
@@ -78,6 +79,10 @@ public class PerkInventoryUI : MonoBehaviour
         }
         instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // Scene'deki objenin referansları boşsa BuildUI ile oluştur
+        // böylece Show()'da tekrar oluşturup duplikasyon yapmaz
+        if (canvasGO == null) BuildUI();
     }
 
     void Start()
@@ -1006,23 +1011,6 @@ public class PerkInventoryUI : MonoBehaviour
                 prioTMP.raycastTarget = false;
             }
 
-            // İsim etiketi
-            GameObject nameGO = new GameObject("Name", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-            nameGO.transform.SetParent(slot.transform, false);
-            RectTransform nameRT = nameGO.GetComponent<RectTransform>();
-            nameRT.anchorMin = new Vector2(0.5f, 1f);
-            nameRT.anchorMax = new Vector2(0.5f, 1f);
-            nameRT.pivot = new Vector2(0.5f, 1f);
-            nameRT.anchoredPosition = new Vector2(0f, -(SLOT_SIZE + 1f));
-            nameRT.sizeDelta = new Vector2(SLOT_SIZE + 20f, 16f);
-            TextMeshProUGUI nameTMP = nameGO.GetComponent<TextMeshProUGUI>();
-            nameTMP.text = perk.perkName;
-            nameTMP.fontSize = 9;
-            nameTMP.alignment = TextAlignmentOptions.Center;
-            nameTMP.color = rarityColor;
-            nameTMP.enableWordWrapping = false;
-            nameTMP.overflowMode = TextOverflowModes.Ellipsis;
-            nameTMP.raycastTarget = false;
 
             // Event'ler
             EventTrigger trigger = iconGO.AddComponent<EventTrigger>();

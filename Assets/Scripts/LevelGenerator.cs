@@ -173,8 +173,8 @@ public class LevelGenerator : MonoBehaviour
 
         bool isPostBossLevel = RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1;
         bool isEliteNode = RunManager.instance.currentNodeType == MapNodeType.EliteCombat;
-        int currentRadius = baseMapRadius + (RunManager.instance.currentLevel / 6);
-        int enemyCountToSpawn = 3 + (RunManager.instance.currentLevel / 6);
+        int currentRadius = Mathf.Min(baseMapRadius + (RunManager.instance.currentLevel / 6), baseMapRadius + 3); // Max radius cap (stage ~8 civarında durur)
+        int enemyCountToSpawn = Mathf.Min(3 + (RunManager.instance.currentLevel / 6), 6); // Max 6 düşman limiti
 
         // Elite node'larda daha fazla ve güçlü düşman
         if (isEliteNode) enemyCountToSpawn += 2;
@@ -491,7 +491,7 @@ public class LevelGenerator : MonoBehaviour
         }
         TurnManager.instance.enemies.Clear();
 
-        int arenaRadius = baseMapRadius + 1 + (RunManager.instance.currentLevel / 10);
+        int arenaRadius = Mathf.Min(baseMapRadius + 1 + (RunManager.instance.currentLevel / 10), baseMapRadius + 4); // Boss arena radius cap
 
         for (int x = -arenaRadius; x <= arenaRadius; x++)
         {

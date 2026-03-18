@@ -103,6 +103,9 @@ public static class MapGenerator
         // ─── Her oda tipinden en az 1 garanti ───
         EnforceMinimumRoomTypes(map, totalRows);
 
+        // ─── SON GÜVENLİK: Ardışık ödül yasağı (tüm post-processing sonrası) ───
+        EnforceNoConsecutiveRewards(map);
+
         return map;
     }
 
@@ -186,7 +189,7 @@ public static class MapGenerator
             // ─── Bu row'daki node'lara tip ata ───
             if (r >= 2 && r < totalRows)
             {
-                AssignRowTypesPathAware(rowNodes, config, r, totalRows, incomingMaxStreak);
+                AssignRowTypesPathAware(map, rowNodes, config, r, totalRows, incomingMaxStreak);
             }
 
             // ─── Streak'leri güncelle ───
@@ -217,6 +220,10 @@ public static class MapGenerator
         // ─── SON GÜVENLİK: Çoklu row'da aynı tip ASLA olamaz ───
         // Post-processing kuralları tip değiştirebilir, bu yüzden en sonda tekrar kontrol
         EnforceNoDuplicatesInRow(map, config, totalRows);
+
+        // ─── SON GÜVENLİK 2: Ardışık ödül yasağını tekrar uygula ───
+        // EnforceNoDuplicatesInRow ödül eklemiş olabilir
+        EnforceNoConsecutiveRewards(map);
     }
 
     /// <summary>
@@ -225,7 +232,7 @@ public static class MapGenerator
     /// Seçimin her zaman anlamı olmalı.
     /// </summary>
     private static void AssignRowTypesPathAware(
-        List<MapNode> rowNodes, MapLayerData config,
+        MapData map, List<MapNode> rowNodes, MapLayerData config,
         int row, int totalRows,
         Dictionary<int, int> incomingMaxStreak)
     {
@@ -253,12 +260,21 @@ public static class MapGenerator
         // ─── Tek node → basit karar ───
         if (count == 1)
         {
+            // Parent'lardan biri ödül mü kontrol et — ödül arkasına ödül koyma
+            bool anyParentReward = HasRewardParent(map, rowNodes[0]);
+
             int streak = incomingMaxStreak.ContainsKey(rowNodes[0].id) ? incomingMaxStreak[rowNodes[0].id] : 0;
-            if (streak >= 2)
+            if (anyParentReward)
+            {
+                // Parent ödülse → zorunlu savaş
+                rowNodes[0].nodeType = Random.value < config.eliteChance * 2f
+                    ? MapNodeType.EliteCombat : MapNodeType.Combat;
+            }
+            else if (streak >= 2)
             {
                 rowNodes[0].nodeType = PickDiverseRewardType(config, canRest, new List<MapNodeType>());
             }
-            else if (streak == 1 && Random.value < 0.2f)
+            else if (streak == 1 && Random.value < 0.45f)
             {
                 rowNodes[0].nodeType = PickDiverseRewardType(config, canRest, new List<MapNodeType>());
             }
@@ -303,7 +319,8 @@ public static class MapGenerator
         foreach (var node in rowNodes)
         {
             int streak = incomingMaxStreak.ContainsKey(node.id) ? incomingMaxStreak[node.id] : 0;
-            if (streak >= 2)
+            bool parentReward = HasRewardParent(map, node);
+            if (streak >= 2 && !parentReward)
             {
                 node.nodeType = PickDiverseRewardType(config, canRest, assignedTypes);
                 assignedTypes.Add(node.nodeType);
@@ -314,11 +331,24 @@ public static class MapGenerator
         foreach (var node in rowNodes)
         {
             int streak = incomingMaxStreak.ContainsKey(node.id) ? incomingMaxStreak[node.id] : 0;
-            if (streak >= 2) continue; // Zaten atandı
+            if (streak >= 2 && !HasRewardParent(map, node)) continue; // Zaten atandı
 
+            bool parentReward = HasRewardParent(map, node);
+
+            // Parent ödülse → kesinlikle savaş
+            if (parentReward)
+            {
+                if (assignedTypes.Contains(MapNodeType.Combat) && !assignedTypes.Contains(MapNodeType.EliteCombat))
+                    node.nodeType = MapNodeType.EliteCombat;
+                else if (assignedTypes.Contains(MapNodeType.EliteCombat) && !assignedTypes.Contains(MapNodeType.Combat))
+                    node.nodeType = MapNodeType.Combat;
+                else
+                    node.nodeType = Random.value < config.eliteChance * 2f ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                assignedTypes.Add(node.nodeType);
+            }
             // Ödül verilmemiş node'a ne verelim?
-            // Streak 1 + çoklu row → %30 şansla ödül (ama farklı tip)
-            if (streak == 1 && Random.value < 0.30f && !AllRewardsUsed(assignedTypes, canRest))
+            // Streak 1 + çoklu row → %45 şansla ödül (ama farklı tip)
+            else if (streak == 1 && Random.value < 0.45f && !AllRewardsUsed(assignedTypes, canRest))
             {
                 node.nodeType = PickDiverseRewardType(config, canRest, assignedTypes);
                 assignedTypes.Add(node.nodeType);
@@ -327,21 +357,25 @@ public static class MapGenerator
             {
                 // Risk node: combat veya elite — ama zaten atanmış tipten farklı
                 if (assignedTypes.Contains(MapNodeType.Combat) && !assignedTypes.Contains(MapNodeType.EliteCombat))
-                {
                     node.nodeType = MapNodeType.EliteCombat;
-                }
                 else if (assignedTypes.Contains(MapNodeType.EliteCombat) && !assignedTypes.Contains(MapNodeType.Combat))
-                {
                     node.nodeType = MapNodeType.Combat;
-                }
                 else
-                {
-                    node.nodeType = Random.value < config.eliteChance * 2f
-                        ? MapNodeType.EliteCombat : MapNodeType.Combat;
-                }
+                    node.nodeType = Random.value < config.eliteChance * 2f ? MapNodeType.EliteCombat : MapNodeType.Combat;
                 assignedTypes.Add(node.nodeType);
             }
         }
+    }
+
+    /// <summary>Bu node'un parent'larından herhangi biri ödül mü?</summary>
+    private static bool HasRewardParent(MapData map, MapNode node)
+    {
+        foreach (var pNode in map.nodes)
+        {
+            if (pNode.childIds.Contains(node.id) && rewardTypes.Contains(pNode.nodeType))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Tüm ödül tipleri kullanıldı mı?</summary>
@@ -552,19 +586,40 @@ public static class MapGenerator
                     else
                     {
                         // Normal row: ödül veya risk — kullanılmamış olanı seç
-                        // Önce ödül tipleri (çeşitlilik için)
-                        if (!seen.Contains(MapNodeType.Shop))
-                            node.nodeType = MapNodeType.Shop;
-                        else if (!seen.Contains(MapNodeType.PerkSelection))
-                            node.nodeType = MapNodeType.PerkSelection;
-                        else if (canRest && !seen.Contains(MapNodeType.Rest))
-                            node.nodeType = MapNodeType.Rest;
-                        else if (!seen.Contains(MapNodeType.EliteCombat))
-                            node.nodeType = MapNodeType.EliteCombat;
-                        else if (!seen.Contains(MapNodeType.Combat))
-                            node.nodeType = MapNodeType.Combat;
+                        // Ama önce parent'lardan biri ödül mü kontrol et — ardışık ödül yasağını korumak için
+                        bool parentIsReward = false;
+                        foreach (var pNode in map.nodes)
+                        {
+                            if (pNode.childIds.Contains(node.id) && rewardTypes.Contains(pNode.nodeType))
+                            { parentIsReward = true; break; }
+                        }
+
+                        if (parentIsReward)
+                        {
+                            // Parent ödülse → sadece risk tipi seç
+                            if (!seen.Contains(MapNodeType.EliteCombat))
+                                node.nodeType = MapNodeType.EliteCombat;
+                            else if (!seen.Contains(MapNodeType.Combat))
+                                node.nodeType = MapNodeType.Combat;
+                            else
+                                node.nodeType = MapNodeType.Combat;
+                        }
                         else
-                            node.nodeType = MapNodeType.Combat;
+                        {
+                            // Parent risk → ödül tipleri de seçilebilir
+                            if (!seen.Contains(MapNodeType.Shop))
+                                node.nodeType = MapNodeType.Shop;
+                            else if (!seen.Contains(MapNodeType.PerkSelection))
+                                node.nodeType = MapNodeType.PerkSelection;
+                            else if (canRest && !seen.Contains(MapNodeType.Rest))
+                                node.nodeType = MapNodeType.Rest;
+                            else if (!seen.Contains(MapNodeType.EliteCombat))
+                                node.nodeType = MapNodeType.EliteCombat;
+                            else if (!seen.Contains(MapNodeType.Combat))
+                                node.nodeType = MapNodeType.Combat;
+                            else
+                                node.nodeType = MapNodeType.Combat;
+                        }
                     }
                 }
                 seen.Add(node.nodeType);
@@ -828,11 +883,25 @@ public static class MapGenerator
 
             // Bu tip yok — uygun bir Combat node'u dönüştür
             // İlk ve son row'u (row 0, boss row) atla
+            // Ödül tipi ise: parent ve child'ları da ödül olmayan node seç
+            bool isRewardType = rewardTypes.Contains(reqType);
             MapNode bestCandidate = null;
             foreach (var node in map.nodes)
             {
                 if (node.nodeType != MapNodeType.Combat) continue;
                 if (node.row <= 0 || node.row >= totalRows) continue;
+                // Ardışık ödül yasağı: ödül tipiyse parent veya child ödülse atla
+                if (isRewardType)
+                {
+                    if (HasRewardParent(map, node)) continue;
+                    bool childReward = false;
+                    foreach (int cid in node.childIds)
+                    {
+                        MapNode c = map.GetNode(cid);
+                        if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
+                    }
+                    if (childReward) continue;
+                }
                 // Ortaya yakın row'ları tercih et
                 if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
                     bestCandidate = node;

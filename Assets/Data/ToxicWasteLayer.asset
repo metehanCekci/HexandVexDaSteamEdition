@@ -17,8 +17,8 @@ MonoBehaviour:
   minNodesPerRow: 1
   maxNodesPerRow: 3
   threeNodeChance: 0.15
-  shopChance: 0.2
-  perkChance: 0.2
+  shopChance: 0.15
+  perkChance: 0.25
   restChance: 0.1
   eliteChance: 0.1
   eventChance: 0
