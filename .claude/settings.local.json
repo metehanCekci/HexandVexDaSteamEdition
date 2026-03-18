@@ -25,7 +25,12 @@
       "Bash(grep -r \"skipTurn\\\\|SkipTurn\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets --include=*.prefab)",
       "Bash(grep -rn \"warningCells\\\\|DrawWarningTile\\\\|warning.*pattern\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes -name *.unity)",
-      "Bash(grep -o \"SkipTurn\\\\|skipButton\\\\|Skip Turn\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/*.unity)"
+      "Bash(grep -o \"SkipTurn\\\\|skipButton\\\\|Skip Turn\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/*.unity)",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition -type f \\\\\\(-name *Guide* -o -name *guide* \\\\\\))",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -type f -name *GuideBook*)",
+      "Bash(grep -E \"\\\\.\\(prefab|asset\\)$\")",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -name *.scene -o -name *.unity)",
+      "Bash(grep -r \"\\\\.Open\\(\\)\\\\|\\\\.Toggle\\(\\)\\\\|\\\\.Close\\(\\)\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts --include=*.cs)"
     ]
   }
 }

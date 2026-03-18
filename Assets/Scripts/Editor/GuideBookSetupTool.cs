@@ -60,7 +60,7 @@ public class GuideBookSetupTool : EditorWindow
 
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 10;
+        canvas.sortingOrder = 100;
 
         CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -116,7 +116,7 @@ public class GuideBookSetupTool : EditorWindow
 
         Canvas panelCanvas = panelGO.AddComponent<Canvas>();
         panelCanvas.overrideSorting = true;
-        panelCanvas.sortingOrder = 50;
+        panelCanvas.sortingOrder = 101;
         panelGO.AddComponent<GraphicRaycaster>();
 
         ui.bookPanel = panelRT;
@@ -156,7 +156,7 @@ public class GuideBookSetupTool : EditorWindow
         SetAnchorsStretchHorizontal(catBar, 10f, 10f, 62f, 32f);
         AddHorizontalGroup(catBar, TextAnchor.MiddleCenter, 4f);
 
-        string[] catLabels = { "COMBAT", "ENEMIES", "ITEMS", "PERKS", "MOVEMENT" };
+        string[] catLabels = { "MOVEMENT", "COMBAT", "ENEMIES", "SHOP", "IMPLANTS", "MAP" };
         ui.categoryButtons = new List<Button>();
         ui.categoryButtonTexts = new List<TMP_Text>();
 
@@ -398,13 +398,18 @@ public class GuideBookSetupTool : EditorWindow
             },
             new GuideBookPage
             {
-                title = "Items & Shop", category = "Items",
+                title = "The Shop", category = "Shop",
                 bodyText = "After each room, a Shop appears. Spend gold to buy items. Items provide powerful one-time or persistent effects. You can reroll the shop for a cost — rerolling gets more expensive each time. Gold is earned by killing enemies. Some perks increase gold drops."
             },
             new GuideBookPage
             {
-                title = "Perks & Level Up", category = "Perks",
-                bodyText = "After clearing a room, choose a perk. Perks are passive upgrades that persist for the run. Rarities: Common (grey) → Rare (blue) → Epic (purple) → Legendary (gold) → Secret. Many perks have multiple levels — you can pick the same perk again to upgrade it. Build synergies between perks for powerful combinations."
+                title = "Implants", category = "Implants",
+                bodyText = "After clearing a room, choose an implant. Implants are passive upgrades that persist for the run. Rarities: Common (grey) → Rare (blue) → Epic (purple) → Legendary (gold) → Secret. Many implants have multiple levels — you can pick the same implant again to upgrade it. Build synergies between implants for powerful combinations."
+            },
+            new GuideBookPage
+            {
+                title = "Map Overview", category = "Map",
+                bodyText = "The map shows your path through the dungeon. Each node is a room — combat, shop, campfire, or perk reward. Choose your route wisely. Campfires restore your HP. The map grows as you progress but caps out after a while."
             }
         };
 

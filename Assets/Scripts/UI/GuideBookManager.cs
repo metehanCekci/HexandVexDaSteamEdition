@@ -46,11 +46,9 @@ public class GuideBookManager : MonoBehaviour
 
     public void SetCategory(string category)
     {
-        // Aynı kategoriye tekrar tıklanırsa filtreyi kaldır (toggle)
-        if (activeCategory == category && !string.IsNullOrEmpty(category))
-            activeCategory = "";
-        else
-            activeCategory = category;
+        // Her zaman bir kategori seçili olsun — aynı kategoriye tekrar tıklama değiştirmez
+        if (activeCategory == category) return;
+        activeCategory = category;
 
         RebuildFilter();
         currentPageIndex = 0;
@@ -130,7 +128,7 @@ public class GuideBookManager : MonoBehaviour
         if (isOpen) return;
         isOpen = true;
         currentPageIndex = 0;
-        activeCategory = ""; // Açılışta tüm sayfaları göster
+        activeCategory = "Movement"; // Açılışta Movement seçili
 
         if (bookUI == null) bookUI = GetComponent<GuideBookUI>();
         if (bookUI == null) bookUI = FindFirstObjectByType<GuideBookUI>();
