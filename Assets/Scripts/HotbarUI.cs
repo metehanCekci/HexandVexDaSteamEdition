@@ -9,14 +9,30 @@ using System.Collections.Generic;
 /// Visual hotbar (action bar) that displays the player's inventory items during gameplay.
 /// Listens to GameEvents.OnInventoryChanged to refresh.
 /// Players can click slots or press 1-5 keys to use items.
-/// Builds its own UI from code — no prefab/scene setup needed.
+/// Tüm UI elemanları hierarchy'de — Inspector'dan düzenlenebilir.
+/// Tools > Setup Hotbar UI ile sahneye eklenir.
 /// </summary>
 public class HotbarUI : MonoBehaviour
 {
     public static HotbarUI instance;
 
+    [Header("Hierarchy References")]
+    [Tooltip("Hotbar'ın kendi Canvas'ı")]
+    public Canvas hotbarCanvas;
+
+    [Tooltip("Slot'ları tutan panel")]
+    public RectTransform hotbarPanel;
+
+    [Tooltip("Panel arka plan Image'ı")]
+    public Image panelBackground;
+
+    [Tooltip("Sahnedeki tüm slot'lar (sıralı). Ilk maxVisibleSlots tanesi aktif.")]
+    public List<HotbarSlotUI> slots = new List<HotbarSlotUI>();
+
     [Header("Config")]
+    [Tooltip("Başlangıçta görünen slot sayısı (OrganPouch ile artabilir)")]
     public int maxVisibleSlots = 3;
+
     public KeyCode[] hotkeys = new KeyCode[]
     {
         KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3,
@@ -30,25 +46,9 @@ public class HotbarUI : MonoBehaviour
     public Color occupiedSlotColor = new Color(0.25f, 0.25f, 0.25f, 0.9f);
     public Color hoverColor = new Color(0.4f, 0.4f, 0.2f, 1f);
 
-    // ─── Internal ───
-    private GameObject hotbarCanvas;
-    private GameObject hotbarPanel;
-    private List<HotbarSlotUI> slotUIs = new List<HotbarSlotUI>();
-
-    private bool uiBuilt = false;
-
     void Awake()
     {
-        if (instance == null)
-        {
-            instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
+        instance = this;
     }
 
     void OnDestroy()
@@ -58,7 +58,7 @@ public class HotbarUI : MonoBehaviour
 
     void Start()
     {
-        BuildUI();
+        ApplySlotVisibility();
         RefreshSlots();
     }
 
@@ -90,124 +90,31 @@ public class HotbarUI : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // UI CONSTRUCTION (Pure Code — No Prefabs)
+    // SLOT VISIBILITY
     // ═══════════════════════════════════════════
 
-    private void BuildUI()
+    private void ApplySlotVisibility()
     {
-        if (uiBuilt) return;
-        uiBuilt = true;
-
-        // ─── Canvas ───
-        hotbarCanvas = new GameObject("HotbarCanvas");
-        hotbarCanvas.transform.SetParent(transform, false);
-        Canvas canvas = hotbarCanvas.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 15; // Above game HUD, below map/shop
-        var scaler = hotbarCanvas.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        hotbarCanvas.AddComponent<GraphicRaycaster>();
-
-        // ─── Panel (bottom-center anchor) ───
-        hotbarPanel = new GameObject("HotbarPanel", typeof(RectTransform));
-        hotbarPanel.transform.SetParent(hotbarCanvas.transform, false);
-        RectTransform panelRT = hotbarPanel.GetComponent<RectTransform>();
-        panelRT.anchorMin = new Vector2(0.5f, 0f);
-        panelRT.anchorMax = new Vector2(0.5f, 0f);
-        panelRT.pivot = new Vector2(0.5f, 0f);
-        panelRT.anchoredPosition = new Vector2(0f, 12f);
-
-        float totalWidth = maxVisibleSlots * slotSize + (maxVisibleSlots - 1) * slotSpacing + 20f;
-        panelRT.sizeDelta = new Vector2(totalWidth, slotSize + 30f);
-
-        // Panel background
-        Image panelBG = hotbarPanel.AddComponent<Image>();
-        panelBG.color = new Color(0.08f, 0.08f, 0.08f, 0.85f);
-        panelBG.raycastTarget = false;
-
-        // ─── Create slots ───
-        slotUIs.Clear();
-        for (int i = 0; i < maxVisibleSlots; i++)
+        for (int i = 0; i < slots.Count; i++)
         {
-            CreateSlotUI(i);
+            if (slots[i] != null)
+                slots[i].gameObject.SetActive(i < maxVisibleSlots);
         }
+        ResizePanel();
     }
 
-    private void CreateSlotUI(int index)
+    private void ResizePanel()
     {
-        // Slot root
-        GameObject slotGO = new GameObject($"HotbarSlot_{index}", typeof(RectTransform));
-        slotGO.transform.SetParent(hotbarPanel.transform, false);
+        if (hotbarPanel == null) return;
+        float totalWidth = maxVisibleSlots * slotSize + (maxVisibleSlots - 1) * slotSpacing + 20f;
+        hotbarPanel.sizeDelta = new Vector2(totalWidth, hotbarPanel.sizeDelta.y);
 
-        RectTransform slotRT = slotGO.GetComponent<RectTransform>();
-        slotRT.anchorMin = new Vector2(0f, 0.5f);
-        slotRT.anchorMax = new Vector2(0f, 0.5f);
-        slotRT.pivot = new Vector2(0f, 0.5f);
-        slotRT.sizeDelta = new Vector2(slotSize, slotSize);
-
-        float startX = 10f;
-        slotRT.anchoredPosition = new Vector2(startX + index * (slotSize + slotSpacing), 5f);
-
-        // Background image
-        Image slotBG = slotGO.AddComponent<Image>();
-        slotBG.color = emptySlotColor;
-        slotBG.raycastTarget = true;
-
-        // Button
-        Button btn = slotGO.AddComponent<Button>();
-        int idx = index;
-        btn.onClick.AddListener(() => UseSlot(idx));
-        ColorBlock cb = btn.colors;
-        cb.normalColor = Color.white;
-        cb.highlightedColor = hoverColor;
-        cb.pressedColor = new Color(0.6f, 0.6f, 0.2f, 1f);
-        cb.disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
-        btn.colors = cb;
-
-        // Item icon
-        GameObject iconGO = new GameObject("Icon", typeof(RectTransform));
-        iconGO.transform.SetParent(slotGO.transform, false);
-        RectTransform iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin = new Vector2(0.1f, 0.1f);
-        iconRT.anchorMax = new Vector2(0.9f, 0.9f);
-        iconRT.offsetMin = Vector2.zero;
-        iconRT.offsetMax = Vector2.zero;
-        Image iconImg = iconGO.AddComponent<Image>();
-        iconImg.preserveAspect = true;
-        iconImg.raycastTarget = false;
-        iconImg.enabled = false;
-
-        // Keybind label (top-left corner)
-        GameObject keyGO = new GameObject("KeyLabel", typeof(RectTransform));
-        keyGO.transform.SetParent(slotGO.transform, false);
-        RectTransform keyRT = keyGO.GetComponent<RectTransform>();
-        keyRT.anchorMin = new Vector2(0f, 1f);
-        keyRT.anchorMax = new Vector2(0f, 1f);
-        keyRT.pivot = new Vector2(0f, 1f);
-        keyRT.anchoredPosition = new Vector2(3f, -2f);
-        keyRT.sizeDelta = new Vector2(20f, 18f);
-        TMP_Text keyText = keyGO.AddComponent<TextMeshProUGUI>();
-        keyText.text = (index + 1).ToString();
-        keyText.fontSize = 11;
-        keyText.alignment = TextAlignmentOptions.TopLeft;
-        keyText.color = new Color(0.6f, 0.6f, 0.6f, 0.8f);
-        keyText.raycastTarget = false;
-
-        // Tooltip handler
-        HotbarSlotTooltip tooltip = slotGO.AddComponent<HotbarSlotTooltip>();
-
-        HotbarSlotUI slotUI = new HotbarSlotUI
+        for (int i = 0; i < slots.Count; i++)
         {
-            root = slotGO,
-            background = slotBG,
-            button = btn,
-            iconImage = iconImg,
-            keyLabel = keyText,
-            tooltip = tooltip
-        };
-
-        slotUIs.Add(slotUI);
+            if (slots[i] == null) continue;
+            RectTransform slotRT = slots[i].GetComponent<RectTransform>();
+            slotRT.anchoredPosition = new Vector2(10f + i * (slotSize + slotSpacing), slotRT.anchoredPosition.y);
+        }
     }
 
     // ═══════════════════════════════════════════
@@ -217,12 +124,14 @@ public class HotbarUI : MonoBehaviour
     public void RefreshSlots()
     {
         if (InventoryManager.instance == null) return;
-        if (!uiBuilt) return;
+        if (slots == null || slots.Count == 0) return;
 
-        for (int i = 0; i < slotUIs.Count; i++)
+        for (int i = 0; i < slots.Count && i < maxVisibleSlots; i++)
         {
             BaseItem item = InventoryManager.instance.GetItem(i);
-            HotbarSlotUI slot = slotUIs[i];
+            HotbarSlotUI slot = slots[i];
+            if (slot == null) continue;
+            if (slot.background == null || slot.button == null || slot.iconImage == null) continue;
 
             if (item != null)
             {
@@ -240,17 +149,20 @@ public class HotbarUI : MonoBehaviour
                     slot.iconImage.enabled = false;
                 }
 
-                // Update tooltip data
-                slot.tooltip.itemName = item.itemName;
-                slot.tooltip.itemDesc = item.description;
-                slot.tooltip.hasItem = true;
+                if (slot.tooltip != null)
+                {
+                    slot.tooltip.itemName = item.itemName;
+                    slot.tooltip.itemDesc = item.description;
+                    slot.tooltip.hasItem = true;
+                }
             }
             else
             {
                 slot.background.color = emptySlotColor;
                 slot.button.interactable = false;
                 slot.iconImage.enabled = false;
-                slot.tooltip.hasItem = false;
+                if (slot.tooltip != null)
+                    slot.tooltip.hasItem = false;
             }
         }
     }
@@ -268,23 +180,10 @@ public class HotbarUI : MonoBehaviour
     public void AddSlot()
     {
         if (maxVisibleSlots >= 5) return;
-        if (!uiBuilt) return;
+        if (maxVisibleSlots >= slots.Count) return;
 
         maxVisibleSlots++;
-        CreateSlotUI(maxVisibleSlots - 1);
-
-        // Recalculate panel width
-        RectTransform panelRT = hotbarPanel.GetComponent<RectTransform>();
-        float totalWidth = maxVisibleSlots * slotSize + (maxVisibleSlots - 1) * slotSpacing + 20f;
-        panelRT.sizeDelta = new Vector2(totalWidth, slotSize + 30f);
-
-        // Reposition all slots
-        for (int i = 0; i < slotUIs.Count; i++)
-        {
-            RectTransform slotRT = slotUIs[i].root.GetComponent<RectTransform>();
-            slotRT.anchoredPosition = new Vector2(10f + i * (slotSize + slotSpacing), 5f);
-        }
-
+        ApplySlotVisibility();
         RefreshSlots();
     }
 
@@ -294,21 +193,7 @@ public class HotbarUI : MonoBehaviour
     public void SetVisible(bool visible)
     {
         if (hotbarCanvas != null)
-            hotbarCanvas.SetActive(visible);
-    }
-
-    // ═══════════════════════════════════════════
-    // INTERNAL DATA CLASS
-    // ═══════════════════════════════════════════
-
-    private class HotbarSlotUI
-    {
-        public GameObject root;
-        public Image background;
-        public Button button;
-        public Image iconImage;
-        public TMP_Text keyLabel;
-        public HotbarSlotTooltip tooltip;
+            hotbarCanvas.gameObject.SetActive(visible);
     }
 }
 
@@ -349,7 +234,6 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
             return;
         }
 
-        // Build tooltip (same style as ShopSlot)
         tooltipObj = new GameObject("HotbarTooltip", typeof(RectTransform));
         tooltipObj.transform.SetParent(transform, false);
         tooltipObj.layer = gameObject.layer;
@@ -358,23 +242,19 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         tooltipCanvasGroup.alpha = 0f;
 
         RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
-        // Position: above the slot
         ttRT.anchorMin = new Vector2(0.5f, 1f);
         ttRT.anchorMax = new Vector2(0.5f, 1f);
         ttRT.pivot = new Vector2(0.5f, 0f);
         ttRT.anchoredPosition = new Vector2(0f, 8f);
         ttRT.sizeDelta = new Vector2(280f, 0f);
 
-        // Background
         Image bg = tooltipObj.AddComponent<Image>();
         bg.color = new Color(0.1f, 0.1f, 0.1f, 0.98f);
         bg.raycastTarget = false;
 
-        // Auto-height
         var fitter = tooltipObj.AddComponent<ContentSizeFitter>();
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        // Layout
         var vlg = tooltipObj.AddComponent<VerticalLayoutGroup>();
         vlg.padding = new RectOffset(12, 12, 10, 10);
         vlg.spacing = 4;
@@ -383,7 +263,6 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         vlg.childForceExpandWidth = true;
         vlg.childForceExpandHeight = false;
 
-        // Title
         GameObject titleGO = new GameObject("Title", typeof(RectTransform));
         titleGO.transform.SetParent(tooltipObj.transform, false);
         titleGO.layer = gameObject.layer;
@@ -394,7 +273,6 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         titleText.fontStyle = FontStyles.Bold;
         titleText.raycastTarget = false;
 
-        // Separator
         GameObject lineGO = new GameObject("Line", typeof(RectTransform));
         lineGO.transform.SetParent(tooltipObj.transform, false);
         lineGO.layer = gameObject.layer;
@@ -405,7 +283,6 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         lineLE.minHeight = 2f;
         lineLE.preferredHeight = 2f;
 
-        // Description
         GameObject descGO = new GameObject("Desc", typeof(RectTransform));
         descGO.transform.SetParent(tooltipObj.transform, false);
         descGO.layer = gameObject.layer;
@@ -416,7 +293,6 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         descText.raycastTarget = false;
         descText.enableWordWrapping = true;
 
-        // Overlay canvas for rendering on top
         Canvas ttCanvas = tooltipObj.AddComponent<Canvas>();
         ttCanvas.overrideSorting = true;
         ttCanvas.sortingOrder = 100;
@@ -428,7 +304,7 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void UpdateContent()
     {
-        if (titleText != null) titleText.text = itemName != null ? itemName.ToUpper() : "";
+        if (titleText != null) titleText.text = itemName != null ? itemName.ToUpperInvariant() : "";
         if (descText != null) descText.text = itemDesc ?? "";
     }
 
@@ -464,7 +340,6 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     void OnDisable()
     {
-        // Can't start coroutines on inactive objects — just hide immediately
         if (fadeCoroutine != null) { StopCoroutine(fadeCoroutine); fadeCoroutine = null; }
         if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 0f;
         if (tooltipObj != null) tooltipObj.SetActive(false);

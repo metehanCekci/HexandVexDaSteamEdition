@@ -196,7 +196,7 @@ public class ShopSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         priceLE.preferredHeight = 20f;
 
         // Verileri doldur
-        titleText.text = tooltipName.ToUpper(); // Başlık hep BÜYÜK HARF
+        titleText.text = tooltipName.ToUpperInvariant(); // Başlık hep BÜYÜK HARF
         descText.text = tooltipDesc;
         priceText.text = tooltipPrice.ToString();
 

@@ -233,7 +233,7 @@ public class ShopDealer : MonoBehaviour
             GameObject nameGO = new GameObject("Name", typeof(RectTransform));
             nameGO.transform.SetParent(canvasGO.transform, false);
             TMP_Text nameTxt = nameGO.AddComponent<TextMeshProUGUI>();
-            nameTxt.text = item.itemName.ToUpper();
+            nameTxt.text = item.itemName.ToUpperInvariant();
             nameTxt.fontSize = 16;
             nameTxt.alignment = TextAlignmentOptions.Left;
             nameTxt.color = Color.white;

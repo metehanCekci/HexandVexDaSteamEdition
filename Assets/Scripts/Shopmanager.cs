@@ -89,18 +89,16 @@ public class Shopmanager : MonoBehaviour
         // HIDE legacy scene UI so it doesn't overlap
         HideLegacyUI();
 
-        // Wire button listeners + Color Tint hover
+        // Wire button listeners
         if (rerollButtonRef != null)
         {
             rerollButtonRef.onClick.RemoveAllListeners();
             rerollButtonRef.onClick.AddListener(TryReroll);
-            MakeColorTintWork(rerollButtonRef);
         }
         if (continueButtonRef != null)
         {
             continueButtonRef.onClick.RemoveAllListeners();
             continueButtonRef.onClick.AddListener(CloseMapNodeShop);
-            MakeColorTintWork(continueButtonRef);
         }
 
         // Wire card buy buttons + hover
@@ -112,7 +110,6 @@ public class Shopmanager : MonoBehaviour
             {
                 slot.button.onClick.RemoveAllListeners();
                 slot.button.onClick.AddListener(() => TryBuy(idx));
-                MakeColorTintWork(slot.button);
             }
             // Hover index for idle bounce
             if (slot.root != null)
@@ -126,28 +123,6 @@ public class Shopmanager : MonoBehaviour
                 EventTrigger.Entry exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
                 exitEntry.callback.AddListener((_) => { if (hoveredCardIndex == idx) hoveredCardIndex = -1; });
                 trigger.triggers.Add(exitEntry);
-            }
-        }
-
-        // Set coin sprites + fix gold layout order (text left, icon right)
-        Sprite coinSprite = GetCoinSprite();
-        if (goldTextRef != null && goldTextRef.transform.parent != null)
-        {
-            // Text first (left), coin icon second (right)
-            goldTextRef.transform.SetAsFirstSibling();
-            goldTextRef.alignment = TextAlignmentOptions.Right;
-            HorizontalLayoutGroup hlg = goldTextRef.transform.parent.GetComponent<HorizontalLayoutGroup>();
-            if (hlg != null) hlg.childAlignment = TextAnchor.MiddleRight;
-        }
-        for (int i = 0; i < cardSlots.Count; i++)
-        {
-            if (cardSlots[i].coinImage != null && coinSprite != null)
-                cardSlots[i].coinImage.sprite = coinSprite;
-            // Price row: text left, coin icon right
-            if (cardSlots[i].priceText != null && cardSlots[i].coinImage != null)
-            {
-                cardSlots[i].priceText.transform.SetAsFirstSibling();
-                cardSlots[i].coinImage.transform.SetAsLastSibling();
             }
         }
 
@@ -166,15 +141,6 @@ public class Shopmanager : MonoBehaviour
             rerollPriceText.gameObject.SetActive(false);
         if (continueButton != null)
             continueButton.SetActive(false);
-    }
-
-    private Sprite GetCoinSprite()
-    {
-        if (TurnManager.instance != null && TurnManager.instance.coinSprite != null)
-            return TurnManager.instance.coinSprite;
-        var vfx = Object.FindFirstObjectByType<CoinDropVFX>();
-        if (vfx != null) return vfx.coinSprite;
-        return null;
     }
 
     // ═══════════════════════════════════════════
@@ -429,7 +395,7 @@ public class Shopmanager : MonoBehaviour
 
     private void PopulateCard(ShopCardSlot card, BaseItem item)
     {
-        if (card.nameText != null) card.nameText.text = item.itemName.ToUpper();
+        if (card.nameText != null) card.nameText.text = item.itemName.ToUpperInvariant();
         if (card.iconImage != null)
         {
             if (item.icon != null) { card.iconImage.sprite = item.icon; card.iconImage.color = Color.white; card.iconImage.enabled = true; }
@@ -553,31 +519,6 @@ public class Shopmanager : MonoBehaviour
     // ═══════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════
-
-    /// <summary>
-    /// Image.color'ı white yapar, asıl renkleri ColorBlock'a taşır.
-    /// Böylece Unity Color Tint (white × ColorBlock) düzgün çalışır.
-    /// </summary>
-    private void MakeColorTintWork(Button btn)
-    {
-        if (btn == null) return;
-        Image img = btn.GetComponent<Image>();
-        if (img == null) return;
-
-        // Image rengine DOKUNMA — ColorBlock çarpan olarak çalışır
-        // normal: image × white = image (değişmez)
-        // hover:  image × 2.5 = belirgin açık
-        // press:  image × 0.5 = koyu
-        btn.transition = Selectable.Transition.ColorTint;
-        ColorBlock cb = btn.colors;
-        cb.normalColor = Color.white;
-        cb.highlightedColor = new Color(2.5f, 2f, 2.5f, 1f);
-        cb.pressedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-        cb.selectedColor = Color.white;
-        cb.disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
-        cb.fadeDuration = 0.1f;
-        btn.colors = cb;
-    }
 
     private IEnumerator FlashText(TMP_Text t)
     {
