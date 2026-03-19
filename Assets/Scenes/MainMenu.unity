@@ -1227,6 +1227,7 @@ GameObject:
   - component: {fileID: 193809364}
   - component: {fileID: 193809363}
   - component: {fileID: 193809362}
+  - component: {fileID: 193809365}
   m_Layer: 0
   m_Name: CloseButton
   m_TagString: Untagged
@@ -1348,6 +1349,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 193809360}
   m_CullTransparentMesh: 1
+--- !u!114 &193809365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 193809360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &276510161
 GameObject:
   m_ObjectHideFlags: 0
@@ -2312,6 +2329,7 @@ GameObject:
   - component: {fileID: 544121440}
   - component: {fileID: 544121437}
   - component: {fileID: 544121436}
+  - component: {fileID: 544121441}
   m_Layer: 0
   m_Name: Filter_EPIC
   m_TagString: Untagged
@@ -2456,6 +2474,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &544121441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544121434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &566384005
 GameObject:
   m_ObjectHideFlags: 0
@@ -2555,6 +2589,7 @@ GameObject:
   - component: {fileID: 581122071}
   - component: {fileID: 581122068}
   - component: {fileID: 581122067}
+  - component: {fileID: 581122072}
   m_Layer: 0
   m_Name: Filter_RARE
   m_TagString: Untagged
@@ -2699,6 +2734,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &581122072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 581122065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &600797250
 GameObject:
   m_ObjectHideFlags: 0
@@ -4082,6 +4133,7 @@ GameObject:
   - component: {fileID: 889340226}
   - component: {fileID: 889340229}
   - component: {fileID: 889340228}
+  - component: {fileID: 889340232}
   m_Layer: 0
   m_Name: Filter_LEGENDARY
   m_TagString: Untagged
@@ -4226,6 +4278,22 @@ RectTransform:
   m_AnchoredPosition: {x: 820, y: -22.5}
   m_SizeDelta: {x: 150, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &889340232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 889340225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &947198904
 GameObject:
   m_ObjectHideFlags: 0
@@ -5547,6 +5615,7 @@ GameObject:
   - component: {fileID: 1304024396}
   - component: {fileID: 1304024393}
   - component: {fileID: 1304024392}
+  - component: {fileID: 1304024397}
   m_Layer: 0
   m_Name: Filter_COMMON
   m_TagString: Untagged
@@ -5691,6 +5760,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1304024397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1304024390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &1313208078
 GameObject:
   m_ObjectHideFlags: 0
@@ -8176,15 +8261,15 @@ PrefabInstance:
       objectReference: {fileID: -3999660417396499025, guid: 05a1ad19fba67d64da8cdd98eeeb5050, type: 3}
     - target: {fileID: 5980470574796809114, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.b
-      value: 0.047058824
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5980470574796809114, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.g
-      value: 0.019607844
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5980470574796809114, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.r
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6088405065455122276, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_AnchorMax.x
@@ -8216,15 +8301,15 @@ PrefabInstance:
       objectReference: {fileID: -3999660417396499025, guid: 05a1ad19fba67d64da8cdd98eeeb5050, type: 3}
     - target: {fileID: 7459733541491813729, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.b
-      value: 0.047058824
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7459733541491813729, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.g
-      value: 0.019607844
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7459733541491813729, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.r
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Sprite
@@ -8232,15 +8317,15 @@ PrefabInstance:
       objectReference: {fileID: -4546686461075519379, guid: 05a1ad19fba67d64da8cdd98eeeb5050, type: 3}
     - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.b
-      value: 0.047058824
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.g
-      value: 0.019607844
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Color.r
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8369228209480155248, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_AnchorMax.x

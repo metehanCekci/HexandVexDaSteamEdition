@@ -267,6 +267,7 @@ GameObject:
   - component: {fileID: 7525559}
   - component: {fileID: 7525561}
   - component: {fileID: 7525560}
+  - component: {fileID: 7525562}
   m_Layer: 5
   m_Name: Checkmark
   m_TagString: Untagged
@@ -331,6 +332,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7525558}
   m_CullTransparentMesh: 1
+--- !u!114 &7525562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7525558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &10162728
 GameObject:
   m_ObjectHideFlags: 0
@@ -1562,7 +1579,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 1.6, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &121842792
@@ -1587,8 +1604,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: '?'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: df6d6f51a644b9e488d31f21677b7869, type: 2}
-  m_sharedMaterial: {fileID: 7936242644131845956, guid: df6d6f51a644b9e488d31f21677b7869, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
+  m_sharedMaterial: {fileID: 4275843045926110767, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -8520,6 +8537,7 @@ GameObject:
   - component: {fileID: 623256255}
   - component: {fileID: 623256257}
   - component: {fileID: 623256256}
+  - component: {fileID: 623256258}
   m_Layer: 5
   m_Name: RerollText
   m_TagString: Untagged
@@ -8647,6 +8665,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 623256254}
   m_CullTransparentMesh: 1
+--- !u!114 &623256258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 623256254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &626686013
 GameObject:
   m_ObjectHideFlags: 0
@@ -17672,6 +17706,7 @@ GameObject:
   - component: {fileID: 1267672139}
   - component: {fileID: 1267672138}
   - component: {fileID: 1267672141}
+  - component: {fileID: 1267672142}
   m_Layer: 5
   m_Name: SkipButton
   m_TagString: Untagged
@@ -17805,6 +17840,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 890357d99e1d8b44a80e0fe41740fb73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkipButtonHoldHandler
+--- !u!114 &1267672142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1267672136}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &1270960949
 GameObject:
   m_ObjectHideFlags: 0
@@ -19194,9 +19245,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0, g: 0.019607844, b: 0.047058824, a: 1}
+  m_EffectColor: {r: 1, g: 1, b: 1, a: 1}
   m_EffectDistance: {x: 1.5, y: -1.5}
-  m_UseGraphicAlpha: 1
+  m_UseGraphicAlpha: 0
 --- !u!114 &1358375681
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19210,7 +19261,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.019607844, b: 0.047058824, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -27002,6 +27053,7 @@ GameObject:
   - component: {fileID: 1944212278}
   - component: {fileID: 1944212280}
   - component: {fileID: 1944212279}
+  - component: {fileID: 1944212281}
   m_Layer: 5
   m_Name: ContText
   m_TagString: Untagged
@@ -27128,6 +27180,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1944212277}
   m_CullTransparentMesh: 1
+--- !u!114 &1944212281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1944212277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &1953228741
 GameObject:
   m_ObjectHideFlags: 0
@@ -28456,7 +28524,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2023283162
 MonoBehaviour:
   m_ObjectHideFlags: 0
