@@ -58,6 +58,15 @@ public class HotbarUI : MonoBehaviour
 
     void Start()
     {
+        // Wire button click listeners for each slot
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] == null || slots[i].button == null) continue;
+            int idx = i;
+            slots[i].button.onClick.RemoveAllListeners();
+            slots[i].button.onClick.AddListener(() => UseSlot(idx));
+        }
+
         ApplySlotVisibility();
         RefreshSlots();
     }

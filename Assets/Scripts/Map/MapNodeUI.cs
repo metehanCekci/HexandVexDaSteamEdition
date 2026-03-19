@@ -149,8 +149,6 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         {
             if (!isFutureReachable && !isVisited)
                 labelText.color = new Color(0.5f, 0.5f, 0.5f, 0.15f);
-            else if (isVisited && !isCurrent)
-                labelText.color = new Color(0.7f, 0.7f, 0.7f, 0.4f);
             else
                 labelText.color = Color.white;
         }
@@ -159,8 +157,6 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         {
             if (!isFutureReachable && !isVisited)
                 iconImage.color = new Color(1f, 1f, 1f, 0.1f);
-            else if (isVisited && !isCurrent)
-                iconImage.color = new Color(1f, 1f, 1f, 0.3f);
             else
                 iconImage.color = Color.white;
         }
@@ -171,7 +167,9 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         {
             if (isReachable && !isVisited)
                 outlineImage.color = new Color(1f, 1f, 1f, 1f);
-            else if (!isFutureReachable && !isVisited)
+            else if (isVisited)
+                outlineImage.color = new Color(1f, 1f, 1f, 1f);
+            else if (!isFutureReachable)
                 outlineImage.color = new Color(1f, 1f, 1f, 0.15f);
             else
                 outlineImage.color = new Color(1f, 1f, 1f, 0.4f);

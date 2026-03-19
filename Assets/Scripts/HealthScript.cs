@@ -22,6 +22,7 @@ public class HealthScript : MonoBehaviour
     private Coroutine flashCoroutine;
     private Coroutine alphaFadeCoroutine; // YENİ: Saydamlığın yavaşça değişmesini sağlayan animasyon
     private bool isDead = false;
+    public bool IsDead => isDead;
 
     private bool isDeepStunnedAlpha = false;
     [Header("VFX")]
@@ -46,6 +47,36 @@ public class HealthScript : MonoBehaviour
             currentHP = maxHP;
         }
         updateHealth();
+    }
+
+    void Update()
+    {
+        if (!isDead) return;
+        if (!gameObject.CompareTag("Player")) return;
+        if (Input.GetKeyDown(KeyCode.F3))
+            CheatRevive();
+    }
+
+    private void CheatRevive()
+    {
+        isDead = false;
+        currentHP = maxHP;
+        if (RunManager.instance != null)
+        {
+            RunManager.instance.playerCurrentHealth = maxHP;
+        }
+        updateHealth();
+
+        if (hptext != null) hptext.gameObject.SetActive(true);
+
+        if (deathMenuUI != null) deathMenuUI.SetActive(false);
+        Time.timeScale = 1f;
+
+        if (spriteRenderer != null)
+        {
+            originalColor = new Color(originalColor.r, originalColor.g, originalColor.b, 1f);
+            spriteRenderer.color = originalColor;
+        }
     }
 
     public void TakeDamage(int dmg, bool applyHitstop = false)

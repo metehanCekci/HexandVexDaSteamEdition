@@ -15,7 +15,7 @@ public class CoinDropService
             if (enemy.IsBoss)
                 coinDrop = 20;
             else
-                coinDrop = Random.Range(1, 3); // Minyonlar da az coin versin
+                coinDrop = 0; // Boss odasında sadece boss gold verir
         }
         else
         {
