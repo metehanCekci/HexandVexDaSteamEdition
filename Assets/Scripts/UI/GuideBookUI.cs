@@ -47,13 +47,16 @@ public class GuideBookUI : MonoBehaviour
     // Dinamik sidebar butonları
     private List<GameObject> sidebarButtonObjects = new List<GameObject>();
 
+    // Scroll blocker — panel açıkken arkadaki scroll'u engeller
+    private GameObject scrollBlocker;
+
     // İlk açılış pulse animasyonu
     private bool hasOpenedOnce = false;
     private Coroutine pulseCoroutine;
     private Coroutine animCoroutine;
 
-    // Kategori isimleri (ALL yok — filtre butonu olarak 5 kategori)
-    private static readonly string[] CATEGORIES = { "Combat", "Enemies", "Items", "Perks" };
+    // Kategori isimleri (ALL yok — filtre butonu olarak 6 kategori)
+    private static readonly string[] CATEGORIES = { "Movement", "Combat", "Enemies", "Shop", "Implants", "Map" };
 
     // Renkler
     private static readonly Color CAT_ACTIVE = new Color(0f, 0.58f, 0.74f, 1f);     // #0093BC
@@ -90,6 +93,28 @@ public class GuideBookUI : MonoBehaviour
         {
             int idx = i;
             categoryButtons[i].onClick.AddListener(() => OnCategoryClicked(idx));
+        }
+
+        // Scroll blocker oluştur — panel arkasında tam ekran şeffaf Image
+        // Tüm scroll/click event'lerini yakalar, arkadaki map'e geçirmez
+        if (bookPanel != null && scrollBlocker == null)
+        {
+            scrollBlocker = new GameObject("ScrollBlocker", typeof(RectTransform), typeof(Image));
+            scrollBlocker.transform.SetParent(bookPanel.parent, false);
+            scrollBlocker.transform.SetSiblingIndex(bookPanel.GetSiblingIndex()); // Panel'in hemen arkasına
+            RectTransform blockerRT = scrollBlocker.GetComponent<RectTransform>();
+            blockerRT.anchorMin = Vector2.zero;
+            blockerRT.anchorMax = Vector2.one;
+            blockerRT.offsetMin = Vector2.zero;
+            blockerRT.offsetMax = Vector2.zero;
+            Image blockerImg = scrollBlocker.GetComponent<Image>();
+            blockerImg.color = new Color(0f, 0f, 0f, 0.3f); // hafif karartma
+            blockerImg.raycastTarget = true;
+            // Blocker'a tıklayınca kitabı kapat
+            Button blockerBtn = scrollBlocker.AddComponent<Button>();
+            blockerBtn.transition = Selectable.Transition.None;
+            blockerBtn.onClick.AddListener(OnCloseClicked);
+            scrollBlocker.SetActive(false);
         }
 
         // Başlangıçta kitap kapalı
@@ -134,6 +159,7 @@ public class GuideBookUI : MonoBehaviour
         }
         hasOpenedOnce = true;
 
+        if (scrollBlocker != null) scrollBlocker.SetActive(true);
         bookPanel.gameObject.SetActive(true);
         RefreshPage();
         RefreshSidebar();
@@ -162,6 +188,7 @@ public class GuideBookUI : MonoBehaviour
         sidebarButtonObjects.Clear();
 
         var filteredIndices = mgr.GetFilteredIndices();
+        string lastSubCategory = null;
 
         for (int i = 0; i < filteredIndices.Count; i++)
         {
@@ -169,7 +196,34 @@ public class GuideBookUI : MonoBehaviour
             GuideBookPage page = mgr.GetPageAt(filteredIndices[i]);
             if (page == null) continue;
 
+            // Alt başlık header'ı — subCategory değiştiyse ekle
+            if (!string.IsNullOrEmpty(page.subCategory) && page.subCategory != lastSubCategory)
+            {
+                lastSubCategory = page.subCategory;
+                GameObject headerGO = new GameObject($"SubHeader_{lastSubCategory}", typeof(RectTransform));
+                headerGO.transform.SetParent(sidebarContent, false);
+                LayoutElement headerLE = headerGO.AddComponent<LayoutElement>();
+                headerLE.preferredHeight = 26f;
+                headerLE.flexibleWidth = 1f;
+
+                TMP_Text headerTmp = headerGO.AddComponent<TextMeshProUGUI>();
+                if (customFont != null) headerTmp.font = customFont;
+                headerTmp.fontSize = 11;
+                headerTmp.alignment = TextAlignmentOptions.MidlineLeft;
+                headerTmp.raycastTarget = false;
+                headerTmp.text = $"  {lastSubCategory.ToUpper()}";
+                headerTmp.color = new Color(0.45f, 0.45f, 0.55f, 1f);
+                headerTmp.fontStyle = FontStyles.Bold;
+
+                sidebarButtonObjects.Add(headerGO);
+            }
+            else if (string.IsNullOrEmpty(page.subCategory) && lastSubCategory != null)
+            {
+                lastSubCategory = null;
+            }
+
             bool isActive = (i == mgr.currentPageIndex);
+            bool hasSubCat = !string.IsNullOrEmpty(page.subCategory);
 
             // Buton GameObject
             GameObject btnGO = new GameObject($"SidebarBtn_{i}", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -222,16 +276,15 @@ public class GuideBookUI : MonoBehaviour
             tmp.textWrappingMode = TextWrappingModes.NoWrap;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
-            // Başlığı kısalt
             string title = page.title;
-            if (title.Length > 22) title = title.Substring(0, 19) + "...";
-            tmp.text = title;
+            if (title.Length > 20) title = title.Substring(0, 17) + "...";
+            tmp.text = hasSubCat ? $"  {title}" : title;
             tmp.color = isActive ? Color.white : new Color(0.6f, 0.6f, 0.6f, 1f);
 
             RectTransform txtRT = txtGO.GetComponent<RectTransform>();
             txtRT.anchorMin = Vector2.zero;
             txtRT.anchorMax = Vector2.one;
-            txtRT.offsetMin = new Vector2(10f, 0); // Sol padding
+            txtRT.offsetMin = new Vector2(hasSubCat ? 18f : 10f, 0);
             txtRT.offsetMax = new Vector2(-4f, 0);
 
             sidebarButtonObjects.Add(btnGO);
@@ -396,6 +449,7 @@ public class GuideBookUI : MonoBehaviour
         bookPanel.localScale = Vector3.one;
         if (bookCanvasGroup != null) bookCanvasGroup.alpha = 0f;
         bookPanel.gameObject.SetActive(false);
+        if (scrollBlocker != null) scrollBlocker.SetActive(false);
     }
 
     private IEnumerator PulseIconLoop()
