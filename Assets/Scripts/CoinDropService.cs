@@ -35,6 +35,11 @@ public class CoinDropService
             GameEvents.GoldChanged(rm.currentGold);
             if (CoinDropVFX.instance != null)
                 CoinDropVFX.instance.SpawnCoins(enemy.transform.position, coinDrop);
+
+            // Collection sistemi — lifetime toplam gold (run'lar arası birikim)
+            int lifetimeGold = PlayerPrefs.GetInt("lifetime_total_gold", 0) + coinDrop;
+            PlayerPrefs.SetInt("lifetime_total_gold", lifetimeGold);
+            GameEvents.TotalGoldLifetime(lifetimeGold);
         }
 
         return coinDrop;
@@ -47,9 +52,10 @@ public class CoinDropService
             p.OnEnemyKilled(deadEnemy);
         RunManager.instance.totalEnemiesKilled++;
 
-        // Collection sistemi için event'ler
-        GameEvents.EnemyKilledTotal(RunManager.instance.totalEnemiesKilled);
-        GameEvents.TotalGoldLifetime(RunManager.instance.totalGoldEarned);
+        // Collection sistemi — lifetime toplam kill (run'lar arası birikim)
+        int lifetimeKills = PlayerPrefs.GetInt("lifetime_total_kills", 0) + 1;
+        PlayerPrefs.SetInt("lifetime_total_kills", lifetimeKills);
+        GameEvents.EnemyKilledTotal(lifetimeKills);
 
         // Boss öncesi kill sayacı (boss node'u değilse say)
         if (RunManager.instance.currentNodeType != MapNodeType.Boss)

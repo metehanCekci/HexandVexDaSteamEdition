@@ -416,7 +416,7 @@ public class CollectionUI : MonoBehaviour
                 tooltipUnlockHint.color = new Color(1f, 0.7f, 0.3f);
             }
 
-            if (tooltipProgressBar != null && entry.requiredAmount > 1)
+            if (tooltipProgressBar != null && entry.requiredAmount > 0)
             {
                 int progress = PerkCollectionManager.instance != null
                     ? PerkCollectionManager.instance.GetProgress(entry.perkId)

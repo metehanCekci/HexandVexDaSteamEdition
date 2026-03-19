@@ -276,16 +276,24 @@ public class PerkCollectionManager : MonoBehaviour
     {
         if (database == null) return;
 
+        // "High-water mark" koşulları — progress sadece artmalı, düşmemeli
+        // (ör: HoldGold = elde tuttuğun en yüksek gold, KillEnemiesSingleRun = tek run en iyi kill)
+        bool isHighWaterMark = condition == UnlockCondition.HoldGold
+                            || condition == UnlockCondition.KillEnemiesSingleRun
+                            || condition == UnlockCondition.KillBeforeBoss;
+
         foreach (var entry in database.entries)
         {
             if (entry.unlockCondition != condition) continue;
             if (IsUnlockedById(entry.perkId)) continue;
 
-            // Progress'i güncelle
-            progressCache[entry.perkId] = currentAmount;
-            PlayerPrefs.SetInt($"perk_progress_{entry.perkId}", currentAmount);
+            // Progress'i güncelle — high-water mark ise sadece artır
+            int prev = GetProgress(entry.perkId);
+            int newVal = isHighWaterMark ? Mathf.Max(prev, currentAmount) : currentAmount;
+            progressCache[entry.perkId] = newVal;
+            PlayerPrefs.SetInt($"perk_progress_{entry.perkId}", newVal);
 
-            if (currentAmount >= entry.requiredAmount)
+            if (newVal >= entry.requiredAmount)
                 UnlockPerk(entry.perkId);
         }
         PlayerPrefs.Save();
