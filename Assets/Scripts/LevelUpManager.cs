@@ -259,13 +259,12 @@ public class LevelUpManager : MonoBehaviour
         int level = RunManager.instance != null ? RunManager.instance.currentLevel : 1;
         int cloverLv = RunManager.instance != null ? RunManager.instance.luckyCloverLevel : 0;
 
-        // Legendary: level 3'ten sonra açılır, giderek artar
-        //   Base: %0 (lv1-2), %3 (lv3-4), %5 (lv5-6), %8 (lv7+)
+        // Legendary: level 8'e kadar çıkmaz, sonra kademeli artar
+        //   Base: %0 (lv1-7), %4 (lv8-15), %8 (lv16+)
         //   Clover bonus: +2% per level
         float legendaryChance = 0f;
-        if (level >= 7) legendaryChance = 8f;
-        else if (level >= 5) legendaryChance = 5f;
-        else if (level >= 3) legendaryChance = 3f;
+        if (level >= 16) legendaryChance = 8f;
+        else if (level >= 8) legendaryChance = 4f;
         legendaryChance += cloverLv * 2f;
 
         // Epic / Rare / Common (legendary yüzdesi düşüldükten sonra kalan)
