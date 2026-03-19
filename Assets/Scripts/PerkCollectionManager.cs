@@ -108,6 +108,17 @@ public class PerkCollectionManager : MonoBehaviour
         return progress;
     }
 
+    /// <summary>Görev tamamlayarak açılan perk sayısını döner (Default olanlar hariç).</summary>
+    public int GetEarnedUnlockCount()
+    {
+        if (database == null) return 0;
+        int count = 0;
+        foreach (var entry in database.entries)
+            if (entry.unlockCondition != UnlockCondition.Default && IsUnlockedById(entry.perkId))
+                count++;
+        return count;
+    }
+
     /// <summary>Toplam açık perk sayısını döner.</summary>
     public int GetUnlockedCount()
     {
@@ -332,8 +343,8 @@ public class PerkCollectionManager : MonoBehaviour
                 GameEvents.PerkUnlocked(perkId);
             }
 
-            // UnlockOtherPerks koşulunu kontrol et
-            CheckCondition(UnlockCondition.UnlockOtherPerks, GetUnlockedCount());
+            // UnlockOtherPerks koşulunu kontrol et — sadece görev tamamlayarak açılanları say
+            CheckCondition(UnlockCondition.UnlockOtherPerks, GetEarnedUnlockCount());
         }
     }
 
