@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 7824249817951269538, guid: 855ac75b9f362dc4eb69a4f08e668a1b, type: 3}
   perkId: LootGland
-  loreText: 
+  loreText: A scavenger organ that secretes enzymes to dissolve enemy tissue into extractable gold compounds. Every kill lines your pockets a little deeper.
   unlockCondition: 0
   requiredAmount: 0
   conditionParam: 

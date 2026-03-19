@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1000000000000001, guid: 7296bb7d11aebe440b7e05ad7d4ce44e, type: 3}
   perkId: LuckyClover
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: A gene-edited four-leaf mutation growing in the chest cavity. Against all logic and science, it bends probability in your favor.
   rarity: 1
   unlockCondition: 9
   requiredAmount: 10

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 4520883504955689006, guid: 02cb28d0d7f5084419350d73f47a6370, type: 3}
   perkId: ExtraDendrite
-  loreText: 
+  loreText: A synthetic nerve branch spliced into the motor cortex. Each new tendril adds another die to the roll, another chance to deal death.
   rarity: 3
   unlockCondition: 0
   requiredAmount: 0

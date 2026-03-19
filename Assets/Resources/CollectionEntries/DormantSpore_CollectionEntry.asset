@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 3200241053812791980, guid: 407d74543c70faf49b06b98f676ad8d1, type: 3}
   perkId: DormantSpore
-  loreText: 
+  loreText: Fungal nodules that feed on inactivity. Every skipped moment lets them swell with kinetic energy, unleashing stored power on your next strike.
   unlockCondition: 0
   requiredAmount: 0
   conditionParam: 

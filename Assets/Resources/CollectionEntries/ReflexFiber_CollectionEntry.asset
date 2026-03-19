@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 575377947375056754, guid: 19a8e2458f31e9844aea1d7486c8bad8, type: 3}
   perkId: ReflexFiber
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: Synthetic fast-twitch fibers woven through every major muscle group. Each upgrade adds another burst of movement per turn.
   rarity: 2
   unlockCondition: 13
   requiredAmount: 500

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 5078675499939597767, guid: ad70bb15bab1bb44186895817e14b523, type: 3}
   perkId: GeneSplice
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: A volatile mutagen that rewrites existing implant code on contact. It either upgrades what you have or spawns something entirely new, then burns itself out.
   rarity: 1
   unlockCondition: 1
   requiredAmount: 200

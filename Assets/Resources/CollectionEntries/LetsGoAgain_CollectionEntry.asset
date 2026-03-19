@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 3920184756210837521, guid: a2c8e4f6b3d7190a5e8c2f4b6d9a1e37, type: 3}
   perkId: LetsGoAgain
-  loreText: 
+  loreText: A temporal echo device embedded in the brainstem. After all implants fire once, a phantom signal triggers them all to activate a second time.
   rarity: 4
   unlockCondition: 0
   requiredAmount: 0

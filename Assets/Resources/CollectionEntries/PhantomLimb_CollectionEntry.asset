@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 7573325371218563316, guid: f0d596c3e13ed1e40842b6f14687ae19, type: 3}
   perkId: PhantomLimb
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: A spectral prosthetic that exists between dimensions. It deploys invisible traps on the battlefield, punishing enemies who step where you once stood.
   rarity: 2
   unlockCondition: 14
   requiredAmount: 10

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1111111111111111501, guid: 9c73e59b7e793984eb928c9b30a3c6a7, type: 3}
   perkId: TerminalFuryGland
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: A berserker gland that feeds on the host's pain. The closer you are to death, the more adrenaline it floods into your strikes. Cornered animals bite hardest.
   rarity: 3
   unlockCondition: 6
   requiredAmount: 1

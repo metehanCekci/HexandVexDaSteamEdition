@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 4771058090172884902, guid: 92c8a7614a21ad246ba42cd0c85d41af, type: 3}
   perkId: GlassCanon
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: A crystalline bone replacement that channels devastating force at the cost of structural integrity. You will hit twice as hard, but your body can barely hold together.
   rarity: 1
   unlockCondition: 9
   requiredAmount: 5

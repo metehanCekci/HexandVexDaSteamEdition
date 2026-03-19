@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 8170780636646441943, guid: 3512cd5738bf59d47ac77b4450365bf4, type: 3}
   perkId: VolatileCells
-  loreText: 
+  loreText: Unstable bio-explosive nodules scattered throughout the body. On impact, nearby cells detonate in a chain reaction that scorches everything close.
   rarity: 1
   unlockCondition: 0
   requiredAmount: 25

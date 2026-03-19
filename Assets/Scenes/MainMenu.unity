@@ -2945,6 +2945,7 @@ GameObject:
   - component: {fileID: 615321169}
   - component: {fileID: 615321166}
   - component: {fileID: 615321165}
+  - component: {fileID: 615321170}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -3079,6 +3080,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ParallaksScript
   hareketMiktari: 25
   yumusaklik: 5
+--- !u!114 &615321170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 615321163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.06
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &627326959
 GameObject:
   m_ObjectHideFlags: 0
@@ -5495,6 +5512,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1274327325 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3192080975481430875, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+  m_PrefabInstance: {fileID: 2393989391850964774}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1274327329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1274327325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &1304024390
 GameObject:
   m_ObjectHideFlags: 0
@@ -6440,6 +6478,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1641372149}
   m_CullTransparentMesh: 1
+--- !u!1 &1681305870 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3928524274000414129, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+  m_PrefabInstance: {fileID: 2393989391850964774}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1681305874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1681305870}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &1721906610
 GameObject:
   m_ObjectHideFlags: 0
@@ -6453,6 +6512,8 @@ GameObject:
   - component: {fileID: 1721906614}
   - component: {fileID: 1721906613}
   - component: {fileID: 1721906612}
+  - component: {fileID: 1721906616}
+  - component: {fileID: 1721906617}
   m_Layer: 5
   m_Name: Button (1)
   m_TagString: Untagged
@@ -6477,7 +6538,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -623.18994, y: 69.36499}
+  m_AnchoredPosition: {x: -144.27002, y: 269.36}
   m_SizeDelta: {x: 221.46, y: 80.73}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1721906612
@@ -6588,6 +6649,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1721906610}
   m_CullTransparentMesh: 1
+--- !u!114 &1721906616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1721906610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
+--- !u!114 &1721906617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1721906610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 1, g: 1, b: 1, a: 1}
+  m_EffectDistance: {x: 1, y: -1}
+  m_UseGraphicAlpha: 1
 --- !u!1 &1758697003
 GameObject:
   m_ObjectHideFlags: 0
@@ -7117,6 +7209,7 @@ GameObject:
   - component: {fileID: 2030832246}
   - component: {fileID: 2030832243}
   - component: {fileID: 2030832242}
+  - component: {fileID: 2030832247}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -7251,6 +7344,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ParallaksScript
   hareketMiktari: 25
   yumusaklik: 5
+--- !u!114 &2030832247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030832240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.06
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &2035667017
 GameObject:
   m_ObjectHideFlags: 0
@@ -7341,6 +7450,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2035667017}
   m_CullTransparentMesh: 1
+--- !u!1 &2059301059 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2048558954863490490, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+  m_PrefabInstance: {fileID: 2393989391850964774}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2059301063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2059301059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd97296ecc591024a8562d9352a2a6e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIHoverEffect
+  hoverScale: 1.12
+  scaleSpeed: 10
+  clickShrink: 0.9
+  clickDuration: 0.1
 --- !u!1 &2091041491
 GameObject:
   m_ObjectHideFlags: 0
@@ -8040,6 +8170,22 @@ PrefabInstance:
       propertyPath: m_AnchorMin.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5980470574796809114, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -3999660417396499025, guid: 05a1ad19fba67d64da8cdd98eeeb5050, type: 3}
+    - target: {fileID: 5980470574796809114, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.b
+      value: 0.047058824
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980470574796809114, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.g
+      value: 0.019607844
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980470574796809114, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.r
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6088405065455122276, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -8063,6 +8209,38 @@ PrefabInstance:
     - target: {fileID: 7124502365383537675, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_Value
       value: 0.809
+      objectReference: {fileID: 0}
+    - target: {fileID: 7459733541491813729, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -3999660417396499025, guid: 05a1ad19fba67d64da8cdd98eeeb5050, type: 3}
+    - target: {fileID: 7459733541491813729, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.b
+      value: 0.047058824
+      objectReference: {fileID: 0}
+    - target: {fileID: 7459733541491813729, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.g
+      value: 0.019607844
+      objectReference: {fileID: 0}
+    - target: {fileID: 7459733541491813729, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.r
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -4546686461075519379, guid: 05a1ad19fba67d64da8cdd98eeeb5050, type: 3}
+    - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.b
+      value: 0.047058824
+      objectReference: {fileID: 0}
+    - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.g
+      value: 0.019607844
+      objectReference: {fileID: 0}
+    - target: {fileID: 7643778369214472398, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      propertyPath: m_Color.r
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8369228209480155248, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       propertyPath: m_AnchorMax.x
@@ -8111,6 +8289,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2590181016895944992, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
       insertIndex: 2
       addedObject: {fileID: 1117248984}
+    - targetCorrespondingSourceObject: {fileID: 2048558954863490490, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2059301063}
+    - targetCorrespondingSourceObject: {fileID: 3192080975481430875, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1274327329}
+    - targetCorrespondingSourceObject: {fileID: 3928524274000414129, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1681305874}
   m_SourcePrefab: {fileID: 100100000, guid: 6e422cf4a1eb843ecb38fa0ef3974c73, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

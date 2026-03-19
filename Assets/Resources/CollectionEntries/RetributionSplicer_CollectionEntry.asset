@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1111111111111111301, guid: a881fac979acb0e439f921f3d0019811, type: 3}
   perkId: RetributionSplicer
-  loreText: 
+  loreText: A grudge-memory implant that catalogues every blow dealt to a target. Each consecutive hit on the same enemy stacks fury, amplifying damage until the target drops.
   unlockCondition: 0
   requiredAmount: 0
   conditionParam: 

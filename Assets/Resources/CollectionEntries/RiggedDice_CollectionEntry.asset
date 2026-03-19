@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 5047546002744779634, guid: eec9c7d0b32c52e418dec796960dfe05, type: 3}
   perkId: RiggedDice
-  loreText: 
+  loreText: Nanoscale weighted inserts hidden inside your combat dice. The lowest roll gets quietly replaced with the highest. Nobody said you had to play fair.
   rarity: 1
   unlockCondition: 0
   requiredAmount: 25

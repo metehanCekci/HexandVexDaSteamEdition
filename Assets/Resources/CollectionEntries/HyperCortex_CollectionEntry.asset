@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 3172771413119584058, guid: a76fa3f56976f8b45b52b14bfca07c7c, type: 3}
   perkId: HyperCortex
-  loreText: 
+  loreText: An overclocked neural implant that amplifies critical damage pathways. Each upgrade pushes the brain further past its design limits.
   rarity: 1
   unlockCondition: 0
   requiredAmount: 0

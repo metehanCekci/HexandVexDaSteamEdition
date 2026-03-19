@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 6899603810289213356, guid: 9ed0fca975cfc2d45bc0595a03b02b05, type: 3}
   perkId: RecoilSpring
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: A mechanical spine brace that absorbs impact force and redirects it. After every hit, you bounce backward and automatically lash out at anything nearby.
   rarity: 2
   unlockCondition: 13
   requiredAmount: 250

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1986514174070140262, guid: 8d2cf8eb1410c6d44942bc4168924640, type: 3}
   perkId: OrganPouch
-  loreText: Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor
-    sit amet.
+  loreText: A bioengineered abdominal cavity expansion. Extra folds of synthetic tissue create room for one more tool on your belt.
   rarity: 1
   unlockCondition: 4
   requiredAmount: 250

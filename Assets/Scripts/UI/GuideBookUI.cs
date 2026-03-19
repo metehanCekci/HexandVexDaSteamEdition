@@ -308,10 +308,25 @@ public class GuideBookUI : MonoBehaviour
             return;
         }
 
-        if (titleText != null) titleText.text = page.title;
-        if (bodyText != null) bodyText.text = page.bodyText;
+        if (titleText != null)
+        {
+            titleText.text = page.title;
+            if (customFont != null) titleText.font = customFont;
+        }
+        if (bodyText != null)
+        {
+            bodyText.text = page.bodyText;
+            if (customFont != null) bodyText.font = customFont;
+            // Resim varsa yazı ile resim arası boşluk bırak
+            bodyText.margin = page.illustration != null
+                ? new Vector4(0, 0, 0, 16f)
+                : Vector4.zero;
+        }
         if (categoryLabel != null)
+        {
             categoryLabel.text = string.IsNullOrEmpty(page.category) ? "" : page.category.ToUpper();
+            if (customFont != null) categoryLabel.font = customFont;
+        }
 
         // İllüstrasyon
         if (illustrationImage != null)

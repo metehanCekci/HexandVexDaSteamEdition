@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 8421024522635560941, guid: 9a9e4094e59f8eb4caa4127aee7c2b46, type: 3}
   perkId: RegenTissue
-  loreText: 
+  loreText: Lab-grown regenerative tissue layered beneath the dermis. It slowly knits wounds shut between rooms, keeping you alive one cell at a time.
   unlockCondition: 0
   requiredAmount: 0
   conditionParam: 

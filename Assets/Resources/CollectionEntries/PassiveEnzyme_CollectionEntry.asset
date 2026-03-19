@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 7357606744854520209, guid: c5e39148a8e7b5d47928c80d55b4ff3c, type: 3}
   perkId: PassiveEnzyme
-  loreText: 
+  loreText: Metabolic bacteria that convert idle time into currency. When you skip a turn, they quietly digest ambient biomass and produce gold.
   unlockCondition: 0
   requiredAmount: 25
   conditionParam: 

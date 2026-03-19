@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 5673649842244364538, guid: 42d757f24381e4044ae8a25c201686ca, type: 3}
   perkId: ChitinArmor
-  loreText: 
+  loreText: Insectoid plating grafted onto the epidermis. Each layer hardens over time, turning skin into a shell that shrugs off glancing blows.
   unlockCondition: 0
   requiredAmount: 0
   conditionParam: 

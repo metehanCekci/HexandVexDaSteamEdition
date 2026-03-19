@@ -98,6 +98,7 @@ public class CollectionUI : MonoBehaviour
         SetupFilterButtons();
         FixLegacyMasks();
         ApplyFontToAll();
+        FixTooltipTextSizing();
     }
 
     /// <summary>
@@ -557,6 +558,33 @@ public class CollectionUI : MonoBehaviour
     // ═══════════════════════════════════════════════════════
     //  HELPERS
     // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Tooltip'teki description ve lore text'lerini içeriğe göre otomatik boyutlandırır.
+    /// Setup tool sabit yükseklik veriyor — uzun text'ler üst üste biniyor.
+    /// ContentSizeFitter + LayoutElement.flexibleHeight ile düzeltir.
+    /// </summary>
+    private void FixTooltipTextSizing()
+    {
+        TMP_Text[] tooltipTexts = { tooltipDescription, tooltipLore, tooltipUnlockHint };
+        foreach (var txt in tooltipTexts)
+        {
+            if (txt == null) continue;
+            // ContentSizeFitter ekle (yoksa)
+            ContentSizeFitter csf = txt.GetComponent<ContentSizeFitter>();
+            if (csf == null) csf = txt.gameObject.AddComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+            // LayoutElement'in sabit height'ını kaldır, flexible yap
+            LayoutElement le = txt.GetComponent<LayoutElement>();
+            if (le != null)
+            {
+                le.preferredHeight = -1;
+                le.flexibleHeight = 0;
+            }
+        }
+    }
 
     /// <summary>
     /// Sahnedeki tüm Collection UI text'lerine collectionFont uygular.

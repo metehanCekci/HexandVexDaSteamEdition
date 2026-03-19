@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 8701619630202089433, guid: 2006924981287ef40a94a3ea53a48712, type: 3}
   perkId: SymbioticFury
-  loreText: 
+  loreText: An alien symbiote fused to the nervous system that rewrites combat math entirely. All additive bonuses become multiplicative, turning small edges into exponential carnage.
   unlockCondition: 0
   requiredAmount: 25
   conditionParam: 

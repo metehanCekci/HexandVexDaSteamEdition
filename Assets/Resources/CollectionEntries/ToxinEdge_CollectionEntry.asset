@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 297017077572518837, guid: 6e7215ec5f7dfb54db1f0221a86f03f0, type: 3}
   perkId: ToxinEdge
-  loreText: 
+  loreText: Venom reservoirs implanted in the forearms that coat every strike in corrosive fluid. Each upgrade concentrates the toxin further.
   unlockCondition: 0
   requiredAmount: 25
   conditionParam: 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1111111111111111201, guid: 3dc8838b5e238e24997ac7ac7a5fa84c, type: 3}
   perkId: NeuroStasisMist
-  loreText: 
+  loreText: A chemical dispersal implant that extends the duration of neural disruption. Stunned enemies stay frozen longer, their synapses locked in a fog.
   rarity: 1
   unlockCondition: 0
   requiredAmount: 25

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1036782846232815647, guid: 326cb9d6ffa3e224eb82cf9698109001, type: 3}
   perkId: NeuroAim
-  loreText: 
+  loreText: Targeting wetware spliced into the occipital lobe. It highlights weak points in real-time, dramatically increasing your chance to land a critical hit.
   unlockCondition: 0
   requiredAmount: 25
   conditionParam: 
