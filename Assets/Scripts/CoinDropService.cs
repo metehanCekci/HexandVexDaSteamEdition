@@ -46,5 +46,17 @@ public class CoinDropService
         foreach (var p in RunManager.instance.activePerks)
             p.OnEnemyKilled(deadEnemy);
         RunManager.instance.totalEnemiesKilled++;
+
+        // Collection sistemi için event'ler
+        GameEvents.EnemyKilledTotal(RunManager.instance.totalEnemiesKilled);
+        GameEvents.TotalGoldLifetime(RunManager.instance.totalGoldEarned);
+
+        // Boss öncesi kill sayacı (boss node'u değilse say)
+        if (RunManager.instance.currentNodeType != MapNodeType.Boss)
+        {
+            int preBossKills = PlayerPrefs.GetInt("kills_before_boss", 0) + 1;
+            PlayerPrefs.SetInt("kills_before_boss", preBossKills);
+            GameEvents.KillsBeforeBossUpdated(preBossKills);
+        }
     }
 }

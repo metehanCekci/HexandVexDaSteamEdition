@@ -228,6 +228,9 @@ public class LevelUpManager : MonoBehaviour
     {
         if (perkPrefab == null || RunManager.instance == null) return true;
 
+        // Koleksiyonda kilitli perkler havuzda görünmez
+        if (!PerkCollectionManager.IsUnlocked(perkPrefab)) return true;
+
         BasePerk checkPerk = perkPrefab.GetComponent<BasePerk>();
 
         // CanBeOffered kontrolu -- kosullu perkler (GeneSplice vb.)

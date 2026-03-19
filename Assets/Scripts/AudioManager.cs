@@ -27,6 +27,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip bossRoarClip;     // Boss giriş animasyonu kükreme sesi
     public AudioClip bossGruntClip;    // Boss hasar yeme grunt sesi
     public AudioClip warlockGruntClip; // Warlock hasar yeme grunt sesi
+    public AudioClip unlockFanfareClip; // Koleksiyon perk unlock sesi
 
     [Header("Ses Ayarları")]
     [Range(0f, 1f)] public float masterVolume = 1f;
@@ -105,4 +106,5 @@ public class AudioManager : MonoBehaviour
     public void PlayBossRoar()     => Play(bossRoarClip != null ? bossRoarClip : lightningClip, 1.2f, 0.7f, 0.8f);
     public void PlayBossGrunt()    => Play(bossGruntClip,    1f, 0.85f, 1.1f);
     public void PlayWarlockGrunt() => Play(warlockGruntClip, 1f, 0.85f, 1.1f);
+    public void PlayUnlockFanfare() => Play(unlockFanfareClip != null ? unlockFanfareClip : cardClip, 1f, 0.95f, 1.05f);
 }

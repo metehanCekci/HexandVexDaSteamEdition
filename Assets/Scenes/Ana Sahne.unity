@@ -23835,6 +23835,7 @@ MonoBehaviour:
   bossRoarClip: {fileID: 8300000, guid: 29be4f2be315a84408630d38aee84c44, type: 3}
   bossGruntClip: {fileID: 8300000, guid: 03963fa4b4e72f4469b77d07a147739b, type: 3}
   warlockGruntClip: {fileID: 8300000, guid: f149c61d39c5cd34ab6c31fa53bd23c8, type: 3}
+  unlockFanfareClip: {fileID: 0}
   masterVolume: 1
   sfxVolume: 1
 --- !u!1 &1745532110

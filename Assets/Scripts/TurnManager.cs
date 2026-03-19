@@ -527,6 +527,7 @@ public class TurnManager : MonoBehaviour
         yield return new WaitForSeconds(0.3f);
 
         RunManager.instance.totalLevelsPlayed++;
+        GameEvents.LevelCleared(RunManager.instance.totalLevelsPlayed);
 
         // Level temizlendiğinde perklerin OnLevelClear callback'ini çağır
         if (RunManager.instance != null)
@@ -1066,6 +1067,11 @@ public class TurnManager : MonoBehaviour
     {
         // OnSkip'i saldırıdan ÖNCE çağır: DormantSpore zarları bu turda kullanılabilsin
         foreach (var perk in RunManager.instance.activePerks) perk.OnSkip();
+
+        // Collection: skip sayacı
+        int totalSkips = PlayerPrefs.GetInt("total_skips", 0) + 1;
+        PlayerPrefs.SetInt("total_skips", totalSkips);
+        GameEvents.SkipTurnPerformed(totalSkips);
         RunManager.instance.currentGold += RunManager.instance.skipBonusGold;
         UpdateCoinUI();
 
@@ -1734,6 +1740,11 @@ public class TurnManager : MonoBehaviour
 
         if (spikedEnemies.Count > 0)
         {
+            // Collection: spike'a itilen düşman sayacı
+            int spikeTotal = PlayerPrefs.GetInt("total_spike_pushes", 0) + spikedEnemies.Count;
+            PlayerPrefs.SetInt("total_spike_pushes", spikeTotal);
+            GameEvents.EnemyPushedIntoSpike(spikeTotal);
+
             yield return new WaitForSeconds(0.2f);
             foreach (var s in spikedEnemies) { StartCoroutine(FlashHazardTileCoroutine(s.GetCurrentCellPosition())); s.health.TakeDamage(Mathf.Max(1, s.health.maxHP / 2)); }
 

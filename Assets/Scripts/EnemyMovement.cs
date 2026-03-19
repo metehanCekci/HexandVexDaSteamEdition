@@ -116,7 +116,7 @@ public class EnemyMovement : MonoBehaviour
         if (totem != null) { totem.OnTotemDeath(); return; }
 
         var bossAI = GetComponent<SpawnerBossAI>();
-        if (bossAI != null && SpawnerBossAI.instance != null) { SpawnerBossAI.instance.OnBossDied(); return; }
+        if (bossAI != null && SpawnerBossAI.instance != null) { GameEvents.BossDefeated(); SpawnerBossAI.instance.OnBossDied(); return; }
 
         var warlock = GetComponent<WarlockEnemyAI>();
         if (warlock != null) { warlock.OnWarlockDied(); return; }

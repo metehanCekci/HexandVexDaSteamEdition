@@ -227,6 +227,7 @@ public class HealthScript : MonoBehaviour
         if (gameObject.CompareTag("Player"))
         {
             if (RunManager.instance != null) RunManager.instance.SaveBestRun();
+            GameEvents.RunCompleted(false); // Oyuncu öldü = run kaybedildi
             if (deathMenuUI != null)
             {
                 deathMenuUI.SetActive(true);

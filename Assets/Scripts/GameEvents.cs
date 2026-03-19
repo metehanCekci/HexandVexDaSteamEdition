@@ -80,4 +80,45 @@ public static class GameEvents
     {
         OnShopClosed?.Invoke();
     }
+
+    // ─── Collection / Unlock Events ───
+    /// <summary>Fired when an enemy is killed. PerkCollectionManager listens for kill-count unlocks.</summary>
+    public static event Action<int> OnEnemyKilledTotal;
+    public static void EnemyKilledTotal(int totalKills) => OnEnemyKilledTotal?.Invoke(totalKills);
+
+    /// <summary>Fired when a run is completed (win or lose). Passes true if the run was a victory.</summary>
+    public static event Action<bool> OnRunCompleted;
+    public static void RunCompleted(bool victory) => OnRunCompleted?.Invoke(victory);
+
+    /// <summary>Fired when a boss is defeated.</summary>
+    public static event Action OnBossDefeated;
+    public static void BossDefeated() => OnBossDefeated?.Invoke();
+
+    /// <summary>Fired when a perk is acquired for the first time in a run.</summary>
+    public static event Action<string> OnPerkAcquired;
+    public static void PerkAcquired(string perkTypeName) => OnPerkAcquired?.Invoke(perkTypeName);
+
+    /// <summary>Fired when a new perk is unlocked in the collection.</summary>
+    public static event Action<string> OnPerkUnlocked;
+    public static void PerkUnlocked(string perkId) => OnPerkUnlocked?.Invoke(perkId);
+
+    /// <summary>Fired when total gold earned changes (cumulative across runs).</summary>
+    public static event Action<int> OnTotalGoldLifetime;
+    public static void TotalGoldLifetime(int totalGold) => OnTotalGoldLifetime?.Invoke(totalGold);
+
+    /// <summary>Fired when a level/room is cleared.</summary>
+    public static event Action<int> OnLevelCleared;
+    public static void LevelCleared(int totalLevels) => OnLevelCleared?.Invoke(totalLevels);
+
+    /// <summary>Fired when an enemy is pushed into a spike/hazard tile.</summary>
+    public static event Action<int> OnEnemyPushedIntoSpike;
+    public static void EnemyPushedIntoSpike(int totalCount) => OnEnemyPushedIntoSpike?.Invoke(totalCount);
+
+    /// <summary>Fired when kills-before-boss counter updates. Passes current layer kill count.</summary>
+    public static event Action<int> OnKillsBeforeBossUpdated;
+    public static void KillsBeforeBossUpdated(int killCount) => OnKillsBeforeBossUpdated?.Invoke(killCount);
+
+    /// <summary>Fired when player skips a turn.</summary>
+    public static event Action<int> OnSkipTurnPerformed;
+    public static void SkipTurnPerformed(int totalSkips) => OnSkipTurnPerformed?.Invoke(totalSkips);
 }

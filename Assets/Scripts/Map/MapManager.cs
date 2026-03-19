@@ -586,6 +586,7 @@ public class MapManager : MonoBehaviour
                 break;
 
             case MapNodeType.Boss:
+                PlayerPrefs.SetInt("kills_before_boss", 0); // Boss'a ulaşıldı, sayaç sıfırla
                 RunManager.instance.currentLevel++;
                 LevelGenerator.instance.GenerateBossArena();
                 showHotbar = true;

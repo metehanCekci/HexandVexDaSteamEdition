@@ -153,6 +153,9 @@ public class RunManager : MonoBehaviour
             return;
         }
 
+        // Collection: perk ilk kez alındı event'i
+        GameEvents.PerkAcquired(prefabScript.GetType().Name);
+
         // Ilk defa aliniyorsa: obje olarak yarat
         GameObject newPerkObj = Instantiate(perkPrefab, transform);
         BasePerk newPerk = newPerkObj.GetComponent<BasePerk>();
