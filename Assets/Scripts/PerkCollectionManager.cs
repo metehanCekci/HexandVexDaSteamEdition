@@ -32,6 +32,8 @@ public class PerkCollectionManager : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
+            if (database == null)
+                database = Resources.Load<PerkCollectionDatabase>("PerkCollectionDatabase");
             LoadAllProgress();
         }
         else

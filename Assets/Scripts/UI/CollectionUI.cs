@@ -97,6 +97,8 @@ public class CollectionUI : MonoBehaviour
     {
         if (database == null && PerkCollectionManager.instance != null)
             database = PerkCollectionManager.instance.database;
+        if (database == null)
+            database = Resources.Load<PerkCollectionDatabase>("PerkCollectionDatabase");
 
         SetupFilterButtons();
         FixLegacyMasks();
@@ -185,6 +187,10 @@ public class CollectionUI : MonoBehaviour
 
         if (database == null && PerkCollectionManager.instance != null)
             database = PerkCollectionManager.instance.database;
+
+        // Hâlâ null ise Resources'tan yükle
+        if (database == null)
+            database = Resources.Load<PerkCollectionDatabase>("PerkCollectionDatabase");
 
         // Her açılışta varsayılan filtreyle başla
         currentFilter = defaultFilter;
