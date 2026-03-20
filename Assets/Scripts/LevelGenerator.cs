@@ -411,10 +411,6 @@ public class LevelGenerator : MonoBehaviour
                 // Elite node: ilk düşman garanti, geri kalanı %20
                 makeElite = (i == 0) || (Random.value < 0.20f);
             }
-            else if (RunManager.instance.currentLevel >= 6)
-            {
-                makeElite = Random.value < 0.10f;
-            }
 
             if (makeElite)
             {
@@ -427,7 +423,9 @@ public class LevelGenerator : MonoBehaviour
 
                 if (eliteSpriteRenderer != null)
                 {
-                    eliteSpriteRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);
+                    Color eliteColor = new Color(1f, 0.85f, 0.2f, 1f);
+                    eliteSpriteRenderer.color = eliteColor;
+                    enemyAI.health.SetOriginalColor(eliteColor);
                 }
             }
             // ========================================================
@@ -446,6 +444,13 @@ public class LevelGenerator : MonoBehaviour
 
         TurnManager.instance.isPlayerTurn = true;
         TurnManager.instance.hasAttackedThisTurn = false;
+
+        // Reset remaining moves for the new level so perks like ReflexFiber start fresh
+        if (RunManager.instance != null)
+        {
+            RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
+        }
+
         TurnManager.instance.player.UpdateHighlights();
 
         TurnManager.instance.Invoke("LockAllEnemyIntents", 0.1f);

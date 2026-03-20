@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1111111111111111401, guid: 0c01cbaa647bca94f8399f77678ce192, type: 3}
   perkId: FatalSightProtocol
-  loreText: Military-grade targeting firmware that hijacks the visual cortex. Every strike finds a vital point. There are no warning shots anymore.
+  loreText: Military-grade targeting firmware that hijacks the visual cortex. Every
+    strike finds a vital point. There are no warning shots anymore.
   rarity: 3
   unlockCondition: 6
-  requiredAmount: 4
+  requiredAmount: 1
   conditionParam: NeuroAimPerk
-  unlockHint: Acquire Neuro Aim Implant four times.
+  unlockHint: Acquire Neuro Aim Implant.

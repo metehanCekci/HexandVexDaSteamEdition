@@ -210,6 +210,12 @@ public class HealthScript : MonoBehaviour
         }
     }
 
+    public void SetOriginalColor(Color color)
+    {
+        originalColor = color;
+        if (spriteRenderer != null) spriteRenderer.color = color;
+    }
+
     public void Heal(int amount)
     {
         if (isDead) return;

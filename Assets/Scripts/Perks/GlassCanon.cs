@@ -26,6 +26,36 @@ public class GlassCanonPerk : BasePerk
         TriggerVisualPop();
     }
 
+    public override void OnEquip()
+    {
+        RunManager.instance.playerMaxHealth = 3;
+        if (RunManager.instance.playerCurrentHealth > 3)
+            RunManager.instance.playerCurrentHealth = 3;
+
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            var h = TurnManager.instance.player.health;
+            h.maxHP = 3;
+            if (h.currentHP > 3) h.currentHP = 3;
+            h.updateHealth();
+        }
+    }
+
+    public override void OnUnequip()
+    {
+        // Restore max HP to the default starting value
+        int defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
+        RunManager.instance.playerMaxHealth = defaultMaxHP;
+        // Don't restore currentHP — keep it as-is (whatever it was)
+
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            var h = TurnManager.instance.player.health;
+            h.maxHP = defaultMaxHP;
+            h.updateHealth();
+        }
+    }
+
     public override void ModifyCombat(CombatPayload payload)
     {
         // Glass Cannon: Her koşulda 2x hasar

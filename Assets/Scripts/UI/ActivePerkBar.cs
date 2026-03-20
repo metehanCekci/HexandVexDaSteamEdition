@@ -486,10 +486,15 @@ public class ActivePerkBar : MonoBehaviour
             lvRT.anchoredPosition = new Vector2(2f, -2f);
             lvRT.sizeDelta = new Vector2(20f, 16f);
             TextMeshProUGUI lvTMP = lvGO.GetComponent<TextMeshProUGUI>();
+            var alagardFont = Resources.Load<TMP_FontAsset>("alagard SDF");
+            if (alagardFont != null) lvTMP.font = alagardFont;
             lvTMP.text = perk.currentLevel.ToString();
             lvTMP.fontSize = 11;
+            lvTMP.fontStyle = FontStyles.Bold;
             lvTMP.alignment = TextAlignmentOptions.BottomRight;
             lvTMP.color = new Color(1f, 0.9f, 0.4f);
+            lvTMP.outlineWidth = 0.25f;
+            lvTMP.outlineColor = Color.black;
             lvTMP.raycastTarget = false;
         }
 
