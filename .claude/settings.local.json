@@ -32,7 +32,12 @@
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -name *.scene -o -name *.unity)",
       "Bash(grep -r \"\\\\.Open\\(\\)\\\\|\\\\.Toggle\\(\\)\\\\|\\\\.Close\\(\\)\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts --include=*.cs)",
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes -type f -name *.unity)",
-      "Bash(ls *.asset)"
+      "Bash(ls *.asset)",
+      "Read(//c/Users/kutus/AppData/LocalLow/DefaultCompany/**)",
+      "Read(//c/Users/kutus/AppData/LocalLow/EfatorStudio/**)",
+      "Bash(ls \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/\"*.unity)",
+      "Read(//c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/LocalLow/Unity/**)",
+      "Read(//c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/LocalLow/**)"
     ]
   }
 }

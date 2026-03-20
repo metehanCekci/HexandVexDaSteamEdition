@@ -320,30 +320,35 @@ public class CollectionUI : MonoBehaviour
             if (card != null) Destroy(card.gameObject);
         cards.Clear();
 
-        Debug.Log($"[Collection] BuildGrid: database={database != null}, PerkCollectionManager={PerkCollectionManager.instance != null}, cardPrefab={cardPrefab != null}, gridContainer={gridContainer != null}");
+        Debug.Log($"[Collection] BuildGrid: database={database != null}, PerkCollectionManager={PerkCollectionManager.instance != null}, cardPrefab={cardPrefab != null}, gridContainer={gridContainer != null}, filter={currentFilter}");
         if (database == null || cardPrefab == null || gridContainer == null) return;
+
+        Debug.Log($"[Collection] Database entry count: {database.entries.Count}");
 
         PerkCollectionManager mgr = PerkCollectionManager.instance;
 
         // Önce filtrelenmiş entry'leri topla ve sırala (açıklar önce, kilitliler sonra)
         var filtered = new List<(PerkCollectionData entry, BasePerk perk, bool unlocked)>();
 
+        int skippedNull = 0, skippedNoPrefab = 0, skippedSecret = 0, skippedNoScript = 0, skippedFilter = 0;
         foreach (var entry in database.entries)
         {
-            if (entry == null || entry.perkPrefab == null) continue;
+            if (entry == null) { skippedNull++; continue; }
+            if (entry.perkPrefab == null) { skippedNoPrefab++; continue; }
 
             // Secret perkleri asla gösterme
-            if (entry.rarity == PerkRarity.Secret) continue;
+            if (entry.rarity == PerkRarity.Secret) { skippedSecret++; continue; }
 
             BasePerk perkScript = entry.perkPrefab.GetComponent<BasePerk>();
-            if (perkScript == null) continue;
+            if (perkScript == null) { skippedNoScript++; Debug.LogWarning($"[Collection] Missing BasePerk on prefab: {entry.perkId} ({entry.perkPrefab.name})"); continue; }
 
             // Filtre kontrolü
-            if (currentFilter.HasValue && entry.rarity != currentFilter.Value) continue;
+            if (currentFilter.HasValue && entry.rarity != currentFilter.Value) { skippedFilter++; continue; }
 
             bool unlocked = mgr != null ? mgr.IsUnlockedById(entry.perkId) : false;
             filtered.Add((entry, perkScript, unlocked));
         }
+        Debug.Log($"[Collection] Filtered: {filtered.Count} shown, skipped: null={skippedNull}, noPrefab={skippedNoPrefab}, secret={skippedSecret}, noScript={skippedNoScript}, filtered={skippedFilter}");
 
         // Sırala: açıklar önce, kilitliler sonra
         filtered.Sort((a, b) =>

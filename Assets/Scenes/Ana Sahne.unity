@@ -4734,7 +4734,6 @@ GameObject:
   - component: {fileID: 366016505}
   - component: {fileID: 366016504}
   - component: {fileID: 366016503}
-  - component: {fileID: 366016501}
   - component: {fileID: 366016500}
   m_Layer: 0
   m_Name: HotbarSlot_3
@@ -4759,22 +4758,7 @@ MonoBehaviour:
   button: {fileID: 366016503}
   iconImage: {fileID: 675384052}
   keyLabel: {fileID: 255675688}
-  tooltip: {fileID: 366016501}
---- !u!114 &366016501
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 366016499}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 839009092}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HotbarSlotTooltip
-  itemName: 
-  itemDesc: 
-  hasItem: 0
+  tooltip: {fileID: 0}
 --- !u!224 &366016502
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6841,7 +6825,6 @@ GameObject:
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
   - component: {fileID: 519420033}
-  - component: {fileID: 519420034}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -6986,18 +6969,6 @@ MonoBehaviour:
   maxZoomZ: -15
   minBounds: {x: -2, y: -1}
   maxBounds: {x: 2, y: 1}
---- !u!114 &519420034
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 519420028}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2beb851b2c714543b270bb38c361be8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CameraShake
 --- !u!1 &529440801
 GameObject:
   m_ObjectHideFlags: 0
@@ -9797,7 +9768,6 @@ GameObject:
   - component: {fileID: 745939513}
   - component: {fileID: 745939512}
   - component: {fileID: 745939511}
-  - component: {fileID: 745939509}
   - component: {fileID: 745939508}
   m_Layer: 0
   m_Name: HotbarSlot_1
@@ -9822,22 +9792,7 @@ MonoBehaviour:
   button: {fileID: 745939511}
   iconImage: {fileID: 904648651}
   keyLabel: {fileID: 1085472713}
-  tooltip: {fileID: 745939509}
---- !u!114 &745939509
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 745939507}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 839009092}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HotbarSlotTooltip
-  itemName: 
-  itemDesc: 
-  hasItem: 0
+  tooltip: {fileID: 0}
 --- !u!224 &745939510
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10295,7 +10250,6 @@ GameObject:
   - component: {fileID: 797254646}
   - component: {fileID: 797254645}
   - component: {fileID: 797254644}
-  - component: {fileID: 797254642}
   - component: {fileID: 797254641}
   m_Layer: 0
   m_Name: HotbarSlot_4
@@ -10320,22 +10274,7 @@ MonoBehaviour:
   button: {fileID: 797254644}
   iconImage: {fileID: 1745532113}
   keyLabel: {fileID: 875724077}
-  tooltip: {fileID: 797254642}
---- !u!114 &797254642
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 797254640}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 839009092}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HotbarSlotTooltip
-  itemName: 
-  itemDesc: 
-  hasItem: 0
+  tooltip: {fileID: 0}
 --- !u!224 &797254643
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10820,21 +10759,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 833440336}
   m_CullTransparentMesh: 1
---- !u!115 &839009092
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: HotbarSlotTooltip
-  m_Namespace: 
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &875724076
 GameObject:
   m_ObjectHideFlags: 0
@@ -12232,7 +12156,6 @@ GameObject:
   - component: {fileID: 1033500412}
   - component: {fileID: 1033500411}
   - component: {fileID: 1033500410}
-  - component: {fileID: 1033500408}
   - component: {fileID: 1033500407}
   m_Layer: 0
   m_Name: HotbarSlot_0
@@ -12257,22 +12180,7 @@ MonoBehaviour:
   button: {fileID: 1033500410}
   iconImage: {fileID: 1453796992}
   keyLabel: {fileID: 20765998}
-  tooltip: {fileID: 1033500408}
---- !u!114 &1033500408
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1033500406}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 839009092}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HotbarSlotTooltip
-  itemName: 
-  itemDesc: 
-  hasItem: 0
+  tooltip: {fileID: 0}
 --- !u!224 &1033500409
 RectTransform:
   m_ObjectHideFlags: 0
@@ -19672,7 +19580,6 @@ GameObject:
   - component: {fileID: 1389360403}
   - component: {fileID: 1389360402}
   - component: {fileID: 1389360401}
-  - component: {fileID: 1389360399}
   - component: {fileID: 1389360398}
   m_Layer: 0
   m_Name: HotbarSlot_2
@@ -19697,22 +19604,7 @@ MonoBehaviour:
   button: {fileID: 1389360401}
   iconImage: {fileID: 1987968820}
   keyLabel: {fileID: 332192795}
-  tooltip: {fileID: 1389360399}
---- !u!114 &1389360399
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1389360397}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 839009092}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HotbarSlotTooltip
-  itemName: 
-  itemDesc: 
-  hasItem: 0
+  tooltip: {fileID: 0}
 --- !u!224 &1389360400
 RectTransform:
   m_ObjectHideFlags: 0
