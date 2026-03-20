@@ -220,6 +220,12 @@ public class HealthScript : MonoBehaviour
     {
         if (isDead) return;
         currentHP = Mathf.Min(currentHP + amount, maxHP);
+
+        if (gameObject.CompareTag("Player") && RunManager.instance != null)
+        {
+            RunManager.instance.playerCurrentHealth = currentHP;
+        }
+
         updateHealth();
     }
 

@@ -130,6 +130,23 @@ public class WarlockEnemyAI : MonoBehaviour
     // ========================================================
     // TERTEMİZ 6 AŞAMALI SAVAŞ DÖNGÜSÜ (ARADA 1 TUR "ES" VAR)
     // ========================================================
+    /// <summary>
+    /// Başka bir warlock bu turda saldırı fazında (charge veya explode) mı?
+    /// </summary>
+    private bool AnotherWarlockIsAttacking()
+    {
+        WarlockEnemyAI[] allWarlocks = FindObjectsByType<WarlockEnemyAI>(FindObjectsSortMode.None);
+        foreach (var w in allWarlocks)
+        {
+            if (w == this || w == null) continue;
+            if (w.myEnemyMovement == null || w.myEnemyMovement.health.currentHP <= 0) continue;
+            // Saldırı fazları: 1 (charge1), 2 (explode1), 4 (charge2), 5 (explode2)
+            if (w.cyclePhase == 1 || w.cyclePhase == 2 || w.cyclePhase == 4 || w.cyclePhase == 5)
+                return true;
+        }
+        return false;
+    }
+
     public IEnumerator ExecuteWarlockTurn()
     {
         if (myEnemyMovement.skipTurns > 0) yield break;
@@ -148,7 +165,15 @@ public class WarlockEnemyAI : MonoBehaviour
                 }
                 if (currentIdleCounter >= idleTurns)
                 {
-                    cyclePhase = 1;
+                    // Başka bir warlock saldırı fazındaysa, bu turda idle kal
+                    if (AnotherWarlockIsAttacking())
+                    {
+                        currentIdleCounter = 0; // 1 tur daha bekle
+                    }
+                    else
+                    {
+                        cyclePhase = 1;
+                    }
                 }
                 break;
 
@@ -182,7 +207,9 @@ public class WarlockEnemyAI : MonoBehaviour
                     animator.SetBool("IsCharging", false);
                     animator.SetBool("IsAttacking", false);
                 }
-                cyclePhase = 4;
+                // Başka bir warlock saldırı fazındaysa, es turundan çıkma
+                if (!AnotherWarlockIsAttacking())
+                    cyclePhase = 4;
                 break;
 
             case 4: // FAZ 4: SALDIRI 2 HAZIRLIK (Şarj)
