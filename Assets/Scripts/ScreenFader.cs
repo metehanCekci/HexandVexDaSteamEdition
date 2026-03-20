@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System;
 using UnityEngine.SceneManagement;
@@ -8,9 +9,8 @@ public class ScreenFader : MonoBehaviour
     public static ScreenFader instance;
     public CanvasGroup faderGroup;
     public float fadeDuration = 1.0f;
-    public string faderTag = "FadeCanvas";
 
-    private bool isTransitioning = false;
+    private bool pendingFadeIn = false;
 
     void Awake()
     {
@@ -19,6 +19,7 @@ public class ScreenFader : MonoBehaviour
             instance = this;
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
+            EnsureFaderExists();
         }
         else
         {
@@ -26,96 +27,78 @@ public class ScreenFader : MonoBehaviour
             return;
         }
     }
-    /*
-        private void Start()
-        {
-            // İlk açılışta fader'ı bul ve aç
-            InitializeFader();
-            if (faderGroup != null) StartCoroutine(Fade(0f));
-        }
-    */
-    private void Start()
+
+    void EnsureFaderExists()
     {
-        // İlk açılışta fader'ı bul
-        InitializeFader();
+        if (faderGroup != null) return;
 
-        if (faderGroup != null)
-        {
-            // Sadece oyun ilk başladığında ekranı zorla simsiyah yapıyoruz.
-            faderGroup.alpha = 1f;
+        GameObject canvasObj = new GameObject("FadeCanvas");
+        canvasObj.transform.SetParent(transform);
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 9999;
+        canvasObj.AddComponent<CanvasScaler>();
 
-            // GÜVENLİK KİLİDİ: Eğer OnSceneLoaded da aynı anda tetiklendiyse
-            // iki animasyon birbiriyle savaşmasın diye önce her şeyi durduruyoruz.
-            StopAllCoroutines();
+        GameObject imageObj = new GameObject("FadeImage");
+        imageObj.transform.SetParent(canvasObj.transform, false);
+        Image img = imageObj.AddComponent<Image>();
+        img.color = Color.black;
+        img.raycastTarget = false;
+        RectTransform rt = img.rectTransform;
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
 
-            // Şimdi siyahı yavaşça aydınlatıp sahneyi göster.
-            StartCoroutine(Fade(0f));
-        }
+        faderGroup = canvasObj.AddComponent<CanvasGroup>();
+        faderGroup.alpha = 0f;
+        faderGroup.blocksRaycasts = false;
     }
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        InitializeFader();
-        // Map sistemi aktifse fade'i MapManager kontrol ediyor — burada yapma
+        EnsureFaderExists();
+
+        // Map sistemi aktifse fade'i MapManager kontrol ediyor
         if (MapManager.instance != null) return;
 
-        // EĞER FadeAndLoad ile gelmiyorsak (direkt Play dediysek veya başka bir geçişse)
-        if (!isTransitioning)
+        if (pendingFadeIn)
         {
-            StartCoroutine(Fade(0f));
+            pendingFadeIn = false;
+            faderGroup.alpha = 1f;
+            StartCoroutine(FadeInAndFinish());
+            return;
         }
+
+        // FadeAndLoad kullanılmadan direkt sahne yüklendiyse fade-in yap
+        faderGroup.alpha = 1f;
+        StartCoroutine(Fade(0f));
     }
 
-    void InitializeFader()
+    private IEnumerator FadeInAndFinish()
     {
-        GameObject obj = GameObject.FindWithTag(faderTag);
-        if (obj != null)
-        {
-            faderGroup = obj.GetComponent<CanvasGroup>();
-            // BURADAKİ alpha = 1f SATIRINI SİLDİM!
-            // Çünkü ekran zaten ya siyahtır ya da fader çalışıyordur.
-            // Durduk yere 1 yaparsan flickering (parlama/kararma) yapar.
-        }
+        yield return StartCoroutine(Fade(0f));
     }
 
     public void FadeAndLoad(Action loadAction)
     {
-        if (isTransitioning) return;
         StopAllCoroutines();
-        StartCoroutine(FadeAndLoadSequence(loadAction));
+        pendingFadeIn = false;
+        StartCoroutine(FadeOutThenLoad(loadAction));
     }
 
-    private IEnumerator FadeAndLoadSequence(Action loadAction)
+    private IEnumerator FadeOutThenLoad(Action loadAction)
     {
-        isTransitioning = true;
-
-        // 1. Ekranı kapat
         yield return StartCoroutine(Fade(1f));
-
-        // 2. Sahneyi yükle
+        pendingFadeIn = true;
         loadAction?.Invoke();
-
-        // Sahnenin tam oturması için 1 saniye siyah ekranda bekle
-        yield return new WaitForSecondsRealtime(1f);
-
-        // Yeni sahnedeki fader'ı bul
-        InitializeFader();
-
-        // 3. Ekranı aç
-        if (faderGroup != null)
-        {
-            yield return StartCoroutine(Fade(0f));
-        }
-
-        isTransitioning = false;
     }
 
     IEnumerator Fade(float targetAlpha)
     {
         if (faderGroup == null) yield break;
 
-        // ÇÖZÜM 1: Sadece 1 kare değil, motorun tam uyanması için 
-        // animasyona başlamadan önce çok kısa bir süre (0.1 sn) bekliyoruz.
-        yield return new WaitForSecondsRealtime(0.1f); 
+        yield return null;
 
         float startAlpha = faderGroup.alpha;
         float elapsed = 0f;
@@ -123,25 +106,13 @@ public class ScreenFader : MonoBehaviour
 
         while (elapsed < fadeDuration)
         {
-            // ÇÖZÜM 2: AMORTİSÖR (Zaman Sınırlandırması)
-            // Eğer oyun o an ağır bir işlem yapıp donarsa (örneğin 0.2 sn), 
-            // bunu 0.033 saniye (yaklaşık 30 FPS adımı) olarak kabul et.
-            // Böylece değer asla 1'den 0.8'e atlayamaz, en fazla 0.97'ye düşer ve pürüzsüz iner.
-            float safeDeltaTime = Mathf.Min(Time.unscaledDeltaTime, 0.033f);
-            
-            elapsed += safeDeltaTime;
-            
-            if (faderGroup != null)
-                faderGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / fadeDuration);
-            
+            elapsed += Time.unscaledDeltaTime;
+            faderGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, elapsed / fadeDuration);
             yield return null;
         }
 
-        if (faderGroup != null)
-        {
-            faderGroup.alpha = targetAlpha;
-            if (targetAlpha <= 0.05f) faderGroup.blocksRaycasts = false;
-        }
+        faderGroup.alpha = targetAlpha;
+        if (targetAlpha <= 0.05f) faderGroup.blocksRaycasts = false;
     }
 
     private void OnDestroy()

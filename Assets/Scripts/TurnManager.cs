@@ -1842,7 +1842,8 @@ public class TurnManager : MonoBehaviour
             }
             StartPlayerTurn();
         }
-        RunManager.instance.totalTurnsPlayed++; // Tur sayısını arttır
+        if (RunManager.instance != null)
+            RunManager.instance.totalTurnsPlayed++;
     }
 
     public void ResumeAfterShop() { StartPlayerTurn(); }

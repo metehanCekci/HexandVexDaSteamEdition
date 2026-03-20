@@ -81,37 +81,48 @@ public class PauseManager : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        if (deathMenuUI != null) deathMenuUI.SetActive(false);
-
-        if (TurnManager.instance != null)
-            TurnManager.instance.ResetGame();
-
-        // Tüm DontDestroyOnLoad singleton'ları yok et — yeni oyunda sıfırdan oluşacaklar
-        if (HotbarUI.instance != null)
-            Destroy(HotbarUI.instance.gameObject);
-        if (ActivePerkBar.instance != null)
-            Destroy(ActivePerkBar.instance.gameObject);
-        if (MapManager.instance != null)
-            Destroy(MapManager.instance.gameObject);
-        if (RunManager.instance != null)
-            Destroy(RunManager.instance.gameObject);
-        if (InventoryManager.instance != null)
-            Destroy(InventoryManager.instance.gameObject);
-        if (PerkInventoryUI.instance != null)
-            Destroy(PerkInventoryUI.instance.gameObject);
-
         if (ScreenFader.instance != null)
         {
-            // ScreenFader'ı fade bittikten sonra yok et
-            var fader = ScreenFader.instance;
-            fader.FadeAndLoad(() =>
+            ScreenFader.instance.FadeAndLoad(() =>
             {
+                if (deathMenuUI != null) deathMenuUI.SetActive(false);
+                // Singleton'ları fade-out bittikten sonra yok et
+                if (TurnManager.instance != null)
+                    TurnManager.instance.ResetGame();
+                if (HotbarUI.instance != null)
+                    Destroy(HotbarUI.instance.gameObject);
+                if (ActivePerkBar.instance != null)
+                    Destroy(ActivePerkBar.instance.gameObject);
+                if (MapManager.instance != null)
+                { Destroy(MapManager.instance.gameObject); MapManager.instance = null; }
+                if (RunManager.instance != null)
+                    Destroy(RunManager.instance.gameObject);
+                if (InventoryManager.instance != null)
+                    Destroy(InventoryManager.instance.gameObject);
+                if (PerkInventoryUI.instance != null)
+                    Destroy(PerkInventoryUI.instance.gameObject);
+
                 SceneManager.LoadScene(1);
-                Destroy(fader.gameObject);
             });
         }
         else
         {
+            if (deathMenuUI != null) deathMenuUI.SetActive(false);
+            if (TurnManager.instance != null)
+                TurnManager.instance.ResetGame();
+            if (HotbarUI.instance != null)
+                Destroy(HotbarUI.instance.gameObject);
+            if (ActivePerkBar.instance != null)
+                Destroy(ActivePerkBar.instance.gameObject);
+            if (MapManager.instance != null)
+            { Destroy(MapManager.instance.gameObject); MapManager.instance = null; }
+            if (RunManager.instance != null)
+                Destroy(RunManager.instance.gameObject);
+            if (InventoryManager.instance != null)
+                Destroy(InventoryManager.instance.gameObject);
+            if (PerkInventoryUI.instance != null)
+                Destroy(PerkInventoryUI.instance.gameObject);
+
             SceneManager.LoadScene(1);
         }
     }

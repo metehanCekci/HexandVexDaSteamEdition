@@ -95,6 +95,9 @@ public class CollectionUI : MonoBehaviour
 
     void Start()
     {
+        if (database == null && PerkCollectionManager.instance != null)
+            database = PerkCollectionManager.instance.database;
+
         SetupFilterButtons();
         FixLegacyMasks();
         ApplyFontToAll();
@@ -179,6 +182,9 @@ public class CollectionUI : MonoBehaviour
     {
         if (isOpen) return;
         isOpen = true;
+
+        if (database == null && PerkCollectionManager.instance != null)
+            database = PerkCollectionManager.instance.database;
 
         // Her açılışta varsayılan filtreyle başla
         currentFilter = defaultFilter;
@@ -308,6 +314,7 @@ public class CollectionUI : MonoBehaviour
             if (card != null) Destroy(card.gameObject);
         cards.Clear();
 
+        Debug.Log($"[Collection] BuildGrid: database={database != null}, PerkCollectionManager={PerkCollectionManager.instance != null}, cardPrefab={cardPrefab != null}, gridContainer={gridContainer != null}");
         if (database == null || cardPrefab == null || gridContainer == null) return;
 
         PerkCollectionManager mgr = PerkCollectionManager.instance;
