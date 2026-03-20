@@ -145,10 +145,17 @@ public class EnemyMovement : MonoBehaviour
 
     public void TeleportTo(Vector3Int targetCell)
     {
+        Vector3Int oldCell = cell;
         cell = targetCell;
         targetWorldPos = groundMap.GetCellCenterWorld(cell);
         targetWorldPos.z = 0;
         transform.position = targetWorldPos;
+
+        if (ScaffoldManager.instance != null)
+        {
+            ScaffoldManager.instance.OnEntityLeave(oldCell);
+            ScaffoldManager.instance.OnEntityEnter(cell);
+        }
     }
 
     /// <summary>

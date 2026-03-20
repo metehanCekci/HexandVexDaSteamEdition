@@ -58,10 +58,18 @@ public class HotbarUI : MonoBehaviour
 
     void Start()
     {
-        // Wire button click listeners for each slot
+        // Wire button click listeners & ensure tooltip references
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i] == null || slots[i].button == null) continue;
+            if (slots[i] == null) continue;
+
+            // Ensure tooltip component exists (add at runtime if missing)
+            if (slots[i].tooltip == null)
+                slots[i].tooltip = slots[i].GetComponent<HotbarSlotTooltip>();
+            if (slots[i].tooltip == null)
+                slots[i].tooltip = slots[i].gameObject.AddComponent<HotbarSlotTooltip>();
+
+            if (slots[i].button == null) continue;
             int idx = i;
             slots[i].button.onClick.RemoveAllListeners();
             slots[i].button.onClick.AddListener(() => UseSlot(idx));
@@ -158,11 +166,12 @@ public class HotbarUI : MonoBehaviour
                     slot.iconImage.enabled = false;
                 }
 
-                if (slot.tooltip != null)
+                HotbarSlotTooltip tt = slot.tooltip ?? slot.GetComponent<HotbarSlotTooltip>();
+                if (tt != null)
                 {
-                    slot.tooltip.itemName = item.itemName;
-                    slot.tooltip.itemDesc = item.description;
-                    slot.tooltip.hasItem = true;
+                    tt.itemName = item.itemName ?? "";
+                    tt.itemDesc = item.description ?? "";
+                    tt.hasItem = true;
                 }
             }
             else
@@ -170,8 +179,9 @@ public class HotbarUI : MonoBehaviour
                 slot.background.color = emptySlotColor;
                 slot.button.interactable = false;
                 slot.iconImage.enabled = false;
-                if (slot.tooltip != null)
-                    slot.tooltip.hasItem = false;
+                HotbarSlotTooltip tt2 = slot.tooltip ?? slot.GetComponent<HotbarSlotTooltip>();
+                if (tt2 != null)
+                    tt2.hasItem = false;
             }
         }
     }
@@ -249,6 +259,8 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         tooltipCanvasGroup = tooltipObj.AddComponent<CanvasGroup>();
         tooltipCanvasGroup.alpha = 0f;
+        tooltipCanvasGroup.blocksRaycasts = false;
+        tooltipCanvasGroup.interactable = false;
 
         RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
         ttRT.anchorMin = new Vector2(0.5f, 1f);
@@ -276,6 +288,8 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         titleGO.transform.SetParent(tooltipObj.transform, false);
         titleGO.layer = gameObject.layer;
         titleText = titleGO.AddComponent<TextMeshProUGUI>();
+        TMP_FontAsset alagardFont = Resources.Load<TMP_FontAsset>("alagard SDF");
+        if (alagardFont != null) titleText.font = alagardFont;
         titleText.fontSize = 16;
         titleText.alignment = TextAlignmentOptions.Left;
         titleText.color = Color.white;
@@ -296,6 +310,7 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         descGO.transform.SetParent(tooltipObj.transform, false);
         descGO.layer = gameObject.layer;
         descText = descGO.AddComponent<TextMeshProUGUI>();
+        if (alagardFont != null) descText.font = alagardFont;
         descText.fontSize = 13;
         descText.alignment = TextAlignmentOptions.Left;
         descText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
