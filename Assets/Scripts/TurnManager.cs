@@ -56,6 +56,7 @@ public class TurnManager : MonoBehaviour
     private PerkCombatProcessor perkProcessor;
     [HideInInspector] public bool isLevelClearTriggered = false;
     private bool manualDiceSkip = false;
+    private bool speedDiceMode = false;
     [HideInInspector] public bool holdingSkip = false;
     public bool isPlayerTurn = true;
     public bool hasAttackedThisTurn = false;
@@ -144,6 +145,10 @@ public class TurnManager : MonoBehaviour
         if (PauseManager.isPaused) return;
 
         if (diceUI != null) diceUI.CheckFastModeSkip();
+
+        // Speed dice: animasyonları atla ama zarları göster
+        if (speedDiceMode && diceUI != null && diceUI.IsDiceAnimPlaying)
+            diceUI.skipDiceAnim = true;
 
         // fastMode veya manuel skip aktifse zarları gizle
         if (RunManager.instance != null)
@@ -859,7 +864,10 @@ public class TurnManager : MonoBehaviour
         if (!skipDiceVisuals)
         {
             UpdateTotalDamageDisplay(totalDamage);
-            yield return StartCoroutine(diceUI.SkippableWait(0.6f));
+            if (speedDiceMode)
+                yield return new WaitForSeconds(0.5f);
+            else
+                yield return StartCoroutine(diceUI.SkippableWait(0.6f));
         }
         diceUI.EndDiceAnim();
 
@@ -1429,6 +1437,14 @@ public class TurnManager : MonoBehaviour
     }
     public bool GetSkipDiceVisuals() => manualDiceSkip;
 
+    public void ToggleSpeedDice()
+    {
+        speedDiceMode = !speedDiceMode;
+        if (speedDiceMode && diceUI != null && diceUI.IsDiceAnimPlaying)
+            diceUI.skipDiceAnim = true;
+    }
+    public bool GetSpeedDice() => speedDiceMode;
+
     private IEnumerator MultiAttack(List<EnemyMovement> targets)
     {
 
@@ -1585,7 +1601,10 @@ public class TurnManager : MonoBehaviour
 
         if (!skipDiceVisuals)
         {
-            yield return StartCoroutine(diceUI.SkippableWait(0.4f));
+            if (speedDiceMode)
+                yield return new WaitForSeconds(0.5f);
+            else
+                yield return StartCoroutine(diceUI.SkippableWait(0.4f));
         }
         HideDiceResults();
         diceUI.EndDiceAnim();
