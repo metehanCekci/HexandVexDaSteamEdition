@@ -80,6 +80,8 @@ public class PauseManager : MonoBehaviour
     public void LoadMainMenu()
     {
         Time.timeScale = 1f;
+        isPaused = false;
+        if (pauseMenuUI != null) pauseMenuUI.SetActive(false);
 
         if (ScreenFader.instance != null)
         {

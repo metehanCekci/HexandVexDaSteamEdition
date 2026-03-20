@@ -10,7 +10,8 @@ public class ScreenFader : MonoBehaviour
     public CanvasGroup faderGroup;
     public float fadeDuration = 1.0f;
 
-    private bool pendingFadeIn = false;
+    // FadeAndLoad aktifse OnSceneLoaded'ın otomatik fade yapmasını engeller
+    private bool fadeAndLoadActive = false;
 
     void Awake()
     {
@@ -59,39 +60,46 @@ public class ScreenFader : MonoBehaviour
     {
         EnsureFaderExists();
 
+        // FadeAndLoad kendi fade-in'ini yapıyor, müdahale etme
+        if (fadeAndLoadActive) return;
+
         // Map sistemi aktifse fade'i MapManager kontrol ediyor
         if (MapManager.instance != null) return;
-
-        if (pendingFadeIn)
-        {
-            pendingFadeIn = false;
-            faderGroup.alpha = 1f;
-            StartCoroutine(FadeInAndFinish());
-            return;
-        }
 
         // FadeAndLoad kullanılmadan direkt sahne yüklendiyse fade-in yap
         faderGroup.alpha = 1f;
         StartCoroutine(Fade(0f));
     }
 
-    private IEnumerator FadeInAndFinish()
-    {
-        yield return StartCoroutine(Fade(0f));
-    }
-
     public void FadeAndLoad(Action loadAction)
     {
         StopAllCoroutines();
-        pendingFadeIn = false;
-        StartCoroutine(FadeOutThenLoad(loadAction));
+        StartCoroutine(FadeOutLoadFadeIn(loadAction));
     }
 
-    private IEnumerator FadeOutThenLoad(Action loadAction)
+    private IEnumerator FadeOutLoadFadeIn(Action loadAction)
     {
+        fadeAndLoadActive = true;
+
+        // Fade out (ekran kararır)
         yield return StartCoroutine(Fade(1f));
-        pendingFadeIn = true;
-        loadAction?.Invoke();
+
+        // Sahneyi async yükle
+        if (loadAction != null)
+        {
+            loadAction.Invoke();
+        }
+
+        // Yeni sahnenin tamamen yüklenmesini bekle
+        yield return null;
+        yield return null;
+
+        // Fade in (ekran açılır)
+        EnsureFaderExists();
+        faderGroup.alpha = 1f;
+        yield return StartCoroutine(Fade(0f));
+
+        fadeAndLoadActive = false;
     }
 
     IEnumerator Fade(float targetAlpha)

@@ -68,8 +68,9 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public bool isThornPlacementTargeting = false;
     [HideInInspector] public bool isMitsuriTargeting = false;
 
-    // Thorn preview
+    // Thorn preview & lifetime tracking
     private GameObject thornPreviewObj;
+    private Dictionary<Vector3Int, int> thornTurnsRemaining = new Dictionary<Vector3Int, int>();
 
     public bool IsAnyTargetingActive => isNecroShotTargeting || isBombPlacementTargeting || isPhaseShiftTargeting || isThornPlacementTargeting || isMitsuriTargeting;
 
@@ -353,6 +354,7 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.surgeBootActive = false;
             RunManager.instance.surgeBootNextTurn = false;
         }
+        TickThornLifetimes();
         player.UpdateHighlights();
         StartCoroutine(LockIntentsNextFrame());
 
@@ -1019,6 +1021,60 @@ public class TurnManager : MonoBehaviour
         return false;
     }
 
+    private void TickThornLifetimes()
+    {
+        if (LevelGenerator.instance == null) return;
+        List<Vector3Int> expired = new List<Vector3Int>();
+        List<Vector3Int> blinkCells = new List<Vector3Int>();
+        List<Vector3Int> keys = new List<Vector3Int>(thornTurnsRemaining.Keys);
+
+        foreach (var key in keys)
+        {
+            int remaining = thornTurnsRemaining[key] - 1;
+            thornTurnsRemaining[key] = remaining;
+
+            if (remaining <= 0)
+                expired.Add(key);
+            else if (remaining == 1)
+                blinkCells.Add(key);
+        }
+
+        // 2. turda (1 tur kaldı) blink efekti
+        foreach (var cell in blinkCells)
+        {
+            if (LevelGenerator.instance.hazardMap != null && LevelGenerator.instance.hazardMap.HasTile(cell))
+                StartCoroutine(BlinkThornTile(cell));
+        }
+
+        // 3. tur doldu → kaldır
+        foreach (var cell in expired)
+        {
+            thornTurnsRemaining.Remove(cell);
+            LevelGenerator.instance.hazardCells.Remove(cell);
+            if (LevelGenerator.instance.hazardMap != null)
+            {
+                LevelGenerator.instance.hazardMap.SetTile(cell, null);
+            }
+        }
+    }
+
+    private IEnumerator BlinkThornTile(Vector3Int cell)
+    {
+        var map = LevelGenerator.instance != null ? LevelGenerator.instance.hazardMap : null;
+        if (map == null) yield break;
+        // LockColor flag'ini kaldır yoksa SetColor çalışmaz
+        if (map.HasTile(cell)) map.SetTileFlags(cell, TileFlags.None);
+        // Son tur boyunca sürekli yanıp sön, tile kaldırılana kadar
+        while (map.HasTile(cell) && thornTurnsRemaining.ContainsKey(cell))
+        {
+            map.SetColor(cell, new Color(1f, 1f, 1f, 0.25f));
+            yield return new WaitForSeconds(0.2f);
+            if (!map.HasTile(cell)) break;
+            map.SetColor(cell, Color.white);
+            yield return new WaitForSeconds(0.2f);
+        }
+    }
+
     private void ExecuteThornAt(Vector3Int cell)
     {
         if (LevelGenerator.instance == null) { isThornPlacementTargeting = false; DestroyThornPreview(); return; }
@@ -1027,6 +1083,7 @@ public class TurnManager : MonoBehaviour
         DestroyThornPreview();
         LevelGenerator.instance.hazardCells.Add(cell);
         if (LevelGenerator.instance.hazardMap != null && LevelGenerator.instance.hazardTile != null) LevelGenerator.instance.hazardMap.SetTile(cell, LevelGenerator.instance.hazardTile);
+        thornTurnsRemaining[cell] = 3;
         if (player != null) player.UpdateHighlights();
     }
 
