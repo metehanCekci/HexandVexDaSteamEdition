@@ -18,5 +18,5 @@ MonoBehaviour:
   rarity: 3
   unlockCondition: 6
   requiredAmount: 4
-  conditionParam: NeuroAim
+  conditionParam: NeuroAimPerk
   unlockHint: Acquire Neuro Aim Implant four times.

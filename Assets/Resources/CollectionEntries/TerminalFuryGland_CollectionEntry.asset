@@ -18,5 +18,5 @@ MonoBehaviour:
   rarity: 3
   unlockCondition: 6
   requiredAmount: 1
-  conditionParam: GlassCannon
+  conditionParam: GlassCanonPerk
   unlockHint: Acquire  Glass Cannon Implant.

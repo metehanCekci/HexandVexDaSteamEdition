@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 2698308610461572902, guid: 8668b9db5b315694d896d602e882685c, type: 3}
   perkId: BioMagnetism
-  loreText: Ferrofluid nodes implanted beneath the skin. They generate a subtle magnetic field that pulls nearby objects and disrupts enemy positioning.
+  loreText: Ferrofluid nodes implanted beneath the skin. They generate a subtle magnetic
+    field that pulls nearby objects and disrupts enemy positioning.
   rarity: 2
   unlockCondition: 6
   requiredAmount: 1
-  conditionParam: 
+  conditionParam: HostSyndromePerk
   unlockHint: Acquire Host Syndrome Implant.

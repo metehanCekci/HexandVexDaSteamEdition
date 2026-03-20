@@ -28,6 +28,8 @@ public class WarlockEnemyAI : MonoBehaviour
     private bool readyToExplodeAttack1 = false;
     private bool readyToExplodeAttack2 = false;
 
+    private int initialIdleOffset = 0;
+
     [Header("Animasyon")]
     public Animator animator;
 
@@ -86,7 +88,8 @@ public class WarlockEnemyAI : MonoBehaviour
         // ========================================================
         // DÖNGÜYÜ SENKRONDAN ÇIKAR
         // ========================================================
-        currentIdleCounter = -(myIndex * 2);
+        initialIdleOffset = -(myIndex * 2);
+        currentIdleCounter = initialIdleOffset;
         cyclePhase = 0;
 
         // ========================================================
@@ -405,9 +408,22 @@ public class WarlockEnemyAI : MonoBehaviour
         }
         ClearAllWarnings();
         cyclePhase = 0;
-        currentIdleCounter = 0;
         readyToExplodeAttack1 = false;
         readyToExplodeAttack2 = false;
+
+        // Diğer warlock'larla çakışmayı önle: sahnedeki warlock'ların
+        // mevcut idle counter'larına bakarak benzersiz bir offset seç
+        WarlockEnemyAI[] allWarlocks = FindObjectsByType<WarlockEnemyAI>(FindObjectsSortMode.None);
+        HashSet<int> usedCounters = new HashSet<int>();
+        foreach (var w in allWarlocks)
+        {
+            if (w != this && w != null && w.myEnemyMovement != null && w.myEnemyMovement.health.currentHP > 0)
+                usedCounters.Add(w.currentIdleCounter);
+        }
+        int offset = initialIdleOffset;
+        while (usedCounters.Contains(offset))
+            offset -= 2;
+        currentIdleCounter = offset;
 
         yield return StartCoroutine(WarlockTeleportFade(1f, 0f, 0.25f));
 

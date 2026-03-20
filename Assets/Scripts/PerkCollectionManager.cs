@@ -26,11 +26,20 @@ public class PerkCollectionManager : MonoBehaviour
     //  LIFECYCLE
     // ═══════════════════════════════════════════════════════
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void AutoCreate()
+    {
+        if (instance != null) return;
+        var go = new GameObject("PerkCollectionManager");
+        go.AddComponent<PerkCollectionManager>();
+    }
+
     void Awake()
     {
         if (instance == null)
         {
             instance = this;
+            transform.SetParent(null); // root'a taşı — DontDestroyOnLoad gerektiriyor
             DontDestroyOnLoad(gameObject);
             if (database == null)
                 database = Resources.Load<PerkCollectionDatabase>("PerkCollectionDatabase");
@@ -320,10 +329,20 @@ public class PerkCollectionManager : MonoBehaviour
         {
             if (entry.unlockCondition != condition) continue;
             if (IsUnlockedById(entry.perkId)) continue;
-            if (!string.IsNullOrEmpty(entry.conditionParam) && entry.conditionParam != param) continue;
+            if (!string.IsNullOrEmpty(entry.conditionParam)
+                && entry.conditionParam != param
+                && entry.conditionParam + "Perk" != param) continue;
 
-            UnlockPerk(entry.perkId);
+            // Progress'i artır ve requiredAmount'a ulaşınca unlock yap
+            int prev = GetProgress(entry.perkId);
+            int newVal = prev + 1;
+            progressCache[entry.perkId] = newVal;
+            PlayerPrefs.SetInt($"perk_progress_{entry.perkId}", newVal);
+
+            if (newVal >= entry.requiredAmount)
+                UnlockPerk(entry.perkId);
         }
+        PlayerPrefs.Save();
     }
 
     private void UnlockPerk(string perkId, bool silent = false)

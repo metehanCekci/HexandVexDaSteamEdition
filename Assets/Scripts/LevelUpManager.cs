@@ -241,7 +241,7 @@ public class LevelUpManager : MonoBehaviour
         if (existing == null)
             existing = RunManager.instance.inventoryPerks.Find(p => p.GetType() == checkPerk.GetType());
 
-        if (existing != null && existing.currentLevel >= existing.maxLevel)
+        if (existing != null)
         {
             return true;
         }

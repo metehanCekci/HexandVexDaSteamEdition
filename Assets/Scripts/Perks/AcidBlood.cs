@@ -2,7 +2,18 @@ using UnityEngine;
 
 public class AcidBloodPerk : BasePerk
 {
-    void OnEnable() { maxLevel = 3; }
-    // Düşmanı dikene itmek oyuncuyu iyileştirir. Seviye başına 1 ek can.
-    // Mantık TurnManager.MultiAttack içinde çalışıyor.
+    void OnEnable() { maxLevel = 3; UpdateDescription(); }
+
+    public override void OnAcquire() { UpdateDescription(); }
+
+    public override void Upgrade()
+    {
+        base.Upgrade();
+        UpdateDescription();
+    }
+
+    private void UpdateDescription()
+    {
+        description = $"Pushing an enemy into spikes heals you for {currentLevel} HP.";
+    }
 }

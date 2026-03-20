@@ -549,9 +549,15 @@ public class SpawnerBossAI : MonoBehaviour
             StartCoroutine(CameraShake(0.4f, 0.14f));
         }
 
+        // Önce tüm minionların HP'sini sıfırla — EnemyPhase'de hareket etmelerini engelle
         foreach (var minion in summonedMinions)
         {
             if (minion != null && minion.health.currentHP > 0)
+                minion.health.currentHP = 0;
+        }
+        foreach (var minion in summonedMinions)
+        {
+            if (minion != null)
                 StartCoroutine(minion.FadeDieCoroutine());
         }
         summonedMinions.Clear();

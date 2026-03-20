@@ -211,8 +211,15 @@ public class CollectionUnlockToast : MonoBehaviour
         Image bgImg = toastGO.GetComponent<Image>();
         if (bgImg != null) bgImg.color = new Color(0f, 0.02f, 0.047f, 1f);
 
-        if (titleText != null) { titleText.text = "NEW PERK UNLOCKED!"; titleText.color = new Color(1f, 0.85f, 0.2f); }
-        if (subtitleText != null) { subtitleText.text = perk.perkName; subtitleText.color = rarityColor; }
+        if (titleText != null) { titleText.text = "NEW PERK UNLOCKED!"; titleText.color = new Color(1f, 0.85f, 0.2f); titleText.fontSize = 12; }
+        string hint = !string.IsNullOrEmpty(entry.unlockHint) ? entry.unlockHint : CollectionUI.GetDefaultHint(entry);
+        if (subtitleText != null)
+        {
+            string rarityHex = ColorUtility.ToHtmlStringRGB(rarityColor);
+            subtitleText.text = $"<color=#{rarityHex}><size=18>{perk.perkName}</size></color>\n<color=#8899AA><size=11>{hint}</size></color>";
+            subtitleText.color = Color.white;
+            subtitleText.richText = true;
+        }
         if (iconImg != null) { iconImg.sprite = perk.icon; iconImg.color = Color.white; }
         if (borderImg != null) borderImg.color = rarityColor;
         if (glowImg != null) glowImg.color = new Color(rarityColor.r, rarityColor.g, rarityColor.b, 0.5f);

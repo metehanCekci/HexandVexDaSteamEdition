@@ -527,7 +527,9 @@ public class TurnManager : MonoBehaviour
         yield return new WaitForSeconds(0.3f);
 
         RunManager.instance.totalLevelsPlayed++;
-        GameEvents.LevelCleared(RunManager.instance.totalLevelsPlayed);
+        int lifetimeLevels = PlayerPrefs.GetInt("lifetime_levels_cleared", 0) + 1;
+        PlayerPrefs.SetInt("lifetime_levels_cleared", lifetimeLevels);
+        GameEvents.LevelCleared(lifetimeLevels);
 
         // Level temizlendiğinde perklerin OnLevelClear callback'ini çağır
         if (RunManager.instance != null)
@@ -1615,9 +1617,13 @@ public class TurnManager : MonoBehaviour
             {
                 int stackBonus = retributionPerk.GetBonusFor(enemy);
                 retributionPerk.RegisterHit(enemy);
-                actualDamage += stackBonus;
                 if (stackBonus > 0)
                 {
+                    // Retribution bonusunu payload multiplier ve crit ile scale et
+                    float scaledBonus = stackBonus * payload.multiplier;
+                    if (payload.isCriticalHit)
+                        scaledBonus *= RunManager.instance.criticalDamageMultiplier;
+                    actualDamage += Mathf.FloorToInt(scaledBonus);
                     retributionPerk.TriggerVisualPop();
                     if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.TriggerShakeForPerk(retributionPerk);
                 }

@@ -141,6 +141,7 @@ public class RunManager : MonoBehaviour
         {
             // Aktif slotlarda zaten varsa: sadece yukselt
             existingActive.Upgrade();
+            GameEvents.PerkAcquired(existingActive.GetType().Name);
             RefreshPerkUI();
             return;
         }
@@ -149,6 +150,7 @@ public class RunManager : MonoBehaviour
         {
             // Envanterde (stash) varsa: orani yukselt
             existingInventory.Upgrade();
+            GameEvents.PerkAcquired(existingInventory.GetType().Name);
             RefreshPerkUI();
             return;
         }

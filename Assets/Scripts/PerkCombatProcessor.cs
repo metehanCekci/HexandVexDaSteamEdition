@@ -18,11 +18,6 @@ public class PerkCombatProcessor : MonoBehaviour
             yield break;
 
         List<BasePerk> perksToProcess = RunManager.instance.activePerks.FindAll(p => p != null);
-        perksToProcess.Sort((a, b) =>
-        {
-            int r = b.isRerollPerk.CompareTo(a.isRerollPerk);
-            return r != 0 ? r : a.priority.CompareTo(b.priority);
-        });
 
         yield return StartCoroutine(ProcessPerksFromList(payload, rolls, perksToProcess));
     }
@@ -43,11 +38,6 @@ public class PerkCombatProcessor : MonoBehaviour
 
         List<BasePerk> secondPass = RunManager.instance.activePerks
             .FindAll(p => p != null && !(p is LetsGoAgainPerk));
-        secondPass.Sort((a, b) =>
-        {
-            int r = b.isRerollPerk.CompareTo(a.isRerollPerk);
-            return r != 0 ? r : a.priority.CompareTo(b.priority);
-        });
 
         payload.flatBonus = 0;
         payload.multiplier = 1.0f;

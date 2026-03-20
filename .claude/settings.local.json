@@ -37,7 +37,12 @@
       "Read(//c/Users/kutus/AppData/LocalLow/EfatorStudio/**)",
       "Bash(ls \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/\"*.unity)",
       "Read(//c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/LocalLow/Unity/**)",
-      "Read(//c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/LocalLow/**)"
+      "Read(//c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/LocalLow/**)",
+      "Bash(grep -n BioMagnetism /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
+      "Bash(grep -n \"ToggleFastMode\" \"/c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/\"*.cs)",
+      "Bash(ls c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)",
+      "Bash(grep -l \"UseSpecificPerk\\\\|unlockCondition: 6\" c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Resources/CollectionEntries/*.asset)",
+      "Bash(grep \"conditionParam:\" c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Resources/CollectionEntries/*UseSpecificPerk* c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Resources/CollectionEntries/BioMagnetism* c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Resources/CollectionEntries/FatalSight* c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Resources/CollectionEntries/MutantSwarm* c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Resources/CollectionEntries/TerminalFury*)"
     ]
   }
 }

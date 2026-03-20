@@ -666,7 +666,7 @@ public class CollectionUI : MonoBehaviour
             headerCounter.text = $"{globalUnlocked} / {globalTotal}";
     }
 
-    private string GetDefaultHint(PerkCollectionData entry)
+    public static string GetDefaultHint(PerkCollectionData entry)
     {
         switch (entry.unlockCondition)
         {
