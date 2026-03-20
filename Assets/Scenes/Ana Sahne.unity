@@ -14504,7 +14504,7 @@ MonoBehaviour:
   shopDealerPrefab: {fileID: 3792929955601508085, guid: eaa1a06c6db7f0e49bd78d6b41618756, type: 3}
   warlockEnemyPrefab: {fileID: 506802351436183914, guid: 216abee7f8db59f4181fc42e10839b5d, type: 3}
   warlockStartLevel: 0
-  warlockSpawnChance: 0.2
+  warlockSpawnChance: 0.1
   baseMapRadius: 3
   aoeStartLevel: 3
 --- !u!4 &1114187817
