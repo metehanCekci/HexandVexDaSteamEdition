@@ -443,6 +443,7 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.surgeBootNextTurn = false;
         }
         TickThornLifetimes();
+        TickBurnsIfActive();
         player.UpdateHighlights();
         StartCoroutine(LockIntentsNextFrame());
 
@@ -1008,6 +1009,8 @@ public class TurnManager : MonoBehaviour
         foreach (var enemy in hitEnemies)
         {
             enemy.health.TakeDamage(totalDamage);
+            ApplyBurnIfActive(enemy);
+            ApplyCystIfActive(enemy);
 
             SpawnSlashEffect(enemy.transform.position);
 
@@ -1825,6 +1828,7 @@ public class TurnManager : MonoBehaviour
             }
             bool dies = enemy.health.currentHP <= actualDamage;
             enemy.health.TakeDamage(actualDamage, true);
+            ApplyBurnIfActive(enemy);
 
             SpawnSlashEffect(enemy.transform.position);
 
@@ -2068,6 +2072,27 @@ public class TurnManager : MonoBehaviour
     }
 
     public void ResumeAfterShop() { StartPlayerTurn(); }
+
+    private void ApplyBurnIfActive(EnemyMovement enemy)
+    {
+        if (RunManager.instance == null || enemy == null || enemy.health.currentHP <= 0) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is PyrogenicGlandsPerk) as PyrogenicGlandsPerk;
+        if (perk != null) perk.ApplyBurn(enemy);
+    }
+
+    private void ApplyCystIfActive(EnemyMovement enemy)
+    {
+        if (RunManager.instance == null || enemy == null || enemy.health.currentHP <= 0) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is ViralCystsPerk) as ViralCystsPerk;
+        if (perk != null) perk.PlantCyst(enemy);
+    }
+
+    private void TickBurnsIfActive()
+    {
+        if (RunManager.instance == null) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is PyrogenicGlandsPerk) as PyrogenicGlandsPerk;
+        if (perk != null) perk.TickBurns();
+    }
 
     public void UpdateTotalDamageDisplay(int val) => diceUI.UpdateTotalDamageDisplay(val);
     public void HideDiceResults() => diceUI.HideDiceResults();

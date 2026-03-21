@@ -184,6 +184,9 @@ public class EnemyMovement : MonoBehaviour
             ScaffoldManager.instance.OnEntityLeave(oldCell);
             ScaffoldManager.instance.OnEntityEnter(cell);
         }
+
+        // Slippery Secretion: slide on mucus
+        CheckMucusSlide(oldCell);
     }
 
     /// <summary>
@@ -316,6 +319,49 @@ public class EnemyMovement : MonoBehaviour
                 ScaffoldManager.instance.OnEntityLeave(oldCell);
                 ScaffoldManager.instance.OnEntityEnter(cell);
             }
+
+            // Slippery Secretion: slide on mucus after knockback
+            CheckMucusSlide(oldCell);
+        }
+        else
+        {
+            // Hit a wall — Hydraulic Impact perk check
+            if (RunManager.instance != null)
+            {
+                var perk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk);
+                if (perk != null)
+                {
+                    int wallDamage = Mathf.CeilToInt(health.maxHP * 0.5f);
+                    health.TakeDamage(wallDamage);
+                    (perk as HydraulicImpactPerk).ShowWallImpactVFX(this);
+                    perk.TriggerVisualPop();
+                }
+            }
+        }
+    }
+
+    private void CheckMucusSlide(Vector3Int cameFromCell)
+    {
+        if (RunManager.instance == null) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is SlipperySecretionPerk) as SlipperySecretionPerk;
+        if (perk == null || !perk.IsMucusCell(cell)) return;
+
+        Vector3Int slideTarget = perk.GetSlideTarget(cell, cameFromCell);
+        if (slideTarget != cell)
+        {
+            Vector3Int oldCell = cell;
+            cell = slideTarget;
+            targetWorldPos = groundMap.GetCellCenterWorld(cell);
+            targetWorldPos.z = 0;
+            isMoving = true;
+
+            if (ScaffoldManager.instance != null)
+            {
+                ScaffoldManager.instance.OnEntityLeave(oldCell);
+                ScaffoldManager.instance.OnEntityEnter(cell);
+            }
+
+            perk.TriggerVisualPop();
         }
     }
 

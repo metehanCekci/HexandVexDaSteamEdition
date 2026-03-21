@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: HypertrophicShell_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 5244404443356522464, guid: 887c365c7b2b14e46aa3f85fc7c8d092, type: 3}
+  perkId: HypertrophicShell
+  loreText: A calcified growth that reinforces the host's vital organs. Each layer
+    adds another wall between you and death.
+  rarity: 0
+  unlockCondition: 2
+  requiredAmount: 3
+  conditionParam: 
+  unlockHint: 3 run tamamla.
