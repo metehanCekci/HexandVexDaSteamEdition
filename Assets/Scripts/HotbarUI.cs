@@ -75,6 +75,10 @@ public class HotbarUI : MonoBehaviour
             slots[i].button.onClick.AddListener(() => UseSlot(idx));
         }
 
+        // InventoryManager DontDestroyOnLoad — sahne değişince slot sayısını senkronize et
+        if (InventoryManager.instance != null && InventoryManager.instance.SlotCount > maxVisibleSlots)
+            maxVisibleSlots = Mathf.Min(InventoryManager.instance.SlotCount, slots.Count);
+
         ApplySlotVisibility();
         RefreshSlots();
     }
@@ -92,10 +96,25 @@ public class HotbarUI : MonoBehaviour
     void Update()
     {
         if (InventoryManager.instance == null) return;
-
-        // Block hotbar input when shop or targeting is active
-        if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive) return;
         if (SecretPerkCinematic.instance != null && SecretPerkCinematic.instance.IsPlaying) return;
+
+        // Targeting aktifken aynı slot tuşu/tıkı iptal eder
+        if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive && !TurnManager.instance.isMitsuriTargeting)
+        {
+            int cancelSlot = TurnManager.instance.pendingTargetingSlot;
+            if (cancelSlot >= 0)
+            {
+                for (int i = 0; i < hotkeys.Length && i < maxVisibleSlots; i++)
+                {
+                    if (Input.GetKeyDown(hotkeys[i]) && i == cancelSlot)
+                    {
+                        TurnManager.instance.CancelTargeting();
+                        return;
+                    }
+                }
+            }
+            return;
+        }
 
         for (int i = 0; i < hotkeys.Length && i < maxVisibleSlots; i++)
         {
@@ -143,6 +162,10 @@ public class HotbarUI : MonoBehaviour
         if (InventoryManager.instance == null) return;
         if (slots == null || slots.Count == 0) return;
 
+        // Targeting aktifken pending slot'u tıklanabilir tut (iptal için)
+        bool hasTargeting = TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive && !TurnManager.instance.isMitsuriTargeting;
+        int targetSlot = hasTargeting ? TurnManager.instance.pendingTargetingSlot : -1;
+
         for (int i = 0; i < slots.Count && i < maxVisibleSlots; i++)
         {
             BaseItem item = InventoryManager.instance.GetItem(i);
@@ -177,8 +200,11 @@ public class HotbarUI : MonoBehaviour
             else
             {
                 slot.background.color = emptySlotColor;
-                slot.button.interactable = false;
                 slot.iconImage.enabled = false;
+
+                // Targeting slotu: görsel boş ama tıklanabilir (iptal için)
+                slot.button.interactable = (i == targetSlot);
+
                 HotbarSlotTooltip tt2 = slot.tooltip ?? slot.GetComponent<HotbarSlotTooltip>();
                 if (tt2 != null)
                     tt2.hasItem = false;
@@ -189,6 +215,15 @@ public class HotbarUI : MonoBehaviour
     private void UseSlot(int index)
     {
         if (InventoryManager.instance == null) return;
+
+        // Targeting aktifken: aynı slot iptal eder, farklı slot engellenir
+        if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive && !TurnManager.instance.isMitsuriTargeting)
+        {
+            if (TurnManager.instance.pendingTargetingSlot == index)
+                TurnManager.instance.CancelTargeting();
+            return;
+        }
+
         InventoryManager.instance.UseItem(index);
     }
 
@@ -202,6 +237,17 @@ public class HotbarUI : MonoBehaviour
         if (maxVisibleSlots >= slots.Count) return;
 
         maxVisibleSlots++;
+        ApplySlotVisibility();
+        RefreshSlots();
+    }
+
+    /// <summary>
+    /// Remove one slot from the hotbar (called when OrganPouch is unequipped).
+    /// </summary>
+    public void RemoveSlot()
+    {
+        if (maxVisibleSlots <= 3) return;
+        maxVisibleSlots--;
         ApplySlotVisibility();
         RefreshSlots();
     }

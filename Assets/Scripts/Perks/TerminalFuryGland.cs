@@ -22,12 +22,24 @@ public class TerminalFuryGlandPerk : BasePerk
         var tm = TurnManager.instance;
         if (rm == null || tm == null || tm.player == null) return;
 
-        int maxHP     = rm.playerMaxHealth;
+        int maxHP = rm.playerMaxHealth;
         int currentHP = tm.player.health.currentHP;
-        if (currentHP < 1) currentHP = 1; // 0'a bölme koruması
+        if (currentHP < 1) currentHP = 1;
 
-        float multiplier = (float)maxHP / currentHP;
-        payload.multiplier *= multiplier;
+        // TFG = missingHP + 2 (5/5=2x, 4/5=3x, 1/5=6x)
+        float tfgMult = maxHP - currentHP + 2;
+
+        // Glass Cannon varsa: additif birlestir (TFG + GC), GC'nin *= 2'sini geri al
+        bool hasGC = rm.activePerks.Exists(p => p is GlassCanonPerk);
+        if (hasGC)
+        {
+            // GC daha once payload.multiplier *= 2 uyguladi, geri al ve toplami koy
+            payload.multiplier = payload.multiplier / 2f * (tfgMult + 2f);
+        }
+        else
+        {
+            payload.multiplier *= tfgMult;
+        }
 
         TriggerVisualPop();
     }

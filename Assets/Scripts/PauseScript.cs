@@ -55,6 +55,7 @@ public class PauseManager : MonoBehaviour
         EnsureCanvasSortingOrder(pauseMenuUI, 500);
         if (statsPanelUI != null) statsPanelUI.Refresh();
         else if (pauseStatsText != null) pauseStatsText.text = RunManager.instance.GetStatsSummary();
+        if (NodeMinimapUI.instance != null) NodeMinimapUI.instance.Refresh();
         Time.timeScale = 0f;
         isPaused = true;
     }

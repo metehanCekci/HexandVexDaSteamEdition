@@ -340,6 +340,9 @@ public class ActivePerkBar : MonoBehaviour
         if (RunManager.instance == null) return;
         if (index < 0 || index >= RunManager.instance.activePerks.Count) return;
 
+        // Stash paneli açık değilse sağ tık unequip'i engelle (combat sırasında kazara atmasın)
+        if (PerkInventoryUI.instance == null || !PerkInventoryUI.instance.IsOpen) return;
+
         HideTooltip();
 
         // PerkInventoryUI'da fly animasyonu başlat (üst bardan stash'e uçsun)

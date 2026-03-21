@@ -46,6 +46,7 @@ public class LevelUpManager : MonoBehaviour
     [Header("Debug")]
     [HideInInspector] public GameObject forcedPerk;
     [HideInInspector] public GameObject forcedPerk2;
+    [HideInInspector] public GameObject forcedPerk3;
 
     private int hoveredCardIndex = -1;
     private bool[] cardAnimDone;
@@ -77,7 +78,9 @@ public class LevelUpManager : MonoBehaviour
         levelUpPanel.SetActive(true);
         if (levelUpCanvasGroup != null) levelUpCanvasGroup.gameObject.SetActive(true);
 
-        // Perk stash panelini göster
+        // Perk stash panelini göster (yoksa oluştur)
+        if (PerkInventoryUI.instance == null)
+            PerkInventoryUI.CreateFromCode();
         if (PerkInventoryUI.instance != null)
             PerkInventoryUI.instance.Show();
 
@@ -98,6 +101,10 @@ public class LevelUpManager : MonoBehaviour
             else if (i == 1 && forcedPerk2 != null && !IsPerkMaxedOut(forcedPerk2) && forcedPerk2 != forcedPerk)
             {
                 randomPerk = forcedPerk2;
+            }
+            else if (i == 2 && forcedPerk3 != null && !IsPerkMaxedOut(forcedPerk3) && forcedPerk3 != forcedPerk && forcedPerk3 != forcedPerk2)
+            {
+                randomPerk = forcedPerk3;
             }
 
             while (randomPerk == null || currentChoices.Contains(randomPerk) || IsPerkMaxedOut(randomPerk))
@@ -376,6 +383,7 @@ public class LevelUpManager : MonoBehaviour
             Debug.Log($"🔥 {activeInstance.perkName} Max Seviyeye ulaştı! Havuzdan kalıcı olarak silindi.");
             if (forcedPerk == chosenPerk) forcedPerk = null;
             if (forcedPerk2 == chosenPerk) forcedPerk2 = null;
+            if (forcedPerk3 == chosenPerk) forcedPerk3 = null;
         }
 
         foreach (var perk in existingPerks)

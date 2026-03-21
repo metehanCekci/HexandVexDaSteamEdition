@@ -117,6 +117,10 @@ public class InventoryManager : MonoBehaviour
         bool used = item.Use();
         if (used)
         {
+            // Cache item info for ESC cancel before clearing slot
+            if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive)
+                TurnManager.instance.SetTargetingItemCache(item, slotIndex);
+
             GameEvents.ItemUsed(item, slotIndex);
             slots[slotIndex] = null;
             GameEvents.InventoryChanged();
@@ -163,6 +167,16 @@ public class InventoryManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Restore an item to a specific slot (used when targeting is cancelled with ESC).
+    /// </summary>
+    public void RestoreItem(int slotIndex, BaseItem item)
+    {
+        if (slotIndex < 0 || slotIndex >= slots.Length) return;
+        slots[slotIndex] = item;
+        GameEvents.InventoryChanged();
+    }
+
+    /// <summary>
     /// Remove an item from a specific slot without using it.
     /// </summary>
     public void RemoveItem(int slotIndex)
@@ -184,5 +198,29 @@ public class InventoryManager : MonoBehaviour
         slots = newSlots;
         maxSlots = newMax;
         GameEvents.InventoryChanged();
+    }
+
+    /// <summary>
+    /// Shrink inventory by removing slots from the end.
+    /// Only call after confirming those slots are empty.
+    /// </summary>
+    public void RemoveSlots(int count)
+    {
+        int newMax = Mathf.Max(3, maxSlots - count);
+        BaseItem[] newSlots = new BaseItem[newMax];
+        for (int i = 0; i < newMax; i++)
+            newSlots[i] = slots[i];
+        slots = newSlots;
+        maxSlots = newMax;
+        GameEvents.InventoryChanged();
+    }
+
+    /// <summary>
+    /// Check if a specific slot has an item.
+    /// </summary>
+    public bool IsSlotOccupied(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= slots.Length) return false;
+        return slots[slotIndex] != null;
     }
 }

@@ -89,15 +89,8 @@ public class EnemyMovement : MonoBehaviour
         HandleMovement();
     }
 
-    void OnMouseDown()
-    {
-        if (PauseManager.isPaused) return;
-        if (TurnManager.instance == null) return;
-        if (TurnManager.instance.isNecroShotTargeting)
-            TurnManager.instance.TryNecroShotKill(this);
-        else if (TurnManager.instance.isPhaseShiftTargeting)
-            TurnManager.instance.TryPhaseShift(this);
-    }
+    // NecroShot & PhaseShift targeting clicks are handled in TurnManager.Update
+    // via cell-based + proximity lookup for accurate targeting.
 
     // ─── Death & Damage Handlers ───
 

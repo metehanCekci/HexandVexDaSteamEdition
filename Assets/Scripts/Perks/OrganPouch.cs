@@ -17,6 +17,41 @@ public class OrganPouchPerk : BasePerk
         TriggerVisualPop();
     }
 
+    // Stash'ten aktife taşındığında slotları tekrar aç
+    public override void OnEquip()
+    {
+        // OnAcquire ile çifte çağrı koruması: InventoryManager zaten doğru slot sayısındaysa açma
+        if (InventoryManager.instance == null) return;
+        int target = 3 + currentLevel;
+        int missing = target - InventoryManager.instance.maxSlots;
+        for (int i = 0; i < missing; i++)
+            ExpandHotbar();
+    }
+
+    // Stash'e taşındığında slotları küçült
+    public override void OnUnequip()
+    {
+        for (int i = 0; i < currentLevel; i++)
+            ShrinkHotbar();
+    }
+
+    // Fazla slotlarda item varsa çıkarmaya izin verme
+    public override bool CanUnequip()
+    {
+        if (InventoryManager.instance == null) return true;
+        int currentMax = InventoryManager.instance.maxSlots;
+        int baseSlots = 3;
+        int slotsToRemove = Mathf.Min(currentLevel, currentMax - baseSlots);
+
+        for (int i = 0; i < slotsToRemove; i++)
+        {
+            int slotIndex = currentMax - 1 - i;
+            if (InventoryManager.instance.IsSlotOccupied(slotIndex))
+                return false;
+        }
+        return true;
+    }
+
     private void ExpandHotbar()
     {
         // Hotbar slot ekle (max 5)
@@ -25,6 +60,16 @@ public class OrganPouchPerk : BasePerk
             InventoryManager.instance.AddSlots(1);
             if (HotbarUI.instance != null)
                 HotbarUI.instance.AddSlot();
+        }
+    }
+
+    private void ShrinkHotbar()
+    {
+        if (InventoryManager.instance != null && InventoryManager.instance.maxSlots > 3)
+        {
+            InventoryManager.instance.RemoveSlots(1);
+            if (HotbarUI.instance != null)
+                HotbarUI.instance.RemoveSlot();
         }
     }
 }

@@ -96,6 +96,15 @@ public class RestNodeUI : MonoBehaviour
             );
         }
 
+        // HealthScript'i de senkronize et (yoksa savaşta eski can değeri kalır)
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            var h = TurnManager.instance.player.health;
+            h.maxHP = RunManager.instance.playerMaxHealth;
+            h.currentHP = RunManager.instance.playerCurrentHealth;
+            h.updateHealth();
+        }
+
         if (infoText != null) infoText.text = $"+{amount} HP";
 
         DisableButtons();

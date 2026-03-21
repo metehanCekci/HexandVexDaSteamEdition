@@ -20,9 +20,36 @@ public class StatsPanelUI : MonoBehaviour
 
     private List<GameObject> spawnedRows = new List<GameObject>();
 
+    void Awake()
+    {
+        AutoFindReferences();
+    }
+
+    private void AutoFindReferences()
+    {
+        if (levelsValue != null && diceValue != null && damageValue != null
+            && killsValue != null && goldValue != null) return;
+
+        var allTexts = GetComponentsInChildren<TMP_Text>(true);
+        foreach (var t in allTexts)
+        {
+            string rowName = t.transform.parent != null ? t.transform.parent.name.ToLower() : "";
+            if (!rowName.Contains("row_")) continue;
+            // Only match the "Value" child, not the label
+            if (!t.gameObject.name.ToLower().Contains("value")) continue;
+
+            if (levelsValue == null && rowName.Contains("levels"))  levelsValue = t;
+            else if (diceValue == null && rowName.Contains("dice")) diceValue = t;
+            else if (damageValue == null && rowName.Contains("damage")) damageValue = t;
+            else if (killsValue == null && (rowName.Contains("kills") || rowName.Contains("enemies"))) killsValue = t;
+            else if (goldValue == null && rowName.Contains("gold")) goldValue = t;
+        }
+    }
+
     public void Refresh()
     {
         if (RunManager.instance == null) return;
+        AutoFindReferences();
         var rm = RunManager.instance;
 
         if (levelsValue) levelsValue.text = FormatWithBest(rm.totalLevelsPlayed,  RunManager.BestLevels);

@@ -47,6 +47,9 @@ public abstract class BasePerk : MonoBehaviour
     // Perk envanterden (stash) alana taşındığında çalışır
     public virtual void OnUnequip() { }
 
+    /// <summary>Perk çıkarılabilir mi? false dönerse unequip/swap engellenir.</summary>
+    public virtual bool CanUnequip() { return true; }
+
     // ======================================================
     // İŞTE YENİ EKLENEN KISIM BURASI KANKA:
     // Ancient Blessing bu komutu çağıracak. Diğer perkler de bu komutu alınca ne yapacaklarını bilecek.

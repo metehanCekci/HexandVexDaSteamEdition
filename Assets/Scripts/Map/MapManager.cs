@@ -572,7 +572,7 @@ public class MapManager : MonoBehaviour
             case MapNodeType.Shop:
                 if (Shopmanager.instance != null)
                     Shopmanager.instance.OpenAsMapNode();
-                showHotbar = false;
+                showHotbar = true;
                 break;
 
             case MapNodeType.PerkSelection:

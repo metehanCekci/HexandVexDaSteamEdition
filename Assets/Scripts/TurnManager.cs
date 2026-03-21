@@ -68,6 +68,10 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public bool isThornPlacementTargeting = false;
     [HideInInspector] public bool isMitsuriTargeting = false;
 
+    // Item targeting iptali için cache
+    [HideInInspector] public BaseItem pendingTargetingItem;
+    [HideInInspector] public int pendingTargetingSlot = -1;
+
     // Thorn preview & lifetime tracking
     private GameObject thornPreviewObj;
     private Dictionary<Vector3Int, int> thornTurnsRemaining = new Dictionary<Vector3Int, int>();
@@ -85,10 +89,14 @@ public class TurnManager : MonoBehaviour
 
     public int finalDamage = 0;
 
+    [Header("Run Reset (R tuşu)")]
+    private float holdRTimer = 0f;
+    private const float HOLD_R_DURATION = 0.8f;
+
     [Header("Yeni Oyun Başlangıç Ayarları")]
     public int startingLevel = 1;
     public int startingGold = 0;
-    public int startingMaxHP = 3;
+    public int startingMaxHP = 5;
     public int startingDiceCount = 2;
     public float startingCritMultiplier = 2.0f;
     public float startingCritChance = 0.10f;
@@ -158,6 +166,36 @@ public class TurnManager : MonoBehaviour
         // Hold-to-skip: basılı tutunca her tur otomatik skip at
         if (holdingSkip && isPlayerTurn) SkipTurn();
 
+        // Hold R: basılı tutunca hızlı run reset (fade ile yeni oyun başlat)
+        if (Input.GetKey(KeyCode.R))
+        {
+            holdRTimer += Time.unscaledDeltaTime;
+            if (holdRTimer >= HOLD_R_DURATION)
+            {
+                holdRTimer = 0f;
+                StopAllCoroutines();
+                Time.timeScale = 1f;
+                int sceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+                if (ScreenFader.instance != null)
+                {
+                    ScreenFader.instance.FadeAndLoad(() =>
+                    {
+                        ResetGame();
+                        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneIndex);
+                    });
+                }
+                else
+                {
+                    ResetGame();
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(sceneIndex);
+                }
+            }
+        }
+        else
+        {
+            holdRTimer = 0f;
+        }
+
         // Mitsuri Blade: turu sırasında istediği zaman düşmana tıklayarak saldırabilir
         if (isMitsuriTargeting)
         {
@@ -195,6 +233,32 @@ public class TurnManager : MonoBehaviour
                 player.ClearHighlights();
                 List<EnemyMovement> singleTarget = new List<EnemyMovement> { directTarget };
                 StartCoroutine(MitsuriAttackSequence(singleTarget));
+            }
+        }
+
+        // NecroShot / PhaseShift: cell-based + proximity click (bypasses OnMouseDown collider issues)
+        if ((isNecroShotTargeting || isPhaseShiftTargeting) && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        {
+            Vector3 mPos = Input.mousePosition;
+            mPos.z = Mathf.Abs(Camera.main.transform.position.z);
+            Vector3 wPoint = Camera.main.ScreenToWorldPoint(mPos);
+            wPoint.z = 0;
+            Vector3Int cCell = groundMap.WorldToCell(wPoint);
+            EnemyMovement clickedEnemy = GetEnemyAtCell(cCell);
+            if (clickedEnemy == null)
+            {
+                float best = 1.5f;
+                foreach (var e in enemies)
+                {
+                    if (e == null || e.health.currentHP <= 0) continue;
+                    float d = Vector3.Distance(wPoint, e.transform.position);
+                    if (d < best) { best = d; clickedEnemy = e; }
+                }
+            }
+            if (clickedEnemy != null)
+            {
+                if (isNecroShotTargeting) TryNecroShotKill(clickedEnemy);
+                else if (isPhaseShiftTargeting) TryPhaseShift(clickedEnemy);
             }
         }
 
@@ -236,6 +300,14 @@ public class TurnManager : MonoBehaviour
         }
 
 #if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.F2))
+        {
+            if (PerkCollectionManager.instance != null)
+            {
+                PerkCollectionManager.instance.ResetAll();
+                Debug.Log("<color=#FF0000>[CHEAT]</color> All collection progress reset!");
+            }
+        }
         if (Input.GetKeyDown(KeyCode.F6))
         {
             // Cheat: tüm state'leri resetle ki level clear akışı takılmasın
@@ -255,11 +327,14 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.currentGold += 10000;
             UpdateCoinUI();
         }
-        if (Input.GetKeyDown(KeyCode.F8)) SpawnDebugAoEEnemies();
+        if (Input.GetKeyDown(KeyCode.F8)) { if (player != null) player.health.TakeDamage(player.health.currentHP + 999); }
         if (Input.GetKeyDown(KeyCode.F9))
         {
-            if (player != null && player.health != null)
-                player.health.TakeDamage(player.health.currentHP + 999);
+            if (PerkCollectionManager.instance != null)
+            {
+                PerkCollectionManager.instance.UnlockAll();
+                Debug.Log("<color=#00FF00>[CHEAT]</color> All collection perks unlocked!");
+            }
         }
         if (Input.GetKeyDown(KeyCode.F10)) DebugEquipAllPerks();
         if (Input.GetKeyDown(KeyCode.F12)) DebugUpgradeAllPerks();
@@ -590,6 +665,33 @@ public class TurnManager : MonoBehaviour
     }
 
     public void RegisterEnemy(EnemyMovement enemy) { if (!enemies.Contains(enemy)) enemies.Add(enemy); }
+    public void SetTargetingItemCache(BaseItem item, int slotIndex)
+    {
+        pendingTargetingItem = item;
+        pendingTargetingSlot = slotIndex;
+    }
+
+    public void CancelTargeting()
+    {
+        if (!IsAnyTargetingActive) return;
+
+        // Restore item to hotbar
+        if (pendingTargetingItem != null && pendingTargetingSlot >= 0 && InventoryManager.instance != null)
+        {
+            InventoryManager.instance.RestoreItem(pendingTargetingSlot, pendingTargetingItem);
+        }
+        pendingTargetingItem = null;
+        pendingTargetingSlot = -1;
+
+        isNecroShotTargeting = false;
+        isBombPlacementTargeting = false;
+        isPhaseShiftTargeting = false;
+        if (isThornPlacementTargeting) { isThornPlacementTargeting = false; DestroyThornPreview(); }
+        // Mitsuri is weapon-based, not item-based — don't cancel with ESC
+    }
+
+    private void ClearTargetingCache() { pendingTargetingItem = null; pendingTargetingSlot = -1; }
+
     public void StartNecroShotTargeting() { isNecroShotTargeting = true; }
 
     // ──────── Mitsuri Blade Range Indicators ────────
@@ -805,6 +907,7 @@ public class TurnManager : MonoBehaviour
         if (!isNecroShotTargeting || target == null) return;
         if (target.IsBoss) return;
         isNecroShotTargeting = false;
+        ClearTargetingCache();
         if (player != null) player.TriggerAttackAnimation();
 
         target.health.TakeDamage(target.health.currentHP);
@@ -817,6 +920,7 @@ public class TurnManager : MonoBehaviour
     private IEnumerator ExecuteBombAt(Vector3Int cell)
     {
         isBombPlacementTargeting = false;
+        ClearTargetingCache();
 
         // Placeholder'ı hemen koy, patlamadan önce göster
         GameObject placeholderObj = null;
@@ -908,6 +1012,7 @@ public class TurnManager : MonoBehaviour
     {
         if (!isPhaseShiftTargeting || target == null) return;
         isPhaseShiftTargeting = false;
+        ClearTargetingCache();
         StartCoroutine(PhaseShiftCoroutine(target));
     }
 
@@ -1077,10 +1182,11 @@ public class TurnManager : MonoBehaviour
 
     private void ExecuteThornAt(Vector3Int cell)
     {
-        if (LevelGenerator.instance == null) { isThornPlacementTargeting = false; DestroyThornPreview(); return; }
+        if (LevelGenerator.instance == null) { isThornPlacementTargeting = false; DestroyThornPreview(); ClearTargetingCache(); return; }
         if (IsThornCellBlocked(cell)) return;
         isThornPlacementTargeting = false;
         DestroyThornPreview();
+        ClearTargetingCache();
         LevelGenerator.instance.hazardCells.Add(cell);
         if (LevelGenerator.instance.hazardMap != null && LevelGenerator.instance.hazardTile != null) LevelGenerator.instance.hazardMap.SetTile(cell, LevelGenerator.instance.hazardTile);
         thornTurnsRemaining[cell] = 3;
@@ -1755,9 +1861,19 @@ public class TurnManager : MonoBehaviour
             }
             else if (!HasWalkableTile(rawTargetCell) || player.GetCurrentCellPosition() == rawTargetCell)
             {
-                e.ApplyStun(2, true);
-                Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
-                cPos.z = 0; pPos.z = 0; e.StartWallBump((cPos - pPos).normalized);
+                // Düşman scaffold duvarındaysa: scaffold kırılsın, düşman düşsün (sessiz kill — damage text yok)
+                Vector3Int enemyCell = e.GetCurrentCellPosition();
+                if (ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(enemyCell))
+                {
+                    e.health.TakeDamageSilent(e.health.currentHP);
+                    ScaffoldManager.instance.OnEntityDied(enemyCell);
+                }
+                else
+                {
+                    e.ApplyStun(2, true);
+                    Vector3 cPos = groundMap.GetCellCenterWorld(enemyCell); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
+                    cPos.z = 0; pPos.z = 0; e.StartWallBump((cPos - pPos).normalized);
+                }
             }
             else
             {
@@ -1808,6 +1924,16 @@ public class TurnManager : MonoBehaviour
         }
 
         yield return new WaitUntil(() => { foreach (var e in knockedEnemies) if (e != null && e.IsMoving()) return false; if (didRecoil && player.IsMoving()) return false; return true; });
+
+        // Knockback sonrası: ölü düşman scaffold üzerinde kaldıysa scaffold çöksün
+        if (ScaffoldManager.instance != null)
+        {
+            foreach (var e in knockedEnemies)
+            {
+                if (e != null && e.health.currentHP <= 0)
+                    ScaffoldManager.instance.OnEntityDied(e.GetCurrentCellPosition());
+            }
+        }
 
         foreach (var e in knockedEnemies) if (e != null && payload.triggerExplosion) TriggerExplosion(e.GetCurrentCellPosition(), payload.explosionDamagePercent, false);
 

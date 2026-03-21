@@ -845,13 +845,59 @@ public class CollectionCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
             if (glowOverlay != null) glowOverlay.color = new Color(0, 0, 0, 0);
         }
 
-        // NewBadge — şimdilik kapalı, CollectionUI kontrol eder
-        if (newBadge != null) newBadge.SetActive(false);
+        // NewBadge — açılmış ama henüz görülmemiş perklerde ünlem göster
+        bool isNew = isUnlocked && entryData != null
+            && PlayerPrefs.GetInt($"perk_seen_{entryData.perkId}", 0) == 0;
+        if (isNew && newBadge == null)
+            CreateNewBadge();
+        if (newBadge != null)
+            newBadge.SetActive(isNew);
     }
 
     public void SetUnlocked(bool val)
     {
         isUnlocked = val;
+    }
+
+    private void MarkAsSeen()
+    {
+        if (!isUnlocked || entryData == null) return;
+        if (PlayerPrefs.GetInt($"perk_seen_{entryData.perkId}", 0) == 1) return;
+        PlayerPrefs.SetInt($"perk_seen_{entryData.perkId}", 1);
+        PlayerPrefs.Save();
+        if (newBadge != null) newBadge.SetActive(false);
+    }
+
+    private void CreateNewBadge()
+    {
+        newBadge = new GameObject("NewBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        newBadge.transform.SetParent(transform, false);
+        RectTransform rt = newBadge.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(1f, 1f);
+        rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(1f, 1f);
+        rt.anchoredPosition = new Vector2(-2f, -2f);
+        rt.sizeDelta = new Vector2(20f, 20f);
+
+        Image bg = newBadge.GetComponent<Image>();
+        bg.color = new Color(1f, 0.3f, 0.1f, 1f);
+        bg.raycastTarget = false;
+
+        // "!" text
+        GameObject textGO = new GameObject("ExcText", typeof(RectTransform), typeof(CanvasRenderer));
+        textGO.transform.SetParent(newBadge.transform, false);
+        TextMeshProUGUI txt = textGO.AddComponent<TextMeshProUGUI>();
+        txt.text = "!";
+        txt.fontSize = 14;
+        txt.fontStyle = FontStyles.Bold;
+        txt.alignment = TextAlignmentOptions.Center;
+        txt.color = Color.white;
+        txt.raycastTarget = false;
+        RectTransform txtRT = textGO.GetComponent<RectTransform>();
+        txtRT.anchorMin = Vector2.zero;
+        txtRT.anchorMax = Vector2.one;
+        txtRT.offsetMin = Vector2.zero;
+        txtRT.offsetMax = Vector2.zero;
     }
 
     // ── Hover / Click ──────────────────────────────────────
@@ -861,6 +907,9 @@ public class CollectionCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         isHovered = true;
         if (parentUI != null)
             parentUI.ShowTooltip(entryData, perkRef, isUnlocked);
+
+        // Yeni perk rozetini kaldır
+        MarkAsSeen();
 
         // Scale up
         if (hoverAnim != null) StopCoroutine(hoverAnim);

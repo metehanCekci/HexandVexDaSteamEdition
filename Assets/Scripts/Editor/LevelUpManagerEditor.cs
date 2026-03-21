@@ -12,19 +12,15 @@ public class LevelUpManagerEditor : Editor
         LevelUpManager manager = (LevelUpManager)target;
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Forced Perk Seçici", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Forced Perk Secici", EditorStyles.boldLabel);
 
-        // Tüm perk listelerinden bir havuz oluştur
         List<GameObject> allPerks = new List<GameObject>();
         if (manager.commonPerks != null) allPerks.AddRange(manager.commonPerks);
         if (manager.rarePerks != null) allPerks.AddRange(manager.rarePerks);
         if (manager.epicPerks != null) allPerks.AddRange(manager.epicPerks);
         if (manager.legendaryPerks != null) allPerks.AddRange(manager.legendaryPerks);
-
-        // Null'ları temizle
         allPerks.RemoveAll(p => p == null);
 
-        // Dropdown için isim listesi oluştur
         List<string> perkNames = new List<string> { "None" };
         for (int i = 0; i < allPerks.Count; i++)
         {
@@ -33,21 +29,28 @@ public class LevelUpManagerEditor : Editor
             perkNames.Add(label);
         }
 
-        // Mevcut seçimin index'ini bul
+        string[] names = perkNames.ToArray();
+
+        DrawForcedPerkPopup(manager, allPerks, names, "1st Forced Perk", ref manager.forcedPerk);
+        DrawForcedPerkPopup(manager, allPerks, names, "2nd Forced Perk", ref manager.forcedPerk2);
+        DrawForcedPerkPopup(manager, allPerks, names, "3rd Forced Perk", ref manager.forcedPerk3);
+    }
+
+    private void DrawForcedPerkPopup(LevelUpManager manager, List<GameObject> allPerks, string[] names, string label, ref GameObject field)
+    {
         int currentIndex = 0;
-        if (manager.forcedPerk != null)
+        if (field != null)
         {
-            int found = allPerks.IndexOf(manager.forcedPerk);
-            if (found >= 0) currentIndex = found + 1; // +1 çünkü 0 = "None"
+            int found = allPerks.IndexOf(field);
+            if (found >= 0) currentIndex = found + 1;
         }
 
-        int newIndex = EditorGUILayout.Popup("Forced Perk", currentIndex, perkNames.ToArray());
-
+        int newIndex = EditorGUILayout.Popup(label, currentIndex, names);
         GameObject newValue = newIndex == 0 ? null : allPerks[newIndex - 1];
-        if (manager.forcedPerk != newValue)
+        if (field != newValue)
         {
-            Undo.RecordObject(manager, "Change Forced Perk");
-            manager.forcedPerk = newValue;
+            Undo.RecordObject(manager, "Change " + label);
+            field = newValue;
             EditorUtility.SetDirty(manager);
         }
     }

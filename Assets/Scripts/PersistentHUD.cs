@@ -24,6 +24,7 @@ public class PersistentHUD : MonoBehaviour
     public Color goldPulseColor = new Color(1f, 0.95f, 0.4f);
 
     private int lastHP = -1;
+    private int lastGold = -1;
     private Coroutine hpPulseCoroutine;
     private Coroutine goldPulseCoroutine;
 
@@ -102,10 +103,56 @@ public class PersistentHUD : MonoBehaviour
     {
         if (goldText != null)
         {
+            int diff = lastGold >= 0 ? amount - lastGold : 0;
+            lastGold = amount;
+
             goldText.text = amount.ToString();
             if (goldPulseCoroutine != null) StopCoroutine(goldPulseCoroutine);
             goldPulseCoroutine = StartCoroutine(PulseText(goldText, goldPulseColor));
+
+            if (diff > 0) SpawnFloatingGoldText(diff);
         }
+    }
+
+    private void SpawnFloatingGoldText(int amount)
+    {
+        if (goldText == null) return;
+
+        var go = new GameObject("GoldFloat");
+        go.transform.SetParent(goldText.transform.parent, false);
+        var tmp = go.AddComponent<TextMeshProUGUI>();
+        tmp.text = "+" + amount;
+        tmp.fontSize = goldText.fontSize * 0.85f;
+        tmp.color = goldPulseColor;
+        tmp.alignment = TextAlignmentOptions.Left;
+        tmp.raycastTarget = false;
+        if (goldText.font != null) tmp.font = goldText.font;
+
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchoredPosition = goldText.rectTransform.anchoredPosition + new Vector2(goldText.preferredWidth + 8f, 0f);
+
+        StartCoroutine(FloatAndFade(go, rt));
+    }
+
+    private IEnumerator FloatAndFade(GameObject go, RectTransform rt)
+    {
+        float duration = 0.9f;
+        float elapsed = 0f;
+        Vector2 startPos = rt.anchoredPosition;
+        var tmp = go.GetComponent<TMP_Text>();
+        Color startColor = tmp.color;
+
+        while (elapsed < duration)
+        {
+            if (go == null) yield break;
+            float t = elapsed / duration;
+            rt.anchoredPosition = startPos + new Vector2(0f, 20f * t);
+            tmp.color = new Color(startColor.r, startColor.g, startColor.b, 1f - t);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (go != null) Destroy(go);
     }
 
     public void Refresh()
@@ -115,6 +162,7 @@ public class PersistentHUD : MonoBehaviour
         if (hpText != null)
             hpText.text = RunManager.instance.playerCurrentHealth + "/" + RunManager.instance.playerMaxHealth;
         lastHP = RunManager.instance.playerCurrentHealth;
+        lastGold = RunManager.instance.currentGold;
     }
 
     private IEnumerator PulseText(TMP_Text text, Color flashColor)

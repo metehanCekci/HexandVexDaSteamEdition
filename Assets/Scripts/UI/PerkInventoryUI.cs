@@ -100,6 +100,14 @@ public class PerkInventoryUI : MonoBehaviour
         // Ghost mouse takibi + hafif dönme
         if (isDragging && dragGhost != null)
         {
+            // Güvenlik: mouse bırakıldıysa ama EndDrag tetiklenmediyse iptal et
+            if (!Input.GetMouseButton(0) && !Input.GetMouseButton(1))
+            {
+                CancelDrag();
+                RefreshUI();
+                return;
+            }
+
             Vector2 pos;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 rootCanvas.transform as RectTransform, Input.mousePosition, null, out pos);

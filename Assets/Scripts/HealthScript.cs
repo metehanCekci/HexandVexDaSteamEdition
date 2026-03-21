@@ -216,6 +216,26 @@ public class HealthScript : MonoBehaviour
         if (spriteRenderer != null) spriteRenderer.color = color;
     }
 
+    /// <summary>
+    /// Hasar ver ama damage text ve camera shake gösterme (scaffold düşüşü gibi sessiz ölümler için).
+    /// </summary>
+    public void TakeDamageSilent(int dmg)
+    {
+        if (isDead) return;
+        currentHP -= dmg;
+
+        if (gameObject.CompareTag("Player") && RunManager.instance != null)
+        {
+            RunManager.instance.totalDamageReceived += dmg;
+            RunManager.instance.playerCurrentHealth = currentHP;
+        }
+
+        OnDamaged?.Invoke(currentHP);
+        updateHealth();
+
+        if (currentHP <= 0) Die();
+    }
+
     public void Heal(int amount)
     {
         if (isDead) return;
@@ -259,7 +279,8 @@ public class HealthScript : MonoBehaviour
         // Scaffold: düşman scaffold üzerinde öldüyse scaffold çöksün
         if (ScaffoldManager.instance != null)
         {
-            EnemyMovement enemyAI = GetComponent<EnemyMovement>();
+            EnemyMovement enemyAI = GetComponentInParent<EnemyMovement>();
+            if (enemyAI == null) enemyAI = GetComponent<EnemyMovement>();
             if (enemyAI != null && enemyAI.groundMap != null)
             {
                 Vector3Int deathCell = enemyAI.GetCurrentCellPosition();

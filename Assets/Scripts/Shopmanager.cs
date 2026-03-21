@@ -180,6 +180,8 @@ public class Shopmanager : MonoBehaviour
         if (isShopOpen)
         {
             isShopOpen = false;
+            if (HotbarUI.instance != null)
+                HotbarUI.instance.SetVisible(false);
             GameEvents.ShopClosed();
         }
     }

@@ -20135,7 +20135,7 @@ MonoBehaviour:
   finalDamage: 0
   startingLevel: 1
   startingGold: 0
-  startingMaxHP: 3
+  startingMaxHP: 5
   startingDiceCount: 2
   startingCritMultiplier: 2
   startingCritChance: 0.1
