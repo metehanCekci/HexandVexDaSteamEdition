@@ -14,6 +14,10 @@ public class CameraController : MonoBehaviour
     public Vector2 minBounds = new Vector2(-60f, -60f); 
     public Vector2 maxBounds = new Vector2(60f, 60f);   
 
+    [Header("Mobil Hassasiyet Ayarları")]
+    public float touchPanSpeed = 0.05f;
+    public float touchZoomSpeed = 0.02f;
+
     private Camera cam;
     private Vector3 dragOrigin;
     
@@ -50,11 +54,20 @@ public class CameraController : MonoBehaviour
             return;
         }
 
-        HandleKeyboardPan();
-        HandleMouseDragPan();
-        HandleZoom();
-        UpdateShake();
+        // Cihaz kontrolü: PC mi Mobil mi?
+        if (!Application.isMobilePlatform)
+        {
+            HandleKeyboardPan();
+            HandleMouseDragPan();
+            HandleZoom();
+        }
+        else
+        {
+            HandleMobileInput();
+        }
+
         ClampCameraPosition();
+        UpdateShake();
     }
 
     private void HandleKeyboardPan()
@@ -81,6 +94,37 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    private void HandleMobileInput()
+    {
+        // Tek Parmak (Kaydırma)
+        if (Input.touchCount == 1)
+        {
+            Touch touch = Input.GetTouch(0);
+
+            if (touch.phase == TouchPhase.Moved)
+            {
+                targetPosition.x -= touch.deltaPosition.x * touchPanSpeed;
+                targetPosition.y -= touch.deltaPosition.y * touchPanSpeed;
+            }
+        }
+        // İki Parmak (Yakınlaştırma / Uzaklaştırma)
+        else if (Input.touchCount == 2)
+        {
+            Touch touch0 = Input.GetTouch(0);
+            Touch touch1 = Input.GetTouch(1);
+
+            Vector2 touch0PrevPos = touch0.position - touch0.deltaPosition;
+            Vector2 touch1PrevPos = touch1.position - touch1.deltaPosition;
+
+            float prevMagnitude = (touch0PrevPos - touch1PrevPos).magnitude;
+            float currentMagnitude = (touch0.position - touch1.position).magnitude;
+
+            float difference = currentMagnitude - prevMagnitude;
+
+            targetPosition.z += difference * touchZoomSpeed;
+        }
+    }
+
     private Vector3 GetMouseWorldPosition()
     {
         Vector3 mousePos = Input.mousePosition;
@@ -95,7 +139,6 @@ public class CameraController : MonoBehaviour
         {
             Vector3 pos = targetPosition;
             pos.z += scroll * zoomSpeed;
-            pos.z = Mathf.Clamp(pos.z, maxZoomZ, minZoomZ); 
             targetPosition = pos;
         }
     }
@@ -121,7 +164,9 @@ public class CameraController : MonoBehaviour
     {
         float clampedX = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
         float clampedY = Mathf.Clamp(targetPosition.y, minBounds.y, maxBounds.y);
-        targetPosition = new Vector3(clampedX, clampedY, targetPosition.z);
+        float clampedZ = Mathf.Clamp(targetPosition.z, maxZoomZ, minZoomZ);
+        
+        targetPosition = new Vector3(clampedX, clampedY, clampedZ);
     }
 
     public void Shake(float duration, float magnitude)

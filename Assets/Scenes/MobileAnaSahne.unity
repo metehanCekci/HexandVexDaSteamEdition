@@ -3962,6 +3962,9 @@ MonoBehaviour:
   restIcon: {fileID: 8472719745605931497, guid: 3d507ef671e236e458eb01202b037205, type: 3}
   eventIcon: {fileID: 0}
   bossIcon: {fileID: -4477880935745126366, guid: 52a6655860d540749b3eb51fd6adde88, type: 3}
+  restCanvasPrefab: {fileID: 0}
+  vignetteIntensity: 0.55
+  vignetteSmoothness: 0.7
   currentMap:
     layerIndex: 0
     nodes: []
@@ -20122,6 +20125,7 @@ MonoBehaviour:
   coinSprite: {fileID: -3424034131817855405, guid: 496580030e4fa8a41ba454a468500dfc, type: 3}
   enemies: []
   isLevelClearTriggered: 0
+  holdingSkip: 0
   isPlayerTurn: 1
   hasAttackedThisTurn: 0
   isAttackAnimationPlaying: 0
@@ -22713,6 +22717,7 @@ MonoBehaviour:
   bossRoarClip: {fileID: 8300000, guid: 29be4f2be315a84408630d38aee84c44, type: 3}
   bossGruntClip: {fileID: 8300000, guid: 03963fa4b4e72f4469b77d07a147739b, type: 3}
   warlockGruntClip: {fileID: 8300000, guid: f149c61d39c5cd34ab6c31fa53bd23c8, type: 3}
+  unlockFanfareClip: {fileID: 0}
   masterVolume: 1
   sfxVolume: 1
 --- !u!1 &1748376502
@@ -26212,7 +26217,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   faderGroup: {fileID: 1953228747}
   fadeDuration: 0.5
-  faderTag: FadeCanvas
 --- !u!225 &1953228747
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -27473,6 +27477,7 @@ GameObject:
   - component: {fileID: 2078544697}
   - component: {fileID: 2078544696}
   - component: {fileID: 2078544695}
+  - component: {fileID: 2078544698}
   m_Layer: 0
   m_Name: EventSystem
   m_TagString: Untagged
@@ -27530,6 +27535,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2078544698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2078544694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2093a8fc55f610978bb6cf6d5d1afa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MobileHoverAutoFixer
 --- !u!1 &2079237198
 GameObject:
   m_ObjectHideFlags: 0
