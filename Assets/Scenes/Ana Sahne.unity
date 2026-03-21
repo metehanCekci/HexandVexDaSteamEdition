@@ -11694,7 +11694,7 @@ MonoBehaviour:
   skipButton: {fileID: 0}
   skipButtonImage: {fileID: 1267672139}
   levelUpCanvasGroup: {fileID: 1574552225}
-  forcedPerk: {fileID: 1986514174070140262, guid: 8d2cf8eb1410c6d44942bc4168924640, type: 3}
+  forcedPerk: {fileID: 0}
   forcedPerk2: {fileID: 0}
 --- !u!4 &937609419
 Transform:
@@ -15044,7 +15044,7 @@ MonoBehaviour:
   hazardTile: {fileID: 11400000, guid: ddc0f38700579ca4ab073a9853d63f97, type: 2}
   scaffoldTile: {fileID: 11400000, guid: 9f6bfb6c9d32fc445ac2556352063d36, type: 2}
   lowerScaffoldTile: {fileID: 11400000, guid: c3ee6f695f976a7428fc4ab3c68cba94, type: 2}
-  scaffoldSpawnChance: 0.2
+  scaffoldSpawnChance: 0.1
   columnTile: {fileID: 11400000, guid: d2b8750910e031b4bbace650254c0f1b, type: 2}
   playerPrefab: {fileID: 4451673360095616607}
   meleeEnemyPrefab: {fileID: 506802351436183914, guid: a0ec16531194a034583e5fd3b77d313f, type: 3}
