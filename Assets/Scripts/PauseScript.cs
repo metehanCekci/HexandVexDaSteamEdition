@@ -1,22 +1,23 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // Sahne yönetimi için gerekli
+using UnityEngine.SceneManagement;
 using TMPro;
+using System.Collections;
 
 public class PauseManager : MonoBehaviour
 {
-    // Durdurma menüsü panelini (Canvas) buraya sürükleyeceğiz
     public GameObject pauseMenuUI;
-    public GameObject deathMenuUI; // Müfettiş (Inspector) panelinden ölme ekranını buraya sürükle
-    // Oyunun durup durmadığını takip eden değişken
+    public GameObject deathMenuUI;
     public static bool isPaused = false;
 
     [Header("Stats UI")]
-    public TMP_Text pauseStatsText; // Duraklatma ekranındaki Text (eski, opsiyonel)
-    public TMP_Text deathStatsText; // Ölme ekranındaki Text (eski, opsiyonel)
-    public StatsPanelUI statsPanelUI;       // Pause menüsündeki stats paneli
-    public StatsPanelUI deathStatsPanelUI;  // Ölüm ekranındaki stats paneli
+    public TMP_Text pauseStatsText;
+    public TMP_Text deathStatsText;
+    public StatsPanelUI statsPanelUI;
+    public StatsPanelUI deathStatsPanelUI;
 
     private bool deathStatsRefreshed = false;
+    private CanvasGroup pauseCanvasGroup;
+    private Coroutine animCoroutine;
 
     void Update()
     {
@@ -40,24 +41,111 @@ public class PauseManager : MonoBehaviour
         }
     }
 
-    // Oyuna devam etme fonksiyonu
     public void Resume()
     {
-        pauseMenuUI.SetActive(false); // Menüyü kapat
-        Time.timeScale = 1f;          // Zamanı normal hızına döndür
-        isPaused = false;
+        if (animCoroutine != null) StopCoroutine(animCoroutine);
+        animCoroutine = StartCoroutine(PauseCloseAnim());
     }
 
-    // Oyunu durdurma fonksiyonu
     public void Pause()
     {
         pauseMenuUI.SetActive(true);
         EnsureCanvasSortingOrder(pauseMenuUI, 500);
+        EnsurePauseCanvasGroup();
+
         if (statsPanelUI != null) statsPanelUI.Refresh();
         else if (pauseStatsText != null) pauseStatsText.text = RunManager.instance.GetStatsSummary();
         if (NodeMinimapUI.instance != null) NodeMinimapUI.instance.Refresh();
+
         Time.timeScale = 0f;
         isPaused = true;
+
+        if (animCoroutine != null) StopCoroutine(animCoroutine);
+        animCoroutine = StartCoroutine(PauseOpenAnim());
+    }
+
+    // ═══════════════════════════════════════════
+    // ANIMATIONS
+    // ═══════════════════════════════════════════
+
+    private void EnsurePauseCanvasGroup()
+    {
+        if (pauseCanvasGroup != null) return;
+        pauseCanvasGroup = pauseMenuUI.GetComponent<CanvasGroup>();
+        if (pauseCanvasGroup == null)
+            pauseCanvasGroup = pauseMenuUI.AddComponent<CanvasGroup>();
+    }
+
+    /// <summary>
+    /// Bouncy açılma: scale overshoot + fade in.
+    /// Elastic ease — hızlı açılır, hafif geri sekip yerine oturur.
+    /// </summary>
+    private IEnumerator PauseOpenAnim()
+    {
+        EnsurePauseCanvasGroup();
+        float duration = 0.4f;
+        float elapsed = 0f;
+
+        pauseCanvasGroup.alpha = 0f;
+        pauseMenuUI.transform.localScale = new Vector3(0.6f, 0.6f, 1f);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            // Elastic ease out — overshoot then settle
+            float s = EaseOutBack(t, 1.4f);
+            pauseMenuUI.transform.localScale = new Vector3(s, s, 1f);
+
+            // Fade in — faster than scale (ilk %60'ta tamamlanır)
+            pauseCanvasGroup.alpha = Mathf.Clamp01(t * 2.5f);
+
+            yield return null;
+        }
+
+        pauseMenuUI.transform.localScale = Vector3.one;
+        pauseCanvasGroup.alpha = 1f;
+        animCoroutine = null;
+    }
+
+    /// <summary>
+    /// Kapanma: hızlı shrink + fade out.
+    /// </summary>
+    private IEnumerator PauseCloseAnim()
+    {
+        EnsurePauseCanvasGroup();
+        float duration = 0.15f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            float s = Mathf.Lerp(1f, 0.85f, t);
+            pauseMenuUI.transform.localScale = new Vector3(s, s, 1f);
+            pauseCanvasGroup.alpha = 1f - t;
+
+            yield return null;
+        }
+
+        pauseMenuUI.SetActive(false);
+        pauseMenuUI.transform.localScale = Vector3.one;
+        pauseCanvasGroup.alpha = 1f;
+        Time.timeScale = 1f;
+        isPaused = false;
+        animCoroutine = null;
+    }
+
+    /// <summary>
+    /// Ease Out Back — overshoot parametresiyle.
+    /// s=1.0 hafif bounce, s=1.7 belirgin bounce.
+    /// </summary>
+    private static float EaseOutBack(float t, float overshoot)
+    {
+        t -= 1f;
+        return t * t * ((overshoot + 1f) * t + overshoot) + 1f;
     }
 
     // Bölümü baştan başlatma fonksiyonu

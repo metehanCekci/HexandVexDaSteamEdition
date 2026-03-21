@@ -190,6 +190,9 @@ public class LevelUpManager : MonoBehaviour
             rerollPerkButton.gameObject.SetActive(RunManager.instance.hasPerkReroll);
             rerollPerkButton.onClick.RemoveAllListeners();
             rerollPerkButton.onClick.AddListener(RerollPerkChoices);
+
+            // Navigation'ı kapat — yakın butonlara hover sızmasını engelle
+            rerollPerkButton.navigation = new Navigation { mode = Navigation.Mode.None };
         }
 
         // Skip butonunu deaktif yap ve rengini orijinaline sıfırla
@@ -197,22 +200,10 @@ public class LevelUpManager : MonoBehaviour
         {
             skipButton.interactable = false;
             skipButton.colors = skipButtonOriginalColorBlock;
-
-            // EventTrigger'dan gelen hover kalıntılarını temizle
-            EventTrigger skipTrigger = skipButton.GetComponent<EventTrigger>();
-            if (skipTrigger != null)
-                skipTrigger.triggers.Clear();
+            skipButton.navigation = new Navigation { mode = Navigation.Mode.None };
         }
         if (skipButtonImage != null)
             skipButtonImage.color = skipButtonOriginalColor;
-
-        // Reroll butonundaki EventTrigger'ı temizle (skip butonuna sızma ihtimalini kes)
-        if (rerollPerkButton != null)
-        {
-            EventTrigger rerollTrigger = rerollPerkButton.GetComponent<EventTrigger>();
-            if (rerollTrigger != null)
-                rerollTrigger.triggers.Clear();
-        }
 
         Time.timeScale = 0f;
         StopAllCoroutines();
@@ -587,13 +578,22 @@ public class LevelUpManager : MonoBehaviour
         // Perk inventory'yi burada kapatma — map'e dönünce kapanacak
         foreach (var btn in choiceButtons) btn.interactable = true;
 
-        // Skip butonunu aktif yap ve rengini restore et
+        // Skip butonunu aktif yap ve görsel state'i zorla sıfırla
         if (skipButton != null)
         {
+            // EventSystem'ın stale pointer verisini temizle
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(null);
+
             skipButton.interactable = true;
-            skipButton.colors = skipButtonOriginalColorBlock;  // ColorBlock'ı restore et
+            skipButton.colors = skipButtonOriginalColorBlock;
             if (skipButtonImage != null)
                 skipButtonImage.color = skipButtonOriginalColor;
+
+            // Button'ın dahili state'ini zorla "Normal"e çek
+            // GameObject toggle — Selectable.OnDisable+OnEnable full reset yapar
+            skipButton.gameObject.SetActive(false);
+            skipButton.gameObject.SetActive(true);
         }
 
         Time.timeScale = 1f;
