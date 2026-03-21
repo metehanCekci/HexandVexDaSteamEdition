@@ -197,7 +197,7 @@ public class LevelGenerator : MonoBehaviour
                         // Merkeze asla tehlikeli tile koyma
                         if (cell != Vector3Int.zero)
                         {
-                            float hazardThreshold = scaffoldSpawnChance + 0.10f;
+                            float hazardThreshold = scaffoldSpawnChance + 0.08f;
                             float scaffoldThreshold = hazardThreshold + scaffoldSpawnChance;
 
                             if (roll < hazardThreshold)
@@ -429,16 +429,6 @@ public class LevelGenerator : MonoBehaviour
                 randomMultiplier *= 2.0f;
                 enemyAI.isElite = true;
                 newEnemyObj.name = "ELITE " + newEnemyObj.name;
-
-                SpriteRenderer eliteSpriteRenderer = newEnemyObj.GetComponent<SpriteRenderer>();
-                if (eliteSpriteRenderer == null) eliteSpriteRenderer = newEnemyObj.GetComponentInChildren<SpriteRenderer>();
-
-                if (eliteSpriteRenderer != null)
-                {
-                    Color eliteColor = new Color(1f, 0.85f, 0.2f, 1f);
-                    eliteSpriteRenderer.color = eliteColor;
-                    enemyAI.health.SetOriginalColor(eliteColor);
-                }
             }
             // ========================================================
 
@@ -527,7 +517,7 @@ public class LevelGenerator : MonoBehaviour
                         groundMap.SetColor(cell, Color.white);
 
                         // Boss arenasında merkeze değil de rastgele bir yerlere sadece diken (hazard) serpiştiriyoruz. Scaffold YÖK EDİLDİ!
-                        if (roll < 0.10f && Vector3Int.zero != cell)
+                        if (roll < 0.08f && Vector3Int.zero != cell)
                         {
                             if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
                             hazardCells.Add(cell);
