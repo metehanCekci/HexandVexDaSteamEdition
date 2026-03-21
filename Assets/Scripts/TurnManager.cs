@@ -143,9 +143,22 @@ public class TurnManager : MonoBehaviour
 
     private void OnScaffoldDestroyed(Vector3Int cell)
     {
-        if (warningMap != null && warningMap.HasTile(cell))
+        // Don't remove warning tiles that belong to a charging bruiser
+        if (warningMap != null && warningMap.HasTile(cell) && !IsCellTargetedByBruiser(cell))
             warningMap.SetTile(cell, null);
         Invoke("StartPlayerTurn", 0.5f);
+    }
+
+    private bool IsCellTargetedByBruiser(Vector3Int cell)
+    {
+        foreach (var e in enemies)
+        {
+            if (e == null || e.health.currentHP <= 0) continue;
+            var bruiser = e.GetComponent<BruiserEnemyAI>();
+            if (bruiser != null && bruiser.isChargingAttack && bruiser.warningCells.Contains(cell))
+                return true;
+        }
+        return false;
     }
 
 

@@ -505,18 +505,42 @@ public class SpawnerBossAI : MonoBehaviour
     }
 
     private bool totemSequenceRunning = false;
+    private int pendingTotemDeaths = 0;
 
     public void OnTotemDestroyed()
     {
         activeTotems--;
+        pendingTotemDeaths++;
+
         if (!totemSequenceRunning)
-            StartCoroutine(TotemDestroySequence());
+            StartCoroutine(TotemDestroyLoop());
     }
 
-    private IEnumerator TotemDestroySequence()
+    /// <summary>
+    /// Kuyruk sistemi — hızlı ardışık totem ölümlerini tek tek işler.
+    /// Bir sekans bitmeden ölen totemler kuyrukta birikir, sırayla oynatılır.
+    /// </summary>
+    private IEnumerator TotemDestroyLoop()
     {
         totemSequenceRunning = true;
+
+        while (pendingTotemDeaths > 0)
+        {
+            // Biriken tüm ölümleri tek seferde tüket
+            int batchCount = pendingTotemDeaths;
+            pendingTotemDeaths = 0;
+
+            yield return StartCoroutine(TotemDestroySequence(batchCount));
+        }
+
+        totemSequenceRunning = false;
+    }
+
+    private IEnumerator TotemDestroySequence(int destroyedCount)
+    {
         isTransitioning = true;
+        // isSummoning'i sıfırla — önceki spawn yarım kalmışsa kilitlemesin
+        isSummoning = false;
 
         yield return new WaitForSeconds(0.1f);
 
@@ -549,7 +573,7 @@ public class SpawnerBossAI : MonoBehaviour
             StartCoroutine(CameraShake(0.4f, 0.14f));
         }
 
-        // Önce tüm minionların HP'sini sıfırla — EnemyPhase'de hareket etmelerini engelle
+        // Tüm minionları öldür
         foreach (var minion in summonedMinions)
         {
             if (minion != null && minion.health.currentHP > 0)
@@ -564,7 +588,6 @@ public class SpawnerBossAI : MonoBehaviour
 
         yield return new WaitForSeconds(lastTotem ? 1.1f : 0.55f);
 
-        // Dinamik Sınırı Kullan (Totemler de bu sınıra uyarak spawn etsin)
         int maxLimit = GetMaxMinionLimit();
         int countToSpawn = 0;
 
@@ -573,7 +596,7 @@ public class SpawnerBossAI : MonoBehaviour
             isShielded = false;
             StartCoroutine(ShatterShieldVisual());
             previousHP = myEnemyMovement.health.currentHP;
-            countToSpawn = maxLimit; // Tüm totemler kırılınca direkt sınıra ulaşır
+            countToSpawn = maxLimit;
         }
         else
         {
@@ -588,7 +611,6 @@ public class SpawnerBossAI : MonoBehaviour
         yield return StartCoroutine(SummonMinions(countToSpawn));
 
         isTransitioning = false;
-        totemSequenceRunning = false;
     }
 
     private IEnumerator CameraShake(float duration, float magnitude)
