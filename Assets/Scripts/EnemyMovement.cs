@@ -89,15 +89,8 @@ public class EnemyMovement : MonoBehaviour
         HandleMovement();
     }
 
-    void OnMouseDown()
-    {
-        if (PauseManager.isPaused) return;
-        if (TurnManager.instance == null) return;
-        if (TurnManager.instance.isNecroShotTargeting)
-            TurnManager.instance.TryNecroShotKill(this);
-        else if (TurnManager.instance.isPhaseShiftTargeting)
-            TurnManager.instance.TryPhaseShift(this);
-    }
+    // NecroShot & PhaseShift targeting clicks are handled in TurnManager.Update
+    // via cell-based + proximity lookup for accurate targeting.
 
     // ─── Death & Damage Handlers ───
 
@@ -145,10 +138,17 @@ public class EnemyMovement : MonoBehaviour
 
     public void TeleportTo(Vector3Int targetCell)
     {
+        Vector3Int oldCell = cell;
         cell = targetCell;
         targetWorldPos = groundMap.GetCellCenterWorld(cell);
         targetWorldPos.z = 0;
         transform.position = targetWorldPos;
+
+        if (ScaffoldManager.instance != null)
+        {
+            ScaffoldManager.instance.OnEntityLeave(oldCell);
+            ScaffoldManager.instance.OnEntityEnter(cell);
+        }
     }
 
     /// <summary>
@@ -184,6 +184,9 @@ public class EnemyMovement : MonoBehaviour
             ScaffoldManager.instance.OnEntityLeave(oldCell);
             ScaffoldManager.instance.OnEntityEnter(cell);
         }
+
+        // Slippery Secretion: slide on mucus
+        CheckMucusSlide(oldCell);
     }
 
     /// <summary>
@@ -316,6 +319,108 @@ public class EnemyMovement : MonoBehaviour
                 ScaffoldManager.instance.OnEntityLeave(oldCell);
                 ScaffoldManager.instance.OnEntityEnter(cell);
             }
+
+            // Slippery Secretion: slide on mucus after knockback
+            CheckMucusSlide(oldCell);
+        }
+        else
+        {
+            // Hit a wall — Hydraulic Impact perk check
+            if (RunManager.instance != null)
+            {
+                var perk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                if (perk != null) perk.ApplyWallDamage(this);
+            }
+        }
+    }
+
+    private void CheckMucusSlide(Vector3Int cameFromCell)
+    {
+        if (RunManager.instance == null) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is SlipperySecretionPerk) as SlipperySecretionPerk;
+        if (perk == null || !perk.IsMucusCell(cell)) return;
+
+        int dirIndex = perk.GetSlideDirectionIndex(cell, cameFromCell);
+        if (dirIndex < 0) return;
+
+        Vector3Int slideTarget = perk.GetRawSlideTarget(cell, dirIndex);
+        if (slideTarget == cell) return;
+
+        perk.TriggerVisualPop();
+
+        bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(slideTarget);
+        bool isWalkable = groundMap.HasTile(slideTarget) || isScaffold;
+        bool hasEnemy = TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(slideTarget);
+        bool hasPlayer = TurnManager.instance != null && TurnManager.instance.player != null && TurnManager.instance.player.GetCurrentCellPosition() == slideTarget;
+        bool isHazard = LevelGenerator.instance != null && LevelGenerator.instance.hazardCells != null && LevelGenerator.instance.hazardCells.Contains(slideTarget);
+
+        // Mukus kayması saldırıyı interrupt eder — bu tur saldıramaz
+        skipTurns = Mathf.Max(skipTurns, 1);
+
+        if (!isWalkable || hasPlayer)
+        {
+            // Wall/edge collision — bump animation + wall damage
+            Vector3 cPos = groundMap.GetCellCenterWorld(cell);
+            Vector3 sPos = groundMap.GetCellCenterWorld(slideTarget);
+            cPos.z = 0; sPos.z = 0;
+            StartWallBump((sPos - cPos).normalized);
+
+            // Hydraulic Impact bonus
+            if (RunManager.instance != null)
+            {
+                var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                if (hiPerk != null) hiPerk.ApplyWallDamage(this);
+            }
+        }
+        else if (hasEnemy)
+        {
+            // Slide into another enemy — bump both
+            Vector3 cPos = groundMap.GetCellCenterWorld(cell);
+            Vector3 sPos = groundMap.GetCellCenterWorld(slideTarget);
+            cPos.z = 0; sPos.z = 0;
+            Vector3 bumpDir = (sPos - cPos).normalized;
+            StartWallBump(bumpDir);
+
+            // Also bump the enemy we collided with + Hydraulic Impact hasar
+            if (TurnManager.instance != null)
+            {
+                EnemyMovement otherEnemy = null;
+                foreach (var e in TurnManager.instance.enemies)
+                {
+                    if (e != null && e != this && e.GetCurrentCellPosition() == slideTarget && e.health.currentHP > 0)
+                    { otherEnemy = e; break; }
+                }
+                if (otherEnemy != null)
+                {
+                    otherEnemy.StartWallBump(bumpDir);
+                    if (RunManager.instance != null)
+                    {
+                        var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                        if (hiPerk != null) { hiPerk.ApplyWallDamage(this); hiPerk.ApplyWallDamage(otherEnemy); }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Slide to the target cell
+            Vector3Int oldCell = cell;
+            cell = slideTarget;
+            targetWorldPos = groundMap.GetCellCenterWorld(cell);
+            targetWorldPos.z = 0;
+            isMoving = true;
+
+            if (ScaffoldManager.instance != null)
+            {
+                ScaffoldManager.instance.OnEntityLeave(oldCell);
+                ScaffoldManager.instance.OnEntityEnter(cell);
+            }
+
+            // Hazard damage (spikes etc.)
+            if (isHazard && health != null)
+            {
+                health.TakeDamage(1);
+            }
         }
     }
 
@@ -353,8 +458,7 @@ public class EnemyMovement : MonoBehaviour
         var bruiser = GetComponent<BruiserEnemyAI>();
         if (bruiser != null)
         {
-            // Bruiser'ın eski charge state'ini temizle
-            if (bruiser.isChargingAttack) bruiser.ForceClearWarningCells();
+            // Charge devam ediyorsa warning cell'leri temizleme — LockNextMove zaten koruyacak
             bruiser.LockNextMove(playerCell, isStunned);
             return;
         }

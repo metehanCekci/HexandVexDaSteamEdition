@@ -103,6 +103,12 @@ public static class MapGenerator
         // ─── Her oda tipinden en az 1 garanti ───
         EnforceMinimumRoomTypes(map, totalRows);
 
+        // ─── Layer başına en az 2 perk garanti ───
+        EnforceMinimumPerkCount(map, totalRows, 2);
+
+        // ─── İlk savaştan sonra perk garanti ───
+        EnforcePerkAfterFirstCombat(map);
+
         // ─── SON GÜVENLİK: Ardışık ödül yasağı (tüm post-processing sonrası) ───
         EnforceNoConsecutiveRewards(map);
 
@@ -909,6 +915,123 @@ public static class MapGenerator
 
             if (bestCandidate != null)
                 bestCandidate.nodeType = reqType;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // LAYER BAŞINA EN AZ N PERK GARANTİSİ
+    // ═══════════════════════════════════════════════════════
+
+    private static void EnforceMinimumPerkCount(MapData map, int totalRows, int minCount)
+    {
+        // Mevcut perk sayısını say
+        int perkCount = 0;
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType == MapNodeType.PerkSelection) perkCount++;
+        }
+
+        // Yeterince varsa çık
+        while (perkCount < minCount)
+        {
+            // Uygun bir Combat node'u PerkSelection'a çevir
+            // Row 0, row 1, boss row'u atla. Ardışık ödül yasağını koru.
+            MapNode bestCandidate = null;
+            int bestScore = int.MaxValue;
+
+            foreach (var node in map.nodes)
+            {
+                if (node.nodeType != MapNodeType.Combat) continue;
+                if (node.row <= 1 || node.row >= totalRows) continue;
+
+                // Ardışık ödül yasağı: parent veya child ödülse atla
+                if (HasRewardParent(map, node)) continue;
+                bool childReward = false;
+                foreach (int cid in node.childIds)
+                {
+                    MapNode c = map.GetNode(cid);
+                    if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
+                }
+                if (childReward) continue;
+
+                // Ortaya yakın olanı tercih et
+                int score = Mathf.Abs(node.row - totalRows / 2);
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    bestCandidate = node;
+                }
+            }
+
+            if (bestCandidate != null)
+            {
+                bestCandidate.nodeType = MapNodeType.PerkSelection;
+                perkCount++;
+            }
+            else
+            {
+                break; // Uygun aday kalmadı
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // İLK SAVAŞTAN SONRA PERK GARANTİSİ
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Row 0 (ilk savaş) sonrasında en az bir patikada PerkSelection olmalı.
+    /// Row 1'deki node'lardan birini (veya tek node row'da tek node'u)
+    /// PerkSelection'a çevirir.
+    /// </summary>
+    private static void EnforcePerkAfterFirstCombat(MapData map)
+    {
+        // Row 0'ın child'larını bul
+        MapNode startNode = null;
+        foreach (var node in map.nodes)
+        {
+            if (node.row == 0) { startNode = node; break; }
+        }
+        if (startNode == null || startNode.childIds.Count == 0) return;
+
+        // Child'larda zaten perk var mı?
+        bool hasPerk = false;
+        foreach (int cid in startNode.childIds)
+        {
+            MapNode child = map.GetNode(cid);
+            if (child != null && child.nodeType == MapNodeType.PerkSelection)
+            { hasPerk = true; break; }
+        }
+        if (hasPerk) return;
+
+        // Tek child varsa onu PerkSelection yap
+        if (startNode.childIds.Count == 1)
+        {
+            MapNode child = map.GetNode(startNode.childIds[0]);
+            if (child != null) child.nodeType = MapNodeType.PerkSelection;
+            return;
+        }
+
+        // Birden fazla child varsa birini PerkSelection yap (tercihen Combat olanı)
+        foreach (int cid in startNode.childIds)
+        {
+            MapNode child = map.GetNode(cid);
+            if (child != null && child.nodeType == MapNodeType.Combat)
+            {
+                child.nodeType = MapNodeType.PerkSelection;
+                return;
+            }
+        }
+
+        // Combat child yoksa herhangi birini çevir (boss veya elite değilse)
+        foreach (int cid in startNode.childIds)
+        {
+            MapNode child = map.GetNode(cid);
+            if (child != null && child.nodeType != MapNodeType.Boss)
+            {
+                child.nodeType = MapNodeType.PerkSelection;
+                return;
+            }
         }
     }
 }

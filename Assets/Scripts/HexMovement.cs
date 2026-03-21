@@ -261,6 +261,9 @@ public class HexMovement : MonoBehaviour
 
     public void StartKnockbackMovement(Vector3Int targetCell, bool preserveFacing = false)
     {
+        // Aynı hücreye knockback yapma — scaffold'u gereksiz yere çökertir
+        if (targetCell == currentCellPosition) return;
+
         bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(targetCell);
         if (groundMap.HasTile(targetCell) || isScaffold)
         {

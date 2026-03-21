@@ -26,6 +26,47 @@ public class GlassCanonPerk : BasePerk
         TriggerVisualPop();
     }
 
+    public override void OnEquip()
+    {
+        var rm = RunManager.instance;
+        int oldMax = rm.playerMaxHealth;
+        int newMax = 3;
+
+        // Orantili HP: 4/5 (80%) -> 2/3 (66% -> floor)
+        float ratio = oldMax > 0 ? (float)rm.playerCurrentHealth / oldMax : 1f;
+        rm.playerMaxHealth = newMax;
+        rm.playerCurrentHealth = Mathf.Clamp(Mathf.RoundToInt(ratio * newMax), 1, newMax);
+
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            var h = TurnManager.instance.player.health;
+            h.maxHP = newMax;
+            h.currentHP = rm.playerCurrentHealth;
+            h.updateHealth();
+        }
+    }
+
+    public override void OnUnequip()
+    {
+        var rm = RunManager.instance;
+        int defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
+        int oldMax = rm.playerMaxHealth;
+        int newMax = defaultMaxHP;
+
+        // Orantili HP: 3/3 (100%) -> 5/5 (100%), 2/3 (66%) -> 3/5 (60%)
+        float ratio = oldMax > 0 ? (float)rm.playerCurrentHealth / oldMax : 1f;
+        rm.playerMaxHealth = newMax;
+        rm.playerCurrentHealth = Mathf.Clamp(Mathf.RoundToInt(ratio * newMax), 1, newMax);
+
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            var h = TurnManager.instance.player.health;
+            h.maxHP = newMax;
+            h.currentHP = rm.playerCurrentHealth;
+            h.updateHealth();
+        }
+    }
+
     public override void ModifyCombat(CombatPayload payload)
     {
         // Glass Cannon: Her koşulda 2x hasar

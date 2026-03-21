@@ -100,6 +100,14 @@ public class PerkInventoryUI : MonoBehaviour
         // Ghost mouse takibi + hafif dönme
         if (isDragging && dragGhost != null)
         {
+            // Güvenlik: mouse bırakıldıysa ama EndDrag tetiklenmediyse iptal et
+            if (!Input.GetMouseButton(0) && !Input.GetMouseButton(1))
+            {
+                CancelDrag();
+                RefreshUI();
+                return;
+            }
+
             Vector2 pos;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 rootCanvas.transform as RectTransform, Input.mousePosition, null, out pos);
@@ -136,6 +144,17 @@ public class PerkInventoryUI : MonoBehaviour
         if (canvasGO == null) BuildUI();
         canvasGO.SetActive(true);
         rootCanvas = canvasGO.GetComponent<Canvas>();
+
+        // Canvas ayarlarını her Show()'da garantile — sahne geçişlerinde bozulabilir
+        if (rootCanvas != null)
+        {
+            rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            rootCanvas.sortingOrder = 91;
+        }
+        // GraphicRaycaster yoksa ekle — hover/drag için gerekli
+        if (canvasGO.GetComponent<GraphicRaycaster>() == null)
+            canvasGO.AddComponent<GraphicRaycaster>();
+
         stashWasOpen = false;
         RefreshUI();
 
@@ -147,6 +166,8 @@ public class PerkInventoryUI : MonoBehaviour
             CanvasGroup panelCG = panelRoot.GetComponent<CanvasGroup>();
             if (panelCG == null) panelCG = panelRoot.AddComponent<CanvasGroup>();
             panelCG.alpha = 1f;
+            panelCG.interactable = true;
+            panelCG.blocksRaycasts = true;
         }
     }
 
@@ -986,10 +1007,15 @@ public class PerkInventoryUI : MonoBehaviour
                 lvRT.anchoredPosition = new Vector2(2f, -2f);
                 lvRT.sizeDelta = new Vector2(22f, 16f);
                 TextMeshProUGUI lvTMP = lvGO.GetComponent<TextMeshProUGUI>();
+                var alagardFont = Resources.Load<TMP_FontAsset>("alagard SDF");
+                if (alagardFont != null) lvTMP.font = alagardFont;
                 lvTMP.text = perk.currentLevel.ToString();
                 lvTMP.fontSize = 11;
+                lvTMP.fontStyle = FontStyles.Bold;
                 lvTMP.alignment = TextAlignmentOptions.BottomRight;
                 lvTMP.color = new Color(1f, 0.9f, 0.4f);
+                lvTMP.outlineWidth = 0.25f;
+                lvTMP.outlineColor = Color.black;
                 lvTMP.raycastTarget = false;
             }
 

@@ -2,7 +2,7 @@ public class VolatileCellsPerk : BasePerk
 {
     void OnEnable()
     {
-        maxLevel = 4;
+        maxLevel = 3;
     }
 
     public override void ModifyCombat(CombatPayload payload)

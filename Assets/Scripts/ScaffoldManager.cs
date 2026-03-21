@@ -40,7 +40,8 @@ public class ScaffoldManager : MonoBehaviour
     {
         return LevelGenerator.instance != null
             && LevelGenerator.instance.scaffoldCells != null
-            && LevelGenerator.instance.scaffoldCells.Contains(cell);
+            && LevelGenerator.instance.scaffoldCells.Contains(cell)
+            && !collapsingOrDestroyed.Contains(cell);
     }
 
     public bool IsCollapsing(Vector3Int cell)

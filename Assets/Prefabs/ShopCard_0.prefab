@@ -143,8 +143,8 @@ MonoBehaviour:
   m_text: Once acquired, you gain the right to reroll perks on the next perk selection
     screen.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
-  m_sharedMaterial: {fileID: 4275843045926110767, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
+  m_sharedMaterial: {fileID: 4275843045926110767, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -280,8 +280,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: SOLD
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
-  m_sharedMaterial: {fileID: 4275843045926110767, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
+  m_sharedMaterial: {fileID: 4275843045926110767, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -715,8 +715,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "MUTAT\u0130ON CATALYST"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
-  m_sharedMaterial: {fileID: 4275843045926110767, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
+  m_sharedMaterial: {fileID: 4275843045926110767, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -852,8 +852,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 6
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
-  m_sharedMaterial: {fileID: 4275843045926110767, guid: 2d11f4ca5091da649a1ee63a03229716, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
+  m_sharedMaterial: {fileID: 4275843045926110767, guid: b7c9f5d1a1c75f6468063fd2da1da109, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

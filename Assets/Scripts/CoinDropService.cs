@@ -7,7 +7,7 @@ public class CoinDropService
         if (enemy.IsTotem) return 0;
 
         RunManager rm = RunManager.instance;
-        bool isBossRoom = rm.currentLevel % 5 == 0;
+        bool isBossRoom = rm.currentNodeType == MapNodeType.Boss;
         int coinDrop = 0;
 
         if (isBossRoom)

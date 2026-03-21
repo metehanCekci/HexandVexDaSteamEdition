@@ -197,14 +197,25 @@ public class LevelGenerator : MonoBehaviour
                         // Merkeze asla tehlikeli tile koyma
                         if (cell != Vector3Int.zero)
                         {
-                            float hazardThreshold = scaffoldSpawnChance + 0.10f;
+                            float hazardThreshold = scaffoldSpawnChance + 0.08f;
                             float scaffoldThreshold = hazardThreshold + scaffoldSpawnChance;
 
                             if (roll < hazardThreshold)
                             {
                                 // Diken (Hazard) tile
-                                if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
-                                hazardCells.Add(cell);
+                                // Komşusunda 2+ hazard varsa spawn etme → geçilmez duvarlar engellenir
+                                int adjacentHazardCount = 0;
+                                Vector3Int[] hazOffsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+                                foreach (var off in hazOffsets)
+                                {
+                                    if (hazardCells.Contains(cell + off)) adjacentHazardCount++;
+                                }
+
+                                if (adjacentHazardCount < 2)
+                                {
+                                    if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
+                                    hazardCells.Add(cell);
+                                }
                             }
                             else if (roll < scaffoldThreshold)
                             {
@@ -234,6 +245,7 @@ public class LevelGenerator : MonoBehaviour
 
         CleanUpDisconnectedIslands();
         EnsureSafeConnectivity();
+        RemoveBottleneckHazards();
 
         // Minimum tile garantisi: düşman sayısı + hazard sayısı + 4 (oyuncu + hareket alanı)
         int minSafeTiles = enemyCountToSpawn + hazardCells.Count + 4;
@@ -411,24 +423,12 @@ public class LevelGenerator : MonoBehaviour
                 // Elite node: ilk düşman garanti, geri kalanı %20
                 makeElite = (i == 0) || (Random.value < 0.20f);
             }
-            else if (RunManager.instance.currentLevel >= 6)
-            {
-                makeElite = Random.value < 0.10f;
-            }
 
             if (makeElite)
             {
                 randomMultiplier *= 2.0f;
                 enemyAI.isElite = true;
                 newEnemyObj.name = "ELITE " + newEnemyObj.name;
-
-                SpriteRenderer eliteSpriteRenderer = newEnemyObj.GetComponent<SpriteRenderer>();
-                if (eliteSpriteRenderer == null) eliteSpriteRenderer = newEnemyObj.GetComponentInChildren<SpriteRenderer>();
-
-                if (eliteSpriteRenderer != null)
-                {
-                    eliteSpriteRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);
-                }
             }
             // ========================================================
 
@@ -446,6 +446,13 @@ public class LevelGenerator : MonoBehaviour
 
         TurnManager.instance.isPlayerTurn = true;
         TurnManager.instance.hasAttackedThisTurn = false;
+
+        // Reset remaining moves for the new level so perks like ReflexFiber start fresh
+        if (RunManager.instance != null)
+        {
+            RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
+        }
+
         TurnManager.instance.player.UpdateHighlights();
 
         TurnManager.instance.Invoke("LockAllEnemyIntents", 0.1f);
@@ -510,7 +517,7 @@ public class LevelGenerator : MonoBehaviour
                         groundMap.SetColor(cell, Color.white);
 
                         // Boss arenasında merkeze değil de rastgele bir yerlere sadece diken (hazard) serpiştiriyoruz. Scaffold YÖK EDİLDİ!
-                        if (roll < 0.10f && Vector3Int.zero != cell)
+                        if (roll < 0.08f && Vector3Int.zero != cell)
                         {
                             if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
                             hazardCells.Add(cell);
@@ -524,6 +531,7 @@ public class LevelGenerator : MonoBehaviour
 
         CleanUpDisconnectedIslands();
         EnsureSafeConnectivity();
+        RemoveBottleneckHazards();
         GenerateColumns();
 
         Vector3 worldCenter = groundMap.GetCellCenterWorld(Vector3Int.zero);
@@ -747,6 +755,76 @@ public class LevelGenerator : MonoBehaviour
             hazardCells.Remove(cell);
             scaffoldCells.Remove(cell);
         }
+    }
+
+    /// <summary>
+    /// Hazard hücreleri darboğaz oluşturuyorsa kaldır.
+    /// Bir hazard kaldırıldığında, güvenli hücrelerin bağlantısı artarsa o hazard darboğazdır.
+    /// </summary>
+    private void RemoveBottleneckHazards()
+    {
+        if (hazardCells.Count == 0) return;
+
+        // Güvenli hücrelerin bağlı bileşen sayısını hesapla
+        int baseComponents = CountSafeComponents();
+        if (baseComponents <= 1) return; // Zaten tek bileşen, sorun yok
+
+        // Her hazard'ı geçici olarak kaldırıp bileşen sayısını kontrol et
+        List<Vector3Int> toRemove = new List<Vector3Int>();
+        foreach (var hCell in new List<Vector3Int>(hazardCells))
+        {
+            // Hazard'ı geçici olarak güvenli yap
+            hazardCells.Remove(hCell);
+            int newComponents = CountSafeComponents();
+            hazardCells.Add(hCell);
+
+            // Bu hazard kaldırılınca bileşen sayısı düşüyorsa darboğaz
+            if (newComponents < baseComponents)
+                toRemove.Add(hCell);
+        }
+
+        foreach (var cell in toRemove)
+        {
+            hazardCells.Remove(cell);
+            if (hazardMap != null) hazardMap.SetTile(cell, null);
+        }
+    }
+
+    /// <summary>Güvenli (hazard/scaffold olmayan) hücrelerin bağlı bileşen sayısını döner.</summary>
+    private int CountSafeComponents()
+    {
+        HashSet<Vector3Int> unvisited = new HashSet<Vector3Int>();
+        foreach (var c in validCells)
+        {
+            if (!hazardCells.Contains(c) && !scaffoldCells.Contains(c))
+                unvisited.Add(c);
+        }
+
+        int components = 0;
+        while (unvisited.Count > 0)
+        {
+            components++;
+            Vector3Int start = unvisited.First();
+            Queue<Vector3Int> queue = new Queue<Vector3Int>();
+            queue.Enqueue(start);
+            unvisited.Remove(start);
+
+            while (queue.Count > 0)
+            {
+                Vector3Int curr = queue.Dequeue();
+                Vector3Int[] offsets = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+                foreach (var off in offsets)
+                {
+                    Vector3Int neighbor = curr + off;
+                    if (unvisited.Contains(neighbor))
+                    {
+                        unvisited.Remove(neighbor);
+                        queue.Enqueue(neighbor);
+                    }
+                }
+            }
+        }
+        return components;
     }
 
     private void CleanUpDisconnectedIslands()

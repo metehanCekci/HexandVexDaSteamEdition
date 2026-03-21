@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: SynapticAnchor_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 5481980800461895454, guid: ab65f1387238d054583bc89aeecc2394, type: 3}
+  perkId: SynapticAnchor
+  loreText: A neural implant that creates a quantum entanglement between two points
+    in space. The anchor remembers, and the body follows.
+  rarity: 3
+  unlockCondition: 7
+  requiredAmount: 30
+  conditionParam: 
+  unlockHint: Toplam 30 level temizle.

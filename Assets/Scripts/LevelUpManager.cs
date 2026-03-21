@@ -46,6 +46,7 @@ public class LevelUpManager : MonoBehaviour
     [Header("Debug")]
     [HideInInspector] public GameObject forcedPerk;
     [HideInInspector] public GameObject forcedPerk2;
+    [HideInInspector] public GameObject forcedPerk3;
 
     private int hoveredCardIndex = -1;
     private bool[] cardAnimDone;
@@ -77,7 +78,9 @@ public class LevelUpManager : MonoBehaviour
         levelUpPanel.SetActive(true);
         if (levelUpCanvasGroup != null) levelUpCanvasGroup.gameObject.SetActive(true);
 
-        // Perk stash panelini göster
+        // Perk stash panelini göster (yoksa oluştur)
+        if (PerkInventoryUI.instance == null)
+            PerkInventoryUI.CreateFromCode();
         if (PerkInventoryUI.instance != null)
             PerkInventoryUI.instance.Show();
 
@@ -91,23 +94,34 @@ public class LevelUpManager : MonoBehaviour
             GameObject randomPerk = null;
             int safetyBreak = 0;
 
-            if (i == 0 && forcedPerk != null && !IsPerkMaxedOut(forcedPerk))
+            if (i == 0 && forcedPerk != null && forcedPerk != null)
             {
                 randomPerk = forcedPerk;
             }
-            else if (i == 1 && forcedPerk2 != null && !IsPerkMaxedOut(forcedPerk2) && forcedPerk2 != forcedPerk)
+            else if (i == 1 && forcedPerk2 != null && forcedPerk2 != forcedPerk)
             {
                 randomPerk = forcedPerk2;
             }
-
-            while (randomPerk == null || currentChoices.Contains(randomPerk) || IsPerkMaxedOut(randomPerk))
+            else if (i == 2 && forcedPerk3 != null && forcedPerk3 != forcedPerk && forcedPerk3 != forcedPerk2)
             {
-                randomPerk = GetRandomPerkByRarity(isBossReward);
-                safetyBreak++;
-                if (safetyBreak > 50)
+                randomPerk = forcedPerk3;
+            }
+
+            bool isForced = (i == 0 && forcedPerk != null && randomPerk == forcedPerk)
+                          || (i == 1 && forcedPerk2 != null && randomPerk == forcedPerk2)
+                          || (i == 2 && forcedPerk3 != null && randomPerk == forcedPerk3);
+
+            if (!isForced)
+            {
+                while (randomPerk == null || currentChoices.Contains(randomPerk) || IsPerkMaxedOut(randomPerk))
                 {
-                    randomPerk = GetAnyValidFallback();
-                    break;
+                    randomPerk = GetRandomPerkByRarity(isBossReward);
+                    safetyBreak++;
+                    if (safetyBreak > 50)
+                    {
+                        randomPerk = GetAnyValidFallback();
+                        break;
+                    }
                 }
             }
 
@@ -183,6 +197,9 @@ public class LevelUpManager : MonoBehaviour
             rerollPerkButton.gameObject.SetActive(RunManager.instance.hasPerkReroll);
             rerollPerkButton.onClick.RemoveAllListeners();
             rerollPerkButton.onClick.AddListener(RerollPerkChoices);
+
+            // Navigation'ı kapat — yakın butonlara hover sızmasını engelle
+            rerollPerkButton.navigation = new Navigation { mode = Navigation.Mode.None };
         }
 
         // Skip butonunu deaktif yap ve rengini orijinaline sıfırla
@@ -190,22 +207,10 @@ public class LevelUpManager : MonoBehaviour
         {
             skipButton.interactable = false;
             skipButton.colors = skipButtonOriginalColorBlock;
-
-            // EventTrigger'dan gelen hover kalıntılarını temizle
-            EventTrigger skipTrigger = skipButton.GetComponent<EventTrigger>();
-            if (skipTrigger != null)
-                skipTrigger.triggers.Clear();
+            skipButton.navigation = new Navigation { mode = Navigation.Mode.None };
         }
         if (skipButtonImage != null)
             skipButtonImage.color = skipButtonOriginalColor;
-
-        // Reroll butonundaki EventTrigger'ı temizle (skip butonuna sızma ihtimalini kes)
-        if (rerollPerkButton != null)
-        {
-            EventTrigger rerollTrigger = rerollPerkButton.GetComponent<EventTrigger>();
-            if (rerollTrigger != null)
-                rerollTrigger.triggers.Clear();
-        }
 
         Time.timeScale = 0f;
         StopAllCoroutines();
@@ -376,6 +381,7 @@ public class LevelUpManager : MonoBehaviour
             Debug.Log($"🔥 {activeInstance.perkName} Max Seviyeye ulaştı! Havuzdan kalıcı olarak silindi.");
             if (forcedPerk == chosenPerk) forcedPerk = null;
             if (forcedPerk2 == chosenPerk) forcedPerk2 = null;
+            if (forcedPerk3 == chosenPerk) forcedPerk3 = null;
         }
 
         foreach (var perk in existingPerks)
@@ -579,13 +585,22 @@ public class LevelUpManager : MonoBehaviour
         // Perk inventory'yi burada kapatma — map'e dönünce kapanacak
         foreach (var btn in choiceButtons) btn.interactable = true;
 
-        // Skip butonunu aktif yap ve rengini restore et
+        // Skip butonunu aktif yap ve görsel state'i zorla sıfırla
         if (skipButton != null)
         {
+            // EventSystem'ın stale pointer verisini temizle
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(null);
+
             skipButton.interactable = true;
-            skipButton.colors = skipButtonOriginalColorBlock;  // ColorBlock'ı restore et
+            skipButton.colors = skipButtonOriginalColorBlock;
             if (skipButtonImage != null)
                 skipButtonImage.color = skipButtonOriginalColor;
+
+            // Button'ın dahili state'ini zorla "Normal"e çek
+            // GameObject toggle — Selectable.OnDisable+OnEnable full reset yapar
+            skipButton.gameObject.SetActive(false);
+            skipButton.gameObject.SetActive(true);
         }
 
         Time.timeScale = 1f;

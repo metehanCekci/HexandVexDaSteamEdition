@@ -24,7 +24,7 @@ public static class UIStyle
     public static readonly Color   SoldOutOverlay= new Color(0f, 0f, 0f, 0.65f);
 
     // ── Font ─────────────────────────────────────────────────────────────────
-    public const string FONT_PATH = "Assets/Star Crush SDF.asset";
+    public const string FONT_PATH = "Assets/alagard SDF.asset";
     public static TMP_FontAsset LoadFont() =>
         AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FONT_PATH);
 

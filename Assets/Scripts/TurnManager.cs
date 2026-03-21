@@ -51,11 +51,12 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public bool skipDiceVisuals { get => diceUI != null ? diceUI.skipDiceVisuals : false; set { if (diceUI != null) diceUI.skipDiceVisuals = value; } }
 
     public List<EnemyMovement> enemies = new List<EnemyMovement>();
-    private CoinDropService coinService;
+    [HideInInspector] public CoinDropService coinService;
     private DiceUIController diceUI;
     private PerkCombatProcessor perkProcessor;
     [HideInInspector] public bool isLevelClearTriggered = false;
     private bool manualDiceSkip = false;
+    private bool speedDiceMode = false;
     [HideInInspector] public bool holdingSkip = false;
     public bool isPlayerTurn = true;
     public bool hasAttackedThisTurn = false;
@@ -67,8 +68,13 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public bool isThornPlacementTargeting = false;
     [HideInInspector] public bool isMitsuriTargeting = false;
 
-    // Thorn preview
+    // Item targeting iptali için cache
+    [HideInInspector] public BaseItem pendingTargetingItem;
+    [HideInInspector] public int pendingTargetingSlot = -1;
+
+    // Thorn preview & lifetime tracking
     private GameObject thornPreviewObj;
+    private Dictionary<Vector3Int, int> thornTurnsRemaining = new Dictionary<Vector3Int, int>();
 
     public bool IsAnyTargetingActive => isNecroShotTargeting || isBombPlacementTargeting || isPhaseShiftTargeting || isThornPlacementTargeting || isMitsuriTargeting;
 
@@ -83,10 +89,14 @@ public class TurnManager : MonoBehaviour
 
     public int finalDamage = 0;
 
+    [Header("Run Reset (R tuşu)")]
+    private float holdRTimer = 0f;
+    private const float HOLD_R_DURATION = 0.8f;
+
     [Header("Yeni Oyun Başlangıç Ayarları")]
     public int startingLevel = 1;
     public int startingGold = 0;
-    public int startingMaxHP = 3;
+    public int startingMaxHP = 5;
     public int startingDiceCount = 2;
     public float startingCritMultiplier = 2.0f;
     public float startingCritChance = 0.10f;
@@ -133,9 +143,22 @@ public class TurnManager : MonoBehaviour
 
     private void OnScaffoldDestroyed(Vector3Int cell)
     {
-        if (warningMap != null && warningMap.HasTile(cell))
+        // Don't remove warning tiles that belong to a charging bruiser
+        if (warningMap != null && warningMap.HasTile(cell) && !IsCellTargetedByBruiser(cell))
             warningMap.SetTile(cell, null);
         Invoke("StartPlayerTurn", 0.5f);
+    }
+
+    private bool IsCellTargetedByBruiser(Vector3Int cell)
+    {
+        foreach (var e in enemies)
+        {
+            if (e == null || e.health.currentHP <= 0) continue;
+            var bruiser = e.GetComponent<BruiserEnemyAI>();
+            if (bruiser != null && bruiser.isChargingAttack && bruiser.warningCells.Contains(cell))
+                return true;
+        }
+        return false;
     }
 
 
@@ -145,12 +168,46 @@ public class TurnManager : MonoBehaviour
 
         if (diceUI != null) diceUI.CheckFastModeSkip();
 
+        // Speed dice: animasyonları atla ama zarları göster
+        if (speedDiceMode && diceUI != null && diceUI.IsDiceAnimPlaying)
+            diceUI.skipDiceAnim = true;
+
         // fastMode veya manuel skip aktifse zarları gizle
         if (RunManager.instance != null)
             skipDiceVisuals = RunManager.instance.fastMode || manualDiceSkip;
 
         // Hold-to-skip: basılı tutunca her tur otomatik skip at
         if (holdingSkip && isPlayerTurn) SkipTurn();
+
+        // Hold R: basılı tutunca hızlı run reset (fade ile yeni oyun başlat)
+        if (Input.GetKey(KeyCode.R))
+        {
+            holdRTimer += Time.unscaledDeltaTime;
+            if (holdRTimer >= HOLD_R_DURATION)
+            {
+                holdRTimer = 0f;
+                StopAllCoroutines();
+                Time.timeScale = 1f;
+                int sceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+                if (ScreenFader.instance != null)
+                {
+                    ScreenFader.instance.FadeAndLoad(() =>
+                    {
+                        ResetGame();
+                        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneIndex);
+                    });
+                }
+                else
+                {
+                    ResetGame();
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(sceneIndex);
+                }
+            }
+        }
+        else
+        {
+            holdRTimer = 0f;
+        }
 
         // Mitsuri Blade: turu sırasında istediği zaman düşmana tıklayarak saldırabilir
         if (isMitsuriTargeting)
@@ -192,6 +249,32 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // NecroShot / PhaseShift: cell-based + proximity click (bypasses OnMouseDown collider issues)
+        if ((isNecroShotTargeting || isPhaseShiftTargeting) && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        {
+            Vector3 mPos = Input.mousePosition;
+            mPos.z = Mathf.Abs(Camera.main.transform.position.z);
+            Vector3 wPoint = Camera.main.ScreenToWorldPoint(mPos);
+            wPoint.z = 0;
+            Vector3Int cCell = groundMap.WorldToCell(wPoint);
+            EnemyMovement clickedEnemy = GetEnemyAtCell(cCell);
+            if (clickedEnemy == null)
+            {
+                float best = 1.5f;
+                foreach (var e in enemies)
+                {
+                    if (e == null || e.health.currentHP <= 0) continue;
+                    float d = Vector3.Distance(wPoint, e.transform.position);
+                    if (d < best) { best = d; clickedEnemy = e; }
+                }
+            }
+            if (clickedEnemy != null)
+            {
+                if (isNecroShotTargeting) TryNecroShotKill(clickedEnemy);
+                else if (isPhaseShiftTargeting) TryPhaseShift(clickedEnemy);
+            }
+        }
+
         if ((isBombPlacementTargeting || isThornPlacementTargeting) && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
             Vector3 mousePos = Input.mousePosition;
@@ -230,6 +313,14 @@ public class TurnManager : MonoBehaviour
         }
 
 #if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.F2))
+        {
+            if (PerkCollectionManager.instance != null)
+            {
+                PerkCollectionManager.instance.ResetAll();
+                Debug.Log("<color=#FF0000>[CHEAT]</color> All collection progress reset!");
+            }
+        }
         if (Input.GetKeyDown(KeyCode.F6))
         {
             // Cheat: tüm state'leri resetle ki level clear akışı takılmasın
@@ -249,11 +340,14 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.currentGold += 10000;
             UpdateCoinUI();
         }
-        if (Input.GetKeyDown(KeyCode.F8)) SpawnDebugAoEEnemies();
+        if (Input.GetKeyDown(KeyCode.F8)) { if (player != null) player.health.TakeDamage(player.health.currentHP + 999); }
         if (Input.GetKeyDown(KeyCode.F9))
         {
-            if (player != null && player.health != null)
-                player.health.TakeDamage(player.health.currentHP + 999);
+            if (PerkCollectionManager.instance != null)
+            {
+                PerkCollectionManager.instance.UnlockAll();
+                Debug.Log("<color=#00FF00>[CHEAT]</color> All collection perks unlocked!");
+            }
         }
         if (Input.GetKeyDown(KeyCode.F10)) DebugEquipAllPerks();
         if (Input.GetKeyDown(KeyCode.F12)) DebugUpgradeAllPerks();
@@ -348,6 +442,8 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.surgeBootActive = false;
             RunManager.instance.surgeBootNextTurn = false;
         }
+        TickThornLifetimes();
+        TickBurnsIfActive();
         player.UpdateHighlights();
         StartCoroutine(LockIntentsNextFrame());
 
@@ -583,6 +679,33 @@ public class TurnManager : MonoBehaviour
     }
 
     public void RegisterEnemy(EnemyMovement enemy) { if (!enemies.Contains(enemy)) enemies.Add(enemy); }
+    public void SetTargetingItemCache(BaseItem item, int slotIndex)
+    {
+        pendingTargetingItem = item;
+        pendingTargetingSlot = slotIndex;
+    }
+
+    public void CancelTargeting()
+    {
+        if (!IsAnyTargetingActive) return;
+
+        // Restore item to hotbar
+        if (pendingTargetingItem != null && pendingTargetingSlot >= 0 && InventoryManager.instance != null)
+        {
+            InventoryManager.instance.RestoreItem(pendingTargetingSlot, pendingTargetingItem);
+        }
+        pendingTargetingItem = null;
+        pendingTargetingSlot = -1;
+
+        isNecroShotTargeting = false;
+        isBombPlacementTargeting = false;
+        isPhaseShiftTargeting = false;
+        if (isThornPlacementTargeting) { isThornPlacementTargeting = false; DestroyThornPreview(); }
+        // Mitsuri is weapon-based, not item-based — don't cancel with ESC
+    }
+
+    private void ClearTargetingCache() { pendingTargetingItem = null; pendingTargetingSlot = -1; }
+
     public void StartNecroShotTargeting() { isNecroShotTargeting = true; }
 
     // ──────── Mitsuri Blade Range Indicators ────────
@@ -798,6 +921,7 @@ public class TurnManager : MonoBehaviour
         if (!isNecroShotTargeting || target == null) return;
         if (target.IsBoss) return;
         isNecroShotTargeting = false;
+        ClearTargetingCache();
         if (player != null) player.TriggerAttackAnimation();
 
         target.health.TakeDamage(target.health.currentHP);
@@ -810,6 +934,7 @@ public class TurnManager : MonoBehaviour
     private IEnumerator ExecuteBombAt(Vector3Int cell)
     {
         isBombPlacementTargeting = false;
+        ClearTargetingCache();
 
         // Placeholder'ı hemen koy, patlamadan önce göster
         GameObject placeholderObj = null;
@@ -859,7 +984,10 @@ public class TurnManager : MonoBehaviour
         if (!skipDiceVisuals)
         {
             UpdateTotalDamageDisplay(totalDamage);
-            yield return StartCoroutine(diceUI.SkippableWait(0.6f));
+            if (speedDiceMode)
+                yield return new WaitForSeconds(0.5f);
+            else
+                yield return StartCoroutine(diceUI.SkippableWait(0.6f));
         }
         diceUI.EndDiceAnim();
 
@@ -881,6 +1009,8 @@ public class TurnManager : MonoBehaviour
         foreach (var enemy in hitEnemies)
         {
             enemy.health.TakeDamage(totalDamage);
+            ApplyBurnIfActive(enemy);
+            ApplyCystIfActive(enemy);
 
             SpawnSlashEffect(enemy.transform.position);
 
@@ -898,6 +1028,7 @@ public class TurnManager : MonoBehaviour
     {
         if (!isPhaseShiftTargeting || target == null) return;
         isPhaseShiftTargeting = false;
+        ClearTargetingCache();
         StartCoroutine(PhaseShiftCoroutine(target));
     }
 
@@ -1008,17 +1139,141 @@ public class TurnManager : MonoBehaviour
         if (player != null && player.GetCurrentCellPosition() == cell) return true;
         if (IsEnemyAtCell(cell)) return true;
         if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(cell)) return true;
+
+        // Bu hücreye diken koymak düşmanları sıkıştırır mı kontrol et
+        if (LevelGenerator.instance != null && WouldBlockEnemyPaths(cell)) return true;
+
         return false;
+    }
+
+    /// <summary>
+    /// Bir hücreye diken koymak düşmanların yolunu tamamen kapatır mı kontrol eder.
+    /// </summary>
+    private bool WouldBlockEnemyPaths(Vector3Int thornCell)
+    {
+        if (LevelGenerator.instance == null || player == null) return false;
+
+        // Geçici olarak hazard ekle
+        LevelGenerator.instance.hazardCells.Add(thornCell);
+
+        Vector3Int playerCell = player.GetCurrentCellPosition();
+        bool anyBlocked = false;
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null || enemy.health.currentHP <= 0) continue;
+            Vector3Int enemyCell = enemy.GetCurrentCellPosition();
+            if (enemyCell == thornCell) continue;
+
+            // BFS — düşman oyuncuya ulaşabilir mi?
+            if (!CanReachAvoidingHazards(enemyCell, playerCell))
+            {
+                anyBlocked = true;
+                break;
+            }
+        }
+
+        // Geçici hazard'ı geri al
+        LevelGenerator.instance.hazardCells.Remove(thornCell);
+        return anyBlocked;
+    }
+
+    /// <summary>BFS ile hazard'ları atlayarak hedefe ulaşılabilir mi kontrol eder.</summary>
+    private bool CanReachAvoidingHazards(Vector3Int from, Vector3Int to)
+    {
+        if (from == to) return true;
+        var lg = LevelGenerator.instance;
+        if (lg == null) return true;
+
+        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
+        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        queue.Enqueue(from);
+        visited.Add(from);
+
+        while (queue.Count > 0)
+        {
+            Vector3Int curr = queue.Dequeue();
+            Vector3Int[] offsets = (curr.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
+
+            foreach (var off in offsets)
+            {
+                Vector3Int neighbor = curr + off;
+                if (neighbor == to) return true;
+                if (visited.Contains(neighbor)) continue;
+                if (!lg.groundMap.HasTile(neighbor) && !(ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(neighbor))) continue;
+                if (lg.hazardCells.Contains(neighbor)) continue;
+
+                visited.Add(neighbor);
+                queue.Enqueue(neighbor);
+            }
+        }
+        return false;
+    }
+
+    private void TickThornLifetimes()
+    {
+        if (LevelGenerator.instance == null) return;
+        List<Vector3Int> expired = new List<Vector3Int>();
+        List<Vector3Int> blinkCells = new List<Vector3Int>();
+        List<Vector3Int> keys = new List<Vector3Int>(thornTurnsRemaining.Keys);
+
+        foreach (var key in keys)
+        {
+            int remaining = thornTurnsRemaining[key] - 1;
+            thornTurnsRemaining[key] = remaining;
+
+            if (remaining <= 0)
+                expired.Add(key);
+            else if (remaining == 1)
+                blinkCells.Add(key);
+        }
+
+        // 2. turda (1 tur kaldı) blink efekti
+        foreach (var cell in blinkCells)
+        {
+            if (LevelGenerator.instance.hazardMap != null && LevelGenerator.instance.hazardMap.HasTile(cell))
+                StartCoroutine(BlinkThornTile(cell));
+        }
+
+        // 3. tur doldu → kaldır
+        foreach (var cell in expired)
+        {
+            thornTurnsRemaining.Remove(cell);
+            LevelGenerator.instance.hazardCells.Remove(cell);
+            if (LevelGenerator.instance.hazardMap != null)
+            {
+                LevelGenerator.instance.hazardMap.SetTile(cell, null);
+            }
+        }
+    }
+
+    private IEnumerator BlinkThornTile(Vector3Int cell)
+    {
+        var map = LevelGenerator.instance != null ? LevelGenerator.instance.hazardMap : null;
+        if (map == null) yield break;
+        // LockColor flag'ini kaldır yoksa SetColor çalışmaz
+        if (map.HasTile(cell)) map.SetTileFlags(cell, TileFlags.None);
+        // Son tur boyunca sürekli yanıp sön, tile kaldırılana kadar
+        while (map.HasTile(cell) && thornTurnsRemaining.ContainsKey(cell))
+        {
+            map.SetColor(cell, new Color(1f, 1f, 1f, 0.25f));
+            yield return new WaitForSeconds(0.2f);
+            if (!map.HasTile(cell)) break;
+            map.SetColor(cell, Color.white);
+            yield return new WaitForSeconds(0.2f);
+        }
     }
 
     private void ExecuteThornAt(Vector3Int cell)
     {
-        if (LevelGenerator.instance == null) { isThornPlacementTargeting = false; DestroyThornPreview(); return; }
+        if (LevelGenerator.instance == null) { isThornPlacementTargeting = false; DestroyThornPreview(); ClearTargetingCache(); return; }
         if (IsThornCellBlocked(cell)) return;
         isThornPlacementTargeting = false;
         DestroyThornPreview();
+        ClearTargetingCache();
         LevelGenerator.instance.hazardCells.Add(cell);
         if (LevelGenerator.instance.hazardMap != null && LevelGenerator.instance.hazardTile != null) LevelGenerator.instance.hazardMap.SetTile(cell, LevelGenerator.instance.hazardTile);
+        thornTurnsRemaining[cell] = 3;
         if (player != null) player.UpdateHighlights();
     }
 
@@ -1077,11 +1332,10 @@ public class TurnManager : MonoBehaviour
         RunManager.instance.currentGold += RunManager.instance.skipBonusGold;
         UpdateCoinUI();
 
-        List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
         bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
 
-        // Greatsword: skip sonrası bitişik düşmana otomatik saldır
-        // MitsuriBlade: skip = tur geçir, otomatik saldırı yok
+        // 1) Mevcut konumdaki bitişik düşmanlara saldır
+        List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
         if (!isMitsuri && adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
         {
             RunManager.instance.remainingMoves = 0;
@@ -1089,6 +1343,24 @@ public class TurnManager : MonoBehaviour
             yield return StartCoroutine(MultiAttack(adjacentEnemies));
         }
 
+        // 2) Synaptic Anchor teleport bekliyor mu?
+        var anchorPerk = RunManager.instance.activePerks.Find(p => p is SynapticAnchorPerk) as SynapticAnchorPerk;
+        if (anchorPerk != null && anchorPerk.teleportPending)
+        {
+            yield return StartCoroutine(anchorPerk.ExecuteTeleport());
+
+            if (CleanupDeadAndCheckLevelClear()) yield break;
+
+            // 3) Teleport sonrası yeni konumdaki bitişik düşmanlara da saldır
+            List<EnemyMovement> newAdjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
+            if (!isMitsuri && newAdjacentEnemies.Count > 0)
+            {
+                isAttackAnimationPlaying = true;
+                yield return StartCoroutine(MultiAttack(newAdjacentEnemies));
+            }
+        }
+
+        if (CleanupDeadAndCheckLevelClear()) yield break;
         if (enemies.Count <= 0) yield break;
         StartCoroutine(EnemyPhase());
     }
@@ -1429,6 +1701,14 @@ public class TurnManager : MonoBehaviour
     }
     public bool GetSkipDiceVisuals() => manualDiceSkip;
 
+    public void ToggleSpeedDice()
+    {
+        speedDiceMode = !speedDiceMode;
+        if (speedDiceMode && diceUI != null && diceUI.IsDiceAnimPlaying)
+            diceUI.skipDiceAnim = true;
+    }
+    public bool GetSpeedDice() => speedDiceMode;
+
     private IEnumerator MultiAttack(List<EnemyMovement> targets)
     {
 
@@ -1585,7 +1865,10 @@ public class TurnManager : MonoBehaviour
 
         if (!skipDiceVisuals)
         {
-            yield return StartCoroutine(diceUI.SkippableWait(0.4f));
+            if (speedDiceMode)
+                yield return new WaitForSeconds(0.5f);
+            else
+                yield return StartCoroutine(diceUI.SkippableWait(0.4f));
         }
         HideDiceResults();
         diceUI.EndDiceAnim();
@@ -1630,6 +1913,8 @@ public class TurnManager : MonoBehaviour
             }
             bool dies = enemy.health.currentHP <= actualDamage;
             enemy.health.TakeDamage(actualDamage, true);
+            ApplyBurnIfActive(enemy);
+            ApplyCystIfActive(enemy);
 
             SpawnSlashEffect(enemy.transform.position);
 
@@ -1676,12 +1961,36 @@ public class TurnManager : MonoBehaviour
                 Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
                 cPos.z = 0; pPos.z = 0; Vector3 bumpDir = (cPos - pPos).normalized;
                 e.StartWallBump(bumpDir); enemyBehind.StartWallBump(bumpDir);
+
+                // Hydraulic Impact: düşmanı düşmana çarptırınca ikisine de hasar
+                if (RunManager.instance != null)
+                {
+                    var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                    if (hiPerk != null) { hiPerk.ApplyWallDamage(e); hiPerk.ApplyWallDamage(enemyBehind); }
+                }
             }
             else if (!HasWalkableTile(rawTargetCell) || player.GetCurrentCellPosition() == rawTargetCell)
             {
-                e.ApplyStun(2, true);
-                Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
-                cPos.z = 0; pPos.z = 0; e.StartWallBump((cPos - pPos).normalized);
+                // Düşman scaffold duvarındaysa: scaffold kırılsın, düşman düşsün (sessiz kill — damage text yok)
+                Vector3Int enemyCell = e.GetCurrentCellPosition();
+                if (ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(enemyCell))
+                {
+                    e.health.TakeDamageSilent(e.health.currentHP);
+                    ScaffoldManager.instance.OnEntityDied(enemyCell);
+                }
+                else
+                {
+                    e.ApplyStun(2, true);
+                    Vector3 cPos = groundMap.GetCellCenterWorld(enemyCell); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
+                    cPos.z = 0; pPos.z = 0; e.StartWallBump((cPos - pPos).normalized);
+
+                    // Hydraulic Impact: duvara itince hasar
+                    if (RunManager.instance != null)
+                    {
+                        var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                        if (hiPerk != null) hiPerk.ApplyWallDamage(e);
+                    }
+                }
             }
             else
             {
@@ -1732,6 +2041,16 @@ public class TurnManager : MonoBehaviour
         }
 
         yield return new WaitUntil(() => { foreach (var e in knockedEnemies) if (e != null && e.IsMoving()) return false; if (didRecoil && player.IsMoving()) return false; return true; });
+
+        // Knockback sonrası: ölü düşman scaffold üzerinde kaldıysa scaffold çöksün
+        if (ScaffoldManager.instance != null)
+        {
+            foreach (var e in knockedEnemies)
+            {
+                if (e != null && e.health.currentHP <= 0)
+                    ScaffoldManager.instance.OnEntityDied(e.GetCurrentCellPosition());
+            }
+        }
 
         foreach (var e in knockedEnemies) if (e != null && payload.triggerExplosion) TriggerExplosion(e.GetCurrentCellPosition(), payload.explosionDamagePercent, false);
 
@@ -1853,6 +2172,27 @@ public class TurnManager : MonoBehaviour
     }
 
     public void ResumeAfterShop() { StartPlayerTurn(); }
+
+    private void ApplyBurnIfActive(EnemyMovement enemy)
+    {
+        if (RunManager.instance == null || enemy == null || enemy.health.currentHP <= 0) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is PyrogenicGlandsPerk) as PyrogenicGlandsPerk;
+        if (perk != null) perk.ApplyBurn(enemy);
+    }
+
+    private void ApplyCystIfActive(EnemyMovement enemy)
+    {
+        if (RunManager.instance == null || enemy == null || enemy.health.currentHP <= 0) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is ViralCystsPerk) as ViralCystsPerk;
+        if (perk != null) perk.PlantCyst(enemy);
+    }
+
+    private void TickBurnsIfActive()
+    {
+        if (RunManager.instance == null) return;
+        var perk = RunManager.instance.activePerks.Find(p => p is PyrogenicGlandsPerk) as PyrogenicGlandsPerk;
+        if (perk != null) perk.TickBurns();
+    }
 
     public void UpdateTotalDamageDisplay(int val) => diceUI.UpdateTotalDamageDisplay(val);
     public void HideDiceResults() => diceUI.HideDiceResults();

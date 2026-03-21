@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 3}
   m_Name: PerkCollectionDatabase
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   entries:
   - {fileID: 11400000, guid: 9c80ec745e361e24b8e773643aee6d77, type: 2}
   - {fileID: 11400000, guid: be5a4afef1e88204da217fbc97850661, type: 2}
@@ -52,3 +52,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2f563fb0ad2e61c4dbffa340d8278b87, type: 2}
   - {fileID: 11400000, guid: 5ef430df449a30d4fab477209e8d0dc5, type: 2}
   - {fileID: 11400000, guid: 72754f2894c83f644934db0528174477, type: 2}
+  - {fileID: 11400000, guid: 80cf205e05954b34481391d9754c6066, type: 2}
+  - {fileID: 11400000, guid: 8ec7edcdb4e8c254aaeee5284e24e7c0, type: 2}
+  - {fileID: 11400000, guid: b5a40e131ca9d26499d7b3312062c5fb, type: 2}
+  - {fileID: 11400000, guid: 29a25b092e369814db0ac23dfad90e77, type: 2}
+  - {fileID: 11400000, guid: 05b2584eb07151941900a6ca35662cac, type: 2}
+  - {fileID: 11400000, guid: 5ee183c7643f31e4281c0cff67ac0c3e, type: 2}
+  - {fileID: 11400000, guid: b5908e7d4b0bdbc4ba011a0a5b26294e, type: 2}
+  - {fileID: 11400000, guid: f17aa8f280e04bf42a6aaef4a3206a57, type: 2}
+  - {fileID: 11400000, guid: d7a6a2b27a71a3a48ad6b3ec77b27ddd, type: 2}

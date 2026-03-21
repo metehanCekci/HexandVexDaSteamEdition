@@ -58,14 +58,26 @@ public class HotbarUI : MonoBehaviour
 
     void Start()
     {
-        // Wire button click listeners for each slot
+        // Wire button click listeners & ensure tooltip references
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i] == null || slots[i].button == null) continue;
+            if (slots[i] == null) continue;
+
+            // Ensure tooltip component exists (add at runtime if missing)
+            if (slots[i].tooltip == null)
+                slots[i].tooltip = slots[i].GetComponent<HotbarSlotTooltip>();
+            if (slots[i].tooltip == null)
+                slots[i].tooltip = slots[i].gameObject.AddComponent<HotbarSlotTooltip>();
+
+            if (slots[i].button == null) continue;
             int idx = i;
             slots[i].button.onClick.RemoveAllListeners();
             slots[i].button.onClick.AddListener(() => UseSlot(idx));
         }
+
+        // InventoryManager DontDestroyOnLoad — sahne değişince slot sayısını senkronize et
+        if (InventoryManager.instance != null && InventoryManager.instance.SlotCount > maxVisibleSlots)
+            maxVisibleSlots = Mathf.Min(InventoryManager.instance.SlotCount, slots.Count);
 
         ApplySlotVisibility();
         RefreshSlots();
@@ -84,10 +96,25 @@ public class HotbarUI : MonoBehaviour
     void Update()
     {
         if (InventoryManager.instance == null) return;
-
-        // Block hotbar input when shop or targeting is active
-        if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive) return;
         if (SecretPerkCinematic.instance != null && SecretPerkCinematic.instance.IsPlaying) return;
+
+        // Targeting aktifken aynı slot tuşu/tıkı iptal eder
+        if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive && !TurnManager.instance.isMitsuriTargeting)
+        {
+            int cancelSlot = TurnManager.instance.pendingTargetingSlot;
+            if (cancelSlot >= 0)
+            {
+                for (int i = 0; i < hotkeys.Length && i < maxVisibleSlots; i++)
+                {
+                    if (Input.GetKeyDown(hotkeys[i]) && i == cancelSlot)
+                    {
+                        TurnManager.instance.CancelTargeting();
+                        return;
+                    }
+                }
+            }
+            return;
+        }
 
         for (int i = 0; i < hotkeys.Length && i < maxVisibleSlots; i++)
         {
@@ -135,6 +162,10 @@ public class HotbarUI : MonoBehaviour
         if (InventoryManager.instance == null) return;
         if (slots == null || slots.Count == 0) return;
 
+        // Targeting aktifken pending slot'u tıklanabilir tut (iptal için)
+        bool hasTargeting = TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive && !TurnManager.instance.isMitsuriTargeting;
+        int targetSlot = hasTargeting ? TurnManager.instance.pendingTargetingSlot : -1;
+
         for (int i = 0; i < slots.Count && i < maxVisibleSlots; i++)
         {
             BaseItem item = InventoryManager.instance.GetItem(i);
@@ -158,20 +189,25 @@ public class HotbarUI : MonoBehaviour
                     slot.iconImage.enabled = false;
                 }
 
-                if (slot.tooltip != null)
+                HotbarSlotTooltip tt = slot.tooltip ?? slot.GetComponent<HotbarSlotTooltip>();
+                if (tt != null)
                 {
-                    slot.tooltip.itemName = item.itemName;
-                    slot.tooltip.itemDesc = item.description;
-                    slot.tooltip.hasItem = true;
+                    tt.itemName = item.itemName ?? "";
+                    tt.itemDesc = item.description ?? "";
+                    tt.hasItem = true;
                 }
             }
             else
             {
                 slot.background.color = emptySlotColor;
-                slot.button.interactable = false;
                 slot.iconImage.enabled = false;
-                if (slot.tooltip != null)
-                    slot.tooltip.hasItem = false;
+
+                // Targeting slotu: görsel boş ama tıklanabilir (iptal için)
+                slot.button.interactable = (i == targetSlot);
+
+                HotbarSlotTooltip tt2 = slot.tooltip ?? slot.GetComponent<HotbarSlotTooltip>();
+                if (tt2 != null)
+                    tt2.hasItem = false;
             }
         }
     }
@@ -179,6 +215,15 @@ public class HotbarUI : MonoBehaviour
     private void UseSlot(int index)
     {
         if (InventoryManager.instance == null) return;
+
+        // Targeting aktifken: aynı slot iptal eder, farklı slot engellenir
+        if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive && !TurnManager.instance.isMitsuriTargeting)
+        {
+            if (TurnManager.instance.pendingTargetingSlot == index)
+                TurnManager.instance.CancelTargeting();
+            return;
+        }
+
         InventoryManager.instance.UseItem(index);
     }
 
@@ -192,6 +237,17 @@ public class HotbarUI : MonoBehaviour
         if (maxVisibleSlots >= slots.Count) return;
 
         maxVisibleSlots++;
+        ApplySlotVisibility();
+        RefreshSlots();
+    }
+
+    /// <summary>
+    /// Remove one slot from the hotbar (called when OrganPouch is unequipped).
+    /// </summary>
+    public void RemoveSlot()
+    {
+        if (maxVisibleSlots <= 3) return;
+        maxVisibleSlots--;
         ApplySlotVisibility();
         RefreshSlots();
     }
@@ -249,6 +305,8 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         tooltipCanvasGroup = tooltipObj.AddComponent<CanvasGroup>();
         tooltipCanvasGroup.alpha = 0f;
+        tooltipCanvasGroup.blocksRaycasts = false;
+        tooltipCanvasGroup.interactable = false;
 
         RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
         ttRT.anchorMin = new Vector2(0.5f, 1f);
@@ -276,6 +334,8 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         titleGO.transform.SetParent(tooltipObj.transform, false);
         titleGO.layer = gameObject.layer;
         titleText = titleGO.AddComponent<TextMeshProUGUI>();
+        TMP_FontAsset alagardFont = Resources.Load<TMP_FontAsset>("alagard SDF");
+        if (alagardFont != null) titleText.font = alagardFont;
         titleText.fontSize = 16;
         titleText.alignment = TextAlignmentOptions.Left;
         titleText.color = Color.white;
@@ -296,6 +356,7 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         descGO.transform.SetParent(tooltipObj.transform, false);
         descGO.layer = gameObject.layer;
         descText = descGO.AddComponent<TextMeshProUGUI>();
+        if (alagardFont != null) descText.font = alagardFont;
         descText.fontSize = 13;
         descText.alignment = TextAlignmentOptions.Left;
         descText.color = new Color(0.9f, 0.9f, 0.9f, 1f);

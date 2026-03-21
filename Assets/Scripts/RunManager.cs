@@ -15,8 +15,8 @@ public class RunManager : MonoBehaviour
     [Header("Run Stats")]
 
     public int currentGold = 0;
-    public int playerMaxHealth = 3;
-    public int playerCurrentHealth = 3;
+    public int playerMaxHealth = 5;
+    public int playerCurrentHealth = 5;
     public int baseDiceCount = 2;
     public int maxTurns = 1;
     public int collectibleSlots = 3;
@@ -198,6 +198,8 @@ public class RunManager : MonoBehaviour
         BasePerk activePerk = activePerks[activeIndex];
         BasePerk inventoryPerk = inventoryPerks[inventoryIndex];
 
+        if (!activePerk.CanUnequip()) return;
+
         // Callback'leri cagir
         activePerk.OnUnequip();
         inventoryPerk.OnEquip();
@@ -229,6 +231,8 @@ public class RunManager : MonoBehaviour
         if (activeIndex < 0 || activeIndex >= activePerks.Count) return;
 
         BasePerk perk = activePerks[activeIndex];
+        if (!perk.CanUnequip()) return;
+
         activePerks.RemoveAt(activeIndex);
         inventoryPerks.Add(perk);
         perk.OnUnequip();

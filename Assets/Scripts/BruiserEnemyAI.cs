@@ -42,6 +42,11 @@ public class BruiserEnemyAI : MonoBehaviour
     /// </summary>
     public void LockNextMove(Vector3Int playerCell, bool isStunned)
     {
+        // Already charging — attack is committed, don't re-evaluate
+        // (scaffold collapse mid-charge must not cancel the attack)
+        if (isChargingAttack && !isStunned && movement.health.currentHP > 0)
+            return;
+
         if (isChargingAttack) ForceClearWarningCells();
 
         if (isStunned || movement.health.currentHP <= 0)

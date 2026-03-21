@@ -79,7 +79,7 @@ public class HealthScript : MonoBehaviour
         }
     }
 
-    public void TakeDamage(int dmg, bool applyHitstop = false)
+    public void TakeDamage(int dmg, bool applyHitstop = false, bool applyStun = true)
     {
         if (isDead) return;
 
@@ -121,7 +121,7 @@ public class HealthScript : MonoBehaviour
         }
 
         EnemyMovement enemy = GetComponentInParent<EnemyMovement>();
-        if (enemy != null && !enemy.IsBoss && !enemy.IsTotem)
+        if (applyStun && enemy != null && !enemy.IsBoss && !enemy.IsTotem)
         {
             enemy.ApplyStun(1, false);
         }
@@ -210,10 +210,42 @@ public class HealthScript : MonoBehaviour
         }
     }
 
+    public void SetOriginalColor(Color color)
+    {
+        originalColor = color;
+        if (spriteRenderer != null) spriteRenderer.color = color;
+    }
+
+    /// <summary>
+    /// Hasar ver ama damage text ve camera shake gösterme (scaffold düşüşü gibi sessiz ölümler için).
+    /// </summary>
+    public void TakeDamageSilent(int dmg)
+    {
+        if (isDead) return;
+        currentHP -= dmg;
+
+        if (gameObject.CompareTag("Player") && RunManager.instance != null)
+        {
+            RunManager.instance.totalDamageReceived += dmg;
+            RunManager.instance.playerCurrentHealth = currentHP;
+        }
+
+        OnDamaged?.Invoke(currentHP);
+        updateHealth();
+
+        if (currentHP <= 0) Die();
+    }
+
     public void Heal(int amount)
     {
         if (isDead) return;
         currentHP = Mathf.Min(currentHP + amount, maxHP);
+
+        if (gameObject.CompareTag("Player") && RunManager.instance != null)
+        {
+            RunManager.instance.playerCurrentHealth = currentHP;
+        }
+
         updateHealth();
     }
 
@@ -247,7 +279,8 @@ public class HealthScript : MonoBehaviour
         // Scaffold: düşman scaffold üzerinde öldüyse scaffold çöksün
         if (ScaffoldManager.instance != null)
         {
-            EnemyMovement enemyAI = GetComponent<EnemyMovement>();
+            EnemyMovement enemyAI = GetComponentInParent<EnemyMovement>();
+            if (enemyAI == null) enemyAI = GetComponent<EnemyMovement>();
             if (enemyAI != null && enemyAI.groundMap != null)
             {
                 Vector3Int deathCell = enemyAI.GetCurrentCellPosition();

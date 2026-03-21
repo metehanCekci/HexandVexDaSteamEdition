@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: PerkLeech_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 8029140015236653387, guid: be1c37f580434e146b9db90e6b5eea86, type: 3}
+  perkId: PerkLeech
+  loreText: A parasitic organism that feeds on the essence of powerful foes. Each
+    elite kill leaves behind a crystallized fragment of their strength.
+  rarity: 3
+  unlockCondition: 8
+  requiredAmount: 20
+  conditionParam: 
+  unlockHint: "Tek run'da 20 d\xFC\u015Fman \xF6ld\xFCr."
