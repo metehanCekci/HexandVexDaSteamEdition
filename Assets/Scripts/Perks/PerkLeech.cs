@@ -27,7 +27,6 @@ public class PerkLeechPerk : BasePerk
 
         TriggerVisualPop();
 
-        // Fragment kazanıldı popup
         if (ActivePerkBar.instance != null)
             ActivePerkBar.instance.TriggerPopForPerk(this);
 
@@ -41,299 +40,151 @@ public class PerkLeechPerk : BasePerk
 
     private string GetDescription()
     {
-        return $"Elite düşman öldürdüğünde bir perk parçası kazan. 3 parça = rastgele perk.\nParçalar: {fragments}/{FRAGMENTS_NEEDED}";
+        return $"Elite dusман oldurdugun de bir perk parcasi kazan. 3 parca = rastgele perk.\nParcalar: {fragments}/{FRAGMENTS_NEEDED}";
     }
 
     private IEnumerator MergeFragmentsAndGrantPerk()
     {
         isMerging = true;
 
-        // Get random perk prefab
         GameObject perkPrefab = null;
         if (LevelUpManager.instance != null)
             perkPrefab = LevelUpManager.instance.GetRandomPerkByRarity(false);
 
         if (perkPrefab == null) { isMerging = false; yield break; }
 
-        // --- MERGE ANIMATION ---
-        // Create 3 fragment objects that fly toward center and merge
-        Canvas canvas = GetMergeCanvas();
-        if (canvas == null) { GrantPerkDirect(perkPrefab); isMerging = false; yield break; }
+        Camera cam = Camera.main;
+        if (cam == null) { GrantPerkDirect(perkPrefab); isMerging = false; yield break; }
 
-        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-        Vector2 canvasSize = canvasRect.sizeDelta;
-        Vector2 center = canvasSize * 0.5f;
+        Vector3 center = cam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 10f));
+        center.z = -5f;
 
-        // Dimmer background
-        GameObject dimmer = CreateDimmer(canvas.transform);
+        // Dimmer
+        GameObject dimmer = new GameObject("PerkLeechDimmer");
+        SpriteRenderer dimmerSR = dimmer.AddComponent<SpriteRenderer>();
+        dimmerSR.sprite = CreateSquareSprite();
+        dimmerSR.color = new Color(0f, 0f, 0f, 0f);
+        dimmerSR.sortingOrder = 200;
+        dimmer.transform.position = center;
+        dimmer.transform.localScale = Vector3.one * 50f;
 
-        // Create 3 fragment sprites at triangle positions around center
-        float radius = 200f;
-        List<RectTransform> fragmentObjects = new List<RectTransform>();
-        for (int i = 0; i < 3; i++)
+        // Dimmer fade in
+        float dur = 0.2f;
+        float e = 0f;
+        while (e < dur)
         {
-            float angle = (i * 120f + 90f) * Mathf.Deg2Rad;
-            Vector2 pos = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-            GameObject frag = CreateFragmentUI(canvas.transform, pos, i);
-            fragmentObjects.Add(frag.GetComponent<RectTransform>());
-        }
-
-        // Phase 1: Fragments appear with pop (0.3s)
-        float popDur = 0.3f;
-        float popElapsed = 0f;
-        while (popElapsed < popDur)
-        {
-            popElapsed += Time.unscaledDeltaTime;
-            float t = popElapsed / popDur;
-            float scale = EaseOutBack(t);
-            foreach (var frag in fragmentObjects)
-                frag.localScale = Vector3.one * scale * 0.8f;
+            e += Time.deltaTime;
+            dimmerSR.color = new Color(0f, 0f, 0f, Mathf.Lerp(0f, 0.5f, e / dur));
             yield return null;
         }
 
-        yield return new WaitForSecondsRealtime(0.2f);
-
-        // Phase 2: Fragments orbit and converge toward center (0.8s)
-        float mergeDur = 0.8f;
-        float mergeElapsed = 0f;
-        List<Vector2> startPositions = new List<Vector2>();
-        foreach (var frag in fragmentObjects)
-            startPositions.Add(frag.anchoredPosition);
-
-        while (mergeElapsed < mergeDur)
+        // 3 fragment — ucgen formasyonda, 1/3 boyut
+        float radius = 0.5f;
+        float fragScale = 0.2f;
+        List<Transform> frags = new List<Transform>();
+        for (int i = 0; i < 3; i++)
         {
-            mergeElapsed += Time.unscaledDeltaTime;
-            float t = mergeElapsed / mergeDur;
-            float eased = t * t; // EaseIn — slow start, fast end
+            float angle = (i * 120f + 90f) * Mathf.Deg2Rad;
+            Vector3 pos = center + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
 
-            // Spin while converging
-            float spinAngle = t * 360f * 2f; // 2 full rotations
+            GameObject frag = new GameObject($"Fragment_{i}");
+            SpriteRenderer sr = frag.AddComponent<SpriteRenderer>();
+            sr.sprite = CreateDiamondSprite();
+            sr.color = new Color(0.5f, 1f, 0.5f, 0.9f);
+            sr.sortingOrder = 201;
+            frag.transform.position = pos;
+            frag.transform.localScale = Vector3.zero;
+            frags.Add(frag.transform);
+        }
+
+        // Pop in
+        dur = 0.3f; e = 0f;
+        while (e < dur)
+        {
+            e += Time.deltaTime;
+            float s = EaseOutBack(e / dur) * fragScale;
+            foreach (var f in frags) f.localScale = Vector3.one * s;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(0.15f);
+
+        // Orbit + converge
+        dur = 0.6f; e = 0f;
+        while (e < dur)
+        {
+            e += Time.deltaTime;
+            float t = e / dur;
+            float eased = t * t;
+            float spin = t * 360f * 2f;
+            float curR = Mathf.Lerp(radius, 0f, eased);
 
             for (int i = 0; i < 3; i++)
             {
-                float baseAngle = (i * 120f + 90f + spinAngle) * Mathf.Deg2Rad;
-                float currentRadius = Mathf.Lerp(radius, 0f, eased);
-                Vector2 pos = center + new Vector2(Mathf.Cos(baseAngle), Mathf.Sin(baseAngle)) * currentRadius;
-                fragmentObjects[i].anchoredPosition = pos;
+                float a = (i * 120f + 90f + spin) * Mathf.Deg2Rad;
+                frags[i].position = center + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * curR;
+                frags[i].position = new Vector3(frags[i].position.x, frags[i].position.y, -5f);
+                float s = Mathf.Lerp(fragScale, fragScale * 0.3f, eased);
+                frags[i].localScale = Vector3.one * s;
 
-                // Scale down as they approach center
-                float scale = Mathf.Lerp(0.8f, 0.3f, eased);
-                fragmentObjects[i].localScale = Vector3.one * scale;
-
-                // Glow brighter
-                var img = fragmentObjects[i].GetComponent<UnityEngine.UI.Image>();
-                if (img != null)
-                {
-                    float glow = Mathf.Lerp(0.7f, 1f, t);
-                    img.color = new Color(glow, 1f, glow, 1f);
-                }
+                SpriteRenderer sr = frags[i].GetComponent<SpriteRenderer>();
+                if (sr != null) sr.color = Color.Lerp(new Color(0.5f, 1f, 0.5f, 0.9f), new Color(1f, 1f, 1f, 1f), t);
             }
             yield return null;
         }
 
-        // Destroy fragments
-        foreach (var frag in fragmentObjects)
-            Object.Destroy(frag.gameObject);
+        foreach (var f in frags) Object.Destroy(f.gameObject);
 
-        // Phase 3: Flash + Perk reveal (0.5s)
         // Flash
-        GameObject flash = CreateFlash(canvas.transform, center);
-        float flashDur = 0.15f;
-        float flashElapsed = 0f;
-        RectTransform flashRT = flash.GetComponent<RectTransform>();
-        while (flashElapsed < flashDur)
-        {
-            flashElapsed += Time.unscaledDeltaTime;
-            float t = flashElapsed / flashDur;
-            flashRT.localScale = Vector3.one * Mathf.Lerp(0f, 3f, t);
-            var img = flash.GetComponent<UnityEngine.UI.Image>();
-            if (img != null)
-                img.color = new Color(1f, 1f, 1f, Mathf.Lerp(1f, 0f, t));
-            yield return null;
-        }
-        Object.Destroy(flash);
-
-        // Show resulting perk icon + name
-        BasePerk perkScript = perkPrefab.GetComponent<BasePerk>();
-        GameObject reveal = CreatePerkReveal(canvas.transform, center, perkScript);
-
-        // Pop in
-        RectTransform revealRT = reveal.GetComponent<RectTransform>();
-        float revealDur = 0.4f;
-        float revealElapsed = 0f;
-        while (revealElapsed < revealDur)
-        {
-            revealElapsed += Time.unscaledDeltaTime;
-            float t = revealElapsed / revealDur;
-            revealRT.localScale = Vector3.one * EaseOutBack(t);
-            yield return null;
-        }
+        GameObject flash = new GameObject("MergeFlash");
+        SpriteRenderer flashSR = flash.AddComponent<SpriteRenderer>();
+        flashSR.sprite = CreateCircleSprite();
+        flashSR.color = Color.white;
+        flashSR.sortingOrder = 202;
+        flash.transform.position = center;
 
         if (AudioManager.instance != null) AudioManager.instance.PlayTextEffect();
         CameraController.ShakeLight();
 
-        yield return new WaitForSecondsRealtime(1.2f);
-
-        // Fade out reveal + dimmer
-        float fadeDur = 0.3f;
-        float fadeElapsed = 0f;
-        var revealGroup = reveal.AddComponent<CanvasGroup>();
-        var dimmerGroup = dimmer.GetComponent<CanvasGroup>();
-        while (fadeElapsed < fadeDur)
+        dur = 0.25f; e = 0f;
+        while (e < dur)
         {
-            fadeElapsed += Time.unscaledDeltaTime;
-            float t = fadeElapsed / fadeDur;
-            if (revealGroup != null) revealGroup.alpha = 1f - t;
-            if (dimmerGroup != null) dimmerGroup.alpha = Mathf.Lerp(0.5f, 0f, t);
+            e += Time.deltaTime;
+            float t = e / dur;
+            flash.transform.localScale = Vector3.one * Mathf.Lerp(0f, 1.5f, t);
+            flashSR.color = new Color(1f, 1f, 1f, Mathf.Lerp(1f, 0f, t));
+            yield return null;
+        }
+        Object.Destroy(flash);
+
+        // Kisa bekleme, sonra fade out
+        yield return new WaitForSeconds(0.15f);
+
+        dur = 0.2f; e = 0f;
+        while (e < dur)
+        {
+            e += Time.deltaTime;
+            dimmerSR.color = new Color(0f, 0f, 0f, Mathf.Lerp(0.5f, 0f, e / dur));
             yield return null;
         }
 
-        Object.Destroy(reveal);
         Object.Destroy(dimmer);
 
-        // Actually grant the perk
         GrantPerkDirect(perkPrefab);
         isMerging = false;
     }
 
     private void GrantPerkDirect(GameObject perkPrefab)
     {
-        if (RunManager.instance != null)
-            RunManager.instance.AddPerk(perkPrefab);
-    }
+        if (RunManager.instance == null) return;
+        RunManager.instance.AddPerk(perkPrefab);
 
-    // --- UI Helpers ---
-
-    private Canvas GetMergeCanvas()
-    {
-        // Use existing high-sort canvas or find one
-        GameObject canvasObj = GameObject.Find("MainCanvas");
-        if (canvasObj != null) return canvasObj.GetComponent<Canvas>();
-
-        // Fallback
-        Canvas[] allCanvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-        Canvas best = null;
-        int bestOrder = int.MinValue;
-        foreach (var c in allCanvases)
+        BasePerk prefabScript = perkPrefab.GetComponent<BasePerk>();
+        if (prefabScript != null && ActivePerkBar.instance != null)
         {
-            if (c.sortingOrder > bestOrder)
-            {
-                bestOrder = c.sortingOrder;
-                best = c;
-            }
-        }
-        return best;
-    }
-
-    private GameObject CreateDimmer(Transform parent)
-    {
-        GameObject obj = new GameObject("PerkLeechDimmer");
-        obj.transform.SetParent(parent, false);
-        RectTransform rt = obj.AddComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.sizeDelta = Vector2.zero;
-        var img = obj.AddComponent<UnityEngine.UI.Image>();
-        img.color = new Color(0f, 0f, 0f, 0.5f);
-        img.raycastTarget = false;
-        var cg = obj.AddComponent<CanvasGroup>();
-        cg.alpha = 0.5f;
-        cg.blocksRaycasts = false;
-        return obj;
-    }
-
-    private GameObject CreateFragmentUI(Transform parent, Vector2 position, int index)
-    {
-        GameObject obj = new GameObject($"Fragment_{index}");
-        obj.transform.SetParent(parent, false);
-        RectTransform rt = obj.AddComponent<RectTransform>();
-        rt.anchoredPosition = position;
-        rt.sizeDelta = new Vector2(60f, 60f);
-        rt.localScale = Vector3.zero;
-
-        var img = obj.AddComponent<UnityEngine.UI.Image>();
-        // Diamond/crystal shape - use a rotated square as fragment
-        img.color = new Color(0.5f, 1f, 0.5f, 0.9f);
-        img.raycastTarget = false;
-        rt.localRotation = Quaternion.Euler(0, 0, 45f);
-
-        return obj;
-    }
-
-    private GameObject CreateFlash(Transform parent, Vector2 position)
-    {
-        GameObject obj = new GameObject("MergeFlash");
-        obj.transform.SetParent(parent, false);
-        RectTransform rt = obj.AddComponent<RectTransform>();
-        rt.anchoredPosition = position;
-        rt.sizeDelta = new Vector2(100f, 100f);
-        rt.localScale = Vector3.zero;
-
-        var img = obj.AddComponent<UnityEngine.UI.Image>();
-        img.color = Color.white;
-        img.raycastTarget = false;
-
-        return obj;
-    }
-
-    private GameObject CreatePerkReveal(Transform parent, Vector2 position, BasePerk perkData)
-    {
-        GameObject obj = new GameObject("PerkReveal");
-        obj.transform.SetParent(parent, false);
-        RectTransform rt = obj.AddComponent<RectTransform>();
-        rt.anchoredPosition = position;
-        rt.sizeDelta = new Vector2(180f, 220f);
-        rt.localScale = Vector3.zero;
-
-        // Background
-        var bg = obj.AddComponent<UnityEngine.UI.Image>();
-        bg.color = new Color(0.02f, 0.02f, 0.05f, 0.9f);
-        bg.raycastTarget = false;
-
-        // Perk icon
-        if (perkData != null && perkData.icon != null)
-        {
-            GameObject iconObj = new GameObject("Icon");
-            iconObj.transform.SetParent(obj.transform, false);
-            RectTransform iconRT = iconObj.AddComponent<RectTransform>();
-            iconRT.anchoredPosition = new Vector2(0, 25f);
-            iconRT.sizeDelta = new Vector2(80f, 80f);
-            var iconImg = iconObj.AddComponent<UnityEngine.UI.Image>();
-            iconImg.sprite = perkData.icon;
-            iconImg.type = UnityEngine.UI.Image.Type.Simple;
-            iconImg.raycastTarget = false;
-        }
-
-        // Perk name
-        GameObject nameObj = new GameObject("Name");
-        nameObj.transform.SetParent(obj.transform, false);
-        RectTransform nameRT = nameObj.AddComponent<RectTransform>();
-        nameRT.anchoredPosition = new Vector2(0, -45f);
-        nameRT.sizeDelta = new Vector2(170f, 40f);
-        var nameText = nameObj.AddComponent<TMPro.TMP_Text>();
-        // Use TextMeshProUGUI for canvas
-        Object.Destroy(nameText);
-        var nameTMP = nameObj.AddComponent<TMPro.TextMeshProUGUI>();
-        nameTMP.text = perkData != null ? perkData.perkName : "???";
-        nameTMP.fontSize = 18f;
-        nameTMP.alignment = TMPro.TextAlignmentOptions.Center;
-        nameTMP.color = GetRarityColor(perkData);
-        nameTMP.raycastTarget = false;
-
-        // FontOverrider will handle the font
-        return obj;
-    }
-
-    private Color GetRarityColor(BasePerk perk)
-    {
-        if (perk == null) return Color.white;
-        switch (perk.rarity)
-        {
-            case PerkRarity.Common: return Color.white;
-            case PerkRarity.Rare: return new Color(0.3f, 0.6f, 1f);
-            case PerkRarity.Epic: return new Color(0.7f, 0.3f, 1f);
-            case PerkRarity.Legendary: return new Color(1f, 0.8f, 0.2f);
-            default: return Color.white;
+            BasePerk active = RunManager.instance.activePerks.Find(p => p.GetType() == prefabScript.GetType());
+            if (active != null)
+                ActivePerkBar.instance.TriggerPopForPerk(active);
         }
     }
 
@@ -342,5 +193,56 @@ public class PerkLeechPerk : BasePerk
         float overshoot = 1.4f;
         t -= 1f;
         return t * t * ((overshoot + 1f) * t + overshoot) + 1f;
+    }
+
+    // --- Sprite helpers ---
+
+    private static Sprite _circle;
+    private static Sprite CreateCircleSprite()
+    {
+        if (_circle != null) return _circle;
+        int r = 64;
+        Texture2D tex = new Texture2D(r, r, TextureFormat.RGBA32, false);
+        float c = r / 2f;
+        for (int y = 0; y < r; y++)
+            for (int x = 0; x < r; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), new Vector2(c, c)) / c;
+                tex.SetPixel(x, y, new Color(1, 1, 1, Mathf.Clamp01(1f - d)));
+            }
+        tex.Apply();
+        _circle = Sprite.Create(tex, new Rect(0, 0, r, r), Vector2.one * 0.5f, r);
+        return _circle;
+    }
+
+    private static Sprite _diamond;
+    private static Sprite CreateDiamondSprite()
+    {
+        if (_diamond != null) return _diamond;
+        int r = 32;
+        Texture2D tex = new Texture2D(r, r, TextureFormat.RGBA32, false);
+        float c = r / 2f;
+        for (int y = 0; y < r; y++)
+            for (int x = 0; x < r; x++)
+            {
+                float d = (Mathf.Abs(x - c) + Mathf.Abs(y - c)) / c;
+                tex.SetPixel(x, y, d < 0.9f ? Color.white : Color.clear);
+            }
+        tex.Apply();
+        _diamond = Sprite.Create(tex, new Rect(0, 0, r, r), Vector2.one * 0.5f, r);
+        return _diamond;
+    }
+
+    private static Sprite _square;
+    private static Sprite CreateSquareSprite()
+    {
+        if (_square != null) return _square;
+        Texture2D tex = new Texture2D(4, 4, TextureFormat.RGBA32, false);
+        for (int y = 0; y < 4; y++)
+            for (int x = 0; x < 4; x++)
+                tex.SetPixel(x, y, Color.white);
+        tex.Apply();
+        _square = Sprite.Create(tex, new Rect(0, 0, 4, 4), Vector2.one * 0.5f, 4);
+        return _square;
     }
 }

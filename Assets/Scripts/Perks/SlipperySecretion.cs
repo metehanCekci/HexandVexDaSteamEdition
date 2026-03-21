@@ -6,6 +6,7 @@ public class SlipperySecretionPerk : BasePerk
 {
     [HideInInspector] public HashSet<Vector3Int> mucusCells = new HashSet<Vector3Int>();
     private List<Vector3Int> trailHistory = new List<Vector3Int>();
+    private Dictionary<Vector3Int, GameObject> mucusVisuals = new Dictionary<Vector3Int, GameObject>();
     private Vector3Int lastTrackedCell;
     private bool initialized = false;
 
@@ -26,10 +27,12 @@ public class SlipperySecretionPerk : BasePerk
 
     public override void OnLevelStart()
     {
+        ClearAllVisuals();
         mucusCells.Clear();
         trailHistory.Clear();
         initialized = false;
-        InitTracking();
+        // InitTracking burada çağrılmaz — eski level'daki pozisyonu almasın.
+        // Update'teki lazy init yeni level'daki doğru pozisyonu alacak.
     }
 
     private void InitTracking()
@@ -43,12 +46,18 @@ public class SlipperySecretionPerk : BasePerk
 
     void Update()
     {
-        if (!initialized || TurnManager.instance == null || TurnManager.instance.player == null) return;
+        if (TurnManager.instance == null || TurnManager.instance.player == null) return;
+
+        // Lazy init: OnLevelStart'ta player henuz null olabilir
+        if (!initialized)
+        {
+            InitTracking();
+            if (!initialized) return;
+        }
 
         Vector3Int currentCell = TurnManager.instance.player.GetCurrentCellPosition();
         if (currentCell != lastTrackedCell)
         {
-            // Player moved — add old cell to trail
             AddToTrail(lastTrackedCell);
             lastTrackedCell = currentCell;
         }
@@ -56,69 +65,43 @@ public class SlipperySecretionPerk : BasePerk
 
     private void AddToTrail(Vector3Int cell)
     {
-        int maxTrail = currentLevel; // Lv1=1, Lv2=2, Lv3=3
+        int maxTrail = 2; // Sabit 2 karelik mucus izi
 
         trailHistory.Add(cell);
 
-        // Remove old cells beyond trail length
         while (trailHistory.Count > maxTrail)
         {
             Vector3Int oldCell = trailHistory[0];
             trailHistory.RemoveAt(0);
             mucusCells.Remove(oldCell);
-            ClearMucusVisual(oldCell);
+            RemoveMucusVisual(oldCell);
         }
 
         mucusCells.Add(cell);
-        ShowMucusVisual(cell);
+        CreateMucusVisual(cell);
     }
 
-    /// <summary>
-    /// Checks if a cell has mucus and returns the slide target cell.
-    /// Called by EnemyMovement after entering a cell.
-    /// </summary>
-    public Vector3Int GetSlideTarget(Vector3Int enteredCell, Vector3Int cameFromCell)
+    public int GetSlideDirectionIndex(Vector3Int enteredCell, Vector3Int cameFromCell)
     {
-        if (!mucusCells.Contains(enteredCell)) return enteredCell;
-
-        // Calculate direction of movement
         Vector3Int[] offsets = (cameFromCell.y % 2 != 0)
             ? EnemyMovement.evenOffsets
             : EnemyMovement.oddOffsets;
 
-        // Find which direction index goes from cameFrom to entered
-        int dirIndex = -1;
         for (int i = 0; i < 6; i++)
         {
             if (cameFromCell + offsets[i] == enteredCell)
-            {
-                dirIndex = i;
-                break;
-            }
+                return i;
         }
+        return -1;
+    }
 
+    public Vector3Int GetRawSlideTarget(Vector3Int enteredCell, int dirIndex)
+    {
         if (dirIndex < 0) return enteredCell;
-
-        // Continue in the same direction for 1 extra hex
         Vector3Int[] slideOffsets = (enteredCell.y % 2 != 0)
             ? EnemyMovement.evenOffsets
             : EnemyMovement.oddOffsets;
-        Vector3Int slideTarget = enteredCell + slideOffsets[dirIndex];
-
-        // Check if slide target is valid
-        if (TurnManager.instance != null && TurnManager.instance.player != null)
-        {
-            Tilemap groundMap = TurnManager.instance.player.groundMap;
-            bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(slideTarget);
-            bool isWalkable = groundMap.HasTile(slideTarget) || isScaffold;
-            bool hasEnemy = TurnManager.instance.IsEnemyAtCell(slideTarget);
-            bool hasPlayer = TurnManager.instance.player.GetCurrentCellPosition() == slideTarget;
-
-            if (isWalkable && !hasEnemy && !hasPlayer)
-                return slideTarget;
-        }
-
-        return enteredCell; // Can't slide, stay put
+        return enteredCell + slideOffsets[dirIndex];
     }
 
     public bool IsMucusCell(Vector3Int cell)
@@ -126,52 +109,78 @@ public class SlipperySecretionPerk : BasePerk
         return mucusCells.Contains(cell);
     }
 
-    // ─── Visuals ───
+    // --- Bagimsiz SpriteRenderer-based gorseller ---
 
-    private void ShowMucusVisual(Vector3Int cell)
+    private void CreateMucusVisual(Vector3Int cell)
     {
-        if (TurnManager.instance == null || TurnManager.instance.player == null) return;
-        Tilemap warningMap = null;
+        if (mucusVisuals.ContainsKey(cell)) return;
 
-        // Try to get warningMap from any enemy for tile overlay
-        if (TurnManager.instance.enemies.Count > 0)
-        {
-            foreach (var e in TurnManager.instance.enemies)
-            {
-                if (e != null && e.warningMap != null) { warningMap = e.warningMap; break; }
-            }
-        }
+        Tilemap groundMap = null;
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+            groundMap = TurnManager.instance.player.groundMap;
+        if (groundMap == null) return;
 
-        if (warningMap != null)
+        Vector3 worldPos = groundMap.GetCellCenterWorld(cell);
+        worldPos.z = -0.05f;
+
+        GameObject obj = new GameObject("MucusTrail");
+        obj.transform.position = worldPos;
+        obj.transform.localScale = Vector3.one * 0.8f;
+
+        SpriteRenderer sr = obj.AddComponent<SpriteRenderer>();
+        sr.sprite = CreateCircleSprite();
+        sr.color = new Color(0.3f, 0.9f, 0.3f, 0.4f);
+        sr.sortingOrder = 2;
+
+        mucusVisuals[cell] = obj;
+    }
+
+    private void RemoveMucusVisual(Vector3Int cell)
+    {
+        if (mucusVisuals.TryGetValue(cell, out GameObject obj))
         {
-            warningMap.SetTile(cell, warningMap.GetTile(warningMap.origin)); // reuse existing tile
-            warningMap.SetColor(cell, new Color(0.3f, 0.9f, 0.3f, 0.35f)); // Green-ish mucus
+            if (obj != null) Object.Destroy(obj);
+            mucusVisuals.Remove(cell);
         }
     }
 
-    private void ClearMucusVisual(Vector3Int cell)
+    private void ClearAllVisuals()
     {
-        if (TurnManager.instance == null) return;
-        Tilemap warningMap = null;
-        if (TurnManager.instance.enemies.Count > 0)
+        foreach (var kvp in mucusVisuals)
         {
-            foreach (var e in TurnManager.instance.enemies)
-            {
-                if (e != null && e.warningMap != null) { warningMap = e.warningMap; break; }
-            }
+            if (kvp.Value != null) Object.Destroy(kvp.Value);
         }
+        mucusVisuals.Clear();
+    }
 
-        if (warningMap != null && warningMap.HasTile(cell))
+    void OnDestroy()
+    {
+        ClearAllVisuals();
+    }
+
+    // --- Placeholder circle sprite ---
+
+    private static Sprite cachedCircle;
+    private static Sprite CreateCircleSprite()
+    {
+        if (cachedCircle != null) return cachedCircle;
+        int size = 64;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        float center = size / 2f;
+        float radius = size / 2f;
+        for (int y = 0; y < size; y++)
         {
-            // Only clear if not targeted by a bruiser
-            bool isWarning = false;
-            foreach (var e in TurnManager.instance.enemies)
+            for (int x = 0; x < size; x++)
             {
-                if (e == null) continue;
-                var bruiser = e.GetComponent<BruiserEnemyAI>();
-                if (bruiser != null && bruiser.warningCells.Contains(cell)) { isWarning = true; break; }
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                float alpha = Mathf.Clamp01(1f - (dist / radius));
+                alpha *= alpha; // Soft edge
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
             }
-            if (!isWarning) warningMap.SetTile(cell, null);
         }
+        tex.Apply();
+        cachedCircle = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        return cachedCircle;
     }
 }

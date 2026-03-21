@@ -79,7 +79,7 @@ public class HealthScript : MonoBehaviour
         }
     }
 
-    public void TakeDamage(int dmg, bool applyHitstop = false)
+    public void TakeDamage(int dmg, bool applyHitstop = false, bool applyStun = true)
     {
         if (isDead) return;
 
@@ -121,7 +121,7 @@ public class HealthScript : MonoBehaviour
         }
 
         EnemyMovement enemy = GetComponentInParent<EnemyMovement>();
-        if (enemy != null && !enemy.IsBoss && !enemy.IsTotem)
+        if (applyStun && enemy != null && !enemy.IsBoss && !enemy.IsTotem)
         {
             enemy.ApplyStun(1, false);
         }

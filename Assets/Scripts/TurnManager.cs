@@ -51,7 +51,7 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public bool skipDiceVisuals { get => diceUI != null ? diceUI.skipDiceVisuals : false; set { if (diceUI != null) diceUI.skipDiceVisuals = value; } }
 
     public List<EnemyMovement> enemies = new List<EnemyMovement>();
-    private CoinDropService coinService;
+    [HideInInspector] public CoinDropService coinService;
     private DiceUIController diceUI;
     private PerkCombatProcessor perkProcessor;
     [HideInInspector] public bool isLevelClearTriggered = false;
@@ -1139,6 +1139,74 @@ public class TurnManager : MonoBehaviour
         if (player != null && player.GetCurrentCellPosition() == cell) return true;
         if (IsEnemyAtCell(cell)) return true;
         if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(cell)) return true;
+
+        // Bu hücreye diken koymak düşmanları sıkıştırır mı kontrol et
+        if (LevelGenerator.instance != null && WouldBlockEnemyPaths(cell)) return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Bir hücreye diken koymak düşmanların yolunu tamamen kapatır mı kontrol eder.
+    /// </summary>
+    private bool WouldBlockEnemyPaths(Vector3Int thornCell)
+    {
+        if (LevelGenerator.instance == null || player == null) return false;
+
+        // Geçici olarak hazard ekle
+        LevelGenerator.instance.hazardCells.Add(thornCell);
+
+        Vector3Int playerCell = player.GetCurrentCellPosition();
+        bool anyBlocked = false;
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy == null || enemy.health.currentHP <= 0) continue;
+            Vector3Int enemyCell = enemy.GetCurrentCellPosition();
+            if (enemyCell == thornCell) continue;
+
+            // BFS — düşman oyuncuya ulaşabilir mi?
+            if (!CanReachAvoidingHazards(enemyCell, playerCell))
+            {
+                anyBlocked = true;
+                break;
+            }
+        }
+
+        // Geçici hazard'ı geri al
+        LevelGenerator.instance.hazardCells.Remove(thornCell);
+        return anyBlocked;
+    }
+
+    /// <summary>BFS ile hazard'ları atlayarak hedefe ulaşılabilir mi kontrol eder.</summary>
+    private bool CanReachAvoidingHazards(Vector3Int from, Vector3Int to)
+    {
+        if (from == to) return true;
+        var lg = LevelGenerator.instance;
+        if (lg == null) return true;
+
+        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
+        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        queue.Enqueue(from);
+        visited.Add(from);
+
+        while (queue.Count > 0)
+        {
+            Vector3Int curr = queue.Dequeue();
+            Vector3Int[] offsets = (curr.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
+
+            foreach (var off in offsets)
+            {
+                Vector3Int neighbor = curr + off;
+                if (neighbor == to) return true;
+                if (visited.Contains(neighbor)) continue;
+                if (!lg.groundMap.HasTile(neighbor) && !(ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(neighbor))) continue;
+                if (lg.hazardCells.Contains(neighbor)) continue;
+
+                visited.Add(neighbor);
+                queue.Enqueue(neighbor);
+            }
+        }
         return false;
     }
 
@@ -1264,11 +1332,10 @@ public class TurnManager : MonoBehaviour
         RunManager.instance.currentGold += RunManager.instance.skipBonusGold;
         UpdateCoinUI();
 
-        List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
         bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
 
-        // Greatsword: skip sonrası bitişik düşmana otomatik saldır
-        // MitsuriBlade: skip = tur geçir, otomatik saldırı yok
+        // 1) Mevcut konumdaki bitişik düşmanlara saldır
+        List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
         if (!isMitsuri && adjacentEnemies.Count > 0 && !hasAttackedThisTurn)
         {
             RunManager.instance.remainingMoves = 0;
@@ -1276,6 +1343,24 @@ public class TurnManager : MonoBehaviour
             yield return StartCoroutine(MultiAttack(adjacentEnemies));
         }
 
+        // 2) Synaptic Anchor teleport bekliyor mu?
+        var anchorPerk = RunManager.instance.activePerks.Find(p => p is SynapticAnchorPerk) as SynapticAnchorPerk;
+        if (anchorPerk != null && anchorPerk.teleportPending)
+        {
+            yield return StartCoroutine(anchorPerk.ExecuteTeleport());
+
+            if (CleanupDeadAndCheckLevelClear()) yield break;
+
+            // 3) Teleport sonrası yeni konumdaki bitişik düşmanlara da saldır
+            List<EnemyMovement> newAdjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
+            if (!isMitsuri && newAdjacentEnemies.Count > 0)
+            {
+                isAttackAnimationPlaying = true;
+                yield return StartCoroutine(MultiAttack(newAdjacentEnemies));
+            }
+        }
+
+        if (CleanupDeadAndCheckLevelClear()) yield break;
         if (enemies.Count <= 0) yield break;
         StartCoroutine(EnemyPhase());
     }
@@ -1829,6 +1914,7 @@ public class TurnManager : MonoBehaviour
             bool dies = enemy.health.currentHP <= actualDamage;
             enemy.health.TakeDamage(actualDamage, true);
             ApplyBurnIfActive(enemy);
+            ApplyCystIfActive(enemy);
 
             SpawnSlashEffect(enemy.transform.position);
 
@@ -1875,6 +1961,13 @@ public class TurnManager : MonoBehaviour
                 Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
                 cPos.z = 0; pPos.z = 0; Vector3 bumpDir = (cPos - pPos).normalized;
                 e.StartWallBump(bumpDir); enemyBehind.StartWallBump(bumpDir);
+
+                // Hydraulic Impact: düşmanı düşmana çarptırınca ikisine de hasar
+                if (RunManager.instance != null)
+                {
+                    var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                    if (hiPerk != null) { hiPerk.ApplyWallDamage(e); hiPerk.ApplyWallDamage(enemyBehind); }
+                }
             }
             else if (!HasWalkableTile(rawTargetCell) || player.GetCurrentCellPosition() == rawTargetCell)
             {
@@ -1890,6 +1983,13 @@ public class TurnManager : MonoBehaviour
                     e.ApplyStun(2, true);
                     Vector3 cPos = groundMap.GetCellCenterWorld(enemyCell); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
                     cPos.z = 0; pPos.z = 0; e.StartWallBump((cPos - pPos).normalized);
+
+                    // Hydraulic Impact: duvara itince hasar
+                    if (RunManager.instance != null)
+                    {
+                        var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                        if (hiPerk != null) hiPerk.ApplyWallDamage(e);
+                    }
                 }
             }
             else

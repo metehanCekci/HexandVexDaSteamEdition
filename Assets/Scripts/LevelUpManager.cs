@@ -94,27 +94,34 @@ public class LevelUpManager : MonoBehaviour
             GameObject randomPerk = null;
             int safetyBreak = 0;
 
-            if (i == 0 && forcedPerk != null && !IsPerkMaxedOut(forcedPerk))
+            if (i == 0 && forcedPerk != null && forcedPerk != null)
             {
                 randomPerk = forcedPerk;
             }
-            else if (i == 1 && forcedPerk2 != null && !IsPerkMaxedOut(forcedPerk2) && forcedPerk2 != forcedPerk)
+            else if (i == 1 && forcedPerk2 != null && forcedPerk2 != forcedPerk)
             {
                 randomPerk = forcedPerk2;
             }
-            else if (i == 2 && forcedPerk3 != null && !IsPerkMaxedOut(forcedPerk3) && forcedPerk3 != forcedPerk && forcedPerk3 != forcedPerk2)
+            else if (i == 2 && forcedPerk3 != null && forcedPerk3 != forcedPerk && forcedPerk3 != forcedPerk2)
             {
                 randomPerk = forcedPerk3;
             }
 
-            while (randomPerk == null || currentChoices.Contains(randomPerk) || IsPerkMaxedOut(randomPerk))
+            bool isForced = (i == 0 && forcedPerk != null && randomPerk == forcedPerk)
+                          || (i == 1 && forcedPerk2 != null && randomPerk == forcedPerk2)
+                          || (i == 2 && forcedPerk3 != null && randomPerk == forcedPerk3);
+
+            if (!isForced)
             {
-                randomPerk = GetRandomPerkByRarity(isBossReward);
-                safetyBreak++;
-                if (safetyBreak > 50)
+                while (randomPerk == null || currentChoices.Contains(randomPerk) || IsPerkMaxedOut(randomPerk))
                 {
-                    randomPerk = GetAnyValidFallback();
-                    break;
+                    randomPerk = GetRandomPerkByRarity(isBossReward);
+                    safetyBreak++;
+                    if (safetyBreak > 50)
+                    {
+                        randomPerk = GetAnyValidFallback();
+                        break;
+                    }
                 }
             }
 

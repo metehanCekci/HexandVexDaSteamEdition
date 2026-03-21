@@ -19,6 +19,9 @@ public class SynapticAnchorPerk : BasePerk
         ClearAnchorVisual();
     }
 
+    /// <summary>true ise bu skip'te teleport yapılacak — TurnManager bekleyecek.</summary>
+    [System.NonSerialized] public bool teleportPending = false;
+
     public override void OnSkip()
     {
         if (TurnManager.instance == null || TurnManager.instance.player == null) return;
@@ -33,11 +36,17 @@ public class SynapticAnchorPerk : BasePerk
         }
         else
         {
-            // Second skip: teleport back to anchor
+            // Second skip: teleport'u hemen başlatma — HandleSkipPhase bekleyecek
+            teleportPending = true;
             TriggerVisualPop();
-            if (TurnManager.instance.player.gameObject.activeInHierarchy)
-                TurnManager.instance.player.StartCoroutine(TeleportToAnchor());
         }
+    }
+
+    /// <summary>TurnManager tarafından çağrılır — teleport coroutine'ini çalıştırır.</summary>
+    public IEnumerator ExecuteTeleport()
+    {
+        teleportPending = false;
+        yield return TeleportToAnchor();
     }
 
     private IEnumerator TeleportToAnchor()
@@ -45,11 +54,21 @@ public class SynapticAnchorPerk : BasePerk
         var player = TurnManager.instance.player;
         Vector3Int fromCell = player.GetCurrentCellPosition();
 
-        // Disappear VFX
+        // Anchor hucresinde dusman var mi? Varsa yer degistir
+        EnemyMovement swapEnemy = null;
+        if (TurnManager.instance != null)
+        {
+            foreach (var e in TurnManager.instance.enemies)
+            {
+                if (e != null && e.health.currentHP > 0 && e.GetCurrentCellPosition() == anchorCell)
+                { swapEnemy = e; break; }
+            }
+        }
+
+        // Disappear VFX — player
         SpriteRenderer sr = player.GetComponentInChildren<SpriteRenderer>();
         if (sr != null)
         {
-            // Quick fade out
             float dur = 0.15f;
             float elapsed = 0f;
             Color startColor = sr.color;
@@ -62,6 +81,27 @@ public class SynapticAnchorPerk : BasePerk
             }
         }
 
+        // Disappear VFX — swap enemy (ayni anda fade)
+        SpriteRenderer enemySR = null;
+        Color enemyOrigColor = Color.white;
+        if (swapEnemy != null)
+        {
+            enemySR = swapEnemy.GetComponentInChildren<SpriteRenderer>();
+            if (enemySR != null)
+            {
+                enemyOrigColor = enemySR.color;
+                float dur = 0.15f;
+                float elapsed = 0f;
+                while (elapsed < dur)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / dur;
+                    enemySR.color = new Color(enemyOrigColor.r, enemyOrigColor.g, enemyOrigColor.b, Mathf.Lerp(1f, 0f, t));
+                    yield return null;
+                }
+            }
+        }
+
         // Teleport
         if (ScaffoldManager.instance != null)
             ScaffoldManager.instance.OnEntityLeave(fromCell);
@@ -71,7 +111,13 @@ public class SynapticAnchorPerk : BasePerk
         if (ScaffoldManager.instance != null)
             ScaffoldManager.instance.OnEntityEnter(anchorCell);
 
-        // Reappear VFX
+        // Swap enemy: oyuncunun eski yerine tasi
+        if (swapEnemy != null)
+        {
+            swapEnemy.ForceSetPosition(fromCell);
+        }
+
+        // Reappear VFX — player
         if (sr != null)
         {
             float dur = 0.2f;
@@ -80,13 +126,28 @@ public class SynapticAnchorPerk : BasePerk
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / dur;
-                float scale = 1f + (1f - t) * 0.3f; // Slight pop
+                float scale = 1f + (1f - t) * 0.3f;
                 player.transform.localScale = Vector3.one * scale;
                 sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, Mathf.Lerp(0f, 1f, t));
                 yield return null;
             }
             player.transform.localScale = Vector3.one;
             sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 1f);
+        }
+
+        // Reappear VFX — swap enemy
+        if (swapEnemy != null && enemySR != null)
+        {
+            float dur = 0.2f;
+            float elapsed = 0f;
+            while (elapsed < dur)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / dur;
+                enemySR.color = new Color(enemyOrigColor.r, enemyOrigColor.g, enemyOrigColor.b, Mathf.Lerp(0f, 1f, t));
+                yield return null;
+            }
+            enemySR.color = enemyOrigColor;
         }
 
         CameraController.ShakeLight();

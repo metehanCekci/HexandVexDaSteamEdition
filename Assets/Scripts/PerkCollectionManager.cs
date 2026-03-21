@@ -281,11 +281,17 @@ public class PerkCollectionManager : MonoBehaviour
             bool unlocked = PlayerPrefs.GetInt($"perk_unlocked_{entry.perkId}", 0) == 1;
             int progress = PlayerPrefs.GetInt($"perk_progress_{entry.perkId}", 0);
 
-            // Default koşullu olanları otomatik aç
+            // Default koşullu olanları otomatik aç ve "görüldü" olarak işaretle
             if (entry.unlockCondition == UnlockCondition.Default && !unlocked)
             {
                 PlayerPrefs.SetInt($"perk_unlocked_{entry.perkId}", 1);
+                PlayerPrefs.SetInt($"perk_seen_{entry.perkId}", 1);
                 unlocked = true;
+            }
+            // Zaten açık default perkleri de "görüldü" olarak işaretle (eski kayıtlar için)
+            if (entry.unlockCondition == UnlockCondition.Default && unlocked)
+            {
+                PlayerPrefs.SetInt($"perk_seen_{entry.perkId}", 1);
             }
 
             unlockCache[entry.perkId] = unlocked;

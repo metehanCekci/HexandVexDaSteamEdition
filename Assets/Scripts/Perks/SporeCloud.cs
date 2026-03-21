@@ -75,7 +75,9 @@ public class SporeCloudPerk : BasePerk
             Vector3Int enemyCell = enemy.GetCurrentCellPosition();
             if (affectedCells.Contains(enemyCell))
             {
-                enemy.ApplyStun(1, true);
+                // 2 tur stun: bu turun sonunda DecreaseStunTurn 1 düşürecek,
+                // böylece saldıran düşman da bir sonraki tur stunlanmış kalır.
+                enemy.ApplyStun(2, true);
             }
         }
 
@@ -119,27 +121,58 @@ public class SporeCloudPerk : BasePerk
         var groundMap = TurnManager.instance.player.groundMap;
         if (groundMap == null) yield break;
 
-        // Create smoke particles at player position expanding outward
         Vector3 center = groundMap.GetCellCenterWorld(playerCell);
 
-        // Main burst at center
-        yield return StartCoroutine(SpawnSmokeParticle(center, 1.5f + currentLevel * 0.5f));
+        // Merkez patlama — büyük ve parlak
+        StartCoroutine(SpawnSmokeParticle(center, 2.0f + currentLevel * 0.6f, 0.85f, true));
+
+        // Her etkilenen cell'de ayrı duman parçacığı
+        float delay = 0f;
+        foreach (var cell in cells)
+        {
+            Vector3 cellPos = groundMap.GetCellCenterWorld(cell);
+            // Hafif rastgele offset
+            cellPos += new Vector3(Random.Range(-0.15f, 0.15f), Random.Range(-0.15f, 0.15f), -0.1f);
+            StartCoroutine(SpawnSmokeParticleDelayed(cellPos, 1.0f + currentLevel * 0.3f, 0.7f, delay));
+            delay += 0.04f;
+        }
+
+        // Ekstra küçük parçacıklar — pop hissi
+        for (int i = 0; i < 4 + currentLevel * 2; i++)
+        {
+            float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float dist = Random.Range(0.3f, 0.8f + currentLevel * 0.3f);
+            Vector3 pos = center + new Vector3(Mathf.Cos(angle) * dist, Mathf.Sin(angle) * dist, -0.1f);
+            StartCoroutine(SpawnSmokeParticleDelayed(pos, Random.Range(0.5f, 0.9f), Random.Range(0.5f, 0.8f), Random.Range(0f, 0.1f)));
+        }
+
+        yield return new WaitForSeconds(0.6f);
     }
 
-    private IEnumerator SpawnSmokeParticle(Vector3 position, float size)
+    private IEnumerator SpawnSmokeParticleDelayed(Vector3 position, float size, float maxAlpha, float delay)
     {
-        // Create a simple sprite-based smoke puff
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+        yield return StartCoroutine(SpawnSmokeParticle(position, size, maxAlpha, false));
+    }
+
+    private IEnumerator SpawnSmokeParticle(Vector3 position, float size, float maxAlpha, bool isBurst)
+    {
         GameObject smoke = new GameObject("SporeSmoke");
         smoke.transform.position = position + Vector3.back * 0.1f;
 
         SpriteRenderer sr = smoke.AddComponent<SpriteRenderer>();
         sr.sprite = CreateCircleSprite();
-        sr.color = new Color(0.4f, 0.7f, 0.2f, 0.6f); // Green-ish spore color
         sr.sortingOrder = 100;
 
-        float duration = 0.8f;
+        // Burst: parlak yeşil-sarı, normal: yeşil
+        Color baseColor = isBurst
+            ? new Color(0.5f, 0.9f, 0.2f, maxAlpha)
+            : new Color(0.3f + Random.Range(0f, 0.2f), 0.7f + Random.Range(0f, 0.2f), 0.1f, maxAlpha);
+        sr.color = baseColor;
+
+        float duration = isBurst ? 1.0f : 0.7f;
         float elapsed = 0f;
-        Vector3 startScale = Vector3.zero;
+        Vector3 startScale = isBurst ? Vector3.one * size * 0.3f : Vector3.zero;
         Vector3 endScale = Vector3.one * size;
 
         while (elapsed < duration)
@@ -147,12 +180,28 @@ public class SporeCloudPerk : BasePerk
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
 
-            // Expand fast, fade slow
-            float scaleT = 1f - (1f - t) * (1f - t); // EaseOut
-            smoke.transform.localScale = Vector3.Lerp(startScale, endScale, scaleT);
+            // Pop efekti: hızlı büyüme sonra hafif geri çekilme
+            float scaleT;
+            if (isBurst && t < 0.2f)
+            {
+                scaleT = t / 0.2f;
+                scaleT = 1f + 0.15f * Mathf.Sin(scaleT * Mathf.PI); // overshoot
+                smoke.transform.localScale = Vector3.Lerp(startScale, endScale * 1.15f, scaleT);
+            }
+            else
+            {
+                scaleT = 1f - (1f - t) * (1f - t); // EaseOut
+                smoke.transform.localScale = Vector3.Lerp(startScale, endScale, scaleT);
+            }
 
-            float alpha = t < 0.3f ? 0.6f : Mathf.Lerp(0.6f, 0f, (t - 0.3f) / 0.7f);
-            sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, alpha);
+            // Alpha: hızlı yüksel, yavaş düş
+            float alpha;
+            if (t < 0.15f)
+                alpha = Mathf.Lerp(0f, maxAlpha, t / 0.15f);
+            else
+                alpha = Mathf.Lerp(maxAlpha, 0f, (t - 0.15f) / 0.85f);
+
+            sr.color = new Color(baseColor.r, baseColor.g, baseColor.b, alpha);
 
             yield return null;
         }

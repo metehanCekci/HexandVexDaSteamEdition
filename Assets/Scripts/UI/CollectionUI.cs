@@ -877,7 +877,7 @@ public class CollectionCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot = new Vector2(1f, 1f);
         rt.anchoredPosition = new Vector2(-2f, -2f);
-        rt.sizeDelta = new Vector2(20f, 20f);
+        rt.sizeDelta = new Vector2(28f, 28f);
 
         Image bg = newBadge.GetComponent<Image>();
         bg.color = new Color(1f, 0.3f, 0.1f, 1f);
@@ -888,11 +888,13 @@ public class CollectionCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExi
         textGO.transform.SetParent(newBadge.transform, false);
         TextMeshProUGUI txt = textGO.AddComponent<TextMeshProUGUI>();
         txt.text = "!";
-        txt.fontSize = 14;
+        txt.fontSize = 18;
         txt.fontStyle = FontStyles.Bold;
         txt.alignment = TextAlignmentOptions.Center;
         txt.color = Color.white;
         txt.raycastTarget = false;
+        if (parentUI != null && parentUI.collectionFont != null)
+            txt.font = parentUI.collectionFont;
         RectTransform txtRT = textGO.GetComponent<RectTransform>();
         txtRT.anchorMin = Vector2.zero;
         txtRT.anchorMax = Vector2.one;

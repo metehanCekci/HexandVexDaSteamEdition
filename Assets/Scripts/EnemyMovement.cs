@@ -328,14 +328,8 @@ public class EnemyMovement : MonoBehaviour
             // Hit a wall — Hydraulic Impact perk check
             if (RunManager.instance != null)
             {
-                var perk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk);
-                if (perk != null)
-                {
-                    int wallDamage = Mathf.CeilToInt(health.maxHP * 0.5f);
-                    health.TakeDamage(wallDamage);
-                    (perk as HydraulicImpactPerk).ShowWallImpactVFX(this);
-                    perk.TriggerVisualPop();
-                }
+                var perk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                if (perk != null) perk.ApplyWallDamage(this);
             }
         }
     }
@@ -346,9 +340,70 @@ public class EnemyMovement : MonoBehaviour
         var perk = RunManager.instance.activePerks.Find(p => p is SlipperySecretionPerk) as SlipperySecretionPerk;
         if (perk == null || !perk.IsMucusCell(cell)) return;
 
-        Vector3Int slideTarget = perk.GetSlideTarget(cell, cameFromCell);
-        if (slideTarget != cell)
+        int dirIndex = perk.GetSlideDirectionIndex(cell, cameFromCell);
+        if (dirIndex < 0) return;
+
+        Vector3Int slideTarget = perk.GetRawSlideTarget(cell, dirIndex);
+        if (slideTarget == cell) return;
+
+        perk.TriggerVisualPop();
+
+        bool isScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(slideTarget);
+        bool isWalkable = groundMap.HasTile(slideTarget) || isScaffold;
+        bool hasEnemy = TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(slideTarget);
+        bool hasPlayer = TurnManager.instance != null && TurnManager.instance.player != null && TurnManager.instance.player.GetCurrentCellPosition() == slideTarget;
+        bool isHazard = LevelGenerator.instance != null && LevelGenerator.instance.hazardCells != null && LevelGenerator.instance.hazardCells.Contains(slideTarget);
+
+        // Mukus kayması saldırıyı interrupt eder — bu tur saldıramaz
+        skipTurns = Mathf.Max(skipTurns, 1);
+
+        if (!isWalkable || hasPlayer)
         {
+            // Wall/edge collision — bump animation + wall damage
+            Vector3 cPos = groundMap.GetCellCenterWorld(cell);
+            Vector3 sPos = groundMap.GetCellCenterWorld(slideTarget);
+            cPos.z = 0; sPos.z = 0;
+            StartWallBump((sPos - cPos).normalized);
+
+            // Hydraulic Impact bonus
+            if (RunManager.instance != null)
+            {
+                var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                if (hiPerk != null) hiPerk.ApplyWallDamage(this);
+            }
+        }
+        else if (hasEnemy)
+        {
+            // Slide into another enemy — bump both
+            Vector3 cPos = groundMap.GetCellCenterWorld(cell);
+            Vector3 sPos = groundMap.GetCellCenterWorld(slideTarget);
+            cPos.z = 0; sPos.z = 0;
+            Vector3 bumpDir = (sPos - cPos).normalized;
+            StartWallBump(bumpDir);
+
+            // Also bump the enemy we collided with + Hydraulic Impact hasar
+            if (TurnManager.instance != null)
+            {
+                EnemyMovement otherEnemy = null;
+                foreach (var e in TurnManager.instance.enemies)
+                {
+                    if (e != null && e != this && e.GetCurrentCellPosition() == slideTarget && e.health.currentHP > 0)
+                    { otherEnemy = e; break; }
+                }
+                if (otherEnemy != null)
+                {
+                    otherEnemy.StartWallBump(bumpDir);
+                    if (RunManager.instance != null)
+                    {
+                        var hiPerk = RunManager.instance.activePerks.Find(p => p is HydraulicImpactPerk) as HydraulicImpactPerk;
+                        if (hiPerk != null) { hiPerk.ApplyWallDamage(this); hiPerk.ApplyWallDamage(otherEnemy); }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Slide to the target cell
             Vector3Int oldCell = cell;
             cell = slideTarget;
             targetWorldPos = groundMap.GetCellCenterWorld(cell);
@@ -361,7 +416,11 @@ public class EnemyMovement : MonoBehaviour
                 ScaffoldManager.instance.OnEntityEnter(cell);
             }
 
-            perk.TriggerVisualPop();
+            // Hazard damage (spikes etc.)
+            if (isHazard && health != null)
+            {
+                health.TakeDamage(1);
+            }
         }
     }
 
@@ -399,8 +458,7 @@ public class EnemyMovement : MonoBehaviour
         var bruiser = GetComponent<BruiserEnemyAI>();
         if (bruiser != null)
         {
-            // Bruiser'ın eski charge state'ini temizle
-            if (bruiser.isChargingAttack) bruiser.ForceClearWarningCells();
+            // Charge devam ediyorsa warning cell'leri temizleme — LockNextMove zaten koruyacak
             bruiser.LockNextMove(playerCell, isStunned);
             return;
         }

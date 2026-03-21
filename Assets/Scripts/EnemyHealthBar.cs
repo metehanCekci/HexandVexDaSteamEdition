@@ -52,6 +52,11 @@ public class EnemyHealthBar : MonoBehaviour
     private float targetRatio = 1f;
     private float trailTimer = 0f;
 
+    // Elite/Boss özel renk sistemi
+    private bool isEliteEnemy = false;
+    private bool isBossEnemy = false;
+    private SpawnerBossAI bossAI;
+
     void Start()
     {
         health = GetComponent<HealthScript>();
@@ -113,11 +118,20 @@ public class EnemyHealthBar : MonoBehaviour
 
         trailRatio = 1f;
         targetRatio = 1f;
-        
+
+        // Elite/Boss tespiti
+        EnemyMovement enemyMov = GetComponentInParent<EnemyMovement>();
+        if (enemyMov != null && enemyMov.isElite)
+            isEliteEnemy = true;
+
+        bossAI = GetComponentInParent<SpawnerBossAI>();
+        if (bossAI != null)
+            isBossEnemy = true;
+
         // Sorting order'ı set et
         if (barCanvas != null)
             barCanvas.sortingOrder = sortingOrder;
-        
+
         UpdateBar();
     }
 
@@ -154,11 +168,26 @@ public class EnemyHealthBar : MonoBehaviour
         // Asıl fill barını hemen güncelle
         fillRT.anchorMax = new Vector2(ratio, 1f);
 
-        // Renk gradyanı: full → mid → low
-        if (ratio > 0.5f)
-            fillImage.color = Color.Lerp(midColor, fullColor, (ratio - 0.5f) * 2f);
+        // Renk: elite = mor, boss = kalkan durumuna göre, normal = gradyan
+        if (isBossEnemy && bossAI != null)
+        {
+            if (bossAI.isShielded)
+                fillImage.color = new Color(0.5f, 0.5f, 0.5f, 1f); // Gri — kalkanlı
+            else
+                fillImage.color = new Color(0.2f, 0.5f, 1f, 1f); // Mavi — hasar yiyebilir
+        }
+        else if (isEliteEnemy)
+        {
+            fillImage.color = new Color(0.6f, 0.2f, 0.85f, 1f); // Mor — elite
+        }
         else
-            fillImage.color = Color.Lerp(lowColor, midColor, ratio * 2f);
+        {
+            // Normal gradyan: full → mid → low
+            if (ratio > 0.5f)
+                fillImage.color = Color.Lerp(midColor, fullColor, (ratio - 0.5f) * 2f);
+            else
+                fillImage.color = Color.Lerp(lowColor, midColor, ratio * 2f);
+        }
 
         if (hpLabel != null)
             hpLabel.text = $"{health.currentHP}/{health.maxHP}";

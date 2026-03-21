@@ -53,3 +53,5 @@ MonoBehaviour:
   priority: 0
   isRerollPerk: 0
   rarity: 2
+  markEffectPrefab: {fileID: 7210318156181294382, guid: c5789a9e52a23ab41a2a872eb072e904, type: 3}
+  markOffset: {x: 0, y: 0.05, z: 0}

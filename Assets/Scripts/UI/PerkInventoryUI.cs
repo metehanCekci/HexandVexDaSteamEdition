@@ -144,6 +144,17 @@ public class PerkInventoryUI : MonoBehaviour
         if (canvasGO == null) BuildUI();
         canvasGO.SetActive(true);
         rootCanvas = canvasGO.GetComponent<Canvas>();
+
+        // Canvas ayarlarını her Show()'da garantile — sahne geçişlerinde bozulabilir
+        if (rootCanvas != null)
+        {
+            rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            rootCanvas.sortingOrder = 91;
+        }
+        // GraphicRaycaster yoksa ekle — hover/drag için gerekli
+        if (canvasGO.GetComponent<GraphicRaycaster>() == null)
+            canvasGO.AddComponent<GraphicRaycaster>();
+
         stashWasOpen = false;
         RefreshUI();
 
@@ -155,6 +166,8 @@ public class PerkInventoryUI : MonoBehaviour
             CanvasGroup panelCG = panelRoot.GetComponent<CanvasGroup>();
             if (panelCG == null) panelCG = panelRoot.AddComponent<CanvasGroup>();
             panelCG.alpha = 1f;
+            panelCG.interactable = true;
+            panelCG.blocksRaycasts = true;
         }
     }
 
