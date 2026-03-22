@@ -33,7 +33,7 @@ public class CameraController : MonoBehaviour
     {
         cam = Camera.main;
         targetPosition = transform.position;
-        dpiScale = Screen.dpi > 0 ? Screen.dpi / 160f : 1f;
+        dpiScale = Screen.dpi > 0 ? Screen.dpi / 96f : 1f;
 
         if (cam.orthographic)
         {
