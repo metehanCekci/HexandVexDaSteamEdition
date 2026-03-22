@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: PyrogenicGlands
   loreText: Bio-engineered glands that coat weapons in an exothermic compound. The
     flames linger, consuming flesh over time.
-  rarity: 0
+  rarity: 2
   unlockCondition: 0
   requiredAmount: 1
   conditionParam: 

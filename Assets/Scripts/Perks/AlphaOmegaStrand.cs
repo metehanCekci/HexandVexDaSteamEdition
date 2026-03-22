@@ -13,13 +13,13 @@ public class AlphaOmegaStrandPerk : BasePerk
     {
         if (payload.diceRolls.Count > 0)
         {
-            // İlk zara seviyesi x 2 ekler
-            payload.diceRolls[0] += (3 * currentLevel); 
-            
+            // İlk zara seviye başına +2 ekler
+            payload.diceRolls[0] += (2 * currentLevel);
+
             if (payload.diceRolls.Count > 1)
             {
-                // Son zara seviyesi x 4 ekler
-                payload.diceRolls[payload.diceRolls.Count - 1] += (3 * currentLevel); 
+                // Son zara seviye başına +2 ekler
+                payload.diceRolls[payload.diceRolls.Count - 1] += (2 * currentLevel);
             }
             if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
                 TriggerVisualPop();

@@ -290,13 +290,21 @@ public class ProfileManager : MonoBehaviour
         keys.Add("total_enemies_killed");
         keys.Add("total_gold_earned");
         keys.Add("total_levels_cleared");
-        keys.Add("total_spike_kills");
+        keys.Add("total_spike_pushes");
         keys.Add("total_skips");
 
         // Lifetime stat keys (perk unlock koşullarını tetikleyen)
         keys.Add("lifetime_total_kills");
         keys.Add("lifetime_total_gold");
         keys.Add("lifetime_levels_cleared");
+
+        // RunManager best record keys
+        keys.Add("best_kills");
+        keys.Add("best_damage");
+        keys.Add("best_turns");
+        keys.Add("best_dice");
+        keys.Add("best_gold");
+        keys.Add("best_levels");
 
         return keys;
     }
