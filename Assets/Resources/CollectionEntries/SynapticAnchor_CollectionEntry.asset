@@ -18,6 +18,6 @@ MonoBehaviour:
     in space. The anchor remembers, and the body follows.
   rarity: 3
   unlockCondition: 7
-  requiredAmount: 30
+  requiredAmount: 50
   conditionParam: 
-  unlockHint: Clear 30 levels in total.
+  unlockHint: Clear 50 levels in total.

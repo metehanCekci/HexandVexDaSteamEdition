@@ -19,6 +19,11 @@ public class RegenTissuePerk : BasePerk
         ApplyHealthBoost();
     }
 
+    public override void OnLetsGoAgain()
+    {
+        ApplyHealthBoost();
+    }
+
     private void ApplyHealthBoost()
     {
         if (RunManager.instance == null) return;

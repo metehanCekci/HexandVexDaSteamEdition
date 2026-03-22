@@ -41,6 +41,9 @@ public abstract class BasePerk : MonoBehaviour
     // Shop reroll yapıldığında çalışır
     public virtual void OnShopReroll() { }
 
+    // LetsGoAgain perki tetiklendiğinde çalışır (ModifyCombat dışı ekstra efektler)
+    public virtual void OnLetsGoAgain() { }
+
     // Perk aktif slotlara taşındığında çalışır
     public virtual void OnEquip() { }
 

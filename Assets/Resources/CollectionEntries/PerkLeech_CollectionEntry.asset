@@ -18,6 +18,6 @@ MonoBehaviour:
     elite kill leaves behind a crystallized fragment of their strength.
   rarity: 3
   unlockCondition: 8
-  requiredAmount: 20
+  requiredAmount: 100
   conditionParam: 
-  unlockHint: Kill 20 enemies in a single run.
+  unlockHint: Kill 100 enemies in a single run.

@@ -18,6 +18,6 @@ MonoBehaviour:
     it releases paralytic spores in a dense cloud.
   rarity: 1
   unlockCondition: 1
-  requiredAmount: 100
+  requiredAmount: 500
   conditionParam: 
-  unlockHint: Kill 100 enemies in total.
+  unlockHint: Kill 500 enemies in total.

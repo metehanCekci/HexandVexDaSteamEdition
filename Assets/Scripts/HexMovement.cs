@@ -276,6 +276,38 @@ public class HexMovement : MonoBehaviour
         }
     }
 
+    public void StartWallBump(Vector3 direction)
+    {
+        StartCoroutine(WallBumpCoroutine(direction));
+    }
+
+    private IEnumerator WallBumpCoroutine(Vector3 direction)
+    {
+        if (AudioManager.instance != null) AudioManager.instance.PlayWall();
+        isMoving = true;
+        Vector3 originalPos = groundMap.GetCellCenterWorld(currentCellPosition);
+        originalPos.z = 0;
+        originalPos.y += playerVisualOffsetY;
+        Vector3 bumpPos = originalPos + (direction * 0.10f);
+
+        while (Vector3.Distance(transform.position, bumpPos) > 0.01f)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, bumpPos, 4f * Time.deltaTime);
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(0.05f);
+
+        while (Vector3.Distance(transform.position, originalPos) > 0.01f)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, originalPos, 1f * Time.deltaTime);
+            yield return null;
+        }
+
+        transform.position = originalPos;
+        isMoving = false;
+    }
+
     public bool IsMoving() => isMoving;
 
     public void UpdateHighlights()

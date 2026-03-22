@@ -149,7 +149,7 @@ public class PerkInventoryUI : MonoBehaviour
         if (rootCanvas != null)
         {
             rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            rootCanvas.sortingOrder = 91;
+            rootCanvas.sortingOrder = 100;
         }
         // GraphicRaycaster yoksa ekle — hover/drag için gerekli
         if (canvasGO.GetComponent<GraphicRaycaster>() == null)

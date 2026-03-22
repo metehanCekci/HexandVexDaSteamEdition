@@ -2037,20 +2037,39 @@ public class TurnManager : MonoBehaviour
             }
 
             Vector3Int bounceTo = playerOriginal;
+            Vector2 recoilDir = Vector2.zero;
             if (avgDir.sqrMagnitude > 0.001f)
             {
                 // Ortalama vektörün tam tersine en yakın hex komşusunu bul
-                Vector2 recoilDir = -avgDir.normalized;
+                recoilDir = -avgDir.normalized;
                 Vector3Int[] offsets = (playerOriginal.y % 2 != 0) ? evenOffsets : oddOffsets;
+
+                // İki geçiş: önce güvenli kareler, sonra tehlikeli kareler
                 float bestDot = -2f;
+                bool foundSafe = false;
                 foreach (var off in offsets)
                 {
                     Vector3Int neighbor = playerOriginal + off;
-                    if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor) || neighbor == player.GetCurrentCellPosition()) continue;
+                    if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor)) continue;
+                    bool isHazard = LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(neighbor);
+                    if (isHazard) continue; // Önce sadece güvenli kareleri dene
                     Vector3 nWorld = groundMap.GetCellCenterWorld(neighbor); nWorld.z = 0;
                     Vector2 nDir = (Vector2)(nWorld - playerWorld).normalized;
                     float dot = Vector2.Dot(recoilDir, nDir);
-                    if (dot > bestDot) { bestDot = dot; bounceTo = neighbor; }
+                    if (dot > bestDot) { bestDot = dot; bounceTo = neighbor; foundSafe = true; }
+                }
+                // Güvenli kare bulunamadıysa tehlikeli kareleri de değerlendir
+                if (!foundSafe)
+                {
+                    foreach (var off in offsets)
+                    {
+                        Vector3Int neighbor = playerOriginal + off;
+                        if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor)) continue;
+                        Vector3 nWorld = groundMap.GetCellCenterWorld(neighbor); nWorld.z = 0;
+                        Vector2 nDir = (Vector2)(nWorld - playerWorld).normalized;
+                        float dot = Vector2.Dot(recoilDir, nDir);
+                        if (dot > bestDot) { bestDot = dot; bounceTo = neighbor; }
+                    }
                 }
             }
 
@@ -2058,6 +2077,13 @@ public class TurnManager : MonoBehaviour
             {
                 recoilPerk.TriggerVisualPop();
                 player.StartKnockbackMovement(bounceTo, true);
+                didRecoil = true;
+            }
+            else if (recoilDir.sqrMagnitude > 0.001f)
+            {
+                // Arkada tile yok — duvara çarp
+                recoilPerk.TriggerVisualPop();
+                player.StartWallBump(new Vector3(recoilDir.x, recoilDir.y, 0f));
                 didRecoil = true;
             }
         }
