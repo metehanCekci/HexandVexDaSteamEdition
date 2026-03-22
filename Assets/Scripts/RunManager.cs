@@ -100,6 +100,9 @@ public class RunManager : MonoBehaviour
             instance = this;
             DontDestroyOnLoad(gameObject);
 
+            Application.targetFrameRate = 120;
+            QualitySettings.vSyncCount = 0;
+
             // If the perk container is a child of this object, it survives too!
             if (perkUIContainer != null)
                 DontDestroyOnLoad(perkUIContainer.root.gameObject);
