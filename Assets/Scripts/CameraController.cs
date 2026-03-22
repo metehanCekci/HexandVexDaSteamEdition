@@ -20,7 +20,8 @@ public class CameraController : MonoBehaviour
 
     private Camera cam;
     private Vector3 dragOrigin;
-    
+    private float dpiScale = 1f;
+
     // Shake offset
     private Vector3 shakeOffset = Vector3.zero;
     private float shakeTimer = 0f;
@@ -32,8 +33,9 @@ public class CameraController : MonoBehaviour
     {
         cam = Camera.main;
         targetPosition = transform.position;
-        
-        if (cam.orthographic) 
+        dpiScale = Screen.dpi > 0 ? Screen.dpi / 160f : 1f;
+
+        if (cam.orthographic)
         {
             cam.orthographic = false;
         }
@@ -103,8 +105,9 @@ public class CameraController : MonoBehaviour
 
             if (touch.phase == TouchPhase.Moved)
             {
-                targetPosition.x -= touch.deltaPosition.x * touchPanSpeed;
-                targetPosition.y -= touch.deltaPosition.y * touchPanSpeed;
+                float scaledSpeed = touchPanSpeed / dpiScale;
+                targetPosition.x -= touch.deltaPosition.x * scaledSpeed;
+                targetPosition.y -= touch.deltaPosition.y * scaledSpeed;
             }
         }
         // İki Parmak (Yakınlaştırma / Uzaklaştırma)
