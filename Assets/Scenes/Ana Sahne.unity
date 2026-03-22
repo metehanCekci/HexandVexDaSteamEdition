@@ -7272,6 +7272,8 @@ MonoBehaviour:
   maxZoomZ: -15
   minBounds: {x: -2, y: -1}
   maxBounds: {x: 2, y: 1}
+  touchPanSpeed: 0.05
+  touchZoomSpeed: 0.02
 --- !u!1 &529440801
 GameObject:
   m_ObjectHideFlags: 0
@@ -11716,8 +11718,8 @@ MonoBehaviour:
   skipButton: {fileID: 0}
   skipButtonImage: {fileID: 0}
   levelUpCanvasGroup: {fileID: 1574552225}
-  forcedPerk: {fileID: 8029140015236653387, guid: be1c37f580434e146b9db90e6b5eea86, type: 3}
-  forcedPerk2: {fileID: 708287139401689839, guid: 5b42725da96423341b29edcea5a51afe, type: 3}
+  forcedPerk: {fileID: 0}
+  forcedPerk2: {fileID: 0}
   forcedPerk3: {fileID: 0}
 --- !u!4 &937609419
 Transform:
