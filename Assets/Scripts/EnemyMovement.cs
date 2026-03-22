@@ -25,6 +25,9 @@ public class EnemyMovement : MonoBehaviour
     public Tilemap warningMap;
     public TileBase warningTile;
 
+    [Header("Tur Sırası")]
+    public int speed = 0; // Yüksek speed = önce hareket eder
+
     [HideInInspector] public bool isElite = false;
 
     private Vector3Int cell;

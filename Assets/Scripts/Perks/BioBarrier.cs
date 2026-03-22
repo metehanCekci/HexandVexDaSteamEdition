@@ -20,6 +20,23 @@ public class BioBarrierPerk : BasePerk
         TriggerVisualPop();
     }
 
+    public override void OnEquip()
+    {
+        RunManager.instance.hasBioBarrier = true;
+        SpawnShield();
+        TriggerVisualPop();
+    }
+
+    public override void OnUnequip()
+    {
+        RunManager.instance.hasBioBarrier = false;
+        if (currentShieldInstance != null)
+        {
+            Destroy(currentShieldInstance);
+            currentShieldInstance = null;
+        }
+    }
+
     public override void OnLevelStart()
     {
         RunManager.instance.hasBioBarrier = true;

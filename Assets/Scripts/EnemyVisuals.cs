@@ -283,8 +283,13 @@ public class EnemyVisuals : MonoBehaviour
         isFading = false;
     }
 
+    private bool fadeDieStarted = false;
+
     public IEnumerator FadeDieCoroutine()
     {
+        // Zaten ölüm animasyonu başladıysa tekrar çalıştırma (race condition koruması)
+        if (fadeDieStarted) yield break;
+        fadeDieStarted = true;
         isFading = true;
 
         if (movement != null)

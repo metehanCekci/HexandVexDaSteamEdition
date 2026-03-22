@@ -35,6 +35,15 @@ public class BruiserEnemyAI : MonoBehaviour
         visuals = GetComponent<EnemyVisuals>();
     }
 
+    void OnEnable()
+    {
+        isFirstTurn = true;
+        isChargingAttack = false;
+
+        currentCooldown = 0;
+        warningCells.Clear();
+    }
+
     public void OnFirstTurnDone() { isFirstTurn = false; }
 
     /// <summary>
@@ -54,10 +63,12 @@ public class BruiserEnemyAI : MonoBehaviour
             movement.hasLockedTarget = false;
             if (visuals != null) visuals.SetArrowVisibility(false);
             isChargingAttack = false;
+    
             return;
         }
 
-        if (currentCooldown > 0) currentCooldown--;
+        // Only decrement cooldown when not already charging
+        if (!isChargingAttack && currentCooldown > 0) currentCooldown--;
 
         // Flip toward player
         Vector3 playerPos = movement.groundMap.GetCellCenterWorld(playerCell);
@@ -78,6 +89,7 @@ public class BruiserEnemyAI : MonoBehaviour
             if (candidateCells.Contains(playerCell))
             {
                 isChargingAttack = true;
+
                 movement.hasLockedTarget = false;
                 if (visuals != null) visuals.SetArrowVisibility(false);
                 if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
@@ -158,6 +170,7 @@ public class BruiserEnemyAI : MonoBehaviour
     {
         if (!isChargingAttack) return;
         isChargingAttack = false;
+
         currentCooldown = 0;
         if (movement.animator != null)
         {

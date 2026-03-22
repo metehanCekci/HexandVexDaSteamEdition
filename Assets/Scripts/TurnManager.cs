@@ -443,7 +443,6 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.surgeBootNextTurn = false;
         }
         TickThornLifetimes();
-        TickBurnsIfActive();
         if (CleanupDeadAndCheckLevelClear()) return;
         player.UpdateHighlights();
         StartCoroutine(LockIntentsNextFrame());
@@ -1531,6 +1530,18 @@ public class TurnManager : MonoBehaviour
 
     private bool CleanupDeadAndCheckLevelClear()
     {
+        // Ölü düşmanları listeden çıkarmadan önce, Die() çağrılmamış olanları temizle
+        // (TotemDestroySequence gibi yerlerden currentHP=0 yapılıp Die() atlanabilir)
+        foreach (var e in enemies)
+        {
+            if (e != null && e.health.currentHP <= 0 && !e.health.IsDead)
+            {
+                // FadeDie başlatarak görsel temizliği garanti et
+                if (e.gameObject.activeInHierarchy)
+                    StartCoroutine(e.FadeDieCoroutine());
+            }
+        }
+
         enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
         if (enemies.Count <= 0)
         {
@@ -1546,6 +1557,13 @@ public class TurnManager : MonoBehaviour
         ClearMitsuriRangeIndicators();
         yield return new WaitForSeconds(0.2f);
         enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
+
+        // Burn tick düşmanlar hareket etmeden önce çalışır
+        TickBurnsIfActive();
+        if (CleanupDeadAndCheckLevelClear()) yield break;
+
+        // Düşmanları speed değerine göre sırala (yüksek speed = önce hareket)
+        enemies.Sort((a, b) => (b != null ? b.speed : 0).CompareTo(a != null ? a.speed : 0));
 
         foreach (var e in enemies) if (e != null && e.skipTurns <= 0) e.ExecuteLockedMove();
         yield return new WaitUntil(() => { foreach (var e in enemies) if (e != null && e.IsMoving()) return false; return true; });
@@ -1671,6 +1689,9 @@ public class TurnManager : MonoBehaviour
                 }
             }
         }
+
+        // Emniyet: EnemyPhase sonu — burn veya diğer efektlerden ölen düşmanları temizle
+        if (CleanupDeadAndCheckLevelClear()) yield break;
 
         EndTurnAndDecreaseStuns();
     }

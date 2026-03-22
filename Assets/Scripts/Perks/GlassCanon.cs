@@ -50,19 +50,14 @@ public class GlassCanonPerk : BasePerk
     {
         var rm = RunManager.instance;
         int defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
-        int oldMax = rm.playerMaxHealth;
-        int newMax = defaultMaxHP;
 
-        // Orantili HP: 3/3 (100%) -> 5/5 (100%), 2/3 (66%) -> 3/5 (60%)
-        float ratio = oldMax > 0 ? (float)rm.playerCurrentHealth / oldMax : 1f;
-        rm.playerMaxHealth = newMax;
-        rm.playerCurrentHealth = Mathf.Clamp(Mathf.RoundToInt(ratio * newMax), 1, newMax);
+        // Sadece maxHP'yi geri yükselt, currentHP'ye dokunma (stash abuse fix)
+        rm.playerMaxHealth = defaultMaxHP;
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
             var h = TurnManager.instance.player.health;
-            h.maxHP = newMax;
-            h.currentHP = rm.playerCurrentHealth;
+            h.maxHP = defaultMaxHP;
             h.updateHealth();
         }
     }

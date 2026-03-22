@@ -11652,7 +11652,6 @@ MonoBehaviour:
   - {fileID: 5093722096315643738, guid: 0847041e97dcb7648b5897f7f9a83ecf, type: 3}
   - {fileID: 5068179257304331724, guid: cdc2662d0656276448b616cfefe9c9d1, type: 3}
   - {fileID: 1111111111111111301, guid: a881fac979acb0e439f921f3d0019811, type: 3}
-  - {fileID: 627726755686980212, guid: d35003d2ffe1e424e86da597f8067bf3, type: 3}
   - {fileID: 5244404443356522464, guid: 887c365c7b2b14e46aa3f85fc7c8d092, type: 3}
   rarePerks:
   - {fileID: 8170780636646441943, guid: 3512cd5738bf59d47ac77b4450365bf4, type: 3}
@@ -11682,6 +11681,7 @@ MonoBehaviour:
   - {fileID: 1111111111111111101, guid: a8326ac1ab2ad7543a14fc4a69b1ac38, type: 3}
   - {fileID: 4585818349810526154, guid: 26fd61e6f0b68ca4fb17f7fe10cd0267, type: 3}
   - {fileID: 4642896074790599915, guid: e17e7720bd834d14e99b460ac4184a3c, type: 3}
+  - {fileID: 627726755686980212, guid: d35003d2ffe1e424e86da597f8067bf3, type: 3}
   legendaryPerks:
   - {fileID: 1109346846490427701, guid: 591fd3e063799564ea700207eeb3e9e0, type: 3}
   - {fileID: 5336392581835503264, guid: 8ccf6ebc72f40fa41bf98afebb2d428e, type: 3}
@@ -27726,7 +27726,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 91
+  m_SortingOrder: 1589
   m_TargetDisplay: 0
 --- !u!1 &1934985737
 GameObject:
@@ -30547,6 +30547,10 @@ PrefabInstance:
     - target: {fileID: 1571829252065472439, guid: 460cd159e1c557e47bc3850dbabed59e, type: 3}
       propertyPath: m_Name
       value: FadeInOut
+      objectReference: {fileID: 0}
+    - target: {fileID: 5281461969332836516, guid: 460cd159e1c557e47bc3850dbabed59e, type: 3}
+      propertyPath: m_SortingOrder
+      value: 1590
       objectReference: {fileID: 0}
     - target: {fileID: 6509488173819563852, guid: 460cd159e1c557e47bc3850dbabed59e, type: 3}
       propertyPath: m_Pivot.x

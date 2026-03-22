@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Viral Cysts
-  description: "Sald\u0131r\u0131 d\xFC\u015Fmana cyst yerle\u015Ftirir. Skip ile
-    patlat. Hasar i\u015Faretli d\xFC\u015Fman say\u0131s\u0131yla artar."
+  description: "Attacks place a cyst on the enemy. Detonate with Skip. Damage scales with the number of marked enemies."
   icon: {fileID: -2643283406517580152, guid: f2b2dd1d74c2c364186081cd5f873735, type: 3}
   priority: 0
   isRerollPerk: 0

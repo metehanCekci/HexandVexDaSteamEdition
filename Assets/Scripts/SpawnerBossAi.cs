@@ -573,15 +573,15 @@ public class SpawnerBossAI : MonoBehaviour
             StartCoroutine(CameraShake(0.4f, 0.14f));
         }
 
-        // Tüm minionları öldür
+        // Tüm minionları öldür — zaten ölmekte olan (isDead) minionları atla
         foreach (var minion in summonedMinions)
         {
-            if (minion != null && minion.health.currentHP > 0)
+            if (minion != null && !minion.health.IsDead && minion.health.currentHP > 0)
                 minion.health.currentHP = 0;
         }
         foreach (var minion in summonedMinions)
         {
-            if (minion != null)
+            if (minion != null && !minion.health.IsDead)
                 StartCoroutine(minion.FadeDieCoroutine());
         }
         summonedMinions.Clear();
@@ -596,6 +596,10 @@ public class SpawnerBossAI : MonoBehaviour
             isShielded = false;
             StartCoroutine(ShatterShieldVisual());
             previousHP = myEnemyMovement.health.currentHP;
+
+            // Kalkan kırıldığında can barını hemen mavi renge güncelle
+            myEnemyMovement.health.updateHealth();
+
             countToSpawn = maxLimit;
         }
         else
@@ -715,7 +719,7 @@ public class SpawnerBossAI : MonoBehaviour
 
         foreach (var minion in summonedMinions)
         {
-            if (minion != null && minion.health.currentHP > 0)
+            if (minion != null && !minion.health.IsDead && minion.health.currentHP > 0)
             {
                 minion.health.currentHP = 0;
                 if (minion.gameObject.activeInHierarchy)
@@ -725,7 +729,7 @@ public class SpawnerBossAI : MonoBehaviour
 
         foreach (var e in TurnManager.instance.enemies.ToList())
         {
-            if (e != null && e.IsTotem && e.health.currentHP > 0)
+            if (e != null && !e.health.IsDead && e.IsTotem && e.health.currentHP > 0)
             {
                 e.health.currentHP = 0;
                 if (e.gameObject.activeInHierarchy)

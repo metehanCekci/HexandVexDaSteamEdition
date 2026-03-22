@@ -20,4 +20,4 @@ MonoBehaviour:
   unlockCondition: 1
   requiredAmount: 100
   conditionParam: 
-  unlockHint: "Toplam 100 d\xFC\u015Fman \xF6ld\xFCr."
+  unlockHint: Kill 100 enemies in total.

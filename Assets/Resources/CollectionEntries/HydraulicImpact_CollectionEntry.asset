@@ -20,4 +20,4 @@ MonoBehaviour:
   unlockCondition: 10
   requiredAmount: 10
   conditionParam: 
-  unlockHint: "Toplam 10 d\xFC\u015Fman\u0131 spike'a it."
+  unlockHint: Push 10 enemies into spikes.
