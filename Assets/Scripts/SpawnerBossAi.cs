@@ -716,13 +716,21 @@ public class SpawnerBossAI : MonoBehaviour
         foreach (var minion in summonedMinions)
         {
             if (minion != null && minion.health.currentHP > 0)
-                StartCoroutine(minion.FadeDieCoroutine());
+            {
+                minion.health.currentHP = 0;
+                if (minion.gameObject.activeInHierarchy)
+                    TurnManager.instance.StartCoroutine(minion.FadeDieCoroutine());
+            }
         }
-        
+
         foreach (var e in TurnManager.instance.enemies.ToList())
         {
             if (e != null && e.IsTotem && e.health.currentHP > 0)
-                StartCoroutine(e.FadeDieCoroutine());
+            {
+                e.health.currentHP = 0;
+                if (e.gameObject.activeInHierarchy)
+                    TurnManager.instance.StartCoroutine(e.FadeDieCoroutine());
+            }
         }
     }
 

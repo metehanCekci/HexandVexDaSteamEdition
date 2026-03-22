@@ -444,6 +444,7 @@ public class TurnManager : MonoBehaviour
         }
         TickThornLifetimes();
         TickBurnsIfActive();
+        if (CleanupDeadAndCheckLevelClear()) return;
         player.UpdateHighlights();
         StartCoroutine(LockIntentsNextFrame());
 
