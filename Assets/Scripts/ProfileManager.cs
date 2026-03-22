@@ -70,7 +70,7 @@ public class ProfileManager : MonoBehaviour
         File.WriteAllText(GetMetaPath(id), name);
     }
 
-    /// <summary>Profil collection %'sini hesaplar.</summary>
+    /// <summary>Profil collection %'sini hesaplar (default perkler hariç).</summary>
     public float GetCollectionPercent(int id)
     {
         if (id == ActiveProfileId)
@@ -78,14 +78,14 @@ public class ProfileManager : MonoBehaviour
             // Aktif profil — direkt PerkCollectionManager'dan oku
             if (PerkCollectionManager.instance != null)
             {
-                int total = PerkCollectionManager.instance.GetTotalCount();
+                int total = PerkCollectionManager.instance.GetEarnableCount();
                 if (total == 0) return 0f;
-                return (float)PerkCollectionManager.instance.GetUnlockedCount() / total * 100f;
+                return (float)PerkCollectionManager.instance.GetEarnedUnlockCount() / total * 100f;
             }
             return 0f;
         }
 
-        // Başka profil — dosyadan oku ve say
+        // Başka profil — dosyadan oku ve say (default perkler hariç)
         string path = GetProfilePath(id);
         if (!File.Exists(path)) return 0f;
         string json = File.ReadAllText(path);
@@ -96,9 +96,10 @@ public class ProfileManager : MonoBehaviour
         int total2 = 0;
         if (PerkCollectionManager.instance != null && PerkCollectionManager.instance.database != null)
         {
-            total2 = PerkCollectionManager.instance.database.entries.Count;
             foreach (var entry in PerkCollectionManager.instance.database.entries)
             {
+                if (entry.unlockCondition == UnlockCondition.Default) continue;
+                total2++;
                 string key = $"perk_unlocked_{entry.perkId}";
                 int idx = data.keys.IndexOf(key);
                 if (idx >= 0 && data.values[idx] == "1")
@@ -291,6 +292,11 @@ public class ProfileManager : MonoBehaviour
         keys.Add("total_levels_cleared");
         keys.Add("total_spike_kills");
         keys.Add("total_skips");
+
+        // Lifetime stat keys (perk unlock koşullarını tetikleyen)
+        keys.Add("lifetime_total_kills");
+        keys.Add("lifetime_total_gold");
+        keys.Add("lifetime_levels_cleared");
 
         return keys;
     }

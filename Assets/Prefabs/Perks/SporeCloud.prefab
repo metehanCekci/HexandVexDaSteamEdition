@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Spore Cloud
-  description: "Hasar ald\u0131\u011F\u0131nda etraf\u0131ndaki d\xFC\u015Fmanlar\u0131
-    stunlar. Duman yar\u0131\xE7ap\u0131 level ile b\xFCy\xFCr."
+  description: "Stuns nearby enemies when you take damage. Cloud radius grows with level."
   icon: {fileID: 2452988725578156918, guid: d24e2e5d72636a749b6dc77bfae45a26, type: 3}
   priority: 0
   isRerollPerk: 0

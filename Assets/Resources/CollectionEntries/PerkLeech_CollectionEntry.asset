@@ -20,4 +20,4 @@ MonoBehaviour:
   unlockCondition: 8
   requiredAmount: 20
   conditionParam: 
-  unlockHint: "Tek run'da 20 d\xFC\u015Fman \xF6ld\xFCr."
+  unlockHint: Kill 20 enemies in a single run.

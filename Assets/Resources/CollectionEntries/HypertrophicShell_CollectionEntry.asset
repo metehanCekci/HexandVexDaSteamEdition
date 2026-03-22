@@ -20,4 +20,4 @@ MonoBehaviour:
   unlockCondition: 2
   requiredAmount: 3
   conditionParam: 
-  unlockHint: 3 run tamamla.
+  unlockHint: Complete 3 runs.

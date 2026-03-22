@@ -25,6 +25,7 @@ public class BruiserEnemyAI : MonoBehaviour
 
     private int currentCooldown = 0;
     private bool isFirstTurn = true;
+    private bool chargeStartedThisTurn = false;
 
     private EnemyMovement movement;
     private EnemyVisuals visuals;
@@ -33,6 +34,15 @@ public class BruiserEnemyAI : MonoBehaviour
     {
         movement = GetComponent<EnemyMovement>();
         visuals = GetComponent<EnemyVisuals>();
+    }
+
+    void OnEnable()
+    {
+        isFirstTurn = true;
+        isChargingAttack = false;
+        chargeStartedThisTurn = false;
+        currentCooldown = 0;
+        warningCells.Clear();
     }
 
     public void OnFirstTurnDone() { isFirstTurn = false; }
@@ -54,10 +64,12 @@ public class BruiserEnemyAI : MonoBehaviour
             movement.hasLockedTarget = false;
             if (visuals != null) visuals.SetArrowVisibility(false);
             isChargingAttack = false;
+            chargeStartedThisTurn = false;
             return;
         }
 
-        if (currentCooldown > 0) currentCooldown--;
+        // Only decrement cooldown when not already charging
+        if (!isChargingAttack && currentCooldown > 0) currentCooldown--;
 
         // Flip toward player
         Vector3 playerPos = movement.groundMap.GetCellCenterWorld(playerCell);
@@ -78,6 +90,7 @@ public class BruiserEnemyAI : MonoBehaviour
             if (candidateCells.Contains(playerCell))
             {
                 isChargingAttack = true;
+                chargeStartedThisTurn = true;
                 movement.hasLockedTarget = false;
                 if (visuals != null) visuals.SetArrowVisibility(false);
                 if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
@@ -158,6 +171,7 @@ public class BruiserEnemyAI : MonoBehaviour
     {
         if (!isChargingAttack) return;
         isChargingAttack = false;
+        chargeStartedThisTurn = false;
         currentCooldown = 0;
         if (movement.animator != null)
         {
@@ -179,6 +193,13 @@ public class BruiserEnemyAI : MonoBehaviour
     public IEnumerator ExecuteAoEAttackCoroutine(HexMovement player)
     {
         if (!isChargingAttack) yield break;
+
+        // Charge just started this turn — show warning only, attack next turn
+        if (chargeStartedThisTurn)
+        {
+            chargeStartedThisTurn = false;
+            yield break;
+        }
 
         Tilemap warningMap = movement.warningMap;
 

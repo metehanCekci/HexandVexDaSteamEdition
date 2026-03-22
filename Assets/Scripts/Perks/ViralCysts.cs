@@ -96,9 +96,9 @@ public class ViralCystsPerk : BasePerk
     {
         switch (currentLevel)
         {
-            case 1: return 0.10f;
-            case 2: return 0.15f;
-            default: return 0.20f;
+            case 1: return 0.15f;
+            case 2: return 0.20f;
+            default: return 0.25f;
         }
     }
 
@@ -123,7 +123,7 @@ public class ViralCystsPerk : BasePerk
 
     private string GetDescription()
     {
-        int percent = currentLevel == 1 ? 10 : currentLevel == 2 ? 15 : 20;
+        int percent = currentLevel == 1 ? 15 : currentLevel == 2 ? 20 : 25;
         CleanDeadMarks();
         return $"Saldirinca dusmana cyst yerlestir. Skip ile patlat.\nDusman basina %{percent} hasar x isaretli dusman sayisi.\nIsaretli: {markedEnemies.Count}";
     }

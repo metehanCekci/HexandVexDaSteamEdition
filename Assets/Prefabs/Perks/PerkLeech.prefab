@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Perk Leech
-  description: "Elite d\xFC\u015Fman \xF6ld\xFCrd\xFC\u011F\xFCnde bir perk par\xE7as\u0131
-    kazan. 3 par\xE7a = rastgele perk."
+  description: "Gain a perk fragment when you kill an elite enemy. 3 fragments = random perk."
   icon: {fileID: 5597838034089175020, guid: e139a6143fb3c3448bbb3a403e70e26d, type: 3}
   priority: 0
   isRerollPerk: 0

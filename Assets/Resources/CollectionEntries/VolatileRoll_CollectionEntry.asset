@@ -20,4 +20,4 @@ MonoBehaviour:
   unlockCondition: 0
   requiredAmount: 1
   conditionParam: 
-  unlockHint: "Ba\u015Flang\u0131\xE7ta a\xE7\u0131k."
+  unlockHint: Unlocked by default.

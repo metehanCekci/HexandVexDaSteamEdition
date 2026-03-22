@@ -146,6 +146,17 @@ public class PerkCollectionManager : MonoBehaviour
         return database != null ? database.entries.Count : 0;
     }
 
+    /// <summary>Default olmayan toplam perk sayısını döner (yüzde hesabı için).</summary>
+    public int GetEarnableCount()
+    {
+        if (database == null) return 0;
+        int count = 0;
+        foreach (var entry in database.entries)
+            if (entry.unlockCondition != UnlockCondition.Default)
+                count++;
+        return count;
+    }
+
     /// <summary>Bekleyen unlock notification'ı varsa döner, yoksa null.</summary>
     public PerkCollectionData DequeueUnlockNotification()
     {
@@ -178,14 +189,18 @@ public class PerkCollectionManager : MonoBehaviour
         {
             PlayerPrefs.DeleteKey($"perk_unlocked_{entry.perkId}");
             PlayerPrefs.DeleteKey($"perk_progress_{entry.perkId}");
+            PlayerPrefs.DeleteKey($"perk_seen_{entry.perkId}");
             unlockCache[entry.perkId] = false;
             progressCache[entry.perkId] = 0;
         }
-        // Default olanları geri aç
+        // Default olanları geri aç ve "görüldü" olarak işaretle (ünlem çıkmasın)
         foreach (var entry in database.entries)
         {
             if (entry.unlockCondition == UnlockCondition.Default)
+            {
                 UnlockPerk(entry.perkId, silent: true);
+                PlayerPrefs.SetInt($"perk_seen_{entry.perkId}", 1);
+            }
         }
         PlayerPrefs.Save();
     }

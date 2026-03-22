@@ -20,4 +20,4 @@ MonoBehaviour:
   unlockCondition: 7
   requiredAmount: 30
   conditionParam: 
-  unlockHint: Toplam 30 level temizle.
+  unlockHint: Clear 30 levels in total.
