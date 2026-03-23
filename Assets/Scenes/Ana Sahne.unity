@@ -11654,7 +11654,6 @@ MonoBehaviour:
   - {fileID: 1111111111111111301, guid: a881fac979acb0e439f921f3d0019811, type: 3}
   - {fileID: 5244404443356522464, guid: 887c365c7b2b14e46aa3f85fc7c8d092, type: 3}
   - {fileID: 7150215332169708800, guid: 663d00f3eb8b0dd4e8b077de4e9a38c2, type: 3}
-  - {fileID: 2771104033734759051, guid: d230bf28581df914b8f7ce6db05d7192, type: 3}
   rarePerks:
   - {fileID: 8170780636646441943, guid: 3512cd5738bf59d47ac77b4450365bf4, type: 3}
   - {fileID: 1986514174070140262, guid: 8d2cf8eb1410c6d44942bc4168924640, type: 3}
@@ -11725,9 +11724,9 @@ MonoBehaviour:
   skipButton: {fileID: 0}
   skipButtonImage: {fileID: 0}
   levelUpCanvasGroup: {fileID: 1574552225}
-  forcedPerk: {fileID: 1666585634419841794, guid: a9f64b1f3e6c7244581865d91998d322, type: 3}
-  forcedPerk2: {fileID: 2771104033734759051, guid: d230bf28581df914b8f7ce6db05d7192, type: 3}
-  forcedPerk3: {fileID: 8338301390874939306, guid: 92274e630d9983f4692e0d50c90eb926, type: 3}
+  forcedPerk: {fileID: 0}
+  forcedPerk2: {fileID: 0}
+  forcedPerk3: {fileID: 0}
 --- !u!4 &937609419
 Transform:
   m_ObjectHideFlags: 0
