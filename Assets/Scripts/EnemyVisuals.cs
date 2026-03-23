@@ -283,7 +283,7 @@ public class EnemyVisuals : MonoBehaviour
         isFading = false;
     }
 
-    private bool fadeDieStarted = false;
+    [HideInInspector] public bool fadeDieStarted = false;
 
     public IEnumerator FadeDieCoroutine()
     {

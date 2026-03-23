@@ -137,8 +137,13 @@ public static class MapGenerator
             if (node.row == 1) { node.nodeType = MapNodeType.Combat; continue; }
             if (node.row == totalRows - 1)
             {
-                node.nodeType = Random.value < config.eliteChance * 2.5f
-                    ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                // Tek node row'daysa elite koyma
+                List<MapNode> rowNodes = map.GetRow(node.row);
+                if (rowNodes.Count <= 1)
+                    node.nodeType = MapNodeType.Combat;
+                else
+                    node.nodeType = Random.value < config.eliteChance * 2.5f
+                        ? MapNodeType.EliteCombat : MapNodeType.Combat;
                 continue;
             }
             // Geri kalanı şimdilik combat — aşağıda değiştirilecek
@@ -250,8 +255,8 @@ public static class MapGenerator
         {
             if (count == 1)
             {
-                rowNodes[0].nodeType = Random.value < config.eliteChance * 2.5f
-                    ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                // Tek node — elite zorunlu olmamalı
+                rowNodes[0].nodeType = MapNodeType.Combat;
             }
             else
             {
@@ -264,17 +269,15 @@ public static class MapGenerator
         }
 
         // ─── Tek node → basit karar ───
+        // TEK NODE ROW'DA ASLA ELITE YOK — oyuncunun alternatif yolu olmalı
         if (count == 1)
         {
-            // Parent'lardan biri ödül mü kontrol et — ödül arkasına ödül koyma
             bool anyParentReward = HasRewardParent(map, rowNodes[0]);
 
             int streak = incomingMaxStreak.ContainsKey(rowNodes[0].id) ? incomingMaxStreak[rowNodes[0].id] : 0;
             if (anyParentReward)
             {
-                // Parent ödülse → zorunlu savaş
-                rowNodes[0].nodeType = Random.value < config.eliteChance * 2f
-                    ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                rowNodes[0].nodeType = MapNodeType.Combat;
             }
             else if (streak >= 2)
             {
@@ -286,8 +289,7 @@ public static class MapGenerator
             }
             else
             {
-                rowNodes[0].nodeType = Random.value < config.eliteChance * 2f
-                    ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                rowNodes[0].nodeType = MapNodeType.Combat;
             }
             return;
         }
@@ -896,6 +898,8 @@ public static class MapGenerator
             {
                 if (node.nodeType != MapNodeType.Combat) continue;
                 if (node.row <= 0 || node.row >= totalRows) continue;
+                // Elite tek node row'a konmamalı — oyuncunun alternatifi olmalı
+                if (reqType == MapNodeType.EliteCombat && map.GetRow(node.row).Count <= 1) continue;
                 // Ardışık ödül yasağı: ödül tipiyse parent veya child ödülse atla
                 if (isRewardType)
                 {

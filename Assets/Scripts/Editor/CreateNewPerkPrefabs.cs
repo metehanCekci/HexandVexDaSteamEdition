@@ -8,35 +8,56 @@ public class CreateNewPerkPrefabs
     public static void CreatePrefabs()
     {
         CreatePerk<VolatileRollPerk>("VolatileRoll", "Volatile Roll",
-            "Her zar %50 şansla 1 veya 6 olur. Yüksek risk, yüksek ödül.");
+            "Each die has a 50% chance to become 1 or 6. High risk, high reward.");
 
         CreatePerk<SporeCloudPerk>("SporeCloud", "Spore Cloud",
-            "Hasar aldığında etrafındaki düşmanları stunlar. Duman yarıçapı level ile büyür.");
+            "When you take damage, stun nearby enemies. Cloud radius grows with level.");
 
         CreatePerk<PerkLeechPerk>("PerkLeech", "Perk Leech",
-            "Elite düşman öldürdüğünde bir perk parçası kazan. 3 parça = rastgele perk.");
+            "Killing an elite enemy drops a perk fragment. Collect 3 fragments for a random perk.");
 
         CreatePerk<PyrogenicGlandsPerk>("PyrogenicGlands", "Pyrogenic Glands",
-            "Saldırıların düşmanları yakar. 2 tur boyunca hasar verir.");
+            "Your attacks set enemies on fire. Burns deal damage over 3 turns.");
 
         CreatePerk<HydraulicImpactPerk>("HydraulicImpact", "Hydraulic Impact",
-            "Knockback ile duvara çarpan düşmanlar max HP'lerinin %50'si kadar hasar alır.");
+            "Enemies knocked into walls take 50% of their max HP as damage.");
 
         CreatePerk<SlipperySecretionPerk>("SlipperySecretion", "Slippery Secretion",
-            "Geçtiğin hücrelerde mucus izi bırakır. Düşmanlar giriş yönünde ekstra 1 hex kayar.");
+            "Leave a mucus trail on tiles you walk over. Enemies slide an extra hex in their movement direction.");
 
         CreatePerk<ViralCystsPerk>("ViralCysts", "Viral Cysts",
-            "Saldırı düşmana cyst yerleştirir. Skip ile patlat. Hasar işaretli düşman sayısıyla artar.");
+            "Attacks plant cysts on enemies. Skip to detonate. Damage scales with marked enemy count.");
 
         CreatePerk<HypertrophicShellPerk>("HypertrophicShell", "Hypertrophic Shell",
-            "Max HP'ni kalıcı olarak +1 artırır. (Maks: 10 HP)");
+            "Permanently increase max HP by +1. (Max: 10 HP)");
 
         CreatePerk<SynapticAnchorPerk>("SynapticAnchor", "Synaptic Anchor",
-            "İlk Skip pozisyonuna anchor koyar. İkinci Skip anchor'a teleport eder.");
+            "First Skip places an anchor. Second Skip teleports you to it.");
+
+        CreatePerk<PressurePointPerk>("PressurePoint", "Pressure Point",
+            "Deal more damage to healthier enemies. Full HP: 3x, 75%+: 2x, 50%-: 1.5x.");
+
+        CreatePerk<OverkillProtocolPerk>("OverkillProtocol", "Overkill Protocol",
+            "Excess damage from a kill transfers to a random living enemy.");
+
+        CreatePerk<CarrionFeederPerk>("CarrionFeeder", "Carrion Feeder",
+            "Killing an enemy heals 1 HP and grants +2 flat damage to your next attack. Stacks per kill.");
+
+        CreatePerk<EchoStrikePerk>("EchoStrike", "Echo Strike",
+            "Your attacks have a chance to strike the same target again. Lv1: 25%, Lv2: 50%, Lv3: 75%.");
+
+        CreatePerk<CatalyticEnzymePerk>("CatalyticEnzyme", "Catalytic Enzyme",
+            "Each skip grants +30% damage to your next attack. Stacks multiply, consumed on attack.");
+
+        CreatePerk<GravitonCorePerk>("GravitonCore", "Graviton Core",
+            "When an enemy is knocked back, pull adjacent enemies 1 hex toward the knockback origin.");
+
+        CreatePerk<NecroticTouchPerk>("NecroticTouch", "Necrotic Touch",
+            "Enemies below 25% HP take 2x damage from all sources.");
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("9 yeni perk prefab'ı oluşturuldu: Assets/Prefabs/Perks/");
+        Debug.Log("16 yeni perk prefab'ı oluşturuldu: Assets/Prefabs/Perks/");
     }
 
     [MenuItem("HexAndVex/Create New Perk Collection Entries")]
@@ -66,39 +87,67 @@ public class CreateNewPerkPrefabs
 
         added += CreateEntry(db, existingIds, "VolatileRoll", "Volatile Roll", PerkRarity.Rare,
             "Dice that defy probability — each face is either salvation or doom. The organism's neural pathways have been rewired to embrace chaos.",
-            UnlockCondition.Default, 1, "", "Başlangıçta açık.");
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
 
         added += CreateEntry(db, existingIds, "SporeCloud", "Spore Cloud", PerkRarity.Rare,
             "A defensive fungal colony embedded in the host's epidermis. When threatened, it releases paralytic spores in a dense cloud.",
-            UnlockCondition.KillEnemies, 100, "", "Toplam 100 düşman öldür.");
+            UnlockCondition.KillEnemies, 100, "", "Kill 100 enemies in total.");
 
         added += CreateEntry(db, existingIds, "PerkLeech", "Perk Leech", PerkRarity.Legendary,
             "A parasitic organism that feeds on the essence of powerful foes. Each elite kill leaves behind a crystallized fragment of their strength.",
-            UnlockCondition.KillEnemiesSingleRun, 20, "", "Tek run'da 20 düşman öldür.");
+            UnlockCondition.KillEnemiesSingleRun, 20, "", "Kill 20 enemies in a single run.");
 
         added += CreateEntry(db, existingIds, "PyrogenicGlands", "Pyrogenic Glands", PerkRarity.Common,
             "Bio-engineered glands that coat weapons in an exothermic compound. The flames linger, consuming flesh over time.",
-            UnlockCondition.Default, 1, "", "Başlangıçta açık.");
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
 
         added += CreateEntry(db, existingIds, "HydraulicImpact", "Hydraulic Impact", PerkRarity.Epic,
             "Hydraulic augmentation that amplifies knockback force exponentially. When a target has nowhere to go, the impact is devastating.",
-            UnlockCondition.PushEnemyIntoSpike, 10, "", "Toplam 10 düşmanı spike'a it.");
+            UnlockCondition.PushEnemyIntoSpike, 10, "", "Push 10 enemies into spikes.");
 
         added += CreateEntry(db, existingIds, "SlipperySecretion", "Slippery Secretion", PerkRarity.Rare,
             "A mucus-producing organ that leaves a slick, frictionless trail. Enemies who step on it lose their footing and slide uncontrollably.",
-            UnlockCondition.MoveTiles, 500, "", "Toplam 500 tile yürü.");
+            UnlockCondition.MoveTiles, 500, "", "Walk 500 tiles in total.");
 
         added += CreateEntry(db, existingIds, "ViralCysts", "Viral Cysts", PerkRarity.Epic,
             "Weaponized bio-cysts that embed themselves in enemy tissue. When detonated, the chain reaction scales with the number of infected hosts.",
-            UnlockCondition.SkipTurns, 50, "", "Toplam 50 kez tur atla.");
+            UnlockCondition.SkipTurns, 50, "", "Skip 50 turns in total.");
 
         added += CreateEntry(db, existingIds, "HypertrophicShell", "Hypertrophic Shell", PerkRarity.Common,
             "A calcified growth that reinforces the host's vital organs. Each layer adds another wall between you and death.",
-            UnlockCondition.CompleteRuns, 3, "", "3 run tamamla.");
+            UnlockCondition.CompleteRuns, 3, "", "Complete 3 runs.");
 
         added += CreateEntry(db, existingIds, "SynapticAnchor", "Synaptic Anchor", PerkRarity.Legendary,
             "A neural implant that creates a quantum entanglement between two points in space. The anchor remembers, and the body follows.",
-            UnlockCondition.ClearLevels, 30, "", "Toplam 30 level temizle.");
+            UnlockCondition.ClearLevels, 30, "", "Clear 30 levels in total.");
+
+        added += CreateEntry(db, existingIds, "PressurePoint", "Pressure Point", PerkRarity.Common,
+            "A bio-sensor that detects structural weaknesses in undamaged tissue. The first strike is always the deadliest.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "OverkillProtocol", "Overkill Protocol", PerkRarity.Legendary,
+            "A predatory reflex that redirects lethal force. When prey falls too easily, the excess energy seeks new targets.",
+            UnlockCondition.KillEnemies, 200, "", "Kill 200 enemies in total.");
+
+        added += CreateEntry(db, existingIds, "CarrionFeeder", "Carrion Feeder", PerkRarity.Rare,
+            "A scavenger organ that metabolizes fallen enemies into raw energy. Each kill feeds the hunger, each feast sharpens the claws.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "EchoStrike", "Echo Strike", PerkRarity.Epic,
+            "Phantom muscle memory that replays lethal movements. The body remembers the kill, and sometimes acts on instinct alone.",
+            UnlockCondition.ClearLevels, 15, "", "Clear 15 levels in total.");
+
+        added += CreateEntry(db, existingIds, "CatalyticEnzyme", "Catalytic Enzyme", PerkRarity.Rare,
+            "A dormant enzyme that builds pressure with each moment of stillness. When finally unleashed, the reaction is explosive.",
+            UnlockCondition.SkipTurns, 30, "", "Skip 30 turns in total.");
+
+        added += CreateEntry(db, existingIds, "GravitonCore", "Graviton Core", PerkRarity.Common,
+            "A dense gravitational implant that warps local space during impacts. Nearby bodies are pulled toward the point of collision.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "NecroticTouch", "Necrotic Touch", PerkRarity.Rare,
+            "A necrotizing agent that accelerates cellular decay in weakened organisms. The closer to death, the faster the rot spreads.",
+            UnlockCondition.KillEnemiesSingleRun, 15, "", "Kill 15 enemies in a single run.");
 
         EditorUtility.SetDirty(db);
         AssetDatabase.SaveAssets();

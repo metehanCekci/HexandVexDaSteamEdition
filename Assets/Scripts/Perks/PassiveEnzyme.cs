@@ -11,6 +11,9 @@ public class PassiveEnzymePerk : BasePerk
 
     public override void OnSkip()
     {
+        // Boss sahnesinde çalışmasın
+        if (RunManager.instance != null && RunManager.instance.currentNodeType == MapNodeType.Boss) return;
+
         // Son 1 düşman kaldıysa çalışmasın — sonsuz para kasma engeli
         if (TurnManager.instance != null && TurnManager.instance.enemies != null)
         {

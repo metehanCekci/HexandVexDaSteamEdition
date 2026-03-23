@@ -38,6 +38,9 @@ public class PerkInventoryUI : MonoBehaviour
     private readonly List<GameObject> spawnedActiveSlots = new List<GameObject>();
     private readonly List<GameObject> spawnedStashSlots = new List<GameObject>();
 
+    // Stash scroll
+    private SimpleScrollArea stashScroll;
+
     // Drag state
     private GameObject dragGhost;
     private bool isDragging;
@@ -142,6 +145,15 @@ public class PerkInventoryUI : MonoBehaviour
     public void Show()
     {
         if (canvasGO == null) BuildUI();
+
+        // Eski stash yapisi scroll desteklemiyorsa yeniden olustur
+        if (stashScroll == null && stashSection != null)
+        {
+            Destroy(stashSection);
+            stashSection = null;
+            RebuildStashSection();
+        }
+
         canvasGO.SetActive(true);
         rootCanvas = canvasGO.GetComponent<Canvas>();
 
@@ -602,13 +614,14 @@ public class PerkInventoryUI : MonoBehaviour
         float dur = 0.15f;
         while (elapsed < dur)
         {
+            if (rt == null) yield break;
             float t = elapsed / dur;
             float s = Mathf.Lerp(0.8f, 1.15f, EaseOutBack(t));
             rt.localScale = Vector3.one * s;
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
-        rt.localScale = Vector3.one * 1.15f;
+        if (rt != null) rt.localScale = Vector3.one * 1.15f;
     }
 
     private void EndDrag(PointerEventData eventData)
@@ -821,18 +834,7 @@ public class PerkInventoryUI : MonoBehaviour
 
         stashTitleText = MakeLabel("StashTitle", stashSection.transform, "STASH", 14, TextAlignmentOptions.Left, new Color(0.7f, 0.7f, 0.7f), 20f);
 
-        float stashGridH = (SLOT_SIZE + 20f) * 2 + SLOT_SPACING + 4f;
-        GameObject stashContainerGO = new GameObject("StashGrid", typeof(RectTransform));
-        stashContainerGO.transform.SetParent(stashSection.transform, false);
-        stashGrid = stashContainerGO.GetComponent<RectTransform>();
-        GridLayoutGroup glg = stashContainerGO.AddComponent<GridLayoutGroup>();
-        glg.cellSize = new Vector2(SLOT_SIZE + 20f, SLOT_SIZE + 20f);
-        glg.spacing = new Vector2(SLOT_SPACING, SLOT_SPACING);
-        glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        glg.constraintCount = 3;
-        glg.childAlignment = TextAnchor.UpperCenter;
-        var stashGridLE = stashContainerGO.AddComponent<LayoutElement>();
-        stashGridLE.preferredHeight = stashGridH;
+        BuildStashGrid(stashSection.transform);
 
         stashSection.SetActive(false);
 
@@ -897,6 +899,10 @@ public class PerkInventoryUI : MonoBehaviour
                     slot.transform.SetParent(stashGrid, false);
                     spawnedStashSlots.Add(slot);
                 }
+
+                // Scroll pozisyonunu sifirla
+                if (stashScroll != null)
+                    stashScroll.ResetScroll();
             }
 
             if (stashSection != null)
@@ -925,8 +931,6 @@ public class PerkInventoryUI : MonoBehaviour
 
     private void RebuildStashSection()
     {
-        float stashGridH = (SLOT_SIZE + 20f) * 2 + SLOT_SPACING + 4f;
-
         stashSection = new GameObject("StashSection", typeof(RectTransform));
         stashSection.transform.SetParent(panelRoot.transform, false);
 
@@ -939,19 +943,54 @@ public class PerkInventoryUI : MonoBehaviour
 
         stashTitleText = MakeLabel("StashTitle", stashSection.transform, "STASH", 14, TextAlignmentOptions.Left, new Color(0.7f, 0.7f, 0.7f), 20f);
 
-        GameObject stashContainerGO = new GameObject("StashGrid", typeof(RectTransform));
-        stashContainerGO.transform.SetParent(stashSection.transform, false);
-        stashGrid = stashContainerGO.GetComponent<RectTransform>();
-        GridLayoutGroup glg = stashContainerGO.AddComponent<GridLayoutGroup>();
-        glg.cellSize = new Vector2(SLOT_SIZE + 20f, SLOT_SIZE + 20f);
+        BuildStashGrid(stashSection.transform);
+
+        stashSection.SetActive(false);
+    }
+
+    private void BuildStashGrid(Transform parent)
+    {
+        float cellH = SLOT_SIZE + 20f;
+        float maxVisibleH = cellH * 3 + SLOT_SPACING * 2 + 4f; // max 3 satir gorunur
+
+        // Sabit yukseklikte gorunum alani — RectMask2D ile kirpma
+        GameObject clipGO = new GameObject("StashClip", typeof(RectTransform));
+        clipGO.transform.SetParent(parent, false);
+        clipGO.AddComponent<RectMask2D>();
+        // Scroll event'lerini yakalamak icin gorünmez Image lazim
+        Image clipImg = clipGO.AddComponent<Image>();
+        clipImg.color = Color.clear;
+        clipImg.raycastTarget = true;
+        var clipLE = clipGO.AddComponent<LayoutElement>();
+        clipLE.preferredHeight = maxVisibleH;
+        clipLE.flexibleHeight = 0;
+
+        // SimpleScrollArea ekle
+        stashScroll = clipGO.AddComponent<SimpleScrollArea>();
+        stashScroll.scrollSpeed = 30f;
+
+        // Grid — clip'in icinde, yukari dogru buyur
+        GameObject gridGO = new GameObject("StashGrid", typeof(RectTransform));
+        gridGO.transform.SetParent(clipGO.transform, false);
+        stashGrid = gridGO.GetComponent<RectTransform>();
+        stashGrid.anchorMin = new Vector2(0, 1);
+        stashGrid.anchorMax = new Vector2(1, 1);
+        stashGrid.pivot = new Vector2(0.5f, 1f);
+        stashGrid.anchoredPosition = Vector2.zero;
+        stashGrid.sizeDelta = new Vector2(0, 0);
+
+        GridLayoutGroup glg = gridGO.AddComponent<GridLayoutGroup>();
+        glg.cellSize = new Vector2(cellH, cellH);
         glg.spacing = new Vector2(SLOT_SPACING, SLOT_SPACING);
         glg.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         glg.constraintCount = 3;
         glg.childAlignment = TextAnchor.UpperCenter;
-        var stashGridLE = stashContainerGO.AddComponent<LayoutElement>();
-        stashGridLE.preferredHeight = stashGridH;
 
-        stashSection.SetActive(false);
+        ContentSizeFitter csf = gridGO.AddComponent<ContentSizeFitter>();
+        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        stashScroll.content = stashGrid;
     }
 
     // ======================================================

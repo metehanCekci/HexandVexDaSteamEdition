@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: CatalyticEnzyme_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 2783592061630149974, guid: 159ecc68f4af788489e64f85a9ae4c02, type: 3}
+  perkId: CatalyticEnzyme
+  loreText: A dormant enzyme that builds pressure with each moment of stillness.
+    When finally unleashed, the reaction is explosive.
+  rarity: 1
+  unlockCondition: 14
+  requiredAmount: 30
+  conditionParam: 
+  unlockHint: Skip 30 turns in total.

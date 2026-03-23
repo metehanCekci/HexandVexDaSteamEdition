@@ -40,7 +40,7 @@ public class PerkLeechPerk : BasePerk
 
     private string GetDescription()
     {
-        return $"Elite dusман oldurdugun de bir perk parcasi kazan. 3 parca = rastgele perk.\nParcalar: {fragments}/{FRAGMENTS_NEEDED}";
+        return $"Earn a implant fragment when you kill an elite enemy. 3 fragments = random implant.\nFragments: {fragments}/{FRAGMENTS_NEEDED}";
     }
 
     private IEnumerator MergeFragmentsAndGrantPerk()

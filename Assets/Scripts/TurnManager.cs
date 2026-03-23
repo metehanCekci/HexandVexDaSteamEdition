@@ -188,6 +188,14 @@ public class TurnManager : MonoBehaviour
                 holdRTimer = 0f;
                 StopAllCoroutines();
                 Time.timeScale = 1f;
+
+                // Perk menüsünü zorla kapat
+                if (LevelUpManager.instance != null)
+                {
+                    LevelUpManager.instance.StopAllCoroutines();
+                    LevelUpManager.instance.ForceClose();
+                }
+
                 int sceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
                 if (ScreenFader.instance != null)
                 {
@@ -474,6 +482,10 @@ public class TurnManager : MonoBehaviour
     }
     public void ResetGame()
     {
+        // Perk menüsünü zorla kapat
+        if (LevelUpManager.instance != null)
+            LevelUpManager.instance.ForceClose();
+
         // 1. Zamanı normale döndür (Pause'dan geliyorsa)
         Time.timeScale = 1f;
 
@@ -536,6 +548,13 @@ public class TurnManager : MonoBehaviour
         hasAttackedThisTurn = false;
         isMitsuriTargeting = false;
 
+        // 4. DontDestroyOnLoad UI'ları temizle
+        if (ActivePerkBar.instance != null)
+            Destroy(ActivePerkBar.instance.gameObject);
+        if (HotbarUI.instance != null)
+            Destroy(HotbarUI.instance.gameObject);
+        if (PerkInventoryUI.instance != null)
+            Destroy(PerkInventoryUI.instance.gameObject);
     }
     public void ClearWarningMap()
     {
@@ -1913,11 +1932,35 @@ public class TurnManager : MonoBehaviour
 
         var voodooPerk = RunManager.instance.activePerks.Find(p => p is VoodooParasitePerk) as VoodooParasitePerk;
         var retributionPerk = RunManager.instance.activePerks.Find(p => p is RetributionSplicerPerk) as RetributionSplicerPerk;
+        var pressurePointPerk = RunManager.instance.activePerks.Find(p => p is PressurePointPerk) as PressurePointPerk;
+        var echoStrikePerk = RunManager.instance.activePerks.Find(p => p is EchoStrikePerk) as EchoStrikePerk;
+        var necroticTouchPerk = RunManager.instance.activePerks.Find(p => p is NecroticTouchPerk) as NecroticTouchPerk;
+        var overkillPerk = RunManager.instance.activePerks.Find(p => p is OverkillProtocolPerk) as OverkillProtocolPerk;
 
         foreach (var enemy in targets)
         {
             if (enemy == null) continue;
             int actualDamage = damagePerEnemy;
+
+            // Pressure Point: dusmanin HP yuzdesine gore hasar carpani
+            if (pressurePointPerk != null)
+            {
+                float ppMult = pressurePointPerk.GetMultiplier(enemy);
+                actualDamage = Mathf.FloorToInt(actualDamage * ppMult);
+                if (ppMult > 1f) pressurePointPerk.TriggerVisualPop();
+            }
+
+            // Necrotic Touch: %25 alti HP'deki dusmanlar 2x hasar alir
+            if (necroticTouchPerk != null)
+            {
+                float ntMult = necroticTouchPerk.GetMultiplier(enemy);
+                if (ntMult > 1f)
+                {
+                    actualDamage = Mathf.FloorToInt(actualDamage * ntMult);
+                    necroticTouchPerk.TriggerVisualPop();
+                }
+            }
+
             if (retributionPerk != null)
             {
                 int stackBonus = retributionPerk.GetBonusFor(enemy);
@@ -1933,12 +1976,36 @@ public class TurnManager : MonoBehaviour
                     if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.TriggerShakeForPerk(retributionPerk);
                 }
             }
-            bool dies = enemy.health.currentHP <= actualDamage;
+
+            int hpBefore = enemy.health.currentHP;
+            bool dies = hpBefore <= actualDamage;
             enemy.health.TakeDamage(actualDamage, true);
             ApplyBurnIfActive(enemy);
             ApplyCystIfActive(enemy);
 
             SpawnSlashEffect(enemy.transform.position);
+
+            // Echo Strike: ayni hedefe tekrar vur (animasyonlu)
+            if (echoStrikePerk != null && !dies && enemy.health.currentHP > 0 && echoStrikePerk.ShouldEcho())
+            {
+                yield return new WaitForSeconds(0.25f);
+                if (player != null) player.TriggerAttackAnimation();
+                if (AudioManager.instance != null) AudioManager.instance.PlaySwing();
+                yield return new WaitForSeconds(0.2f);
+                if (AudioManager.instance != null) AudioManager.instance.PlayHit();
+
+                int echoDmg = actualDamage;
+                if (enemy.health.currentHP <= echoDmg) dies = true;
+                enemy.health.TakeDamage(echoDmg, true);
+                SpawnSlashEffect(enemy.transform.position);
+            }
+
+            // Overkill Protocol: fazla hasari baska dusmana aktar
+            if (overkillPerk != null && dies)
+            {
+                int overkill = actualDamage - hpBefore;
+                if (overkill > 0) overkillPerk.TransferOverkill(enemy, overkill);
+            }
 
             RegisterComboHit();
             knockedEnemies.Add(enemy); if (dies) deadEnemiesThisTurn.Add(enemy);
@@ -2017,6 +2084,25 @@ public class TurnManager : MonoBehaviour
             else
             {
                 e.ApplyStun(1, false); e.StartKnockbackMovement(rawTargetCell);
+            }
+        }
+
+        // Graviton Core: knockback olan dusmanlarin eski pozisyonlarina komsu dusmanlari cek
+        if (RunManager.instance != null)
+        {
+            var gravitonPerk = RunManager.instance.activePerks.Find(p => p is GravitonCorePerk) as GravitonCorePerk;
+            if (gravitonPerk != null)
+            {
+                List<EnemyMovement> gravitonPulled = new List<EnemyMovement>();
+                foreach (var e in knockedEnemies)
+                {
+                    if (e == null) continue;
+                    var pulled = gravitonPerk.PullAdjacentEnemies(e.GetCurrentCellPosition(), e);
+                    foreach (var pe in pulled)
+                        if (!knockedEnemies.Contains(pe) && !gravitonPulled.Contains(pe))
+                            gravitonPulled.Add(pe);
+                }
+                knockedEnemies.AddRange(gravitonPulled);
             }
         }
 

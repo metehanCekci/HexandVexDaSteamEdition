@@ -36,7 +36,7 @@ public class PyrogenicGlandsPerk : BasePerk
     {
         if (TurnManager.instance == null) return;
 
-        float damagePercent = currentLevel * 0.08f; // Lv1=%8, Lv2=%16, Lv3=%24
+        float damagePercent = currentLevel * 0.15f; // Lv1=%15, Lv2=%30, Lv3=%45
         List<int> toRemove = new List<int>();
 
         var burnEntries = new List<KeyValuePair<int, int>>(burnTurnsRemaining);
@@ -59,6 +59,9 @@ public class PyrogenicGlandsPerk : BasePerk
             }
 
             int damage = Mathf.Max(1, Mathf.RoundToInt(enemy.health.maxHP * damagePercent));
+            // Warlock'un burn hasarında ışınlanmaması için flag set et
+            var warlock = enemy.GetComponent<WarlockEnemyAI>();
+            if (warlock != null) warlock.isBurnDamage = true;
             enemy.health.TakeDamage(damage, false, false);
             ShowBurnVFX(enemy);
 
