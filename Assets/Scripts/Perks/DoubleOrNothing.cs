@@ -3,6 +3,11 @@ using System.Linq;
 
 public class DoubleOrNothingPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Rare;
+    }
+
     public override void OnAcquire()
     {
         priority = 50; // En son hasar hesaplanırken baksın

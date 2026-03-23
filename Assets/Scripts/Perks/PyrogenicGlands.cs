@@ -26,17 +26,17 @@ public class PyrogenicGlandsPerk : BasePerk
     {
         if (enemy == null || enemy.health.currentHP <= 0) return;
         int id = enemy.GetInstanceID();
-        burnTurnsRemaining[id] = 3; // 3 tur yanar
+        burnTurnsRemaining[id] = 5; // 5 tur yanar
         TriggerVisualPop();
         ShowBurnVFX(enemy);
-        CreateBurnOrbit(enemy, 3);
+        CreateBurnOrbit(enemy, 5);
     }
 
     public void TickBurns()
     {
         if (TurnManager.instance == null) return;
 
-        float damagePercent = currentLevel * 0.15f; // Lv1=%15, Lv2=%30, Lv3=%45
+        float damagePercent = currentLevel * 0.05f; // Lv1=%5, Lv2=%10, Lv3=%15
         List<int> toRemove = new List<int>();
 
         var burnEntries = new List<KeyValuePair<int, int>>(burnTurnsRemaining);

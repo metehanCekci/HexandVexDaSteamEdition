@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1111111111111111101, guid: a8326ac1ab2ad7543a14fc4a69b1ac38, type: 3}
   perkId: HostSyndrome
-  loreText: A parasitic gland that thrives on proximity to hostile organisms. The more enemies surround you, the more venom it pumps into your strikes.
-  rarity: 2
+  loreText: A parasitic gland that thrives on proximity to hostile organisms. The
+    more enemies surround you, the more venom it pumps into your strikes.
+  rarity: 3
   unlockCondition: 8
   requiredAmount: 25
   conditionParam: 

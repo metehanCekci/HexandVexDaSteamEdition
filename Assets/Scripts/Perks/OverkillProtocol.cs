@@ -6,7 +6,7 @@ public class OverkillProtocolPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 1;
-        rarity = PerkRarity.Legendary;
+        rarity = PerkRarity.Common;
     }
 
     /// <summary>

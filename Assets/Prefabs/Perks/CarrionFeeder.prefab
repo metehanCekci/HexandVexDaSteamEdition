@@ -48,7 +48,7 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Carrion Feeder
   description: Killing an enemy heals 1 HP and grants +2 flat damage to your next
-    attack. Stacks per kill.
+    attack.
   icon: {fileID: -7440351437230719341, guid: 718947759eda4fe4b9f4614dd55e542e, type: 3}
   priority: 0
   isRerollPerk: 0

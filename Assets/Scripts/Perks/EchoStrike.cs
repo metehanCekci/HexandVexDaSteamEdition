@@ -10,11 +10,11 @@ public class EchoStrikePerk : BasePerk
 
     /// <summary>
     /// Returns the echo chance based on current level.
-    /// Lv1: 25%, Lv2: 50%, Lv3: 75%
+    /// Lv1: 15%, Lv2: 30%, Lv3: 45%
     /// </summary>
     public float GetEchoChance()
     {
-        return currentLevel * 0.25f;
+        return currentLevel * 0.15f;
     }
 
     /// <summary>

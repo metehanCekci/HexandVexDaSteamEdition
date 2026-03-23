@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class NeuroAimPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     // İlk alındığında çalışır (1. Seviye)
     public override void OnAcquire()
     {

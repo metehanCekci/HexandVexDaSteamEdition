@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: PressurePoint
   loreText: A bio-sensor that detects structural weaknesses in undamaged tissue.
     The first strike is always the deadliest.
-  rarity: 0
+  rarity: 1
   unlockCondition: 0
   requiredAmount: 1
   conditionParam: 

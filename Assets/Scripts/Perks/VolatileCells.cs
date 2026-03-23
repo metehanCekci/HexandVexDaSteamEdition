@@ -3,6 +3,7 @@ public class VolatileCellsPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 3;
+        rarity = PerkRarity.Rare;
     }
 
     public override void ModifyCombat(CombatPayload payload)

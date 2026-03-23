@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class RegenTissuePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     public override void OnAcquire()
     {
         ApplyHealthBoost();

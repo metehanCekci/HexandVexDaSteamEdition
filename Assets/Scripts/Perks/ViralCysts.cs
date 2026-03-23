@@ -13,6 +13,7 @@ public class ViralCystsPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 3;
+        rarity = PerkRarity.Epic;
     }
 
     public override void OnAcquire()
@@ -29,6 +30,15 @@ public class ViralCystsPerk : BasePerk
         GameObject marker = CreateCystMarker(enemy);
         markedEnemies.Add(id, marker);
         description = GetDescription();
+    }
+
+    /// <summary>Returns extra dice count equal to marked enemy count. Called by TurnManager before rolling.</summary>
+    public int GetExtraDice()
+    {
+        CleanDeadMarks();
+        int count = markedEnemies.Count;
+        if (count > 0) TriggerVisualPop();
+        return count;
     }
 
     public override void OnSkip()
@@ -125,7 +135,7 @@ public class ViralCystsPerk : BasePerk
     {
         int percent = currentLevel == 1 ? 15 : currentLevel == 2 ? 20 : 25;
         CleanDeadMarks();
-        return $"Saldirinca dusmana cyst yerlestir. Skip ile patlat.\nDusman basina %{percent} hasar x isaretli dusman sayisi.\nIsaretli: {markedEnemies.Count}";
+        return $"Attacks plant cysts. +1 die per marked enemy. Skip to detonate.\n{percent}% max HP damage per marked enemy.\nMarked: {markedEnemies.Count}";
     }
 
     // --- Persistent Visual Marker (MarkEffect prefab + breathe anim) ---

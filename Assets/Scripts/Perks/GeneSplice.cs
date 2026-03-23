@@ -4,6 +4,11 @@ using System.Collections.Generic;
 
 public class GeneSplicePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Rare;
+    }
+
     public override bool CanBeOffered()
     {
         if (RunManager.instance == null) return true;

@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class AlphaOmegaStrandPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     // YENİ: Kart tekrar seçilirse seviye artsın
     public override void Upgrade()
     {

@@ -11,6 +11,7 @@ public class PerkLeechPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 1;
+        rarity = PerkRarity.Rare;
     }
 
     public override void OnAcquire()

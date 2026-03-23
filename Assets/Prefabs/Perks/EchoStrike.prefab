@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Echo Strike
-  description: 'Your attacks have a chance to strike the same target again. Lv1:
-    25%, Lv2: 50%, Lv3: 75%.'
+  description: 'Attacks have a chance to strike again. Lv1: 15%, Lv2: 30%, Lv3: 45%.'
   icon: {fileID: 5881832836993228770, guid: e7b6328a9c0d892479c0f310dc70f450, type: 3}
   priority: 0
   isRerollPerk: 0

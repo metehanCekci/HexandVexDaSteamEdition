@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Perk Leech
-  description: "Gain a perk fragment when you kill an elite enemy. 3 fragments = random perk."
+  description: Killing an elite drops a fragment. Collect 3 fragments for a random
+    perk.
   icon: {fileID: 5597838034089175020, guid: e139a6143fb3c3448bbb3a403e70e26d, type: 3}
   priority: 0
   isRerollPerk: 0

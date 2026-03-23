@@ -3,6 +3,11 @@ using System.Linq;
 
 public class RiggedDicePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     public override void OnAcquire()
     {
         isRerollPerk = true; // Zar değerlerini değiştirdiği için

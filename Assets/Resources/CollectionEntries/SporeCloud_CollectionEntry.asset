@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: SporeCloud
   loreText: A defensive fungal colony embedded in the host's epidermis. When threatened,
     it releases paralytic spores in a dense cloud.
-  rarity: 1
+  rarity: 0
   unlockCondition: 1
   requiredAmount: 500
   conditionParam: 

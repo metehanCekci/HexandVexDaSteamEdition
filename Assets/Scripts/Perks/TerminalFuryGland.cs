@@ -10,7 +10,7 @@ public class TerminalFuryGlandPerk : BasePerk
     void OnEnable()
     {
         perkName    = "Terminal Fury Gland";
-        description = "Always deal bonus damage. The lower your HP, the stronger the multiplier.";
+        description = "Always deal double damage, get +1x mult per missing health.";
         rarity      = PerkRarity.Legendary;
         maxLevel    = 1;
         priority    = 15;
@@ -26,8 +26,8 @@ public class TerminalFuryGlandPerk : BasePerk
         int currentHP = tm.player.health.currentHP;
         if (currentHP < 1) currentHP = 1;
 
-        // TFG = missingHP + 2 (5/5=2x, 4/5=3x, 1/5=6x)
-        float tfgMult = maxHP - currentHP + 2;
+        // Always 2x base, +1x per missing HP (5/5=2x, 4/5=3x, 1/5=6x)
+        float tfgMult = 2f + (maxHP - currentHP);
 
         // Glass Cannon varsa: additif birlestir (TFG + GC), GC'nin *= 2'sini geri al
         bool hasGC = rm.activePerks.Exists(p => p is GlassCanonPerk);

@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 5336392581835503264, guid: 8ccf6ebc72f40fa41bf98afebb2d428e, type: 3}
   perkId: Bribe
-  loreText: A neural handshake protocol loaded with forged credentials. Sometimes the cheapest way past a problem is to pay it off.
-  rarity: 3
+  loreText: A neural handshake protocol loaded with forged credentials. Sometimes
+    the cheapest way past a problem is to pay it off.
+  rarity: 2
   unlockCondition: 2
   requiredAmount: 3
   conditionParam: 

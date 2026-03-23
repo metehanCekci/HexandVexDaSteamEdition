@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CapitalistPunchPerk : BasePerk
 {
-    void OnEnable() { maxLevel = 1; }
+    void OnEnable() { maxLevel = 1; rarity = PerkRarity.Legendary; }
 
     public override void ModifyCombat(CombatPayload payload)
     {

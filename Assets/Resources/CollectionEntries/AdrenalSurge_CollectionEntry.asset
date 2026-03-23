@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 7709780136663571344, guid: 068b670ca0405144384779e69aa54d49, type: 3}
   perkId: AdrenalSurge
-  loreText: A black-market gland fused to the adrenal cortex. It floods your muscles with synthetic fury, doubling the force behind every swing.
+  loreText: A black-market gland fused to the adrenal cortex. It floods your muscles
+    with synthetic fury, doubling the force behind every swing.
   rarity: 2
   unlockCondition: 0
   requiredAmount: 0

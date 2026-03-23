@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class PassiveEnzymePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     // YENİ: Kart tekrar seçilirse sadece seviyeyi artır (Matematiği OnSkip içinde halledeceğiz)
     public override void Upgrade()
     {

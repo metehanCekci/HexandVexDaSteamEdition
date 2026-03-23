@@ -48,7 +48,7 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Graviton Core
   description: When an enemy is knocked back, pull adjacent enemies 1 hex toward
-    the knockback origin.
+    the impact.
   icon: {fileID: 4557775558309134271, guid: 11124347f0585de479e4d1d65aad9372, type: 3}
   priority: 0
   isRerollPerk: 0

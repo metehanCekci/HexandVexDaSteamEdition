@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 3106120126287650368, guid: 838a33db2aca1da4d93374f57d13a821, type: 3}
   perkId: DoubleOrNothing
-  loreText: A gambling chip soldered into the combat cortex. When the numbers align, damage doubles. When they don't, you get exactly what you rolled.
+  loreText: A gambling chip soldered into the combat cortex. When the numbers align,
+    damage doubles. When they don't, you get exactly what you rolled.
   rarity: 1
   unlockCondition: 1
   requiredAmount: 100

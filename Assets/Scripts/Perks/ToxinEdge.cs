@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class ToxinEdgePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     // YENİ: Kart tekrar seçilirse sadece seviyeyi artır
     public override void Upgrade()
     {

@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: OverkillProtocol
   loreText: A predatory reflex that redirects lethal force. When prey falls too easily,
     the excess energy seeks new targets.
-  rarity: 3
+  rarity: 0
   unlockCondition: 1
   requiredAmount: 200
   conditionParam: 

@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class AcidBloodPerk : BasePerk
 {
-    void OnEnable() { maxLevel = 3; UpdateDescription(); }
+    void OnEnable() { maxLevel = 3; rarity = PerkRarity.Common; UpdateDescription(); }
 
     public override void OnAcquire() { UpdateDescription(); }
 

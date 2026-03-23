@@ -146,7 +146,12 @@ public class TurnManager : MonoBehaviour
         // Don't remove warning tiles that belong to a charging bruiser
         if (warningMap != null && warningMap.HasTile(cell) && !IsCellTargetedByBruiser(cell))
             warningMap.SetTile(cell, null);
-        Invoke("StartPlayerTurn", 0.5f);
+
+        // Only restart the player turn if it's currently the player's turn.
+        // During enemy phase, scaffold collapse must NOT trigger an extra StartPlayerTurn
+        // (otherwise bruiser charge→attack happens in one perceived turn).
+        if (isPlayerTurn)
+            Invoke("StartPlayerTurn", 0.5f);
     }
 
     private bool IsCellTargetedByBruiser(Vector3Int cell)
@@ -1840,13 +1845,15 @@ public class TurnManager : MonoBehaviour
         int extraDices = 0;
         foreach (var p in RunManager.instance.activePerks) if (p is DormantSporePerk ambushPerk) { extraDices += ambushPerk.storedExtraDices; ambushPerk.storedExtraDices = 0; }
         if (RunManager.instance.bonusDiceNextCombat > 0) { extraDices += RunManager.instance.bonusDiceNextCombat; RunManager.instance.bonusDiceNextCombat = 0; }
+        // Host Syndrome: +1 die per adjacent enemy
+        foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
+        // Viral Cysts: +1 die per marked enemy
+        foreach (var p in RunManager.instance.activePerks) if (p is ViralCystsPerk viralPerk) { extraDices += viralPerk.GetExtraDice(); }
         for (int i = 0; i < (diceCount + extraDices); i++) currentRolls.Add(Random.Range(1, 7));
         // Reroll stack: her zara kalıcı bonus ekle (AMA SADECE PERK VARSA)
         if (RunManager.instance != null && RunManager.instance.shopRerollStack > 0)
         {
-            // Genetic Cartel perki aktif mi diye kontrol et
-            // (Eğer senin perkinin script adı farklıysa "GeneticCartelPerk" yazan yeri kendi isminle değiştir)
-            bool hasGeneticCartel = RunManager.instance.activePerks.Exists(p => p.GetType().Name == "GeneticCartelPerk");
+            bool hasGeneticCartel = RunManager.instance.activePerks.Exists(p => p is ShopRerollStackPerk);
 
             if (hasGeneticCartel)
             {
@@ -2385,13 +2392,19 @@ public class TurnManager : MonoBehaviour
     {
         Vector3Int[] offsets = (centerCell.y % 2 != 0) ? evenOffsets : oddOffsets;
         List<Vector3Int> safeNeighbors = new List<Vector3Int>();
+        List<Vector3Int> walkableNeighbors = new List<Vector3Int>();
         foreach (var off in offsets)
         {
             Vector3Int neighbor = centerCell + off;
-            if (HasWalkableTile(neighbor) && !IsEnemyAtCell(neighbor) && player.GetCurrentCellPosition() != neighbor && !LevelGenerator.instance.hazardCells.Contains(neighbor))
+            if (!HasWalkableTile(neighbor)) continue;
+            if (IsEnemyAtCell(neighbor) || player.GetCurrentCellPosition() == neighbor) continue;
+            walkableNeighbors.Add(neighbor);
+            if (!LevelGenerator.instance.hazardCells.Contains(neighbor))
                 safeNeighbors.Add(neighbor);
         }
         if (safeNeighbors.Count > 0) return safeNeighbors[Random.Range(0, safeNeighbors.Count)];
+        // No non-hazard neighbor — bounce to any walkable cell to avoid getting stuck on spikes
+        if (walkableNeighbors.Count > 0) return walkableNeighbors[Random.Range(0, walkableNeighbors.Count)];
         return centerCell;
     }
 

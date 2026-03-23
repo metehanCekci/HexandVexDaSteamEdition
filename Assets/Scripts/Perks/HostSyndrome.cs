@@ -1,32 +1,28 @@
 using UnityEngine;
 
 /// <summary>
-/// Host Syndrome (Epic) — One-time purchase
-/// Gain +1 to each die roll for every enemy currently adjacent to you.
+/// Host Syndrome (Legendary)
+/// Gain +1 extra die for every enemy currently adjacent to you.
+/// Extra dice are added before rolling in TurnManager.
 /// </summary>
 public class HostSyndromePerk : BasePerk
 {
     void OnEnable()
     {
         perkName     = "Host Syndrome";
-        description  = "Gain +1 to each die roll for every enemy adjacent to you.";
-        rarity       = PerkRarity.Epic;
+        description  = "Roll +1 extra die for every enemy adjacent to you.";
+        rarity       = PerkRarity.Legendary;
         maxLevel     = 1;
-        isRerollPerk = false;
-        priority     = 5;
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    /// <summary>Called by TurnManager before rolling dice. Returns extra dice count.</summary>
+    public int GetExtraDice()
     {
         var tm = TurnManager.instance;
-        if (tm == null) return;
+        if (tm == null || tm.player == null) return 0;
 
-        int adjacentCount = tm.GetAdjacentEnemies(tm.player.GetCurrentCellPosition()).Count;
-        if (adjacentCount <= 0) return;
-
-        for (int i = 0; i < payload.diceRolls.Count; i++)
-            payload.diceRolls[i] += adjacentCount;
-
-        TriggerVisualPop();
+        int count = tm.GetAdjacentEnemies(tm.player.GetCurrentCellPosition()).Count;
+        if (count > 0) TriggerVisualPop();
+        return count;
     }
 }

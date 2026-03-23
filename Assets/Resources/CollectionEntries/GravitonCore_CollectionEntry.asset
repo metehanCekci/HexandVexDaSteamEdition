@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
-  m_Name: MomentumEngine_CollectionEntry
+  m_Name: GravitonCore_CollectionEntry
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
-  perkPrefab: {fileID: 1969263836647659006, guid: cdded615e1c59514abb6dd08f0c3044a, type: 3}
-  perkId: MomentumEngine
-  loreText: Kinetic capacitors wired into the legs. Every hex you cross before striking
-    stores energy, converting footwork into raw hitting power.
-  rarity: 1
-  unlockCondition: 13
-  requiredAmount: 100
+  perkPrefab: {fileID: 2771104033734759051, guid: d230bf28581df914b8f7ce6db05d7192, type: 3}
+  perkId: GravitonCore
+  loreText: A dense gravitational implant that warps local space during impacts.
+    Nearby bodies are pulled toward the point of collision.
+  rarity: 0
+  unlockCondition: 0
+  requiredAmount: 1
   conditionParam: 
-  unlockHint: Move 100 times.
+  unlockHint: Unlocked by default.

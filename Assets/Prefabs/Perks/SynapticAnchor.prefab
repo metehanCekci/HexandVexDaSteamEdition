@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Synaptic Anchor
-  description: "First Skip places an anchor at your position. Second Skip teleports you to the anchor."
+  description: First Skip places an anchor. Second Skip teleports you to it.
   icon: {fileID: -3422037730721896359, guid: 11f104670e5e1f24d84b6e99366d3349, type: 3}
   priority: 0
   isRerollPerk: 0
-  rarity: 3
+  rarity: 1

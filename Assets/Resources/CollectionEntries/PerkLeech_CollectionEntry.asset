@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: PerkLeech
   loreText: A parasitic organism that feeds on the essence of powerful foes. Each
     elite kill leaves behind a crystallized fragment of their strength.
-  rarity: 3
+  rarity: 1
   unlockCondition: 8
   requiredAmount: 100
   conditionParam: 

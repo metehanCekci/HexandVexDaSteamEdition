@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: SynapticAnchor
   loreText: A neural implant that creates a quantum entanglement between two points
     in space. The anchor remembers, and the body follows.
-  rarity: 3
+  rarity: 1
   unlockCondition: 7
   requiredAmount: 50
   conditionParam: 

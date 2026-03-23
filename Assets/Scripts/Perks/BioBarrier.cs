@@ -3,6 +3,11 @@ using System.Collections;
 
 public class BioBarrierPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     [Header("Obje Ayarları")]
     public GameObject shieldPrefab; // Kalkan objen
     

@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Pyrogenic Glands
-  description: Your attacks burn enemies. Deals damage over 3 turns.
+  description: Attacks set enemies on fire for 5 turns. Burn deals 5/10/15% max HP
+    per tick.
   icon: {fileID: -2207031521626848329, guid: 81d622b916f51d94fb56499332fde2ea, type: 3}
   priority: 0
   isRerollPerk: 0
