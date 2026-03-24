@@ -16,9 +16,6 @@ public class MutaGen : BaseItem
         if (TurnManager.instance.player.health.currentHP >= TurnManager.instance.player.health.maxHP) return false;
 
         TurnManager.instance.player.health.Heal(2);
-        if (RunManager.instance != null)
-            RunManager.instance.playerCurrentHealth = Mathf.Min(
-                RunManager.instance.playerCurrentHealth + 2, RunManager.instance.playerMaxHealth);
         return true;
     }
 }

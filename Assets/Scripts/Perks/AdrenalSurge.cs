@@ -1,5 +1,10 @@
 public class AdrenalSurgePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Epic;
+    }
+
     public override void ModifyCombat(CombatPayload payload)
     {
         payload.multiplier *= 2.0f;

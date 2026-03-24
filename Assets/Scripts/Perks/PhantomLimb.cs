@@ -8,6 +8,7 @@ public class PhantomLimbPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 3;
+        rarity = PerkRarity.Rare;
     }
 
     public override void OnAcquire()

@@ -16,8 +16,8 @@ MonoBehaviour:
   perkId: SporeCloud
   loreText: A defensive fungal colony embedded in the host's epidermis. When threatened,
     it releases paralytic spores in a dense cloud.
-  rarity: 1
+  rarity: 0
   unlockCondition: 1
-  requiredAmount: 100
+  requiredAmount: 500
   conditionParam: 
-  unlockHint: "Toplam 100 d\xFC\u015Fman \xF6ld\xFCr."
+  unlockHint: Kill 500 enemies in total.

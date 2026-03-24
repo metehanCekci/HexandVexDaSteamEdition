@@ -10,14 +10,14 @@ public class NeuroStasisMistPerk : BasePerk
     void OnEnable()
     {
         perkName    = "Neuro-Stasis Mist";
-        description = "Stuns you apply last +1 extra turn. At level 3: +2 extra turns.";
-        rarity      = PerkRarity.Rare;
+        description = "Stuns you apply last +1 extra turn. +1 per level.";
+        rarity      = PerkRarity.Common;
         maxLevel    = 3;
     }
 
-    /// <summary>Returns how many extra stun turns this perk adds.</summary>
+    /// <summary>Returns how many extra stun turns this perk adds. +1 per level.</summary>
     public int GetStunBonus()
     {
-        return currentLevel >= 3 ? 2 : 1;
+        return currentLevel;
     }
 }

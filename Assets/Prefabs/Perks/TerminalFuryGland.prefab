@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Terminal Fury Gland
-  description: 1x to all dice but gains 1x for each missing health. (Max 5x)
+  description: Always deal double damage, get +1x mult per missing health.
   icon: {fileID: -7887244125207754765, guid: 1e1dbff9df71d6446a9df6b3cc03cefa, type: 3}
   priority: 2
   isRerollPerk: 0
-  rarity: 0
+  rarity: 3

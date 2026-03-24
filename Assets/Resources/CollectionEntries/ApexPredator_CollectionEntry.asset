@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1109346846490427701, guid: 591fd3e063799564ea700207eeb3e9e0, type: 3}
   perkId: ApexPredator
-  loreText: Gene therapy harvested from an extinct apex species. The first strike lands with devastating force, but the instinct fades with each follow-up blow.
+  loreText: Gene therapy harvested from an extinct apex species. The first strike
+    lands with devastating force, but the instinct fades with each follow-up blow.
   rarity: 3
   unlockCondition: 5
   requiredAmount: 1

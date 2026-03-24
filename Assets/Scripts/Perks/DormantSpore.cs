@@ -3,6 +3,11 @@ using System;      // Temel fonksiyonlar için
 using System.Collections.Generic; // Listeler için
 public class DormantSporePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     public int storedExtraDices = 0;
 
     public override void OnSkip()

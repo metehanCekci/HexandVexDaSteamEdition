@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 5093722096315643738, guid: 0847041e97dcb7648b5897f7f9a83ecf, type: 3}
   perkId: AcidBlood
-  loreText: Venom sacs woven into the bloodstream. Every wound you inflict feeds the parasite inside, and it pays you back in stitched flesh.
+  loreText: Venom sacs woven into the bloodstream. Every wound you inflict feeds
+    the parasite inside, and it pays you back in stitched flesh.
+  rarity: 0
   unlockCondition: 10
-  requiredAmount: 1
+  requiredAmount: 5
   conditionParam: 
-  unlockHint: Push an enemy into a spike.
+  unlockHint: Push an enemy into a spike 5 times.

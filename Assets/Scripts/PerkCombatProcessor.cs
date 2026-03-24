@@ -44,6 +44,10 @@ public class PerkCombatProcessor : MonoBehaviour
 
         yield return StartCoroutine(ProcessPerksFromList(payload, rolls, secondPass));
 
+        // Non-combat perk efektlerini de tetikle (RegenTissue vs.)
+        foreach (var perk in secondPass)
+            perk.OnLetsGoAgain();
+
         var sfPerk = RunManager.instance.activePerks.Find(p => p is SymbioticFuryPerk);
         if (sfPerk != null && !diceUI.skipDiceVisuals)
         {

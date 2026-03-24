@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 7943290738935132467, guid: 5233eb7c84d74284e8bacd094186a75b, type: 3}
   perkId: NeuralReboot
-  loreText: A failsafe subroutine that reruns low-performing neural signals. Any weak impulse gets recycled until it meets the minimum combat threshold.
-  rarity: 1
+  loreText: A failsafe subroutine that reruns low-performing neural signals. Any
+    weak impulse gets recycled until it meets the minimum combat threshold.
+  rarity: 0
   unlockCondition: 0
   requiredAmount: 25
   conditionParam: 

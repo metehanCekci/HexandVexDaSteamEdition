@@ -5,6 +5,7 @@ public class ExtraDendritePerk : BasePerk
     void OnEnable()
     {
         maxLevel = 999;
+        rarity = PerkRarity.Epic;
     }
 
     // İlk alındığında çalışır (1. Seviye)

@@ -64,6 +64,13 @@ public class LevelUpManager : MonoBehaviour
             skipButtonOriginalColorBlock = skipButton.colors;
     }
 
+    void OnDestroy()
+    {
+        // Sahne değişirken perk panelini temizle
+        ForceClose();
+        if (instance == this) instance = null;
+    }
+
     public void ShowLevelUpScreen()
     {
         // Tüm perkler max seviyeye ulaştıysa perk seçme ekranını atla
@@ -264,12 +271,12 @@ public class LevelUpManager : MonoBehaviour
         int level = RunManager.instance != null ? RunManager.instance.currentLevel : 1;
         int cloverLv = RunManager.instance != null ? RunManager.instance.luckyCloverLevel : 0;
 
-        // Legendary: level 8'e kadar çıkmaz, sonra kademeli artar
-        //   Base: %0 (lv1-7), %4 (lv8-15), %8 (lv16+)
+        // Legendary: her bölümde çıkabilir, level ilerledikçe şans artar
+        //   Base: %4 (lv1-7), %6 (lv8-15), %8 (lv16+)
         //   Clover bonus: +2% per level
-        float legendaryChance = 0f;
+        float legendaryChance = 4f;
         if (level >= 16) legendaryChance = 8f;
-        else if (level >= 8) legendaryChance = 4f;
+        else if (level >= 8) legendaryChance = 6f;
         legendaryChance += cloverLv * 2f;
 
         // Epic / Rare / Common (legendary yüzdesi düşüldükten sonra kalan)
@@ -648,6 +655,38 @@ public class LevelUpManager : MonoBehaviour
         }
         if (perkBlackBackground != null)
             perkBlackBackground.SetActive(show);
+    }
+
+    /// <summary>Perk menüsünü zorla kapat (R reset, sahne değişimi vs.).</summary>
+    public void ForceClose()
+    {
+        StopAllCoroutines();
+        if (levelUpPanel != null) levelUpPanel.SetActive(false);
+        if (levelUpCanvasGroup != null)
+        {
+            levelUpCanvasGroup.alpha = 1f;
+            levelUpCanvasGroup.gameObject.SetActive(false);
+        }
+        ShowBlackBackground(false);
+
+        // Kartları resetle
+        if (choiceButtons != null)
+        {
+            foreach (var btn in choiceButtons)
+            {
+                if (btn == null) continue;
+                btn.transform.localScale = Vector3.one;
+                btn.interactable = true;
+                btn.gameObject.SetActive(false);
+                CanvasGroup cg = btn.GetComponent<CanvasGroup>();
+                if (cg != null) cg.alpha = 1f;
+            }
+        }
+
+        currentChoices.Clear();
+
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.Hide();
     }
 
     /// <summary>Perk seçme ekranını göstermeden sonraki levele geç.</summary>

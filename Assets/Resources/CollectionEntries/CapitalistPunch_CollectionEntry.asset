@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 8338301390874939306, guid: 92274e630d9983f4692e0d50c90eb926, type: 3}
   perkId: CapitalistPunch
-  loreText: A pressure-sensitive knuckle implant linked to your credit chip. The heavier your wallet, the harder your fists crack bone.
-  rarity: 2
+  loreText: A pressure-sensitive knuckle implant linked to your credit chip. The
+    heavier your wallet, the harder your fists crack bone.
+  rarity: 3
   unlockCondition: 12
   requiredAmount: 100
   conditionParam: 

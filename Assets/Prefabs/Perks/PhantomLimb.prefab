@@ -47,10 +47,9 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Fatal Mine
-  description: 'When skipping leave a mine at your tile that deals %25 max health
-    damage. '
+  description: Place invisible mines when you move. Enemies that step on them take
+    damage.
   icon: {fileID: 1049648278431873775, guid: ce80817fbabf2694da60f7a7d7f37716, type: 3}
   priority: 0
   isRerollPerk: 0
-  rarity: 0
-  isDisabled: 0
+  rarity: 1

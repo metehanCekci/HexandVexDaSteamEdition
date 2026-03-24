@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: GeneticCartel
-  description: +1 to all your dice for each time you rerolled your shop this run.
+  description: Each shop reroll permanently adds +1 to all dice.
   icon: {fileID: -1501830745789406389, guid: ad2b30684b497194f9a5dec48fc39f3c, type: 3}
   priority: 1
   isRerollPerk: 0
-  rarity: 4
+  rarity: 3

@@ -3,6 +3,11 @@ using System.Linq;
 
 public class RiggedDicePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     public override void OnAcquire()
     {
         isRerollPerk = true; // Zar değerlerini değiştirdiği için
@@ -21,11 +26,10 @@ public class RiggedDicePerk : BasePerk
         bool changed = false;
         for (int i = 0; i < payload.diceRolls.Count; i++)
         {
-            if (payload.diceRolls[i] == minVal)
+            if (payload.diceRolls[i] != maxVal)
             {
                 payload.diceRolls[i] = maxVal;
                 changed = true;
-                break; // Sadece bir tane en düşüğü eşitlemek istersen break bırak. Hepsini eşitlesin dersen break'i sil.
             }
         }
 

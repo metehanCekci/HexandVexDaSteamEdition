@@ -573,15 +573,15 @@ public class SpawnerBossAI : MonoBehaviour
             StartCoroutine(CameraShake(0.4f, 0.14f));
         }
 
-        // Tüm minionları öldür
+        // Tüm minionları öldür — zaten ölmekte olan (isDead) minionları atla
         foreach (var minion in summonedMinions)
         {
-            if (minion != null && minion.health.currentHP > 0)
+            if (minion != null && !minion.health.IsDead && minion.health.currentHP > 0)
                 minion.health.currentHP = 0;
         }
         foreach (var minion in summonedMinions)
         {
-            if (minion != null)
+            if (minion != null && !minion.health.IsDead)
                 StartCoroutine(minion.FadeDieCoroutine());
         }
         summonedMinions.Clear();
@@ -596,6 +596,10 @@ public class SpawnerBossAI : MonoBehaviour
             isShielded = false;
             StartCoroutine(ShatterShieldVisual());
             previousHP = myEnemyMovement.health.currentHP;
+
+            // Kalkan kırıldığında can barını hemen mavi renge güncelle
+            myEnemyMovement.health.updateHealth();
+
             countToSpawn = maxLimit;
         }
         else
@@ -711,19 +715,56 @@ public class SpawnerBossAI : MonoBehaviour
         readyToExplodeThisTurn = false;
         aoeWarningCells.Clear();
 
-        if (bossWarningMap != null) bossWarningMap.ClearAllTiles(); 
+        if (bossWarningMap != null) bossWarningMap.ClearAllTiles();
 
-        foreach (var minion in summonedMinions)
-        {
-            if (minion != null && minion.health.currentHP > 0)
-                StartCoroutine(minion.FadeDieCoroutine());
-        }
-        
+        // Tüm hayatta kalan düşmanları temizle (minionlar, totemler ve diğerleri)
         foreach (var e in TurnManager.instance.enemies.ToList())
         {
-            if (e != null && e.IsTotem && e.health.currentHP > 0)
-                StartCoroutine(e.FadeDieCoroutine());
+            if (e == null) continue;
+            // Boss'un kendisini atla
+            if (e == myEnemyMovement) continue;
+            if (e.health.IsDead || e.health.currentHP <= 0)
+            {
+                // Zaten ölü ama sprite kalabilir — zorla yok et
+                if (e.gameObject != null) Destroy(e.gameObject);
+                continue;
+            }
+            e.health.currentHP = 0;
+            if (e.gameObject.activeInHierarchy)
+                TurnManager.instance.StartCoroutine(ForceKillEnemy(e));
         }
+
+        // summonedMinions listesinde olup enemies'te olmayan düşmanları da temizle
+        foreach (var minion in summonedMinions)
+        {
+            if (minion == null) continue;
+            if (minion.health.currentHP <= 0 && minion.gameObject != null)
+            {
+                Destroy(minion.gameObject);
+                continue;
+            }
+            minion.health.currentHP = 0;
+            if (minion.gameObject.activeInHierarchy)
+                TurnManager.instance.StartCoroutine(ForceKillEnemy(minion));
+        }
+    }
+
+    private IEnumerator ForceKillEnemy(EnemyMovement enemy)
+    {
+        if (enemy == null) yield break;
+        var visuals = enemy.GetComponent<EnemyVisuals>();
+
+        // fadeDieStarted zaten true ise (burn vb.) direkt destroy
+        if (visuals != null && visuals.fadeDieStarted)
+        {
+            yield return new WaitForSeconds(0.5f);
+            if (enemy != null && enemy.gameObject != null)
+                Destroy(enemy.gameObject);
+            yield break;
+        }
+
+        // Normal fade die
+        yield return TurnManager.instance.StartCoroutine(enemy.FadeDieCoroutine());
     }
 
     public bool IsCellTargetedByBoss(Vector3Int cell)

@@ -1,5 +1,10 @@
 public class ReflexFiberPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Epic;
+    }
+
     public override void OnAcquire()
     {
         RunManager.instance.extraMovesPerTurn += 1;

@@ -47,10 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Pyrogenic Glands
-  description: "Sald\u0131r\u0131lar\u0131n d\xFC\u015Fmanlar\u0131 yakar. 3 tur
-    boyunca hasar verir."
+  description: Attacks set enemies on fire for 5 turns. Burn deals 5/10/15% max HP
+    per tick.
   icon: {fileID: -2207031521626848329, guid: 81d622b916f51d94fb56499332fde2ea, type: 3}
   priority: 0
   isRerollPerk: 0
-  rarity: 0
+  rarity: 2
   fireEffectPrefab: {fileID: 7792017491707608846, guid: f9ed83b3f3c156b4b9322c1693d0b676, type: 3}

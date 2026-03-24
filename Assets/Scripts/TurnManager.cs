@@ -146,7 +146,12 @@ public class TurnManager : MonoBehaviour
         // Don't remove warning tiles that belong to a charging bruiser
         if (warningMap != null && warningMap.HasTile(cell) && !IsCellTargetedByBruiser(cell))
             warningMap.SetTile(cell, null);
-        Invoke("StartPlayerTurn", 0.5f);
+
+        // Only restart the player turn if it's currently the player's turn.
+        // During enemy phase, scaffold collapse must NOT trigger an extra StartPlayerTurn
+        // (otherwise bruiser charge→attack happens in one perceived turn).
+        if (isPlayerTurn)
+            Invoke("StartPlayerTurn", 0.5f);
     }
 
     private bool IsCellTargetedByBruiser(Vector3Int cell)
@@ -188,6 +193,14 @@ public class TurnManager : MonoBehaviour
                 holdRTimer = 0f;
                 StopAllCoroutines();
                 Time.timeScale = 1f;
+
+                // Perk menüsünü zorla kapat
+                if (LevelUpManager.instance != null)
+                {
+                    LevelUpManager.instance.StopAllCoroutines();
+                    LevelUpManager.instance.ForceClose();
+                }
+
                 int sceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
                 if (ScreenFader.instance != null)
                 {
@@ -443,7 +456,7 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.surgeBootNextTurn = false;
         }
         TickThornLifetimes();
-        TickBurnsIfActive();
+        if (CleanupDeadAndCheckLevelClear()) return;
         player.UpdateHighlights();
         StartCoroutine(LockIntentsNextFrame());
 
@@ -474,6 +487,10 @@ public class TurnManager : MonoBehaviour
     }
     public void ResetGame()
     {
+        // Perk menüsünü zorla kapat
+        if (LevelUpManager.instance != null)
+            LevelUpManager.instance.ForceClose();
+
         // 1. Zamanı normale döndür (Pause'dan geliyorsa)
         Time.timeScale = 1f;
 
@@ -536,6 +553,13 @@ public class TurnManager : MonoBehaviour
         hasAttackedThisTurn = false;
         isMitsuriTargeting = false;
 
+        // 4. DontDestroyOnLoad UI'ları temizle
+        if (ActivePerkBar.instance != null)
+            Destroy(ActivePerkBar.instance.gameObject);
+        if (HotbarUI.instance != null)
+            Destroy(HotbarUI.instance.gameObject);
+        if (PerkInventoryUI.instance != null)
+            Destroy(PerkInventoryUI.instance.gameObject);
     }
     public void ClearWarningMap()
     {
@@ -1530,6 +1554,18 @@ public class TurnManager : MonoBehaviour
 
     private bool CleanupDeadAndCheckLevelClear()
     {
+        // Ölü düşmanları listeden çıkarmadan önce, Die() çağrılmamış olanları temizle
+        // (TotemDestroySequence gibi yerlerden currentHP=0 yapılıp Die() atlanabilir)
+        foreach (var e in enemies)
+        {
+            if (e != null && e.health.currentHP <= 0 && !e.health.IsDead)
+            {
+                // FadeDie başlatarak görsel temizliği garanti et
+                if (e.gameObject.activeInHierarchy)
+                    StartCoroutine(e.FadeDieCoroutine());
+            }
+        }
+
         enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
         if (enemies.Count <= 0)
         {
@@ -1545,6 +1581,13 @@ public class TurnManager : MonoBehaviour
         ClearMitsuriRangeIndicators();
         yield return new WaitForSeconds(0.2f);
         enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
+
+        // Burn tick düşmanlar hareket etmeden önce çalışır
+        TickBurnsIfActive();
+        if (CleanupDeadAndCheckLevelClear()) yield break;
+
+        // Düşmanları speed değerine göre sırala (yüksek speed = önce hareket)
+        enemies.Sort((a, b) => (b != null ? b.speed : 0).CompareTo(a != null ? a.speed : 0));
 
         foreach (var e in enemies) if (e != null && e.skipTurns <= 0) e.ExecuteLockedMove();
         yield return new WaitUntil(() => { foreach (var e in enemies) if (e != null && e.IsMoving()) return false; return true; });
@@ -1670,6 +1713,9 @@ public class TurnManager : MonoBehaviour
                 }
             }
         }
+
+        // Emniyet: EnemyPhase sonu — burn veya diğer efektlerden ölen düşmanları temizle
+        if (CleanupDeadAndCheckLevelClear()) yield break;
 
         EndTurnAndDecreaseStuns();
     }
@@ -1799,13 +1845,15 @@ public class TurnManager : MonoBehaviour
         int extraDices = 0;
         foreach (var p in RunManager.instance.activePerks) if (p is DormantSporePerk ambushPerk) { extraDices += ambushPerk.storedExtraDices; ambushPerk.storedExtraDices = 0; }
         if (RunManager.instance.bonusDiceNextCombat > 0) { extraDices += RunManager.instance.bonusDiceNextCombat; RunManager.instance.bonusDiceNextCombat = 0; }
+        // Host Syndrome: +1 die per adjacent enemy
+        foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
+        // Viral Cysts: +1 die per marked enemy
+        foreach (var p in RunManager.instance.activePerks) if (p is ViralCystsPerk viralPerk) { extraDices += viralPerk.GetExtraDice(); }
         for (int i = 0; i < (diceCount + extraDices); i++) currentRolls.Add(Random.Range(1, 7));
         // Reroll stack: her zara kalıcı bonus ekle (AMA SADECE PERK VARSA)
         if (RunManager.instance != null && RunManager.instance.shopRerollStack > 0)
         {
-            // Genetic Cartel perki aktif mi diye kontrol et
-            // (Eğer senin perkinin script adı farklıysa "GeneticCartelPerk" yazan yeri kendi isminle değiştir)
-            bool hasGeneticCartel = RunManager.instance.activePerks.Exists(p => p.GetType().Name == "GeneticCartelPerk");
+            bool hasGeneticCartel = RunManager.instance.activePerks.Exists(p => p is ShopRerollStackPerk);
 
             if (hasGeneticCartel)
             {
@@ -1891,11 +1939,35 @@ public class TurnManager : MonoBehaviour
 
         var voodooPerk = RunManager.instance.activePerks.Find(p => p is VoodooParasitePerk) as VoodooParasitePerk;
         var retributionPerk = RunManager.instance.activePerks.Find(p => p is RetributionSplicerPerk) as RetributionSplicerPerk;
+        var pressurePointPerk = RunManager.instance.activePerks.Find(p => p is PressurePointPerk) as PressurePointPerk;
+        var echoStrikePerk = RunManager.instance.activePerks.Find(p => p is EchoStrikePerk) as EchoStrikePerk;
+        var necroticTouchPerk = RunManager.instance.activePerks.Find(p => p is NecroticTouchPerk) as NecroticTouchPerk;
+        var overkillPerk = RunManager.instance.activePerks.Find(p => p is OverkillProtocolPerk) as OverkillProtocolPerk;
 
         foreach (var enemy in targets)
         {
             if (enemy == null) continue;
             int actualDamage = damagePerEnemy;
+
+            // Pressure Point: dusmanin HP yuzdesine gore hasar carpani
+            if (pressurePointPerk != null)
+            {
+                float ppMult = pressurePointPerk.GetMultiplier(enemy);
+                actualDamage = Mathf.FloorToInt(actualDamage * ppMult);
+                if (ppMult > 1f) pressurePointPerk.TriggerVisualPop();
+            }
+
+            // Necrotic Touch: %25 alti HP'deki dusmanlar 2x hasar alir
+            if (necroticTouchPerk != null)
+            {
+                float ntMult = necroticTouchPerk.GetMultiplier(enemy);
+                if (ntMult > 1f)
+                {
+                    actualDamage = Mathf.FloorToInt(actualDamage * ntMult);
+                    necroticTouchPerk.TriggerVisualPop();
+                }
+            }
+
             if (retributionPerk != null)
             {
                 int stackBonus = retributionPerk.GetBonusFor(enemy);
@@ -1911,12 +1983,36 @@ public class TurnManager : MonoBehaviour
                     if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.TriggerShakeForPerk(retributionPerk);
                 }
             }
-            bool dies = enemy.health.currentHP <= actualDamage;
+
+            int hpBefore = enemy.health.currentHP;
+            bool dies = hpBefore <= actualDamage;
             enemy.health.TakeDamage(actualDamage, true);
             ApplyBurnIfActive(enemy);
             ApplyCystIfActive(enemy);
 
             SpawnSlashEffect(enemy.transform.position);
+
+            // Echo Strike: ayni hedefe tekrar vur (animasyonlu)
+            if (echoStrikePerk != null && !dies && enemy.health.currentHP > 0 && echoStrikePerk.ShouldEcho())
+            {
+                yield return new WaitForSeconds(0.25f);
+                if (player != null) player.TriggerAttackAnimation();
+                if (AudioManager.instance != null) AudioManager.instance.PlaySwing();
+                yield return new WaitForSeconds(0.2f);
+                if (AudioManager.instance != null) AudioManager.instance.PlayHit();
+
+                int echoDmg = actualDamage;
+                if (enemy.health.currentHP <= echoDmg) dies = true;
+                enemy.health.TakeDamage(echoDmg, true);
+                SpawnSlashEffect(enemy.transform.position);
+            }
+
+            // Overkill Protocol: fazla hasari baska dusmana aktar
+            if (overkillPerk != null && dies)
+            {
+                int overkill = actualDamage - hpBefore;
+                if (overkill > 0) overkillPerk.TransferOverkill(enemy, overkill);
+            }
 
             RegisterComboHit();
             knockedEnemies.Add(enemy); if (dies) deadEnemiesThisTurn.Add(enemy);
@@ -1998,6 +2094,25 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // Graviton Core: knockback olan dusmanlarin eski pozisyonlarina komsu dusmanlari cek
+        if (RunManager.instance != null)
+        {
+            var gravitonPerk = RunManager.instance.activePerks.Find(p => p is GravitonCorePerk) as GravitonCorePerk;
+            if (gravitonPerk != null)
+            {
+                List<EnemyMovement> gravitonPulled = new List<EnemyMovement>();
+                foreach (var e in knockedEnemies)
+                {
+                    if (e == null) continue;
+                    var pulled = gravitonPerk.PullAdjacentEnemies(e.GetCurrentCellPosition(), e);
+                    foreach (var pe in pulled)
+                        if (!knockedEnemies.Contains(pe) && !gravitonPulled.Contains(pe))
+                            gravitonPulled.Add(pe);
+                }
+                knockedEnemies.AddRange(gravitonPulled);
+            }
+        }
+
         var recoilPerk = RunManager.instance.activePerks.Find(p => p is RecoilSpringPerk) as RecoilSpringPerk;
         bool didRecoil = false;
         if (recoilPerk != null && targets.Count > 0)
@@ -2015,20 +2130,39 @@ public class TurnManager : MonoBehaviour
             }
 
             Vector3Int bounceTo = playerOriginal;
+            Vector2 recoilDir = Vector2.zero;
             if (avgDir.sqrMagnitude > 0.001f)
             {
                 // Ortalama vektörün tam tersine en yakın hex komşusunu bul
-                Vector2 recoilDir = -avgDir.normalized;
+                recoilDir = -avgDir.normalized;
                 Vector3Int[] offsets = (playerOriginal.y % 2 != 0) ? evenOffsets : oddOffsets;
+
+                // İki geçiş: önce güvenli kareler, sonra tehlikeli kareler
                 float bestDot = -2f;
+                bool foundSafe = false;
                 foreach (var off in offsets)
                 {
                     Vector3Int neighbor = playerOriginal + off;
-                    if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor) || neighbor == player.GetCurrentCellPosition()) continue;
+                    if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor)) continue;
+                    bool isHazard = LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(neighbor);
+                    if (isHazard) continue; // Önce sadece güvenli kareleri dene
                     Vector3 nWorld = groundMap.GetCellCenterWorld(neighbor); nWorld.z = 0;
                     Vector2 nDir = (Vector2)(nWorld - playerWorld).normalized;
                     float dot = Vector2.Dot(recoilDir, nDir);
-                    if (dot > bestDot) { bestDot = dot; bounceTo = neighbor; }
+                    if (dot > bestDot) { bestDot = dot; bounceTo = neighbor; foundSafe = true; }
+                }
+                // Güvenli kare bulunamadıysa tehlikeli kareleri de değerlendir
+                if (!foundSafe)
+                {
+                    foreach (var off in offsets)
+                    {
+                        Vector3Int neighbor = playerOriginal + off;
+                        if (!HasWalkableTile(neighbor) || IsEnemyAtCell(neighbor)) continue;
+                        Vector3 nWorld = groundMap.GetCellCenterWorld(neighbor); nWorld.z = 0;
+                        Vector2 nDir = (Vector2)(nWorld - playerWorld).normalized;
+                        float dot = Vector2.Dot(recoilDir, nDir);
+                        if (dot > bestDot) { bestDot = dot; bounceTo = neighbor; }
+                    }
                 }
             }
 
@@ -2036,6 +2170,13 @@ public class TurnManager : MonoBehaviour
             {
                 recoilPerk.TriggerVisualPop();
                 player.StartKnockbackMovement(bounceTo, true);
+                didRecoil = true;
+            }
+            else if (recoilDir.sqrMagnitude > 0.001f)
+            {
+                // Arkada tile yok — duvara çarp
+                recoilPerk.TriggerVisualPop();
+                player.StartWallBump(new Vector3(recoilDir.x, recoilDir.y, 0f));
                 didRecoil = true;
             }
         }
@@ -2251,13 +2392,19 @@ public class TurnManager : MonoBehaviour
     {
         Vector3Int[] offsets = (centerCell.y % 2 != 0) ? evenOffsets : oddOffsets;
         List<Vector3Int> safeNeighbors = new List<Vector3Int>();
+        List<Vector3Int> walkableNeighbors = new List<Vector3Int>();
         foreach (var off in offsets)
         {
             Vector3Int neighbor = centerCell + off;
-            if (HasWalkableTile(neighbor) && !IsEnemyAtCell(neighbor) && player.GetCurrentCellPosition() != neighbor && !LevelGenerator.instance.hazardCells.Contains(neighbor))
+            if (!HasWalkableTile(neighbor)) continue;
+            if (IsEnemyAtCell(neighbor) || player.GetCurrentCellPosition() == neighbor) continue;
+            walkableNeighbors.Add(neighbor);
+            if (!LevelGenerator.instance.hazardCells.Contains(neighbor))
                 safeNeighbors.Add(neighbor);
         }
         if (safeNeighbors.Count > 0) return safeNeighbors[Random.Range(0, safeNeighbors.Count)];
+        // No non-hazard neighbor — bounce to any walkable cell to avoid getting stuck on spikes
+        if (walkableNeighbors.Count > 0) return walkableNeighbors[Random.Range(0, walkableNeighbors.Count)];
         return centerCell;
     }
 
