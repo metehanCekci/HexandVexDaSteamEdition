@@ -7272,7 +7272,7 @@ MonoBehaviour:
   maxZoomZ: -15
   minBounds: {x: -2, y: -1}
   maxBounds: {x: 2, y: 1}
-  touchPanSpeed: 0.05
+  touchPanSpeed: 0.02
   touchZoomSpeed: 0.02
 --- !u!1 &529440801
 GameObject:
