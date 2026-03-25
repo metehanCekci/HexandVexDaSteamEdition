@@ -15,6 +15,7 @@ public class CascadeProtocolPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Legendary;
+        maxLevel = 1;
     }
 
     public override void OnAcquire()

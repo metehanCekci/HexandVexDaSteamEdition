@@ -15,11 +15,29 @@ public class SecretPerkOrb : BaseItem
         itemType = ItemType.Instant;
     }
 
+    /// <summary>
+    /// Verilecek secret perk kaldı mı? Shop bu metodu kontrol eder.
+    /// </summary>
+    public bool HasAvailableSecrets()
+    {
+        if (RunManager.instance == null || secretPerkPool.Count == 0) return false;
+
+        foreach (var perkPrefab in secretPerkPool)
+        {
+            if (perkPrefab == null) continue;
+            BasePerk prefabScript = perkPrefab.GetComponent<BasePerk>();
+            if (prefabScript == null) continue;
+
+            BasePerk existing = RunManager.instance.activePerks.Find(p => p.GetType() == prefabScript.GetType());
+            if (existing == null || existing.currentLevel < existing.maxLevel) return true;
+        }
+        return false;
+    }
+
     public override bool Use()
     {
         if (RunManager.instance == null || secretPerkPool.Count == 0) return false;
 
-        // Henüz max seviyeye ulaşmamış secret perkleri filtrele
         List<GameObject> available = new List<GameObject>();
         foreach (var perkPrefab in secretPerkPool)
         {

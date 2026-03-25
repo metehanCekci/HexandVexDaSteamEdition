@@ -128,9 +128,10 @@ public class ShopDealer : MonoBehaviour
         int slotCount = itemCells.Length;
 
         int secretSlotIndex = -1;
+        bool secretHasPerks = secretItem is SecretPerkOrb orb && orb.HasAvailableSecrets();
         bool guaranteeSecret = (RunManager.instance != null && RunManager.instance.currentLevel >= 6
                                 && !Shopmanager.hasBoughtSecretItem);
-        if (secretItem != null && !Shopmanager.hasBoughtSecretItem &&
+        if (secretItem != null && !Shopmanager.hasBoughtSecretItem && secretHasPerks &&
             (guaranteeSecret || Random.value < Shopmanager.instance.secretItemChance))
             secretSlotIndex = Random.Range(0, slotCount);
 
