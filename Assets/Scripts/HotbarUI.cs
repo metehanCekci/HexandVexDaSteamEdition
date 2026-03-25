@@ -104,9 +104,21 @@ public class HotbarUI : MonoBehaviour
             int cancelSlot = TurnManager.instance.pendingTargetingSlot;
             if (cancelSlot >= 0)
             {
+                // Tuşla iptal
                 for (int i = 0; i < hotkeys.Length && i < maxVisibleSlots; i++)
                 {
                     if (Input.GetKeyDown(hotkeys[i]) && i == cancelSlot)
+                    {
+                        TurnManager.instance.CancelTargeting();
+                        return;
+                    }
+                }
+
+                // Tıklamayla iptal
+                if (Input.GetMouseButtonDown(0) && cancelSlot < slots.Count && slots[cancelSlot] != null)
+                {
+                    RectTransform rt = slots[cancelSlot].GetComponent<RectTransform>();
+                    if (rt != null && RectTransformUtility.RectangleContainsScreenPoint(rt, Input.mousePosition, hotbarCanvas != null ? hotbarCanvas.worldCamera : null))
                     {
                         TurnManager.instance.CancelTargeting();
                         return;
@@ -121,6 +133,24 @@ public class HotbarUI : MonoBehaviour
             if (Input.GetKeyDown(hotkeys[i]))
             {
                 UseSlot(i);
+                return;
+            }
+        }
+
+        // Mouse tıklamasıyla slot kullanma (buton onClick bazen çalışmayabilir)
+        if (Input.GetMouseButtonDown(0))
+        {
+            for (int i = 0; i < slots.Count && i < maxVisibleSlots; i++)
+            {
+                if (slots[i] == null || slots[i].button == null) continue;
+                if (!slots[i].button.interactable) continue;
+
+                RectTransform rt = slots[i].GetComponent<RectTransform>();
+                if (rt != null && RectTransformUtility.RectangleContainsScreenPoint(rt, Input.mousePosition, hotbarCanvas != null ? hotbarCanvas.worldCamera : null))
+                {
+                    UseSlot(i);
+                    return;
+                }
             }
         }
     }

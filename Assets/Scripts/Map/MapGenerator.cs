@@ -112,6 +112,9 @@ public static class MapGenerator
         // ─── SON GÜVENLİK: Ardışık ödül yasağı (tüm post-processing sonrası) ───
         EnforceNoConsecutiveRewards(map);
 
+        // ─── SON GÜVENLİK: Layer başına en az 1 Shop garanti ───
+        EnforceMinimumShop(map, totalRows);
+
         return map;
     }
 
@@ -920,6 +923,45 @@ public static class MapGenerator
             if (bestCandidate != null)
                 bestCandidate.nodeType = reqType;
         }
+    }
+
+    /// <summary>
+    /// Tüm post-processing sonrası Shop silinmiş olabilir.
+    /// En az 1 Shop garanti eder — ardışık ödül yasağını koruyarak.
+    /// </summary>
+    private static void EnforceMinimumShop(MapData map, int totalRows)
+    {
+        bool hasShop = false;
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType == MapNodeType.Shop) { hasShop = true; break; }
+        }
+        if (hasShop) return;
+
+        // Shop yok — uygun bir Combat node'u Shop'a çevir
+        MapNode bestCandidate = null;
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType != MapNodeType.Combat) continue;
+            if (node.row <= 1 || node.row >= totalRows) continue;
+
+            // Ardışık ödül yasağı: parent veya child ödülse atla
+            if (HasRewardParent(map, node)) continue;
+            bool childReward = false;
+            foreach (int cid in node.childIds)
+            {
+                MapNode c = map.GetNode(cid);
+                if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
+            }
+            if (childReward) continue;
+
+            // Ortaya yakın row'ları tercih et
+            if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
+                bestCandidate = node;
+        }
+
+        if (bestCandidate != null)
+            bestCandidate.nodeType = MapNodeType.Shop;
     }
 
     // ═══════════════════════════════════════════════════════

@@ -2411,7 +2411,9 @@ public class TurnManager : MonoBehaviour
             else PlayerTakeDamage(1);
 
             StartCoroutine(FlashHazardTileCoroutine(player.GetCurrentCellPosition()));
-            player.StartKnockbackMovement(playerOriginalCell);
+            // Güvenli komşu hücreye it (eski hücre scaffold ise kırılmış olabilir)
+            Vector3Int safeCell = GetSafeNeighbor(player.GetCurrentCellPosition());
+            player.StartKnockbackMovement(safeCell);
             yield return new WaitUntil(() => !player.IsMoving());
         }
 
