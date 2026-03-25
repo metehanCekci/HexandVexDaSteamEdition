@@ -338,9 +338,10 @@ public class Shopmanager : MonoBehaviour
         if (itemPool.Count == 0) return;
 
         int secretSlotIndex = -1;
+        bool secretHasPerks = secretItem is SecretPerkOrb orb && orb.HasAvailableSecrets();
         bool guaranteeSecret = (RunManager.instance != null && RunManager.instance.currentLevel >= 6
                                 && !hasBoughtSecretItem && rerollCount == 0);
-        if (secretItem != null && !hasBoughtSecretItem && (guaranteeSecret || Random.value < secretItemChance))
+        if (secretItem != null && !hasBoughtSecretItem && secretHasPerks && (guaranteeSecret || Random.value < secretItemChance))
             secretSlotIndex = Random.Range(0, shopSlotCount);
 
         int availableCount = 0;
