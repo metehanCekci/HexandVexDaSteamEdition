@@ -275,7 +275,7 @@ public class BruiserEnemyAI : MonoBehaviour
                 foreach (var perk in RunManager.instance.activePerks) if (perk is BioBarrierPerk aegis) { aegis.BreakShield(); break; }
                 RunManager.instance.hasBioBarrier = false;
             }
-            else player.health.TakeDamage(2);
+            else TurnManager.instance.PlayerTakeDamage(2);
 
             Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(player.GetCurrentCellPosition(), movement.GetCurrentCellPosition());
             player.StartKnockbackMovement(pushTarget);

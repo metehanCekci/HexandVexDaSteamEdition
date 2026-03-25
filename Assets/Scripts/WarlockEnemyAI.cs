@@ -353,7 +353,7 @@ public class WarlockEnemyAI : MonoBehaviour
                     foreach (var perk in RunManager.instance.activePerks) if (perk is BioBarrierPerk aegis) { aegis.BreakShield(); break; }
                     RunManager.instance.hasBioBarrier = false;
                 }
-                else TurnManager.instance.player.health.TakeDamage(attackDamage);
+                else TurnManager.instance.PlayerTakeDamage(attackDamage);
 
                 Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyMovement.GetCurrentCellPosition());
                 TurnManager.instance.player.StartKnockbackMovement(pushTarget);
@@ -412,7 +412,7 @@ public class WarlockEnemyAI : MonoBehaviour
                         foreach (var perk in RunManager.instance.activePerks) if (perk is BioBarrierPerk aegis) { aegis.BreakShield(); break; }
                         RunManager.instance.hasBioBarrier = false;
                     }
-                    else TurnManager.instance.player.health.TakeDamage(attackDamage);
+                    else TurnManager.instance.PlayerTakeDamage(attackDamage);
 
                     Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyMovement.GetCurrentCellPosition());
                     TurnManager.instance.player.StartKnockbackMovement(pushTarget);

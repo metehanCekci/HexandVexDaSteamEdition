@@ -398,7 +398,7 @@ public class SpawnerBossAI : MonoBehaviour
                 }
                 else
                 {
-                    TurnManager.instance.player.health.TakeDamage(2);
+                    TurnManager.instance.PlayerTakeDamage(2);
                 }
             }
 

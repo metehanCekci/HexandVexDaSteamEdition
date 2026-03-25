@@ -31,7 +31,7 @@ public class OuroborosPerk : BasePerk
     }
 
     /// <summary>
-    /// Diriliş: canı full yap, tüm perklerin seviyesini 1 düşür, Lv1 olanları yok et.
+    /// Diriliş: canı full yap, rastgele 1 perkin seviyesini 1 düşür, Lv1 ise yok et.
     /// </summary>
     public void Revive()
     {
@@ -41,25 +41,38 @@ public class OuroborosPerk : BasePerk
         var playerHealth = TurnManager.instance.player.health;
         playerHealth.Heal(playerHealth.maxHP);
 
-        // Tüm perklerin seviyesini düşür
-        List<BasePerk> toRemove = new List<BasePerk>();
+        // Tüm perklerden (active + inventory) Ouroboros hariç birini seç
+        List<BasePerk> candidates = new List<BasePerk>();
 
         foreach (var p in RunManager.instance.activePerks)
         {
-            if (p == this) continue; // Ouroboros kendini düşürmez
-
-            if (p.currentLevel <= 1)
-                toRemove.Add(p);
-            else
-                p.currentLevel--;
+            if (p != this && p.currentLevel >= 1) candidates.Add(p);
         }
-
-        // Lv1 perkleri yok et
-        foreach (var p in toRemove)
+        foreach (var p in RunManager.instance.inventoryPerks)
         {
-            RunManager.instance.activePerks.Remove(p);
-            Object.Destroy(p.gameObject);
+            if (p != this && p.currentLevel >= 1) candidates.Add(p);
         }
+
+        if (candidates.Count == 0) return;
+
+        BasePerk target = candidates[Random.Range(0, candidates.Count)];
+
+        if (target.currentLevel <= 1)
+        {
+            RunManager.instance.activePerks.Remove(target);
+            RunManager.instance.inventoryPerks.Remove(target);
+            Object.Destroy(target.gameObject);
+        }
+        else
+        {
+            target.currentLevel--;
+        }
+
+        // UI'ı güncelle
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.RefreshUI();
+        if (ActivePerkBar.instance != null)
+            ActivePerkBar.instance.RefreshBar();
 
         TriggerVisualPop();
     }
