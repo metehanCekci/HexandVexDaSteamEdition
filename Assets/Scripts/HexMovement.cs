@@ -193,6 +193,12 @@ public class HexMovement : MonoBehaviour
                         ScaffoldManager.instance.OnEntityLeave(previousCellForScaffold);
                         ScaffoldManager.instance.OnEntityEnter(currentCellPosition);
                     }
+                    // Seismic Step: waypoint geçişinde de kontrol
+                    if (RunManager.instance != null)
+                    {
+                        var seismicPerk = RunManager.instance.activePerks.Find(p => p is SeismicStepPerk) as SeismicStepPerk;
+                        if (seismicPerk != null) seismicPerk.OnPlayerLeftCell(previousCellForScaffold);
+                    }
                     previousCellForScaffold = currentCellPosition;
                     currentWaypoint = null;
                     MoveCharacter(finalTarget);
@@ -208,6 +214,13 @@ public class HexMovement : MonoBehaviour
                 {
                     ScaffoldManager.instance.OnEntityLeave(previousCellForScaffold);
                     ScaffoldManager.instance.OnEntityEnter(currentCellPosition);
+                }
+
+                // Seismic Step: titreyen tile'dan ayrılınca çöker
+                if (RunManager.instance != null)
+                {
+                    var seismicPerk = RunManager.instance.activePerks.Find(p => p is SeismicStepPerk) as SeismicStepPerk;
+                    if (seismicPerk != null) seismicPerk.OnPlayerLeftCell(previousCellForScaffold);
                 }
 
                 if (!isKnockbackMove) TurnManager.instance.PlayerFinishedMove(currentCellPosition);

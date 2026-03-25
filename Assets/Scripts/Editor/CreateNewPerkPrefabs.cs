@@ -55,9 +55,24 @@ public class CreateNewPerkPrefabs
         CreatePerk<NecroticTouchPerk>("NecroticTouch", "Necrotic Touch",
             "Enemies below 25% HP take 2x damage from all sources.");
 
+        CreatePerk<CondensedFuryPerk>("CondensedFury", "Condensed Fury",
+            "Roll 1 fewer die, but add +3 flat damage to each remaining die. +1 per level.");
+
+        CreatePerk<SymbioticArsenalPerk>("SymbioticArsenal", "Symbiotic Arsenal",
+            "Gain +0.5x damage multiplier per filled item slot. +0.25x per level.");
+
+        CreatePerk<IronWillPerk>("IronWill", "Iron Will",
+            "Complete a level without taking damage to gain +2x multiplier next combat. +1x per level.");
+
+        CreatePerk<NeuralHijackPerk>("NeuralHijack", "Neural Hijack",
+            "Knocking an enemy into another enemy converts the hit enemy to your side. Allies attack adjacent enemies each turn.");
+
+        CreatePerk<SeismicStepPerk>("SeismicStep", "Seismic Step",
+            "Skipping makes your tile unstable. When you leave, it collapses. Enemies on it take damage.");
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("16 yeni perk prefab'ı oluşturuldu: Assets/Prefabs/Perks/");
+        Debug.Log("Perk prefab'ları oluşturuldu: Assets/Prefabs/Perks/");
     }
 
     [MenuItem("HexAndVex/Create New Perk Collection Entries")]
@@ -148,6 +163,26 @@ public class CreateNewPerkPrefabs
         added += CreateEntry(db, existingIds, "NecroticTouch", "Necrotic Touch", PerkRarity.Rare,
             "A necrotizing agent that accelerates cellular decay in weakened organisms. The closer to death, the faster the rot spreads.",
             UnlockCondition.KillEnemiesSingleRun, 15, "", "Kill 15 enemies in a single run.");
+
+        added += CreateEntry(db, existingIds, "CondensedFury", "Condensed Fury", PerkRarity.Epic,
+            "A volatile compression organ that sacrifices quantity for devastating potency. Fewer strikes, but each one hits like a freight train.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "SymbioticArsenal", "Symbiotic Arsenal", PerkRarity.Rare,
+            "A symbiotic organism that feeds on equipped tools, converting their presence into raw combat power.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "IronWill", "Iron Will", PerkRarity.Rare,
+            "An indomitable survival instinct. Each flawless victory fuels a devastating surge of power in the next encounter.",
+            UnlockCondition.ClearLevels, 10, "", "Clear 10 levels in total.");
+
+        added += CreateEntry(db, existingIds, "NeuralHijack", "Neural Hijack", PerkRarity.Legendary,
+            "A parasitic neural implant that hijacks enemy nervous systems on impact. The converted host fights alongside you until the implant burns out.",
+            UnlockCondition.PushEnemyIntoSpike, 20, "", "Push 20 enemies into spikes.");
+
+        added += CreateEntry(db, existingIds, "SeismicStep", "Seismic Step", PerkRarity.Legendary,
+            "Your very presence destabilizes the ground beneath you. Each moment of stillness sends tremors through the earth, and when you leave, the ground crumbles.",
+            UnlockCondition.SkipTurns, 100, "", "Skip 100 turns in total.");
 
         EditorUtility.SetDirty(db);
         AssetDatabase.SaveAssets();

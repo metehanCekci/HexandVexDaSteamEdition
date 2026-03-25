@@ -64,7 +64,7 @@ public class LevelGenerator : MonoBehaviour
     public int baseMapRadius = 3;
     public int aoeStartLevel = 1; // Her bölümde çıkabilir
 
-    private List<Vector3Int> validCells = new List<Vector3Int>();
+    public List<Vector3Int> validCells = new List<Vector3Int>();
     public HashSet<Vector3Int> hazardCells = new HashSet<Vector3Int>();
     public HashSet<Vector3Int> scaffoldCells = new HashSet<Vector3Int>();
 
@@ -765,29 +765,132 @@ public class LevelGenerator : MonoBehaviour
     {
         if (hazardCells.Count == 0) return;
 
-        // Güvenli hücrelerin bağlı bileşen sayısını hesapla
-        int baseComponents = CountSafeComponents();
-        if (baseComponents <= 1) return; // Zaten tek bileşen, sorun yok
-
-        // Her hazard'ı geçici olarak kaldırıp bileşen sayısını kontrol et
-        List<Vector3Int> toRemove = new List<Vector3Int>();
-        foreach (var hCell in new List<Vector3Int>(hazardCells))
+        // Tekrarlı kaldırma: her iterasyonda yeni bottleneck'ler açığa çıkabilir
+        const int maxIterations = 20;
+        for (int iter = 0; iter < maxIterations; iter++)
         {
-            // Hazard'ı geçici olarak güvenli yap
-            hazardCells.Remove(hCell);
-            int newComponents = CountSafeComponents();
-            hazardCells.Add(hCell);
+            int baseComponents = CountSafeComponents();
+            if (baseComponents <= 1) return;
 
-            // Bu hazard kaldırılınca bileşen sayısı düşüyorsa darboğaz
-            if (newComponents < baseComponents)
-                toRemove.Add(hCell);
+            List<Vector3Int> toRemove = new List<Vector3Int>();
+            foreach (var hCell in new List<Vector3Int>(hazardCells))
+            {
+                hazardCells.Remove(hCell);
+                int newComponents = CountSafeComponents();
+                hazardCells.Add(hCell);
+
+                if (newComponents < baseComponents)
+                    toRemove.Add(hCell);
+            }
+
+            // Tek tek kaldırarak bağlantı sağlanamadıysa,
+            // kopuk bölgeler arasındaki en yakın hazard'ları BFS ile bul ve kaldır
+            if (toRemove.Count == 0 && baseComponents > 1)
+            {
+                toRemove = FindHazardsBridgingIslands();
+            }
+
+            if (toRemove.Count == 0) break;
+
+            foreach (var cell in toRemove)
+            {
+                hazardCells.Remove(cell);
+                if (hazardMap != null) hazardMap.SetTile(cell, null);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Kopuk güvenli adalar arasında hazard hücreleri üzerinden en kısa yolu bulur
+    /// ve o yoldaki hazard'ları kaldırır.
+    /// </summary>
+    private List<Vector3Int> FindHazardsBridgingIslands()
+    {
+        List<Vector3Int> result = new List<Vector3Int>();
+
+        // Güvenli adaları bul
+        List<HashSet<Vector3Int>> islands = new List<HashSet<Vector3Int>>();
+        HashSet<Vector3Int> unvisited = new HashSet<Vector3Int>();
+        foreach (var c in validCells)
+            if (!hazardCells.Contains(c) && !scaffoldCells.Contains(c))
+                unvisited.Add(c);
+
+        while (unvisited.Count > 0)
+        {
+            HashSet<Vector3Int> island = new HashSet<Vector3Int>();
+            Queue<Vector3Int> q = new Queue<Vector3Int>();
+            Vector3Int start = unvisited.First();
+            q.Enqueue(start); unvisited.Remove(start); island.Add(start);
+            while (q.Count > 0)
+            {
+                Vector3Int curr = q.Dequeue();
+                Vector3Int[] offs = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+                foreach (var off in offs)
+                {
+                    Vector3Int nb = curr + off;
+                    if (unvisited.Contains(nb)) { unvisited.Remove(nb); island.Add(nb); q.Enqueue(nb); }
+                }
+            }
+            islands.Add(island);
         }
 
-        foreach (var cell in toRemove)
+        if (islands.Count <= 1) return result;
+
+        // En büyük adadan diğer adalara hazard hücreleri üzerinden BFS yap
+        HashSet<Vector3Int> mainIsland = islands.OrderByDescending(i => i.Count).First();
+        HashSet<Vector3Int> otherSafeCells = new HashSet<Vector3Int>();
+        foreach (var island in islands)
+            if (island != mainIsland)
+                foreach (var c in island) otherSafeCells.Add(c);
+
+        // BFS: mainIsland kenarından başla, hazard hücreleri üzerinden ilerle
+        Queue<Vector3Int> bfs = new Queue<Vector3Int>();
+        Dictionary<Vector3Int, Vector3Int> cameFrom = new Dictionary<Vector3Int, Vector3Int>();
+
+        foreach (var cell in mainIsland)
         {
-            hazardCells.Remove(cell);
-            if (hazardMap != null) hazardMap.SetTile(cell, null);
+            Vector3Int[] offs = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offs)
+            {
+                Vector3Int nb = cell + off;
+                if (hazardCells.Contains(nb) && !cameFrom.ContainsKey(nb))
+                {
+                    bfs.Enqueue(nb);
+                    cameFrom[nb] = cell; // parent is a safe cell (sentinel)
+                }
+            }
         }
+
+        Vector3Int bridgeEnd = Vector3Int.zero;
+        bool found = false;
+        while (bfs.Count > 0 && !found)
+        {
+            Vector3Int curr = bfs.Dequeue();
+            Vector3Int[] offs = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offs)
+            {
+                Vector3Int nb = curr + off;
+                if (otherSafeCells.Contains(nb)) { bridgeEnd = curr; found = true; break; }
+                if (hazardCells.Contains(nb) && !cameFrom.ContainsKey(nb))
+                {
+                    cameFrom[nb] = curr;
+                    bfs.Enqueue(nb);
+                }
+            }
+        }
+
+        if (found)
+        {
+            // Yolu geri izle, sadece hazard olan hücreleri topla
+            Vector3Int step = bridgeEnd;
+            while (cameFrom.ContainsKey(step) && hazardCells.Contains(step))
+            {
+                result.Add(step);
+                step = cameFrom[step];
+            }
+        }
+
+        return result;
     }
 
     /// <summary>Güvenli (hazard/scaffold olmayan) hücrelerin bağlı bileşen sayısını döner.</summary>

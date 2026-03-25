@@ -72,6 +72,13 @@ public class SyncPerkRaritiesToPrefabs
 
             // Secret
             { "SymbioticFury",      PerkRarity.Secret },
+
+            // New perks
+            { "CondensedFury",      PerkRarity.Epic },
+            { "SymbioticArsenal",   PerkRarity.Rare },
+            { "IronWill",           PerkRarity.Rare },
+            { "NeuralHijack",       PerkRarity.Legendary },
+            { "SeismicStep",        PerkRarity.Legendary },
         };
 
         int prefabUpdated = 0;

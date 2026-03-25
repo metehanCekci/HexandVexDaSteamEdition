@@ -1537,6 +1537,25 @@ public class TurnManager : MonoBehaviour
         return centerCell;
     }
 
+    /// <summary>Düşman için güvenli komşu hücre bul (oyuncu pozisyonunu da engellemez).</summary>
+    public Vector3Int GetSafeNeighborForEnemy(Vector3Int centerCell)
+    {
+        Vector3Int[] offsets = (centerCell.y % 2 != 0) ? evenOffsets : oddOffsets;
+        foreach (var off in offsets)
+        {
+            Vector3Int n = centerCell + off;
+            if (HasWalkableTile(n) && !IsEnemyAtCell(n) && !LevelGenerator.instance.hazardCells.Contains(n)
+                && (player == null || player.GetCurrentCellPosition() != n)) return n;
+        }
+        // Fallback: herhangi bir yürünebilir komşu
+        foreach (var off in offsets)
+        {
+            Vector3Int n = centerCell + off;
+            if (HasWalkableTile(n) && !IsEnemyAtCell(n)) return n;
+        }
+        return centerCell;
+    }
+
     private void TryBreakBioBarrier()
     {
         foreach (var perk in RunManager.instance.activePerks)
@@ -1567,8 +1586,23 @@ public class TurnManager : MonoBehaviour
         }
 
         enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
-        if (enemies.Count <= 0)
+
+        // Neural Hijack: dost düşmanlar level clear'ı engellemez
+        bool hasHostileEnemies = enemies.Exists(e => e != null && !e.isAllied);
+        if (!hasHostileEnemies)
         {
+            // Kalan dostları da öldür — level bitti
+            foreach (var ally in new List<EnemyMovement>(enemies))
+            {
+                if (ally != null && ally.isAllied)
+                {
+                    ally.health.TakeDamageSilent(ally.health.currentHP);
+                    if (ally.gameObject.activeInHierarchy)
+                        StartCoroutine(ally.FadeDieCoroutine());
+                }
+            }
+            enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
+
             ClearWarningMap();
             StartCoroutine(WaitAndTriggerLevelClear());
             return true;
@@ -1589,7 +1623,7 @@ public class TurnManager : MonoBehaviour
         // Düşmanları speed değerine göre sırala (yüksek speed = önce hareket)
         enemies.Sort((a, b) => (b != null ? b.speed : 0).CompareTo(a != null ? a.speed : 0));
 
-        foreach (var e in enemies) if (e != null && e.skipTurns <= 0) e.ExecuteLockedMove();
+        foreach (var e in enemies) if (e != null && e.skipTurns <= 0 && !e.isAllied) e.ExecuteLockedMove();
         yield return new WaitUntil(() => { foreach (var e in enemies) if (e != null && e.IsMoving()) return false; return true; });
         yield return new WaitForSeconds(0.2f);
 
@@ -1639,7 +1673,7 @@ public class TurnManager : MonoBehaviour
             {
                 if (e.IsBoss && SpawnerBossAI.instance != null && SpawnerBossAI.instance.readyToExplodeThisTurn) readyToBossAttack.Add(e);
                 else if (e.IsBruiser && e.isChargingAttack) readyToAoEAttack.Add(e);
-                else if (e.IsMelee && IsNeighbor(e.GetCurrentCellPosition(), player.GetCurrentCellPosition())) readyToMeleeAttack.Add(e);
+                else if (e.IsMelee && !e.isAllied && IsNeighbor(e.GetCurrentCellPosition(), player.GetCurrentCellPosition())) readyToMeleeAttack.Add(e);
                 else if (e.IsWarlock)
                 {
                     WarlockEnemyAI warlock = e.GetComponent<WarlockEnemyAI>();
@@ -1849,7 +1883,11 @@ public class TurnManager : MonoBehaviour
         foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
         // Viral Cysts: +1 die per marked enemy
         foreach (var p in RunManager.instance.activePerks) if (p is ViralCystsPerk viralPerk) { extraDices += viralPerk.GetExtraDice(); }
-        for (int i = 0; i < (diceCount + extraDices); i++) currentRolls.Add(Random.Range(1, 7));
+        // Condensed Fury: roll 1 fewer die (minimum 1 die always)
+        int diceReduction = 0;
+        foreach (var p in RunManager.instance.activePerks) if (p is CondensedFuryPerk cfPerk) { diceReduction += cfPerk.GetDiceReduction(); }
+        int totalDice = Mathf.Max(1, diceCount + extraDices - diceReduction);
+        for (int i = 0; i < totalDice; i++) currentRolls.Add(Random.Range(1, 7));
         // Reroll stack: her zara kalıcı bonus ekle (AMA SADECE PERK VARSA)
         if (RunManager.instance != null && RunManager.instance.shopRerollStack > 0)
         {
@@ -1861,7 +1899,7 @@ public class TurnManager : MonoBehaviour
                     currentRolls[i] += RunManager.instance.shopRerollStack;
             }
         }
-        if (RunManager.instance != null) RunManager.instance.totalDiceRolled += diceCount + extraDices;
+        if (RunManager.instance != null) RunManager.instance.totalDiceRolled += totalDice;
         CombatPayload payload = new CombatPayload(currentRolls);
         if (RunManager.instance != null && RunManager.instance.activePerks.Exists(p => p.GetType().Name == "SymbioticFuryPerk")) payload.multiplyInsteadOfAdd = true;
         if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.ForceOpen();
@@ -2053,10 +2091,24 @@ public class TurnManager : MonoBehaviour
 
             if (enemyBehind != null)
             {
-                e.ApplyStun(2, true); enemyBehind.ApplyStun(2, true);
+                // Neural Hijack: itilen düşman (enemyBehind) taraf değiştirir
+                var neuralPerk = RunManager.instance != null
+                    ? RunManager.instance.activePerks.Find(p => p is NeuralHijackPerk) as NeuralHijackPerk
+                    : null;
+                bool converted = false;
+                if (neuralPerk != null && !enemyBehind.isAllied && !enemyBehind.wasAllied && !enemyBehind.IsBoss)
+                {
+                    ConvertToAlly(enemyBehind);
+                    neuralPerk.TriggerVisualPop();
+                    converted = true;
+                }
+
+                e.ApplyStun(2, true);
+                if (!converted) { enemyBehind.ApplyStun(2, true); }
                 Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
                 cPos.z = 0; pPos.z = 0; Vector3 bumpDir = (cPos - pPos).normalized;
-                e.StartWallBump(bumpDir); enemyBehind.StartWallBump(bumpDir);
+                e.StartWallBump(bumpDir);
+                if (!converted) { enemyBehind.StartWallBump(bumpDir); }
 
                 // Hydraulic Impact: düşmanı düşmana çarptırınca ikisine de hasar
                 if (RunManager.instance != null)
@@ -2306,10 +2358,174 @@ public class TurnManager : MonoBehaviour
             {
                 if (e != null) e.DecreaseStunTurn();
             }
-            StartPlayerTurn();
+            StartCoroutine(EndTurnWithAlliedAttacks());
         }
+        else
+        {
+            if (RunManager.instance != null)
+                RunManager.instance.totalTurnsPlayed++;
+        }
+    }
+
+    private IEnumerator EndTurnWithAlliedAttacks()
+    {
+        yield return StartCoroutine(TickAlliedEnemies());
+        if (CleanupDeadAndCheckLevelClear()) yield break;
+        StartPlayerTurn();
         if (RunManager.instance != null)
             RunManager.instance.totalTurnsPlayed++;
+    }
+
+    // ──────── Neural Hijack: Dost Düşman Sistemi ────────
+
+    private void ConvertToAlly(EnemyMovement enemy)
+    {
+        enemy.isAllied = true;
+        enemy.wasAllied = true;
+        enemy.movementStyle = MovementStyle.None;
+
+        // 3 HP'ye ayarla
+        enemy.health.maxHP = 3;
+        enemy.health.currentHP = 3;
+        enemy.health.updateHealth();
+
+        // Stun/knockback iptal — dosta döndüğü anda sakin olsun
+        enemy.skipTurns = 0;
+        enemy.isBumping = false;
+
+        // Yeşil tint — dost olduğu belli olsun (hasar flash sonrası da korunsun)
+        Color allyColor = new Color(0.3f, 1f, 0.4f, 1f);
+        enemy.health.SetOriginalColor(allyColor);
+    }
+
+    /// <summary>
+    /// Her tur sonunda dost düşmanlar:
+    /// 1. En yakın düşmana doğru 1 hex hareket eder
+    /// 2. Komşu düşmanlara oyuncunun son saldırı hasarıyla vurur (animasyonlu)
+    /// Tıpatıp normal düşman gibi davranır.
+    /// </summary>
+    private IEnumerator TickAlliedEnemies()
+    {
+        List<EnemyMovement> allies = enemies.FindAll(e => e != null && e.isAllied && e.health.currentHP > 0);
+        if (allies.Count == 0) yield break;
+
+        // 1) Hareket: en yakın düşmana doğru 1 hex
+        foreach (var ally in allies)
+        {
+            Vector3Int allyCell = ally.GetCurrentCellPosition();
+            Vector3Int bestTarget = allyCell;
+            float bestDist = float.MaxValue;
+
+            // En yakın düşmanı bul
+            foreach (var enemy in enemies)
+            {
+                if (enemy == null || enemy.isAllied || enemy.health.currentHP <= 0) continue;
+                float dist = HexGridUtils.DistanceCube(allyCell, enemy.GetCurrentCellPosition());
+                if (dist < bestDist) { bestDist = dist; bestTarget = enemy.GetCurrentCellPosition(); }
+            }
+
+            if (bestTarget == allyCell) continue; // Düşman yok
+
+            // Komşu hücrelerden düşmana en yakın olanı seç
+            Vector3Int[] offsets = (allyCell.y % 2 != 0) ? evenOffsets : oddOffsets;
+            Vector3Int bestMove = allyCell;
+            float bestMoveDist = bestDist;
+
+            foreach (var off in offsets)
+            {
+                Vector3Int neighbor = allyCell + off;
+                if (!HasWalkableTile(neighbor)) continue;
+                if (IsEnemyAtCell(neighbor) && !GetEnemyAtCell(neighbor).isAllied) continue; // Düşmanın üzerine basma, saldıracaksın
+                if (IsEnemyAtCell(neighbor)) continue; // Başka ally'nin üzerine basma
+                if (player != null && player.GetCurrentCellPosition() == neighbor) continue;
+                if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(neighbor)) continue;
+
+                float d = HexGridUtils.DistanceCube(neighbor, bestTarget);
+                if (d < bestMoveDist) { bestMoveDist = d; bestMove = neighbor; }
+            }
+
+            if (bestMove != allyCell)
+            {
+                // Scaffold handling
+                if (ScaffoldManager.instance != null)
+                {
+                    ScaffoldManager.instance.OnEntityLeave(allyCell);
+                    ScaffoldManager.instance.OnEntityEnter(bestMove);
+                }
+                ally.StartKnockbackMovement(bestMove); // Hareket için knockback kullan (smooth movement)
+            }
+        }
+
+        // Hareket animasyonunu bekle
+        yield return new WaitUntil(() => { foreach (var a in allies) if (a != null && a.IsMoving()) return false; return true; });
+        yield return new WaitForSeconds(0.15f);
+
+        // 2) Saldırı: komşu düşmanlara vur (hedefin max HP'sinin %25'i)
+        bool anyAttack = false;
+
+        foreach (var ally in allies)
+        {
+            if (ally == null || ally.health.currentHP <= 0) continue;
+
+            Vector3Int allyCell = ally.GetCurrentCellPosition();
+            Vector3Int[] offsets = (allyCell.y % 2 != 0) ? evenOffsets : oddOffsets;
+            List<EnemyMovement> targets = new List<EnemyMovement>();
+
+            foreach (var off in offsets)
+            {
+                Vector3Int neighborCell = allyCell + off;
+                EnemyMovement target = GetEnemyAtCell(neighborCell);
+                if (target != null && !target.isAllied && target.health.currentHP > 0)
+                    targets.Add(target);
+            }
+
+            if (targets.Count > 0)
+            {
+                // Saldırı animasyonu
+                if (ally.animator != null) ally.animator.SetTrigger("Attack");
+                anyAttack = true;
+
+                foreach (var target in targets)
+                {
+                    int allyDamage = Mathf.Max(1, Mathf.FloorToInt(target.health.maxHP * 0.25f));
+                    target.health.TakeDamage(allyDamage);
+
+                    // Knockback: düşmanı ally'den uzağa it
+                    if (target.health.currentHP > 0)
+                    {
+                        Vector3Int knockTarget = GetRawOppositeCell(target.GetCurrentCellPosition(), allyCell);
+                        if (HasWalkableTile(knockTarget) && !IsEnemyAtCell(knockTarget)
+                            && (player == null || player.GetCurrentCellPosition() != knockTarget))
+                        {
+                            target.ApplyStun(1, false);
+                            target.StartKnockbackMovement(knockTarget);
+                        }
+                        else
+                        {
+                            // Duvara çarptı — bump
+                            target.ApplyStun(2, true);
+                            Vector3 cPos = groundMap.GetCellCenterWorld(target.GetCurrentCellPosition());
+                            Vector3 aPos = groundMap.GetCellCenterWorld(allyCell);
+                            cPos.z = 0; aPos.z = 0;
+                            target.StartWallBump((cPos - aPos).normalized);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (anyAttack)
+        {
+            if (AudioManager.instance != null) AudioManager.instance.PlayHit();
+            yield return new WaitForSeconds(0.3f);
+            // Knockback bitmesini bekle
+            yield return new WaitUntil(() =>
+            {
+                foreach (var e in enemies)
+                    if (e != null && !e.isAllied && e.IsMoving()) return false;
+                return true;
+            });
+        }
     }
 
     public void ResumeAfterShop() { StartPlayerTurn(); }
@@ -2365,7 +2581,7 @@ public class TurnManager : MonoBehaviour
     public List<EnemyMovement> GetAdjacentEnemies(Vector3Int playerCell)
     {
         List<EnemyMovement> adjacentList = new List<EnemyMovement>();
-        foreach (var enemy in enemies) if (enemy != null && enemy.health.currentHP > 0) if (IsNeighbor(playerCell, enemy.GetCurrentCellPosition())) adjacentList.Add(enemy);
+        foreach (var enemy in enemies) if (enemy != null && enemy.health.currentHP > 0 && !enemy.isAllied) if (IsNeighbor(playerCell, enemy.GetCurrentCellPosition())) adjacentList.Add(enemy);
         return adjacentList;
     }
 

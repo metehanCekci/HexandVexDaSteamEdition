@@ -30,6 +30,11 @@ public class EnemyMovement : MonoBehaviour
 
     [HideInInspector] public bool isElite = false;
 
+    /// <summary>Neural Hijack: taraf değiştirmiş dost düşman.</summary>
+    [HideInInspector] public bool isAllied = false;
+    /// <summary>Bir kez dost olan düşman bir daha düşman olamaz.</summary>
+    [HideInInspector] public bool wasAllied = false;
+
     private Vector3Int cell;
     private Vector3 targetWorldPos;
     private bool isMoving = false;
@@ -621,6 +626,14 @@ public class EnemyMovement : MonoBehaviour
                 if (TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(neighbor) && neighbor != cell) continue;
 
                 float cellPenalty = 0f;
+
+                // Seismic Step: titreyen tile'lardan kaçın
+                if (RunManager.instance != null)
+                {
+                    var seismicPerk = RunManager.instance.activePerks.Find(p => p is SeismicStepPerk) as SeismicStepPerk;
+                    if (seismicPerk != null && seismicPerk.IsCellShaking(neighbor))
+                        cellPenalty += 20f;
+                }
 
                 if (TurnManager.instance != null)
                 {

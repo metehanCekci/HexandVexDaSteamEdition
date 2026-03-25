@@ -17,9 +17,14 @@ public class ChitinArmorPerk : BasePerk
     // YENİ: Kart tekrar seçilirse çalışır (Seviye Atlama)
     public override void Upgrade()
     {
-        base.Upgrade(); // Seviyeyi 1 artırır
-        
-        RunManager.instance.armorChance += 0.15f; // Her seviyede +%15 Zırh şansı daha!
+        base.Upgrade();
+
+        RunManager.instance.armorChance += 0.15f;
         TriggerVisualPop();
+    }
+
+    public override void ModifyCombat(CombatPayload payload)
+    {
+        payload.multiplier *= 999f;
     }
 }
