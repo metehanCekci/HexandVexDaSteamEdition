@@ -984,6 +984,13 @@ public class TurnManager : MonoBehaviour
         for (int i = 0; i < diceCount; i++) rolls.Add(Random.Range(1, 7));
         if (RunManager.instance != null) RunManager.instance.totalDiceRolled += diceCount;
 
+        // Volatile Roll: zarları baştan 1/6 yap
+        var volatilePerkBomb = RunManager.instance != null
+            ? RunManager.instance.activePerks.Find(p => p is VolatileRollPerk) as VolatileRollPerk
+            : null;
+        if (volatilePerkBomb != null)
+            volatilePerkBomb.ApplyToBaseRolls(rolls);
+
         CombatPayload payload = new CombatPayload(rolls);
         if (RunManager.instance != null && RunManager.instance.activePerks.Exists(p => p.GetType().Name == "SymbioticFuryPerk"))
             payload.multiplyInsteadOfAdd = true;
@@ -993,6 +1000,24 @@ public class TurnManager : MonoBehaviour
         {
             yield return StartCoroutine(diceUI.ShowDiceSequence(rolls));
             UpdateTotalDamageDisplay(payload.GetFinalDamage());
+
+            // Volatile Roll: 6 gelince zincirleme extra zarlar (animasyonlu)
+            if (volatilePerkBomb != null)
+                yield return StartCoroutine(VolatileRollChainAnimation(volatilePerkBomb, rolls, payload));
+        }
+        else if (volatilePerkBomb != null)
+        {
+            int chainStart = 0; int chainCount = 0;
+            while (chainCount < 50)
+            {
+                int prevCount = rolls.Count;
+                var extras = volatilePerkBomb.GenerateChainRolls(rolls, chainStart);
+                if (extras.Count == 0) break;
+                rolls.AddRange(extras);
+                payload.diceRolls.AddRange(extras);
+                chainStart = prevCount;
+                chainCount++;
+            }
         }
 
         // Perk zar boost'larını uygula
@@ -1926,7 +1951,7 @@ public class TurnManager : MonoBehaviour
         }
 
         int extraDices = 0;
-        foreach (var p in RunManager.instance.activePerks) if (p is DormantSporePerk ambushPerk) { extraDices += ambushPerk.storedExtraDices; ambushPerk.storedExtraDices = 0; }
+        foreach (var p in RunManager.instance.activePerks) if (p is DormantSporePerk ambushPerk) { extraDices += ambushPerk.ConsumeStoredDice(); }
         if (RunManager.instance.bonusDiceNextCombat > 0) { extraDices += RunManager.instance.bonusDiceNextCombat; RunManager.instance.bonusDiceNextCombat = 0; }
         // Host Syndrome: +1 die per adjacent enemy
         foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
@@ -1951,6 +1976,14 @@ public class TurnManager : MonoBehaviour
             }
         }
         if (RunManager.instance != null) RunManager.instance.totalDiceRolled += totalDice;
+
+        // Volatile Roll: zarları baştan 1/6 yap
+        var volatilePerk = RunManager.instance != null
+            ? RunManager.instance.activePerks.Find(p => p is VolatileRollPerk) as VolatileRollPerk
+            : null;
+        if (volatilePerk != null)
+            volatilePerk.ApplyToBaseRolls(currentRolls);
+
         CombatPayload payload = new CombatPayload(currentRolls);
         if (RunManager.instance != null && RunManager.instance.activePerks.Exists(p => p.GetType().Name == "SymbioticFuryPerk")) payload.multiplyInsteadOfAdd = true;
         if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.ForceOpen();
@@ -1959,7 +1992,32 @@ public class TurnManager : MonoBehaviour
         {
             yield return StartCoroutine(diceUI.ShowDiceSequence(currentRolls));
             UpdateTotalDamageDisplay(payload.GetFinalDamage());
-            yield return StartCoroutine(diceUI.SkippableWait(0.5f));
+
+            // Volatile Roll: 6 gelince zincirleme extra zarlar (animasyonlu)
+            if (volatilePerk != null)
+            {
+                yield return StartCoroutine(VolatileRollChainAnimation(volatilePerk, currentRolls, payload));
+            }
+            else
+            {
+                yield return StartCoroutine(diceUI.SkippableWait(0.5f));
+            }
+        }
+        else if (volatilePerk != null)
+        {
+            // skipDiceVisuals: extra zarları sessizce ekle
+            int chainStart = 0;
+            int chainCount = 0;
+            while (chainCount < 50)
+            {
+                int prevCount = currentRolls.Count;
+                var extras = volatilePerk.GenerateChainRolls(currentRolls, chainStart);
+                if (extras.Count == 0) break;
+                currentRolls.AddRange(extras);
+                payload.diceRolls.AddRange(extras);
+                chainStart = prevCount;
+                chainCount++;
+            }
         }
 
         yield return StartCoroutine(perkProcessor.ProcessPerks(payload, currentRolls));
@@ -2158,7 +2216,7 @@ public class TurnManager : MonoBehaviour
                 bool converted = false;
                 if (neuralPerk != null && !enemyBehind.isAllied && !enemyBehind.wasAllied && !enemyBehind.IsBoss)
                 {
-                    ConvertToAlly(enemyBehind);
+                    ConvertToAlly(enemyBehind, damagePerEnemy, e);
                     neuralPerk.TriggerVisualPop();
                     converted = true;
                 }
@@ -2446,9 +2504,40 @@ public class TurnManager : MonoBehaviour
             RunManager.instance.totalTurnsPlayed++;
     }
 
+    // ──────── Volatile Roll: Zincirleme Zar Animasyonu ────────
+
+    private IEnumerator VolatileRollChainAnimation(VolatileRollPerk perk, List<int> rolls, CombatPayload payload)
+    {
+        int chainStart = 0;
+        int chainCount = 0;
+        while (chainCount < 50)
+        {
+            int prevCount = rolls.Count;
+            var extras = perk.GenerateChainRolls(rolls, chainStart);
+            if (extras.Count == 0) break;
+
+            // Her extra zarı tek tek animasyonla ekle
+            foreach (int val in extras)
+            {
+                rolls.Add(val);
+                payload.diceRolls.Add(val);
+                diceUI.SpawnExtraDie(val);
+                if (AudioManager.instance != null) AudioManager.instance.PlayDiceHit();
+                UpdateTotalDamageDisplay(payload.GetFinalDamage());
+                yield return StartCoroutine(diceUI.SkippableWait(0.25f));
+            }
+
+            chainStart = prevCount;
+            chainCount++;
+        }
+
+        perk.TriggerVisualPop();
+        yield return StartCoroutine(diceUI.SkippableWait(0.3f));
+    }
+
     // ──────── Neural Hijack: Dost Düşman Sistemi ────────
 
-    private void ConvertToAlly(EnemyMovement enemy)
+    private void ConvertToAlly(EnemyMovement enemy, int damage, EnemyMovement pushedEnemy = null)
     {
         enemy.isAllied = true;
         enemy.wasAllied = true;
@@ -2463,8 +2552,20 @@ public class TurnManager : MonoBehaviour
         enemy.skipTurns = 0;
         enemy.isBumping = false;
 
-        // Neural Hijack: oyuncunun bu turdaki toplam hasarını kaydet
-        enemy.hijackDamage = Mathf.Max(1, finalDamage);
+        // Neural Hijack: oyuncunun bu saldırıdaki hasarını kaydet
+        enemy.hijackDamage = Mathf.Max(1, damage);
+
+        // Sprite'ı itilen düşmana doğru çevir
+        if (pushedEnemy != null)
+        {
+            var visuals = enemy.GetComponent<EnemyVisuals>();
+            if (visuals != null && visuals.visualRenderer != null)
+            {
+                float dx = pushedEnemy.transform.position.x - enemy.transform.position.x;
+                if (Mathf.Abs(dx) > 0.01f)
+                    visuals.visualRenderer.flipX = (dx < 0);
+            }
+        }
 
         // Okları gizle — ally'nin yön oku göstermesine gerek yok
         enemy.SetArrowVisibility(false);

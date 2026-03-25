@@ -10,11 +10,33 @@ public class DormantSporePerk : BasePerk
 
     public int storedExtraDices = 0;
 
+    public int ConsumeStoredDice()
+    {
+        int dice = storedExtraDices;
+        storedExtraDices = 0;
+        description = GetDescription();
+        return dice;
+    }
+
+    public override void OnAcquire()
+    {
+        description = GetDescription();
+    }
+
     public override void OnSkip()
     {
         storedExtraDices++;
-        Debug.Log($"🎯 Ambush: 1 zar birikti! Toplam: {storedExtraDices}");
+        description = GetDescription();
         TriggerVisualPop();
     }
-    // ModifyCombat artık burada değil, TurnManager'da yönetiliyor!
+
+    public override void OnLevelStart()
+    {
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        return $"Each skip stores +1 extra die for your next attack.\nStored dice: {storedExtraDices}";
+    }
 }

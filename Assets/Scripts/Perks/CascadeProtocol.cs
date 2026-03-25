@@ -21,6 +21,7 @@ public class CascadeProtocolPerk : BasePerk
     public override void OnAcquire()
     {
         Subscribe();
+        description = GetDescription();
     }
 
     public override void OnEquip()
@@ -32,6 +33,7 @@ public class CascadeProtocolPerk : BasePerk
     {
         Unsubscribe();
         accumulatedDamage = 0;
+        description = GetDescription();
     }
 
     public override void ModifyCombat(CombatPayload payload)
@@ -46,12 +48,14 @@ public class CascadeProtocolPerk : BasePerk
         // Bu saldırının zar toplamını birikime ekle (kritik/mult hariç, sadece raw dice)
         int diceSum = payload.diceRolls.Sum();
         accumulatedDamage += diceSum;
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
         accumulatedDamage = 0;
+        description = GetDescription();
     }
 
     void OnDestroy()
@@ -83,5 +87,12 @@ public class CascadeProtocolPerk : BasePerk
     private void OnPlayerDamaged(int remainingHP)
     {
         accumulatedDamage = 0;
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        int percent = 100 + (currentLevel - 1) * 25;
+        return $"Each attack's dice sum carries forward as flat bonus to the next attack ({percent}%). Resets on damage taken or level clear.\nAccumulated: {accumulatedDamage}";
     }
 }

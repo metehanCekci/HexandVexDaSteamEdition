@@ -18,9 +18,15 @@ public class DiceHoarderPerk : BasePerk
     /// <summary>
     /// Her perk/shop leveline girildiğinde TurnManager veya MapManager tarafından çağrılır.
     /// </summary>
+    public override void OnAcquire()
+    {
+        description = GetDescription();
+    }
+
     public void OnNonCombatLevelVisited()
     {
         visitedLevels++;
+        description = GetDescription();
     }
 
     public int GetExtraDice()
@@ -32,5 +38,11 @@ public class DiceHoarderPerk : BasePerk
     public override void OnLevelStart()
     {
         // Sıfırlanmaz — run boyunca birikir
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        return $"Each non-combat level visited grants permanent +1 die.\nVisited: {visitedLevels} (+{visitedLevels} dice)";
     }
 }

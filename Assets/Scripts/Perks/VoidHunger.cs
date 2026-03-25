@@ -19,11 +19,13 @@ public class VoidHungerPerk : BasePerk
     public override void OnAcquire()
     {
         Subscribe();
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
+        description = GetDescription();
     }
 
     private void Subscribe()
@@ -42,6 +44,7 @@ public class VoidHungerPerk : BasePerk
     private void OnTileDestroyed(Vector3Int cell)
     {
         collapsedCount++;
+        description = GetDescription();
     }
 
     public override void ModifyCombat(CombatPayload payload)
@@ -51,5 +54,12 @@ public class VoidHungerPerk : BasePerk
         float bonusPerTile = 0.25f + currentLevel * 0.25f; // Lv1: 0.5, Lv2: 0.75, Lv3: 1.0
         payload.multiplier += collapsedCount * bonusPerTile;
         TriggerVisualPop();
+    }
+
+    private string GetDescription()
+    {
+        float bonusPerTile = 0.25f + currentLevel * 0.25f;
+        float totalBonus = collapsedCount * bonusPerTile;
+        return $"Each collapsed tile grants permanent +{bonusPerTile:F2}x damage multiplier.\nCollapsed: {collapsedCount} (+{totalBonus:F1}x)";
     }
 }
