@@ -76,6 +76,9 @@ public class SyncPerkDescriptions
             { "IronWill",           "Complete a level without taking damage to gain +2x multiplier next combat. +1x per level." },
             { "NeuralHijack",       "Knock an enemy into another to convert it. Ally has 3 HP, deals your last attack's damage to adjacent enemies each turn." },
             { "SeismicStep",        "Skipping makes your tile unstable. When you leave, it collapses. Enemies on it take damage." },
+            { "CascadeProtocol",    "Each attack's dice total carries over to the next as bonus damage. Resets each room." },
+            { "DiceHoarder",        "Gain +1 permanent die for every perk selection and shop you visit." },
+            { "PentUpStrike",       "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once." },
 
             // === SECRET ===
             { "SymbioticFury",      "Dice values are multiplied together instead of added." },

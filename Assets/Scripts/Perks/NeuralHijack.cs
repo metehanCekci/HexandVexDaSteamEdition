@@ -11,5 +11,6 @@ public class NeuralHijackPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Legendary;
+        maxLevel = 1;
     }
 }

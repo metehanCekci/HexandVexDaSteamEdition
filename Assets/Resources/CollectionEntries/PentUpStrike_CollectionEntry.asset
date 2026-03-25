@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: PentUpStrike_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 8370909524944938661, guid: 07c4326b41c5c3443ab33cbef7cd0141, type: 3}
+  perkId: PentUpStrike
+  loreText: A kinetic absorption organ that converts failed impacts into stored potential
+    energy. The longer you wait, the more devastating the release.
+  rarity: 3
+  unlockCondition: 14
+  requiredAmount: 75
+  conditionParam: 
+  unlockHint: Skip 75 turns in total.

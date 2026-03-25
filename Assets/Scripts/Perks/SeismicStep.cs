@@ -19,6 +19,7 @@ public class SeismicStepPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Legendary;
+        maxLevel = 1;
     }
 
     /// <summary>
@@ -150,7 +151,7 @@ public class SeismicStepPerk : BasePerk
         if (AudioManager.instance != null) AudioManager.instance.PlayWall();
 
         // Çökme sırasında düşman varsa hasar ver
-        int collapseDamage = currentLevel; // Lv1: 1, Lv2: 2, Lv3: 3
+        int collapseDamage = 1;
         if (TurnManager.instance != null)
         {
             EnemyMovement victim = TurnManager.instance.GetEnemyAtCell(cell);
@@ -207,45 +208,6 @@ public class SeismicStepPerk : BasePerk
         if (LevelGenerator.instance != null)
             LevelGenerator.instance.validCells.Remove(cell);
 
-        // Lv3: komşu tile'lar da titresin (1 tur sonra çöker)
-        if (currentLevel >= 3 && TurnManager.instance != null)
-        {
-            Vector3Int[] offsets = (cell.y % 2 != 0)
-                ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
-            foreach (var off in offsets)
-            {
-                Vector3Int neighbor = cell + off;
-                if (groundMap.HasTile(neighbor) && !shakingCells.Contains(neighbor))
-                {
-                    // Oyuncu üzerindeyse çökertme
-                    if (TurnManager.instance.player != null &&
-                        TurnManager.instance.player.GetCurrentCellPosition() == neighbor) continue;
-
-                    // Scaffold ise dokunma
-                    if (ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(neighbor)) continue;
-
-                    shakingCells.Add(neighbor);
-                    Coroutine shake = TurnManager.instance.StartCoroutine(ShakeCoroutine(neighbor));
-                    shakeCoroutines[neighbor] = shake;
-
-                    // 1 tur sonra otomatik çöksün
-                    TurnManager.instance.StartCoroutine(DelayedCollapse(neighbor, 1));
-                }
-            }
-        }
-    }
-
-    private IEnumerator DelayedCollapse(Vector3Int cell, int turnsDelay)
-    {
-        // turnsDelay tur bekle (her tur ~2 saniye)
-        for (int i = 0; i < turnsDelay; i++)
-            yield return new WaitForSeconds(2f);
-
-        if (!shakingCells.Contains(cell)) yield break;
-
-        StopShake(cell);
-        shakingCells.Remove(cell);
-        yield return CollapseCoroutine(cell);
     }
 
     private void StopShake(Vector3Int cell)

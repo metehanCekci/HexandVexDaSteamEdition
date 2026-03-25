@@ -5,6 +5,7 @@ public class CondensedFuryPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Epic;
+        maxLevel = 1;
     }
 
     /// <summary>

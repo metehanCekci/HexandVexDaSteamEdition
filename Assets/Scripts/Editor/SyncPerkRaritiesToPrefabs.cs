@@ -79,6 +79,9 @@ public class SyncPerkRaritiesToPrefabs
             { "IronWill",           PerkRarity.Rare },
             { "NeuralHijack",       PerkRarity.Legendary },
             { "SeismicStep",        PerkRarity.Legendary },
+            { "CascadeProtocol",    PerkRarity.Legendary },
+            { "DiceHoarder",        PerkRarity.Legendary },
+            { "PentUpStrike",       PerkRarity.Legendary },
         };
 
         int prefabUpdated = 0;

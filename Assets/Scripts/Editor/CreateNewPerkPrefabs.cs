@@ -70,6 +70,15 @@ public class CreateNewPerkPrefabs
         CreatePerk<SeismicStepPerk>("SeismicStep", "Seismic Step",
             "Skipping makes your tile unstable. When you leave, it collapses. Enemies on it take damage.");
 
+        CreatePerk<CascadeProtocolPerk>("CascadeProtocol", "Cascade Protocol",
+            "Each attack's dice total carries over to the next as bonus damage. Resets each room.");
+
+        CreatePerk<DiceHoarderPerk>("DiceHoarder", "Dice Hoarder",
+            "Gain +1 permanent die for every perk selection and shop you visit.");
+
+        CreatePerk<PentUpStrikePerk>("PentUpStrike", "Pent-Up Strike",
+            "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once.");
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("Perk prefab'ları oluşturuldu: Assets/Prefabs/Perks/");
@@ -183,6 +192,18 @@ public class CreateNewPerkPrefabs
         added += CreateEntry(db, existingIds, "SeismicStep", "Seismic Step", PerkRarity.Legendary,
             "Your very presence destabilizes the ground beneath you. Each moment of stillness sends tremors through the earth, and when you leave, the ground crumbles.",
             UnlockCondition.SkipTurns, 100, "", "Skip 100 turns in total.");
+
+        added += CreateEntry(db, existingIds, "CascadeProtocol", "Cascade Protocol", PerkRarity.Legendary,
+            "A neural feedback loop that amplifies combat data with each strike. Every attack feeds the next, building toward an unstoppable crescendo of destruction.",
+            UnlockCondition.ClearLevels, 50, "", "Clear 50 levels in total.");
+
+        added += CreateEntry(db, existingIds, "DiceHoarder", "Dice Hoarder", PerkRarity.Legendary,
+            "A parasitic growth that feeds on choice itself. Every crossroads strengthens it, every decision adds another weapon to the arsenal.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "PentUpStrike", "Pent-Up Strike", PerkRarity.Legendary,
+            "A kinetic absorption organ that converts failed impacts into stored potential energy. The longer you wait, the more devastating the release.",
+            UnlockCondition.SkipTurns, 75, "", "Skip 75 turns in total.");
 
         EditorUtility.SetDirty(db);
         AssetDatabase.SaveAssets();

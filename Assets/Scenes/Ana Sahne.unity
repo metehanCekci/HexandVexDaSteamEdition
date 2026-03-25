@@ -11696,10 +11696,13 @@ MonoBehaviour:
   legendaryPerks:
   - {fileID: 1109346846490427701, guid: 591fd3e063799564ea700207eeb3e9e0, type: 3}
   - {fileID: 8338301390874939306, guid: 92274e630d9983f4692e0d50c90eb926, type: 3}
+  - {fileID: 7263386612016704444, guid: c024d6c959b8a2e478f34e4b27bafe25, type: 3}
+  - {fileID: 6227027999208693742, guid: 8899eb9f49ba3224ea873c33615ccb13, type: 3}
   - {fileID: 1111111111111111401, guid: 0c01cbaa647bca94f8399f77678ce192, type: 3}
   - {fileID: 2210770434232164357, guid: 0b158b73fcc7424459ddbeb84bc7ce73, type: 3}
   - {fileID: 1111111111111111101, guid: a8326ac1ab2ad7543a14fc4a69b1ac38, type: 3}
   - {fileID: 7733694003799486102, guid: 33746d0890e3b1549bf3c320ca4a1ecf, type: 3}
+  - {fileID: 8370909524944938661, guid: 07c4326b41c5c3443ab33cbef7cd0141, type: 3}
   - {fileID: 9102810684379735990, guid: 296dc476f5b22b54ea5b9e519e90eb73, type: 3}
   - {fileID: 1111111111111111501, guid: 9c73e59b7e793984eb928c9b30a3c6a7, type: 3}
   - {fileID: 2685890259749979858, guid: 933253f12869f3e4baabefcd1401161d, type: 3}
@@ -11731,9 +11734,9 @@ MonoBehaviour:
   skipButton: {fileID: 0}
   skipButtonImage: {fileID: 0}
   levelUpCanvasGroup: {fileID: 1574552225}
-  forcedPerk: {fileID: 7733694003799486102, guid: 33746d0890e3b1549bf3c320ca4a1ecf, type: 3}
-  forcedPerk2: {fileID: 5673649842244364538, guid: 42d757f24381e4044ae8a25c201686ca, type: 3}
-  forcedPerk3: {fileID: 0}
+  forcedPerk: {fileID: 6227027999208693742, guid: 8899eb9f49ba3224ea873c33615ccb13, type: 3}
+  forcedPerk2: {fileID: 8370909524944938661, guid: 07c4326b41c5c3443ab33cbef7cd0141, type: 3}
+  forcedPerk3: {fileID: 7263386612016704444, guid: c024d6c959b8a2e478f34e4b27bafe25, type: 3}
 --- !u!4 &937609419
 Transform:
   m_ObjectHideFlags: 0

@@ -1883,6 +1883,8 @@ public class TurnManager : MonoBehaviour
         foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
         // Viral Cysts: +1 die per marked enemy
         foreach (var p in RunManager.instance.activePerks) if (p is ViralCystsPerk viralPerk) { extraDices += viralPerk.GetExtraDice(); }
+        // Dice Hoarder: +1 die per visited perk/shop level
+        foreach (var p in RunManager.instance.activePerks) if (p is DiceHoarderPerk hoardPerk) { extraDices += hoardPerk.GetExtraDice(); }
         // Condensed Fury: roll 1 fewer die (minimum 1 die always)
         int diceReduction = 0;
         foreach (var p in RunManager.instance.activePerks) if (p is CondensedFuryPerk cfPerk) { diceReduction += cfPerk.GetDiceReduction(); }
