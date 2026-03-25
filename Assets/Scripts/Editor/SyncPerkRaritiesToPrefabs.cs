@@ -72,6 +72,7 @@ public class SyncPerkRaritiesToPrefabs
 
             // Secret
             { "SymbioticFury",      PerkRarity.Secret },
+            { "Ouroboros",          PerkRarity.Secret },
 
             // New perks
             { "CondensedFury",      PerkRarity.Epic },
@@ -82,6 +83,9 @@ public class SyncPerkRaritiesToPrefabs
             { "CascadeProtocol",    PerkRarity.Legendary },
             { "DiceHoarder",        PerkRarity.Legendary },
             { "PentUpStrike",       PerkRarity.Legendary },
+            { "VoidHunger",         PerkRarity.Common },
+            { "Deadweight",         PerkRarity.Rare },
+            { "KillChain",          PerkRarity.Epic },
         };
 
         int prefabUpdated = 0;

@@ -73,10 +73,8 @@ public class HypertrophicShellPerk : BasePerk
 
         if (newMax != oldMax)
         {
-            // Proportional HP adjustment
-            float ratio = oldMax > 0 ? (float)rm.playerCurrentHealth / oldMax : 1f;
             rm.playerMaxHealth = newMax;
-            rm.playerCurrentHealth = Mathf.Clamp(Mathf.RoundToInt(ratio * newMax), 1, newMax);
+            rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth, newMax);
             SyncHealthToScene();
         }
     }

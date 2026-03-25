@@ -79,10 +79,14 @@ public class SyncPerkDescriptions
             { "CascadeProtocol",    "Each attack's dice total carries over to the next as bonus damage. Resets each room." },
             { "DiceHoarder",        "Gain +1 permanent die for every perk selection and shop you visit." },
             { "PentUpStrike",       "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once." },
+            { "VoidHunger",         "Gain +0.5x damage multiplier for every tile that collapses. Permanent." },
+            { "Deadweight",         "Stunned enemies take 2x damage. +1x per level." },
+            { "KillChain",          "Killing an enemy grants +1 extra move this turn. +1 per level." },
 
             // === SECRET ===
             { "SymbioticFury",      "Dice values are multiplied together instead of added." },
             { "LetsGoAgain",        "After all perks trigger, they all trigger once more." },
+            { "Ouroboros",          "Cheat death. All perks lose 1 level. Lv1 perks are destroyed. No perks left = true death." },
         };
 
         int prefabUpdated = 0;

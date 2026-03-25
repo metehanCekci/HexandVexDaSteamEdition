@@ -110,20 +110,14 @@ public class WarlockEnemyAI : MonoBehaviour
         if (myEnemyMovement.health.currentHP < previousHP && !isTransitioning)
         {
             previousHP = myEnemyMovement.health.currentHP;
-            // Stun durumundaysa ışınlanma — sadece warninglerı temizle ve döngüyü sıfırla
-            if (myEnemyMovement.skipTurns > 0)
-            {
-                ClearAllWarnings();
-                cyclePhase = 0;
-                currentIdleCounter = initialIdleOffset;
-            }
             // Burn/DoT hasarı sırasında ışınlanma — saldırısını interrupt etme
-            else if (isBurnDamage)
+            if (isBurnDamage)
             {
                 // HP güncellendi, teleport yok, saldırı devam eder
             }
             else
             {
+                // Her vuruşta (stun dahil) ışınlan
                 StartCoroutine(HitAndTeleportSequence());
             }
         }

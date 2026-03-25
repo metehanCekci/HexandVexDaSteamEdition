@@ -591,6 +591,15 @@ public class TurnManager : MonoBehaviour
                 StartCoroutine(AnimateShieldBreakFX(player.transform.position));
                 return;
             }
+
+            // Ouroboros: ölmeden diriliş — perk seviyeleri düşer
+            var ouroboros = RunManager.instance.activePerks.Find(p => p is OuroborosPerk) as OuroborosPerk;
+            if (ouroboros != null && ouroboros.CanRevive())
+            {
+                ouroboros.Revive();
+                StartCoroutine(AnimateShieldBreakFX(player.transform.position));
+                return;
+            }
         }
         player.health.TakeDamage(amt);
     }
@@ -1982,6 +1991,7 @@ public class TurnManager : MonoBehaviour
         var pressurePointPerk = RunManager.instance.activePerks.Find(p => p is PressurePointPerk) as PressurePointPerk;
         var echoStrikePerk = RunManager.instance.activePerks.Find(p => p is EchoStrikePerk) as EchoStrikePerk;
         var necroticTouchPerk = RunManager.instance.activePerks.Find(p => p is NecroticTouchPerk) as NecroticTouchPerk;
+        var deadweightPerk = RunManager.instance.activePerks.Find(p => p is DeadweightPerk) as DeadweightPerk;
         var overkillPerk = RunManager.instance.activePerks.Find(p => p is OverkillProtocolPerk) as OverkillProtocolPerk;
 
         foreach (var enemy in targets)
@@ -2006,6 +2016,14 @@ public class TurnManager : MonoBehaviour
                     actualDamage = Mathf.FloorToInt(actualDamage * ntMult);
                     necroticTouchPerk.TriggerVisualPop();
                 }
+            }
+
+            // Deadweight: stunlanmış düşmanlar ekstra hasar alır
+            if (deadweightPerk != null && deadweightPerk.IsStunned(enemy))
+            {
+                float dwMult = deadweightPerk.GetStunnedMultiplier();
+                actualDamage = Mathf.FloorToInt(actualDamage * dwMult);
+                deadweightPerk.TriggerVisualPop();
             }
 
             if (retributionPerk != null)

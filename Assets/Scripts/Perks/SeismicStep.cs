@@ -208,6 +208,8 @@ public class SeismicStepPerk : BasePerk
         if (LevelGenerator.instance != null)
             LevelGenerator.instance.validCells.Remove(cell);
 
+        // VoidHunger gibi dinleyiciler için event yayınla
+        TrapTileEvents.FireTileDestroyed(cell);
     }
 
     private void StopShake(Vector3Int cell)

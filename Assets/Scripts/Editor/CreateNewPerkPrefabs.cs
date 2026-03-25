@@ -79,6 +79,18 @@ public class CreateNewPerkPrefabs
         CreatePerk<PentUpStrikePerk>("PentUpStrike", "Pent-Up Strike",
             "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once.");
 
+        CreatePerk<VoidHungerPerk>("VoidHunger", "Void Hunger",
+            "Gain +0.5x damage multiplier for every tile that collapses. Permanent.");
+
+        CreatePerk<DeadweightPerk>("Deadweight", "Deadweight",
+            "Stunned enemies take 2x damage. +1x per level.");
+
+        CreatePerk<KillChainPerk>("KillChain", "Kill Chain",
+            "Killing an enemy grants +1 extra move this turn. +1 per level.");
+
+        CreatePerk<OuroborosPerk>("Ouroboros", "Ouroboros",
+            "Cheat death. All perks lose 1 level. Lv1 perks are destroyed. No perks left = true death.");
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("Perk prefab'ları oluşturuldu: Assets/Prefabs/Perks/");
@@ -204,6 +216,22 @@ public class CreateNewPerkPrefabs
         added += CreateEntry(db, existingIds, "PentUpStrike", "Pent-Up Strike", PerkRarity.Legendary,
             "A kinetic absorption organ that converts failed impacts into stored potential energy. The longer you wait, the more devastating the release.",
             UnlockCondition.SkipTurns, 75, "", "Skip 75 turns in total.");
+
+        added += CreateEntry(db, existingIds, "VoidHunger", "Void Hunger", PerkRarity.Common,
+            "A parasitic void that feeds on structural collapse. Each crumbling tile strengthens its hunger, converting destruction into raw power.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "Deadweight", "Deadweight", PerkRarity.Rare,
+            "A neurotoxin that exploits paralyzed nervous systems. Immobilized prey becomes fragile, their frozen muscles offering no resistance to the killing blow.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "KillChain", "Kill Chain", PerkRarity.Epic,
+            "A predatory adrenaline response that accelerates with each kill. The hunt feeds itself — every death fuels the next strike.",
+            UnlockCondition.KillEnemiesSingleRun, 10, "", "Kill 10 enemies in a single run.");
+
+        added += CreateEntry(db, existingIds, "Ouroboros", "Ouroboros", PerkRarity.Secret,
+            "The serpent devours its own tail. Death is not the end — it is merely a shedding of skin. Each rebirth costs a piece of what you were, until nothing remains.",
+            UnlockCondition.CompleteRuns, 5, "", "Complete 5 runs.");
 
         EditorUtility.SetDirty(db);
         AssetDatabase.SaveAssets();
