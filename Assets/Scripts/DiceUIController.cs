@@ -122,6 +122,25 @@ public class DiceUIController : MonoBehaviour
         if (!skipDiceAnim) yield return new WaitForSeconds(0.2f + rolls.Count * 0.08f);
     }
 
+    public void SpawnExtraDie(int value)
+    {
+        if (dieUIPrefab == null || diceUIContainer == null) return;
+        GameObject newDie = Instantiate(dieUIPrefab, diceUIContainer);
+        spawnedDiceUI.Add(newDie);
+        CanvasGroup cg = newDie.GetComponent<CanvasGroup>();
+        if (cg == null) cg = newDie.AddComponent<CanvasGroup>();
+        cg.alpha = 1f;
+        TMP_Text txt = newDie.GetComponentInChildren<TMP_Text>();
+        if (txt != null) { txt.color = Color.white; txt.text = value.ToString(); }
+        Image img = newDie.GetComponent<Image>();
+        if (img != null && diceSprites != null)
+        {
+            int spriteIndex = Mathf.Clamp(value - 1, 0, diceSprites.Length - 1);
+            img.sprite = diceSprites[spriteIndex];
+        }
+        StartCoroutine(DiePopAnimation(newDie.transform));
+    }
+
     public void AnimateSpecificDie(int index, int newValue)
     {
         if (index >= 0 && index < spawnedDiceUI.Count)

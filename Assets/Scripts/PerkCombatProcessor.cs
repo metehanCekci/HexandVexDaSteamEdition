@@ -72,6 +72,14 @@ public class PerkCombatProcessor : MonoBehaviour
                 if (rolls[i] != payload.diceRolls[i])
                     changedIndices.Add(i);
 
+            // Volatile Roll gibi perkler zincirleme zar ekleyebilir — yeni zarları sync et
+            List<int> addedDiceIndices = new List<int>();
+            while (rolls.Count < payload.diceRolls.Count)
+            {
+                addedDiceIndices.Add(rolls.Count);
+                rolls.Add(payload.diceRolls[rolls.Count]);
+            }
+
             if (changedIndices.Count > 0)
             {
                 if (!diceUI.skipDiceVisuals)
@@ -117,6 +125,18 @@ public class PerkCombatProcessor : MonoBehaviour
                         rolls[idx] = payload.diceRolls[idx];
                     anyDieChanged = true;
                 }
+            }
+
+            // Zincirleme eklenen zarlar için UI spawn et
+            if (addedDiceIndices.Count > 0)
+            {
+                if (!diceUI.skipDiceVisuals)
+                {
+                    foreach (int idx in addedDiceIndices)
+                        diceUI.SpawnExtraDie(payload.diceRolls[idx]);
+                    yield return StartCoroutine(diceUI.SkippableWait(0.3f));
+                }
+                anyDieChanged = true;
             }
 
             int afterTotal = payload.GetFinalDamage();

@@ -21,6 +21,11 @@ public class RetributionSplicerPerk : BasePerk
         priority    = 20; // Apply after other bonuses
     }
 
+    public override void OnAcquire()
+    {
+        description = GetDescription();
+    }
+
     /// <summary>Called by TurnManager after each hit to register the target.</summary>
     public void RegisterHit(EnemyMovement target)
     {
@@ -28,6 +33,7 @@ public class RetributionSplicerPerk : BasePerk
         int id = target.GetInstanceID();
         if (!hitCounts.ContainsKey(id)) hitCounts[id] = 0;
         hitCounts[id]++;
+        description = GetDescription();
     }
 
     /// <summary>Returns the flat damage bonus against this target (based on previous hits).</summary>
@@ -44,10 +50,21 @@ public class RetributionSplicerPerk : BasePerk
     {
         if (enemy == null) return;
         hitCounts.Remove(enemy.GetInstanceID());
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         hitCounts.Clear();
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        int bonusPerHit = 1 + currentLevel;
+        int totalTargets = hitCounts.Count;
+        int totalHits = 0;
+        foreach (var kv in hitCounts) totalHits += kv.Value;
+        return $"Each hit on the same target grants +{bonusPerHit} flat damage against them. No stack limit.\nTargets: {totalTargets} | Total hits: {totalHits}";
     }
 }

@@ -10,9 +10,15 @@ public class CatalyticEnzymePerk : BasePerk
         rarity = PerkRarity.Rare;
     }
 
+    public override void OnAcquire()
+    {
+        description = GetDescription();
+    }
+
     public override void OnSkip()
     {
         skipStacks++;
+        description = GetDescription();
         TriggerVisualPop();
     }
 
@@ -22,10 +28,18 @@ public class CatalyticEnzymePerk : BasePerk
         // Each stack = +30% multiplier
         payload.multiplier *= 1f + (skipStacks * 0.3f);
         skipStacks = 0; // Consume on attack
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         skipStacks = 0;
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        int bonus = Mathf.RoundToInt(skipStacks * 30);
+        return $"Each skip grants +30% damage multiplier (stacks). Consumed on attack.\nStacks: {skipStacks} (+{bonus}%)";
     }
 }

@@ -10,6 +10,11 @@ public class CarrionFeederPerk : BasePerk
         rarity = PerkRarity.Rare;
     }
 
+    public override void OnAcquire()
+    {
+        description = GetDescription();
+    }
+
     public override void OnEnemyKilled(EnemyMovement enemy)
     {
         // Heal 1 HP
@@ -22,6 +27,7 @@ public class CarrionFeederPerk : BasePerk
 
         // Stack +2 flat bonus for next attack
         stacks += 2;
+        description = GetDescription();
         TriggerVisualPop();
     }
 
@@ -30,10 +36,17 @@ public class CarrionFeederPerk : BasePerk
         if (stacks <= 0) return;
         payload.flatBonus += stacks;
         stacks = 0; // Consume stacks on attack
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         stacks = 0;
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        return $"Heal 1 HP on kill. Each kill grants +2 flat damage for next attack (stacks).\nStacks: {stacks} (+{stacks} dmg)";
     }
 }
