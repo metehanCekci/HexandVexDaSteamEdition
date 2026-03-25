@@ -48,7 +48,7 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Deadweight
   description: Stunned enemies take 2x damage. +1x per level.
-  icon: {fileID: 0}
+  icon: {fileID: -6435217697247572374, guid: e13b9b5de7435774cb505ebd8f454b82, type: 3}
   priority: 0
   isRerollPerk: 0
   rarity: 1
