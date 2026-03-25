@@ -338,10 +338,12 @@ public class Shopmanager : MonoBehaviour
         if (itemPool.Count == 0) return;
 
         int secretSlotIndex = -1;
-        bool secretHasPerks = secretItem is SecretPerkOrb orb && orb.HasAvailableSecrets();
+        bool secretAvailable = false;
+        if (secretItem != null && secretItem is SecretPerkOrb orbCheck)
+            secretAvailable = orbCheck.HasAvailableSecrets();
         bool guaranteeSecret = (RunManager.instance != null && RunManager.instance.currentLevel >= 6
                                 && !hasBoughtSecretItem && rerollCount == 0);
-        if (secretItem != null && !hasBoughtSecretItem && secretHasPerks && (guaranteeSecret || Random.value < secretItemChance))
+        if (secretItem != null && !hasBoughtSecretItem && secretAvailable && (guaranteeSecret || Random.value < secretItemChance))
             secretSlotIndex = Random.Range(0, shopSlotCount);
 
         int availableCount = 0;
@@ -433,6 +435,9 @@ public class Shopmanager : MonoBehaviour
 
         if (item.itemType == ItemType.Instant)
         {
+            if (secretItem != null && item.itemName == secretItem.itemName)
+                hasBoughtSecretItem = true;
+
             if (!item.Use()) { RunManager.instance.currentGold += item.price; RefreshCoinDisplay(); return; }
         }
         else

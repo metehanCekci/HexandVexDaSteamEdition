@@ -128,10 +128,12 @@ public class ShopDealer : MonoBehaviour
         int slotCount = itemCells.Length;
 
         int secretSlotIndex = -1;
-        bool secretHasPerks = secretItem is SecretPerkOrb orb && orb.HasAvailableSecrets();
+        bool secretAvailable = false;
+        if (secretItem != null && secretItem is SecretPerkOrb orbCheck)
+            secretAvailable = orbCheck.HasAvailableSecrets();
         bool guaranteeSecret = (RunManager.instance != null && RunManager.instance.currentLevel >= 6
                                 && !Shopmanager.hasBoughtSecretItem);
-        if (secretItem != null && !Shopmanager.hasBoughtSecretItem && secretHasPerks &&
+        if (secretItem != null && !Shopmanager.hasBoughtSecretItem && secretAvailable &&
             (guaranteeSecret || Random.value < Shopmanager.instance.secretItemChance))
             secretSlotIndex = Random.Range(0, slotCount);
 
@@ -487,6 +489,11 @@ public class ShopDealer : MonoBehaviour
 
         if (item.itemType == ItemType.Instant)
         {
+            // Secret orb: satın alındığında her zaman bought flag'ini set et
+            if (Shopmanager.instance != null && Shopmanager.instance.secretItem != null &&
+                item.itemName == Shopmanager.instance.secretItem.itemName)
+                Shopmanager.hasBoughtSecretItem = true;
+
             if (!item.Use())
             {
                 RunManager.instance.currentGold += item.price;
