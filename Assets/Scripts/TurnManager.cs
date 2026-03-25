@@ -61,6 +61,7 @@ public class TurnManager : MonoBehaviour
     public bool isPlayerTurn = true;
     public bool hasAttackedThisTurn = false;
     public bool isAttackAnimationPlaying = false;
+    private bool isPhantomAssaultActive = false;
 
     [HideInInspector] public bool isNecroShotTargeting = false;
     [HideInInspector] public bool isBombPlacementTargeting = false;
@@ -1393,6 +1394,27 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // Phantom Assault: hayaletler de saldırır
+        if (!CleanupDeadAndCheckLevelClear())
+        {
+            var phantomAssaultPerk = RunManager.instance.activePerks.Find(p => p is PhantomAssaultPerk) as PhantomAssaultPerk;
+            if (phantomAssaultPerk != null && phantomAssaultPerk.HasGhosts())
+            {
+                List<Vector3Int> ghostCells = phantomAssaultPerk.GetGhostCellsWithTargets();
+                foreach (var ghostCell in ghostCells)
+                {
+                    List<EnemyMovement> ghostTargets = GetAdjacentEnemies(ghostCell);
+                    if (ghostTargets.Count > 0)
+                    {
+                        isAttackAnimationPlaying = true;
+                        yield return StartCoroutine(MultiAttack(ghostTargets));
+                    }
+                    if (CleanupDeadAndCheckLevelClear()) break;
+                }
+                phantomAssaultPerk.ConsumeGhosts();
+            }
+        }
+
         if (CleanupDeadAndCheckLevelClear()) yield break;
         if (enemies.Count <= 0) yield break;
         StartCoroutine(EnemyPhase());
@@ -2323,6 +2345,18 @@ public class TurnManager : MonoBehaviour
         }
         finalDamage = payload.GetFinalDamage();
         RunManager.instance.totalDamageDealt += finalDamage; // Toplam hasarı ekle
+
+        // Phantom Assault: saldırı sonrası hayalet bırak + rastgele tile'a ışınlan
+        if (!isPhantomAssaultActive && player != null && player.health.currentHP > 0)
+        {
+            var phantomAssaultPerk = RunManager.instance.activePerks.Find(p => p is PhantomAssaultPerk) as PhantomAssaultPerk;
+            if (phantomAssaultPerk != null)
+            {
+                isPhantomAssaultActive = true;
+                yield return StartCoroutine(phantomAssaultPerk.SpawnGhostAndTeleport());
+                isPhantomAssaultActive = false;
+            }
+        }
     }
 
     private IEnumerator EnemyAttackCoroutine(List<EnemyMovement> attackers)

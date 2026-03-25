@@ -39,7 +39,7 @@ public class SyncPerkRaritiesToPrefabs
             { "MutantSwarm",        PerkRarity.Rare },
             { "DoubleOrNothing",    PerkRarity.Rare },
             { "GlassCanon",         PerkRarity.Rare },
-            { "VolatileRoll",       PerkRarity.Rare },
+            { "VolatileRoll",       PerkRarity.Legendary },
             { "CarrionFeeder",      PerkRarity.Rare },
             { "CatalyticEnzyme",    PerkRarity.Rare },
             { "NecroticTouch",      PerkRarity.Rare },
@@ -86,6 +86,8 @@ public class SyncPerkRaritiesToPrefabs
             { "VoidHunger",         PerkRarity.Common },
             { "Deadweight",         PerkRarity.Rare },
             { "KillChain",          PerkRarity.Epic },
+            { "InsurancePolicy",    PerkRarity.Rare },
+            { "PhantomAssault",     PerkRarity.Legendary },
         };
 
         int prefabUpdated = 0;

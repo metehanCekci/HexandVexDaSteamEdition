@@ -91,6 +91,12 @@ public class CreateNewPerkPrefabs
         CreatePerk<OuroborosPerk>("Ouroboros", "Ouroboros",
             "Cheat death. All perks lose 1 level. Lv1 perks are destroyed. No perks left = true death.");
 
+        CreatePerk<InsurancePolicyPerk>("InsurancePolicy", "Insurance Policy",
+            "Gain gold when you take damage. +3 gold per HP lost at Lv1, +5 at Lv2, +7 at Lv3.");
+
+        CreatePerk<PhantomAssaultPerk>("PhantomAssault", "Phantom Assault",
+            "Attacks leave a ghost at your position and teleport you to a random tile. Skip to unleash all ghosts — each attacks with full dice damage.");
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("Perk prefab'ları oluşturuldu: Assets/Prefabs/Perks/");
@@ -121,7 +127,7 @@ public class CreateNewPerkPrefabs
 
         int added = 0;
 
-        added += CreateEntry(db, existingIds, "VolatileRoll", "Volatile Roll", PerkRarity.Rare,
+        added += CreateEntry(db, existingIds, "VolatileRoll", "Volatile Roll", PerkRarity.Legendary,
             "Dice that defy probability — each face is either salvation or doom. The organism's neural pathways have been rewired to embrace chaos.",
             UnlockCondition.Default, 1, "", "Unlocked by default.");
 
@@ -232,6 +238,14 @@ public class CreateNewPerkPrefabs
         added += CreateEntry(db, existingIds, "Ouroboros", "Ouroboros", PerkRarity.Secret,
             "The serpent devours its own tail. Death is not the end — it is merely a shedding of skin. Each rebirth costs a piece of what you were, until nothing remains.",
             UnlockCondition.CompleteRuns, 5, "", "Complete 5 runs.");
+
+        added += CreateEntry(db, existingIds, "InsurancePolicy", "Insurance Policy", PerkRarity.Rare,
+            "A parasitic actuary that monetizes suffering. Every wound becomes a transaction, every scar a deposit. Pain is just another currency.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "PhantomAssault", "Phantom Assault", PerkRarity.Legendary,
+            "Quantum echoes of your killing intent linger where you struck. When you pause, every phantom remembers, and every phantom strikes as one.",
+            UnlockCondition.KillEnemies, 300, "", "Kill 300 enemies in total.");
 
         EditorUtility.SetDirty(db);
         AssetDatabase.SaveAssets();

@@ -40,7 +40,7 @@ public class SyncPerkDescriptions
             { "MutantSwarm",       "Each die adds +0.5x damage multiplier per level." },
             { "DoubleOrNothing",    "If total dice sum is even, damage is doubled." },
             { "GlassCanon",         "Your max HP becomes 3, but your damage is doubled." },
-            { "VolatileRoll",       "Each die has a 50% chance to become 1 or 6." },
+            { "VolatileRoll",       "All dice become 1 or 6. Every 6 generates an extra die. Chain 6s create infinite dice." },
             { "CarrionFeeder",      "Killing an enemy heals 1 HP and grants +2 flat damage to your next attack." },
             { "CatalyticEnzyme",    "Each skip grants +30% damage to your next attack. Stacks, consumed on attack." },
             { "NecroticTouch",      "Enemies below 50% HP take 2x damage from all sources." },
@@ -82,6 +82,8 @@ public class SyncPerkDescriptions
             { "VoidHunger",         "Gain +0.5x damage multiplier for every tile that collapses. Permanent." },
             { "Deadweight",         "Stunned enemies take 2x damage. +1x per level." },
             { "KillChain",          "Killing an enemy grants +1 extra move this turn. +1 per level." },
+            { "InsurancePolicy",    "Gain gold when you take damage. +3 gold per HP lost at Lv1, +5 at Lv2, +7 at Lv3." },
+            { "PhantomAssault",     "Attacks leave a ghost at your position and teleport you to a random tile. Skip to unleash all ghosts — each attacks with full dice damage." },
 
             // === SECRET ===
             { "SymbioticFury",      "Dice values are multiplied together instead of added." },

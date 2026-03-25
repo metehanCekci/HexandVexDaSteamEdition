@@ -10,14 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
-  m_Name: VolatileRoll_CollectionEntry
+  m_Name: Ouroboros_CollectionEntry
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
-  perkPrefab: {fileID: 4964166258271362127, guid: a35cffc7b2ff3ea44ae64ce03fd998a0, type: 3}
-  perkId: VolatileRoll
-  loreText: "Dice that defy probability \u2014 each face is either salvation or doom.
-    The organism's neural pathways have been rewired to embrace chaos."
-  rarity: 3
-  unlockCondition: 0
-  requiredAmount: 1
+  perkPrefab: {fileID: 1973649367061276827, guid: ef4236ba5cefd724ea594ad8eeb72bf6, type: 3}
+  perkId: Ouroboros
+  loreText: "The serpent devours its own tail. Death is not the end \u2014 it is
+    merely a shedding of skin. Each rebirth costs a piece of what you were, until
+    nothing remains."
+  rarity: 4
+  unlockCondition: 2
+  requiredAmount: 5
   conditionParam: 
-  unlockHint: Unlocked by default.
+  unlockHint: Complete 5 runs.

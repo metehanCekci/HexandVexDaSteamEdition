@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &4964166258271362127
+--- !u!1 &8770049335834323996
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1028688444463057915}
-  - component: {fileID: 4814601441922963057}
+  - component: {fileID: 3383535814671458937}
+  - component: {fileID: 6692855468286764506}
   m_Layer: 0
-  m_Name: VolatileRoll
+  m_Name: KillChain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1028688444463057915
+--- !u!4 &3383535814671458937
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4964166258271362127}
+  m_GameObject: {fileID: 8770049335834323996}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -32,24 +32,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4814601441922963057
+--- !u!114 &6692855468286764506
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4964166258271362127}
+  m_GameObject: {fileID: 8770049335834323996}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 87e262675611dc640adca4baa3253121, type: 3}
+  m_Script: {fileID: 11500000, guid: 86c89ad9103e87547acdbe440e0fe23f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::VolatileRollPerk
+  m_EditorClassIdentifier: Assembly-CSharp::KillChainPerk
   currentLevel: 1
   maxLevel: 3
-  perkName: Volatile Roll
-  description: All dice become 1 or 6. Every 6 generates an extra die. Chain 6s create
-    infinite dice.
-  icon: {fileID: -4363507172755077261, guid: 89ebaf46365c7c840a712eae6c2490d1, type: 3}
+  perkName: Kill Chain
+  description: Killing an enemy grants +1 extra move this turn. +1 per level.
+  icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0
-  rarity: 3
+  rarity: 2
