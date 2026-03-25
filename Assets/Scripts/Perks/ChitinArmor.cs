@@ -10,7 +10,6 @@ public class ChitinArmorPerk : BasePerk
 
     public override void OnAcquire()
     {
-        RunManager.instance.dodgeChance += 0.30f;
         TriggerVisualPop();
     }
 
