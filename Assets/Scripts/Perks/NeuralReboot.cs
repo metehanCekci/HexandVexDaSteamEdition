@@ -5,6 +5,7 @@ public class NeuralRebootPerk : BasePerk
     void Awake()
     {
         maxLevel = 1;
+        rarity = PerkRarity.Common;
         isRerollPerk = true;
     }
 

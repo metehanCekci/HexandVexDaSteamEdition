@@ -64,6 +64,13 @@ public class LevelUpManager : MonoBehaviour
             skipButtonOriginalColorBlock = skipButton.colors;
     }
 
+    void OnDestroy()
+    {
+        // Sahne değişirken perk panelini temizle
+        ForceClose();
+        if (instance == this) instance = null;
+    }
+
     public void ShowLevelUpScreen()
     {
         // Tüm perkler max seviyeye ulaştıysa perk seçme ekranını atla
@@ -648,6 +655,38 @@ public class LevelUpManager : MonoBehaviour
         }
         if (perkBlackBackground != null)
             perkBlackBackground.SetActive(show);
+    }
+
+    /// <summary>Perk menüsünü zorla kapat (R reset, sahne değişimi vs.).</summary>
+    public void ForceClose()
+    {
+        StopAllCoroutines();
+        if (levelUpPanel != null) levelUpPanel.SetActive(false);
+        if (levelUpCanvasGroup != null)
+        {
+            levelUpCanvasGroup.alpha = 1f;
+            levelUpCanvasGroup.gameObject.SetActive(false);
+        }
+        ShowBlackBackground(false);
+
+        // Kartları resetle
+        if (choiceButtons != null)
+        {
+            foreach (var btn in choiceButtons)
+            {
+                if (btn == null) continue;
+                btn.transform.localScale = Vector3.one;
+                btn.interactable = true;
+                btn.gameObject.SetActive(false);
+                CanvasGroup cg = btn.GetComponent<CanvasGroup>();
+                if (cg != null) cg.alpha = 1f;
+            }
+        }
+
+        currentChoices.Clear();
+
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.Hide();
     }
 
     /// <summary>Perk seçme ekranını göstermeden sonraki levele geç.</summary>

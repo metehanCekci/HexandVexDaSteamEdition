@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 2685890259749979858, guid: 933253f12869f3e4baabefcd1401161d, type: 3}
   perkId: VoodooParasite
-  loreText: A symbiotic entity that mirrors damage across linked targets. What one feels, others suffer. The threads of pain are invisible but absolute.
+  loreText: A symbiotic entity that mirrors damage across linked targets. What one
+    feels, others suffer. The threads of pain are invisible but absolute.
   rarity: 3
   unlockCondition: 7
   requiredAmount: 25

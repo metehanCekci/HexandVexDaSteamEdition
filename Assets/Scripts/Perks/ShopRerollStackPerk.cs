@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class ShopRerollStackPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Legendary;
+    }
+
     public override void OnAcquire()
     {
         perkName = "Genetic Cartel";

@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Volatile Roll
-  description: "Her zar %50 \u015Fansla 1 veya 6 olur. Y\xFCksek risk, y\xFCksek
-    \xF6d\xFCl."
+  description: Each die has a 50% chance to become 1 or 6.
   icon: {fileID: -4363507172755077261, guid: 89ebaf46365c7c840a712eae6c2490d1, type: 3}
   priority: 0
   isRerollPerk: 0

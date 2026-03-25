@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class MomentumEnginePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Rare;
+    }
+
     public override void OnAcquire()
     {
         priority = 5; // Hasar çarpanlarından önce, normal zar manipülasyonlarıyla aynı anda eklensin

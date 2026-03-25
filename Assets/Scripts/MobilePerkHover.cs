@@ -3,76 +3,119 @@ using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
 /// <summary>
-/// Tüm perkleri, market eşyalarını ve butonları TEK BİR SCRIPT ile mobile uyumlu yapar.
-/// Bunu sahnendeki 'EventSystem' objesine atman yeterli.
-/// Mevcut ShopSlot, ActivePerkBar vb. kodlarına DOKUNMANA GEREK YOK.
+/// Bu script mobildeki iki önemli sorunu çözer:
+/// 1) Perklere basılı tutunca okuma (hover), kısa tıklayınca seçme yapar.
+/// 2) Haritada kamerayı kaydırırken yanlışlıkla tıklanmasını engeller.
 /// </summary>
-public class MobileHoverAutoFixer : MonoBehaviour
+public class MobilePerkHover : MonoBehaviour
 {
-    private PointerEventData pointerData;
-    private List<RaycastResult> raycastResults = new List<RaycastResult>();
-    
-    // Ekranda o an parmağın altında kalan ve bilgi ekranı açılan objelerin hafızası
-    private HashSet<GameObject> currentlyHoveredObjects = new HashSet<GameObject>();
+    [Header("Dokunma Ayarları")]
+    [Tooltip("Özelliğin okunması için kaç saniye basılı tutulmalı?")]
+    public float basiliTutmaSuresi = 0.3f; 
+
+    private float dokunmaZamanlayicisi = 0f;
+    private bool ozellikOkunuyorMu = false;
+    private GameObject dokunulanObje = null;
 
     void Start()
     {
+        // 1. SORUNUN ÇÖZÜMÜ (HARİTADA KAYDIRIRKEN TIKLAMAYI ENGELLEME):
+        // Oyunun parmak kaydırma toleransını ekranın hassasiyetine göre artırıyoruz.
+        // Böylece parmağını kaydırdığında Unity bunu "tıklama" olarak algılamaz.
         if (EventSystem.current != null)
         {
-            pointerData = new PointerEventData(EventSystem.current);
+            float ekranHassasiyeti = Screen.dpi;
+            if (ekranHassasiyeti <= 0) ekranHassasiyeti = 160f; 
+
+            int yeniSinir = (int)(ekranHassasiyeti * 0.15f); 
+            EventSystem.current.pixelDragThreshold = Mathf.Max(EventSystem.current.pixelDragThreshold, yeniSinir);
         }
     }
 
     void Update()
     {
-        // Eğer cihaz bilgisayarsa (fare kullanılıyorsa) bu kod oyununu hiç etkilemesin
-        if (!Application.isMobilePlatform) return;
-
-        if (Input.touchCount > 0)
+        // Ekrana ilk dokunulduğu an
+        if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
-            Touch touch = Input.GetTouch(0);
-            
-            if (pointerData == null && EventSystem.current != null) 
-                pointerData = new PointerEventData(EventSystem.current);
-                
-            pointerData.position = touch.position;
+            dokunmaZamanlayicisi = 0f;
+            ozellikOkunuyorMu = false;
+            dokunulanObje = EkrandaDokunulanObjeyiBul();
+        }
 
-            // DURUM 1: Parmak ekrana değdiğinde veya kaydırıldığında (Basılı tutma)
-            if (touch.phase == TouchPhase.Began || touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
+        // Ekrana basılı tutulmaya devam ediliyorsa
+        if (Input.GetMouseButton(0) || (Input.touchCount > 0 && (Input.GetTouch(0).phase == TouchPhase.Moved || Input.GetTouch(0).phase == TouchPhase.Stationary)))
+        {
+            if (dokunulanObje != null)
             {
-                raycastResults.Clear();
-                EventSystem.current.RaycastAll(pointerData, raycastResults);
+                dokunmaZamanlayicisi += Time.deltaTime;
 
-                // Dokunduğumuz ve arayüzde altından geçtiğimiz her UI objesini hafızaya al
-                foreach (RaycastResult result in raycastResults)
+                // Eğer parmağımızı ayarladığımız süreden (0.3 sn) fazla tuttuysak ve özellik daha açılmadıysa
+                if (dokunmaZamanlayicisi >= basiliTutmaSuresi && !ozellikOkunuyorMu)
                 {
-                    if (result.gameObject != null)
-                    {
-                        currentlyHoveredObjects.Add(result.gameObject);
-                    }
-                }
-            }
-            // DURUM 2: Parmağı ekrandan tam çektiği an (Bilgi penceresini kapatma anı)
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-            {
-                // Hafızadaki her şeye "Fare üzerinden çekildi (PointerExit)" sinyali yollayarak pencereleri kapattır
-                foreach (GameObject obj in currentlyHoveredObjects)
-                {
-                    if (obj != null)
-                    {
-                        ExecuteEvents.ExecuteHierarchy(obj, pointerData, ExecuteEvents.pointerExitHandler);
-                    }
-                }
-                
-                // İşlem bitti, hafızayı temizle
-                currentlyHoveredObjects.Clear();
-                
-                // Unity'nin mobil bug'ını (butonu seçili bırakmasını) engellemek için seçimi sıfırla
-                if (EventSystem.current != null)
-                {
-                    EventSystem.current.SetSelectedGameObject(null);
+                    ozellikOkunuyorMu = true;
+                    
+                    // Bilgisayardaki fareyi üstüne getirme (Hover) olayını çalıştır
+                    ExecuteEvents.Execute(dokunulanObje, new PointerEventData(EventSystem.current), ExecuteEvents.pointerEnterHandler);
                 }
             }
         }
+
+        // Parmak ekrandan çekildiğinde
+        if (Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && (Input.GetTouch(0).phase == TouchPhase.Ended || Input.GetTouch(0).phase == TouchPhase.Canceled)))
+        {
+            if (dokunulanObje != null)
+            {
+                // Eğer uzun basıldıysa (özellik okunduysa)
+                if (ozellikOkunuyorMu)
+                {
+                    // Parmağı çekince özelliği gizle
+                    ExecuteEvents.Execute(dokunulanObje, new PointerEventData(EventSystem.current), ExecuteEvents.pointerExitHandler);
+                    
+                    // OYUNUN YANLIŞLIKLA SEÇMESİNİ ENGELLEMEK İÇİN HİLE:
+                    // Parmağımızı çektiğimizde oyunun bunu "tıklama" sanmaması için butonu saniyenin binde biri kadar bir süreliğine etkisiz hale getiriyoruz.
+                    UnityEngine.UI.Button buton = dokunulanObje.GetComponentInParent<UnityEngine.UI.Button>();
+                    if (buton != null)
+                    {
+                        StartCoroutine(ButonuGeciciKapat(buton));
+                    }
+                }
+                else
+                {
+                    // Kısa tıklandıysa: Önce hover kapat, sonra SEÇME işlemini gerçekleştir
+                    ExecuteEvents.Execute(dokunulanObje, new PointerEventData(EventSystem.current), ExecuteEvents.pointerExitHandler);
+                    ExecuteEvents.Execute(dokunulanObje, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
+                }
+            }
+
+            // Her şey bittiğinde değerleri sıfırla
+            dokunulanObje = null;
+            ozellikOkunuyorMu = false;
+            dokunmaZamanlayicisi = 0f;
+        }
+    }
+
+    // Butonu anlık kapatıp açan yardımcı komut
+    private System.Collections.IEnumerator ButonuGeciciKapat(UnityEngine.UI.Button btn)
+    {
+        bool eskiDurum = btn.interactable;
+        btn.interactable = false;
+        yield return new WaitForEndOfFrame();
+        btn.interactable = eskiDurum;
+    }
+
+    // Parmağın tam olarak hangi arayüz nesnesine dokunduğunu bulur
+    private GameObject EkrandaDokunulanObjeyiBul()
+    {
+        PointerEventData isaretciVerisi = new PointerEventData(EventSystem.current);
+        isaretciVerisi.position = Input.mousePosition; 
+
+        List<RaycastResult> sonuclar = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(isaretciVerisi, sonuclar);
+
+        if (sonuclar.Count > 0)
+        {
+            return sonuclar[0].gameObject;
+        }
+        return null;
     }
 }

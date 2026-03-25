@@ -16,8 +16,8 @@ MonoBehaviour:
   perkId: PerkLeech
   loreText: A parasitic organism that feeds on the essence of powerful foes. Each
     elite kill leaves behind a crystallized fragment of their strength.
-  rarity: 3
+  rarity: 1
   unlockCondition: 8
-  requiredAmount: 20
+  requiredAmount: 100
   conditionParam: 
-  unlockHint: "Tek run'da 20 d\xFC\u015Fman \xF6ld\xFCr."
+  unlockHint: Kill 100 enemies in a single run.

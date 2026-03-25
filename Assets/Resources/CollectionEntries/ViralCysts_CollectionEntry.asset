@@ -20,4 +20,4 @@ MonoBehaviour:
   unlockCondition: 14
   requiredAmount: 50
   conditionParam: 
-  unlockHint: Toplam 50 kez tur atla.
+  unlockHint: Skip your turn 50 times in total.

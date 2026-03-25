@@ -13,6 +13,7 @@ public class SlipperySecretionPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 3;
+        rarity = PerkRarity.Common;
     }
 
     public override void OnAcquire()

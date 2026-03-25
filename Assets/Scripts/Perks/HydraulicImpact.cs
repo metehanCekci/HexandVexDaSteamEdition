@@ -6,6 +6,7 @@ public class HydraulicImpactPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 3;
+        rarity = PerkRarity.Epic;
     }
 
     public float GetWallDamagePercent()

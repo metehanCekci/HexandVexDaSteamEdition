@@ -14,6 +14,7 @@ public class PyrogenicGlandsPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 3;
+        rarity = PerkRarity.Epic;
     }
 
     public override void ModifyCombat(CombatPayload payload)
@@ -25,17 +26,17 @@ public class PyrogenicGlandsPerk : BasePerk
     {
         if (enemy == null || enemy.health.currentHP <= 0) return;
         int id = enemy.GetInstanceID();
-        burnTurnsRemaining[id] = 3; // 3 tur yanar
+        burnTurnsRemaining[id] = 5; // 5 tur yanar
         TriggerVisualPop();
         ShowBurnVFX(enemy);
-        CreateBurnOrbit(enemy, 3);
+        CreateBurnOrbit(enemy, 5);
     }
 
     public void TickBurns()
     {
         if (TurnManager.instance == null) return;
 
-        float damagePercent = currentLevel * 0.10f; // Lv1=%10, Lv2=%20, Lv3=%30
+        float damagePercent = currentLevel * 0.05f; // Lv1=%5, Lv2=%10, Lv3=%15
         List<int> toRemove = new List<int>();
 
         var burnEntries = new List<KeyValuePair<int, int>>(burnTurnsRemaining);
@@ -58,15 +59,25 @@ public class PyrogenicGlandsPerk : BasePerk
             }
 
             int damage = Mathf.Max(1, Mathf.RoundToInt(enemy.health.maxHP * damagePercent));
+            // Warlock'un burn hasarında ışınlanmaması için flag set et
+            var warlock = enemy.GetComponent<WarlockEnemyAI>();
+            if (warlock != null) warlock.isBurnDamage = true;
             enemy.health.TakeDamage(damage, false, false);
             ShowBurnVFX(enemy);
 
-            // Yanarak öldüyse kill reward ver (PerkLeech stack vs.)
+            // Yanarak öldüyse kill reward ver ve perk callback'lerini tetikle
             if (enemy.health.currentHP <= 0)
             {
                 toRemove.Add(enemyId);
                 if (TurnManager.instance.coinService != null)
                     TurnManager.instance.coinService.ProcessKillRewards(enemy);
+
+                // Perk OnEnemyKilled callback'leri
+                if (RunManager.instance != null)
+                {
+                    foreach (var p in RunManager.instance.activePerks)
+                        if (p != null) p.OnEnemyKilled(enemy);
+                }
                 continue;
             }
 

@@ -5,6 +5,7 @@ public class VolatileRollPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 1;
+        rarity = PerkRarity.Rare;
         isRerollPerk = true;
         priority = -10; // Run early so other perks see the final 1/6 values
     }

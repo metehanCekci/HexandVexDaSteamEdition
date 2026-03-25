@@ -47,9 +47,9 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Recoil Spring
-  description: When you deal damage to an enemy, both you and the target are knocked
-    back by 1 tile. If you land adjacent to an enemy after this jump, you immediately
-    make another attack roll.
+  description: After attacking, bounce backward. If you land next to another enemy,
+    attack again.
   icon: {fileID: -4629115114559398676, guid: f579110dd4bb8974499ed93e2b54edd4, type: 3}
   priority: 0
   isRerollPerk: 0
+  rarity: 1

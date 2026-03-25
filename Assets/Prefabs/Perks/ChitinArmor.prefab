@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Chitin Armor
-  description: +15% Chance to evade damage each LVL.
+  description: +15% armor chance per level. Armor blocks all damage from one hit.
   icon: {fileID: 3394840567205637898, guid: 12b239a60ad68104f82e6ebe6d38a836, type: 3}
   priority: 0
   isRerollPerk: 0
+  rarity: 0

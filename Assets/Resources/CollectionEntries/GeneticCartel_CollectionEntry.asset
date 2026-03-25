@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 2210770434232164357, guid: 0b158b73fcc7424459ddbeb84bc7ce73, type: 3}
   perkId: GeneticCartel
-  loreText: A black-market syndicate chip that rewards market manipulation. Every reroll feeds data back to the cartel, and they tip you in raw firepower.
-  rarity: 4
+  loreText: A black-market syndicate chip that rewards market manipulation. Every
+    reroll feeds data back to the cartel, and they tip you in raw firepower.
+  rarity: 3
   unlockCondition: 0
   requiredAmount: 0
   conditionParam: 

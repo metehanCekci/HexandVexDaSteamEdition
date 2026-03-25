@@ -3,6 +3,11 @@ using System.Collections;
 
 public class BioBarrierPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     [Header("Obje Ayarları")]
     public GameObject shieldPrefab; // Kalkan objen
     
@@ -18,6 +23,23 @@ public class BioBarrierPerk : BasePerk
         RunManager.instance.hasBioBarrier = true;
         SpawnShield();
         TriggerVisualPop();
+    }
+
+    public override void OnEquip()
+    {
+        RunManager.instance.hasBioBarrier = true;
+        SpawnShield();
+        TriggerVisualPop();
+    }
+
+    public override void OnUnequip()
+    {
+        RunManager.instance.hasBioBarrier = false;
+        if (currentShieldInstance != null)
+        {
+            Destroy(currentShieldInstance);
+            currentShieldInstance = null;
+        }
     }
 
     public override void OnLevelStart()

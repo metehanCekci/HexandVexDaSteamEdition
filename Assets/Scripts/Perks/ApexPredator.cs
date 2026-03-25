@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class ApexPredatorPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Legendary;
+    }
+
     public override void ModifyCombat(CombatPayload payload)
     {
         payload.multiplier *= 5.0f; // 6 Katı devasa hasar

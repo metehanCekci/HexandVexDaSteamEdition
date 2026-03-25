@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Hypertrophic Shell
-  description: "Max HP'ni kal\u0131c\u0131 olarak +1 art\u0131r\u0131r. (Maks: 10
-    HP)"
+  description: 'Permanently increase max HP by +1 per level. (Max: 10 HP)'
   icon: {fileID: -4811080509247167860, guid: ff9b5df22a94626438f8bdde5dbff19b, type: 3}
   priority: 0
   isRerollPerk: 0

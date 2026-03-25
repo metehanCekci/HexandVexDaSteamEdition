@@ -251,6 +251,7 @@ public class HealthScript : MonoBehaviour
 
     private void Die()
     {
+        if (isDead) return; // Çift ölüm çağrısını engelle
         isDead = true;
         OnDeath?.Invoke();
 

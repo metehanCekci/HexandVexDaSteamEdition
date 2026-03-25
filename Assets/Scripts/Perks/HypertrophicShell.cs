@@ -7,6 +7,7 @@ public class HypertrophicShellPerk : BasePerk
     void OnEnable()
     {
         maxLevel = 5;
+        rarity = PerkRarity.Common;
     }
 
     public override void OnAcquire()

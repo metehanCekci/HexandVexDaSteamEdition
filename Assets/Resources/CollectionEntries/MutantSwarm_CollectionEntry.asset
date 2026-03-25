@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
   perkPrefab: {fileID: 1412653846867171776, guid: fca2ad3f3a913c64bba24f7617234511, type: 3}
   perkId: MutantSwarm
-  loreText: Micro-organisms bred in your marrow that multiply with each new die. The more dice you roll, the more the swarm amplifies your damage.
+  loreText: Micro-organisms bred in your marrow that multiply with each new die.
+    The more dice you roll, the more the swarm amplifies your damage.
   rarity: 1
   unlockCondition: 6
   requiredAmount: 1

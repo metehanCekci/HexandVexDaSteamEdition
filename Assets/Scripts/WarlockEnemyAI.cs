@@ -20,6 +20,7 @@ public class WarlockEnemyAI : MonoBehaviour
     private int cyclePhase = 0;
 
     private bool isTransitioning = false;
+    [HideInInspector] public bool isBurnDamage = false;
     private int previousHP;
 
     private List<Vector3Int> attack1WarningCells = new List<Vector3Int>();
@@ -109,8 +110,24 @@ public class WarlockEnemyAI : MonoBehaviour
         if (myEnemyMovement.health.currentHP < previousHP && !isTransitioning)
         {
             previousHP = myEnemyMovement.health.currentHP;
-            StartCoroutine(HitAndTeleportSequence());
+            // Stun durumundaysa ışınlanma — sadece warninglerı temizle ve döngüyü sıfırla
+            if (myEnemyMovement.skipTurns > 0)
+            {
+                ClearAllWarnings();
+                cyclePhase = 0;
+                currentIdleCounter = initialIdleOffset;
+            }
+            // Burn/DoT hasarı sırasında ışınlanma — saldırısını interrupt etme
+            else if (isBurnDamage)
+            {
+                // HP güncellendi, teleport yok, saldırı devam eder
+            }
+            else
+            {
+                StartCoroutine(HitAndTeleportSequence());
+            }
         }
+        isBurnDamage = false;
     }
 
     void OnDestroy()

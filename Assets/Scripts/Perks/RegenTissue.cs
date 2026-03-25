@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class RegenTissuePerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Common;
+    }
+
     public override void OnAcquire()
     {
         ApplyHealthBoost();
@@ -15,6 +20,11 @@ public class RegenTissuePerk : BasePerk
     }
 
     public override void OnLevelClear()
+    {
+        ApplyHealthBoost();
+    }
+
+    public override void OnLetsGoAgain()
     {
         ApplyHealthBoost();
     }

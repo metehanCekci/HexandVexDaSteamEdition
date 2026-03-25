@@ -10,6 +10,9 @@ public class GlassCanonPerk : BasePerk
 
     public override void OnAcquire()
     {
+        // Sadece max HP 3'ten büyükse düşür — zaten 3 veya altındaysa dokunma
+        if (RunManager.instance.playerMaxHealth <= 3) return;
+
         RunManager.instance.playerMaxHealth = 3;
         if (RunManager.instance.playerCurrentHealth > 3)
             RunManager.instance.playerCurrentHealth = 3;
@@ -29,13 +32,14 @@ public class GlassCanonPerk : BasePerk
     public override void OnEquip()
     {
         var rm = RunManager.instance;
+        if (rm.playerMaxHealth <= 3) return;
+
         int oldMax = rm.playerMaxHealth;
         int newMax = 3;
 
-        // Orantili HP: 4/5 (80%) -> 2/3 (66% -> floor)
-        float ratio = oldMax > 0 ? (float)rm.playerCurrentHealth / oldMax : 1f;
         rm.playerMaxHealth = newMax;
-        rm.playerCurrentHealth = Mathf.Clamp(Mathf.RoundToInt(ratio * newMax), 1, newMax);
+        // Current HP'yi 3'e düşür ama asla mevcut değerin altına indirme
+        rm.playerCurrentHealth = Mathf.Clamp(rm.playerCurrentHealth, 1, newMax);
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
@@ -50,19 +54,14 @@ public class GlassCanonPerk : BasePerk
     {
         var rm = RunManager.instance;
         int defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
-        int oldMax = rm.playerMaxHealth;
-        int newMax = defaultMaxHP;
 
-        // Orantili HP: 3/3 (100%) -> 5/5 (100%), 2/3 (66%) -> 3/5 (60%)
-        float ratio = oldMax > 0 ? (float)rm.playerCurrentHealth / oldMax : 1f;
-        rm.playerMaxHealth = newMax;
-        rm.playerCurrentHealth = Mathf.Clamp(Mathf.RoundToInt(ratio * newMax), 1, newMax);
+        // Sadece maxHP'yi geri yükselt, currentHP'ye dokunma (stash abuse fix)
+        rm.playerMaxHealth = defaultMaxHP;
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
             var h = TurnManager.instance.player.health;
-            h.maxHP = newMax;
-            h.currentHP = rm.playerCurrentHealth;
+            h.maxHP = defaultMaxHP;
             h.updateHealth();
         }
     }

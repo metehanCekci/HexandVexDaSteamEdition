@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class MutantSwarmPerk : BasePerk
 {
+    void OnEnable()
+    {
+        rarity = PerkRarity.Rare;
+    }
+
     // YENİ: Kart tekrar seçilirse seviye artsın
     public override void Upgrade()
     {
@@ -11,8 +16,7 @@ public class MutantSwarmPerk : BasePerk
 
     public override void ModifyCombat(CombatPayload payload)
     {
-        // Seviye 1'de %25 (0.25f), Seviye 2'de %50 (0.50f), Seviye 3'te %75 (0.75f) çarpan ekler!
-        float bonusPerDie = 0.25f * currentLevel;
+        float bonusPerDie = 0.5f * currentLevel;
         float extraMult = 1.0f + (payload.diceRolls.Count * bonusPerDie);
         
         payload.multiplier *= extraMult;
