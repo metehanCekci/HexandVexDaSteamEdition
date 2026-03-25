@@ -5,26 +5,22 @@ public class ChitinArmorPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        maxLevel = 1;
     }
 
-    // İlk alındığında çalışır (1. Seviye)
     public override void OnAcquire()
     {
-        RunManager.instance.armorChance += 0.15f; 
+        RunManager.instance.dodgeChance += 0.30f;
         TriggerVisualPop();
     }
 
-    // YENİ: Kart tekrar seçilirse çalışır (Seviye Atlama)
-    public override void Upgrade()
+    public override void OnEquip()
     {
-        base.Upgrade();
-
-        RunManager.instance.armorChance += 0.15f;
-        TriggerVisualPop();
+        RunManager.instance.dodgeChance += 0.30f;
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override void OnUnequip()
     {
-        payload.multiplier *= 999f;
+        RunManager.instance.dodgeChance -= 0.30f;
     }
 }

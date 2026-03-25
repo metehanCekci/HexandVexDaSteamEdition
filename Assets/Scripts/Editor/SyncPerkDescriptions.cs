@@ -12,7 +12,7 @@ public class SyncPerkDescriptions
         {
             // === COMMON ===
             { "LootGland",          "Gain +1 bonus gold per kill for each level." },
-            { "ChitinArmor",        "+15% armor chance per level. Armor blocks all damage from one hit." },
+            { "ChitinArmor",        "30% chance to dodge incoming attacks." },
             { "RegenTissue",        "Heal 1 HP per level at the start of each level." },
             { "PassiveEnzyme",      "Earn gold when you skip your turn with more than 1 enemy. +2 gold per level." },
             { "DormantSpore",       "Each skipped turn stores +1 bonus die for your next attack." },
@@ -73,17 +73,17 @@ public class SyncPerkDescriptions
             // === NEW ===
             { "CondensedFury",      "Roll 1 fewer die, but add +3 flat damage to each remaining die. +1 per level." },
             { "SymbioticArsenal",   "Gain +0.5x damage multiplier per filled item slot. +0.25x per level." },
-            { "IronWill",           "Complete a level without taking damage to gain +2x multiplier next combat. +1x per level." },
-            { "NeuralHijack",       "Knock an enemy into another to convert it. Ally has 3 HP, deals your last attack's damage to adjacent enemies each turn." },
+            { "IronWill",           "Each level cleared without taking damage adds +1x multiplier. Stacks across levels. Resets on damage." },
+            { "NeuralHijack",       "Knock an enemy into another to convert it. Ally has 3 HP, deals the dice total from the converting attack to adjacent enemies each turn." },
             { "SeismicStep",        "Skipping makes your tile unstable. When you leave, it collapses. Enemies on it take damage." },
-            { "CascadeProtocol",    "Each attack's dice total carries over to the next as bonus damage. Resets each room." },
+            { "CascadeProtocol",    "Each attack's dice total carries over to the next as bonus damage. Resets each room or when you take damage." },
             { "DiceHoarder",        "Gain +1 permanent die for every perk selection and shop you visit." },
             { "PentUpStrike",       "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once." },
             { "VoidHunger",         "Gain +0.5x damage multiplier for every tile that collapses. Permanent." },
             { "Deadweight",         "Stunned enemies take 2x damage. +1x per level." },
             { "KillChain",          "Killing an enemy grants +1 extra move this turn. +1 per level." },
             { "InsurancePolicy",    "Gain gold when you take damage. +3 gold per HP lost at Lv1, +5 at Lv2, +7 at Lv3." },
-            { "PhantomAssault",     "Attacks leave a ghost at your position and teleport you to a random tile. Skip to unleash all ghosts — each attacks with full dice damage." },
+            { "PhantomAssault",     "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each." },
 
             // === SECRET ===
             { "SymbioticFury",      "Dice values are multiplied together instead of added." },

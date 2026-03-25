@@ -5,15 +5,32 @@ using System.Linq;
 /// Cascade Protocol (Legendary)
 /// Her saldırının zar toplamı (kritik/multiplier HARİÇ) bir sonraki saldırıya flat bonus olarak eklenir.
 /// Lv1: %100, Lv2: %125, Lv3: %150 birikim oranı.
-/// Oda bitince sıfırlanır.
+/// Oda bitince VEYA hasar alınca sıfırlanır.
 /// </summary>
 public class CascadeProtocolPerk : BasePerk
 {
     private int accumulatedDamage = 0;
+    private bool subscribed = false;
 
     void OnEnable()
     {
         rarity = PerkRarity.Legendary;
+    }
+
+    public override void OnAcquire()
+    {
+        Subscribe();
+    }
+
+    public override void OnEquip()
+    {
+        Subscribe();
+    }
+
+    public override void OnUnequip()
+    {
+        Unsubscribe();
+        accumulatedDamage = 0;
     }
 
     public override void ModifyCombat(CombatPayload payload)
@@ -31,6 +48,38 @@ public class CascadeProtocolPerk : BasePerk
     }
 
     public override void OnLevelStart()
+    {
+        Subscribe();
+        accumulatedDamage = 0;
+    }
+
+    void OnDestroy()
+    {
+        Unsubscribe();
+    }
+
+    private void Subscribe()
+    {
+        if (subscribed) return;
+        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        {
+            TurnManager.instance.player.health.OnDamaged += OnPlayerDamaged;
+            subscribed = true;
+        }
+    }
+
+    private void Unsubscribe()
+    {
+        if (!subscribed) return;
+        if (TurnManager.instance != null && TurnManager.instance.player != null
+            && TurnManager.instance.player.health != null)
+        {
+            TurnManager.instance.player.health.OnDamaged -= OnPlayerDamaged;
+        }
+        subscribed = false;
+    }
+
+    private void OnPlayerDamaged(int remainingHP)
     {
         accumulatedDamage = 0;
     }

@@ -50,7 +50,10 @@
       "Bash(grep -i \"kist\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)",
       "Bash(grep -n \"BreakShield\\\\|hasBioBarrier\\\\|bioBarrier\\\\|BioBarrier\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition -name PerkCollectionDatabase* -o -name *.asset)",
-      "Bash(grep -n \"PyrogenicGlands\\\\|rarity = Perk\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)"
+      "Bash(grep -n \"PyrogenicGlands\\\\|rarity = Perk\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Resources/CollectionEntries -type f -name *.asset)",
+      "Bash(find Assets/Scripts/Perks -name \"*.cs\" -exec grep -l \"GetDescription\\\\|description =\" {})",
+      "Bash(grep -n \"shopRerollStack\" Assets/Scripts/*.cs)"
     ]
   }
 }

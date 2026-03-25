@@ -61,7 +61,6 @@ public class TurnManager : MonoBehaviour
     public bool isPlayerTurn = true;
     public bool hasAttackedThisTurn = false;
     public bool isAttackAnimationPlaying = false;
-    private bool isPhantomAssaultActive = false;
 
     [HideInInspector] public bool isNecroShotTargeting = false;
     [HideInInspector] public bool isBombPlacementTargeting = false;
@@ -1394,17 +1393,21 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        // Phantom Assault: hayaletler de saldırır
+        // Phantom Assault: hayaletlere sırayla ışınlan, her birinde etraftaki düşmanlara saldır
         if (!CleanupDeadAndCheckLevelClear())
         {
             var phantomAssaultPerk = RunManager.instance.activePerks.Find(p => p is PhantomAssaultPerk) as PhantomAssaultPerk;
             if (phantomAssaultPerk != null && phantomAssaultPerk.HasGhosts())
             {
-                List<Vector3Int> ghostCells = phantomAssaultPerk.GetGhostCellsWithTargets();
-                foreach (var ghostCell in ghostCells)
+                List<Vector3Int> allGhosts = phantomAssaultPerk.GetAllGhostCells();
+                foreach (var ghostCell in allGhosts)
                 {
+                    // Teleport player to this ghost cell
+                    yield return StartCoroutine(phantomAssaultPerk.TeleportPlayerToCell(ghostCell));
+
+                    // Attack adjacent enemies at ghost position
                     List<EnemyMovement> ghostTargets = GetAdjacentEnemies(ghostCell);
-                    if (ghostTargets.Count > 0)
+                    if (!isMitsuri && ghostTargets.Count > 0)
                     {
                         isAttackAnimationPlaying = true;
                         yield return StartCoroutine(MultiAttack(ghostTargets));
@@ -1657,6 +1660,21 @@ public class TurnManager : MonoBehaviour
         foreach (var e in enemies) if (e != null && e.skipTurns <= 0 && !e.isAllied) e.ExecuteLockedMove();
         yield return new WaitUntil(() => { foreach (var e in enemies) if (e != null && e.IsMoving()) return false; return true; });
         yield return new WaitForSeconds(0.2f);
+
+        // Phantom Assault: düşmanlar hayaletlerin üstüne yürürse o hayalet yok olur
+        if (RunManager.instance != null)
+        {
+            var paPerk = RunManager.instance.activePerks.Find(p => p is PhantomAssaultPerk) as PhantomAssaultPerk;
+            if (paPerk != null && paPerk.HasGhosts())
+            {
+                List<Vector3Int> ghostsToRemove = new List<Vector3Int>();
+                foreach (var ghostCell in paPerk.GetAllGhostCells())
+                {
+                    if (IsEnemyAtCell(ghostCell)) ghostsToRemove.Add(ghostCell);
+                }
+                foreach (var cell in ghostsToRemove) paPerk.DestroyGhostAtCell(cell);
+            }
+        }
 
         // ========================================================
         // MAYIN KONTROLÜ
@@ -2184,6 +2202,12 @@ public class TurnManager : MonoBehaviour
             }
             else
             {
+                // Phantom Assault: düşman knockback yiyip hücresini boşaltıyorsa, eski yerine hayalet bırak
+                if (RunManager.instance != null)
+                {
+                    var paPerk = RunManager.instance.activePerks.Find(p => p is PhantomAssaultPerk) as PhantomAssaultPerk;
+                    if (paPerk != null) paPerk.SpawnGhostAtCell(e.GetCurrentCellPosition());
+                }
                 e.ApplyStun(1, false); e.StartKnockbackMovement(rawTargetCell);
             }
         }
@@ -2346,17 +2370,7 @@ public class TurnManager : MonoBehaviour
         finalDamage = payload.GetFinalDamage();
         RunManager.instance.totalDamageDealt += finalDamage; // Toplam hasarı ekle
 
-        // Phantom Assault: saldırı sonrası hayalet bırak + rastgele tile'a ışınlan
-        if (!isPhantomAssaultActive && player != null && player.health.currentHP > 0)
-        {
-            var phantomAssaultPerk = RunManager.instance.activePerks.Find(p => p is PhantomAssaultPerk) as PhantomAssaultPerk;
-            if (phantomAssaultPerk != null)
-            {
-                isPhantomAssaultActive = true;
-                yield return StartCoroutine(phantomAssaultPerk.SpawnGhostAndTeleport());
-                isPhantomAssaultActive = false;
-            }
-        }
+        // (Phantom Assault ghost placement now handled in knockback section above)
     }
 
     private IEnumerator EnemyAttackCoroutine(List<EnemyMovement> attackers)
@@ -2447,6 +2461,12 @@ public class TurnManager : MonoBehaviour
         enemy.skipTurns = 0;
         enemy.isBumping = false;
 
+        // Neural Hijack: oyuncunun bu turdaki toplam hasarını kaydet
+        enemy.hijackDamage = Mathf.Max(1, finalDamage);
+
+        // Okları gizle — ally'nin yön oku göstermesine gerek yok
+        enemy.SetArrowVisibility(false);
+
         // Yeşil tint — dost olduğu belli olsun (hasar flash sonrası da korunsun)
         Color allyColor = new Color(0.3f, 1f, 0.4f, 1f);
         enemy.health.SetOriginalColor(allyColor);
@@ -2507,6 +2527,7 @@ public class TurnManager : MonoBehaviour
                     ScaffoldManager.instance.OnEntityEnter(bestMove);
                 }
                 ally.StartKnockbackMovement(bestMove); // Hareket için knockback kullan (smooth movement)
+                ally.SetArrowVisibility(false); // Ally okları göstermesin
             }
         }
 
@@ -2541,7 +2562,7 @@ public class TurnManager : MonoBehaviour
 
                 foreach (var target in targets)
                 {
-                    int allyDamage = Mathf.Max(1, Mathf.FloorToInt(target.health.maxHP * 0.25f));
+                    int allyDamage = Mathf.Max(1, ally.hijackDamage);
                     target.health.TakeDamage(allyDamage);
 
                     // Knockback: düşmanı ally'den uzağa it

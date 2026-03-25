@@ -95,7 +95,7 @@ public class CreateNewPerkPrefabs
             "Gain gold when you take damage. +3 gold per HP lost at Lv1, +5 at Lv2, +7 at Lv3.");
 
         CreatePerk<PhantomAssaultPerk>("PhantomAssault", "Phantom Assault",
-            "Attacks leave a ghost at your position and teleport you to a random tile. Skip to unleash all ghosts — each attacks with full dice damage.");
+            "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each.");
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();

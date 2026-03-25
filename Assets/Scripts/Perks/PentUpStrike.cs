@@ -18,6 +18,11 @@ public class PentUpStrikePerk : BasePerk
         rarity = PerkRarity.Legendary;
     }
 
+    public override void OnAcquire()
+    {
+        description = GetDescription();
+    }
+
     public override void ModifyCombat(CombatPayload payload)
     {
         if (isReleasing)
@@ -28,6 +33,7 @@ public class PentUpStrikePerk : BasePerk
             payload.flatBonus += Mathf.FloorToInt(bonus);
             storedDamage = 0;
             isReleasing = false;
+            description = GetDescription();
             TriggerVisualPop();
         }
         else
@@ -42,6 +48,7 @@ public class PentUpStrikePerk : BasePerk
             payload.flatBonus = 0;
             payload.multiplier = 0f;
 
+            description = GetDescription();
             TriggerVisualPop();
         }
     }
@@ -56,5 +63,12 @@ public class PentUpStrikePerk : BasePerk
     {
         storedDamage = 0;
         isReleasing = false;
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        int percent = 50 + currentLevel * 50;
+        return $"Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}%.\nStored: {storedDamage}";
     }
 }

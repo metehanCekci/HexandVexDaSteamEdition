@@ -34,6 +34,8 @@ public class EnemyMovement : MonoBehaviour
     [HideInInspector] public bool isAllied = false;
     /// <summary>Bir kez dost olan düşman bir daha düşman olamaz.</summary>
     [HideInInspector] public bool wasAllied = false;
+    /// <summary>Neural Hijack: dönüştürülürken oyuncunun attığı zar toplamı. Her vuruşta bu kadar hasar verir.</summary>
+    [HideInInspector] public int hijackDamage = 0;
 
     private Vector3Int cell;
     private Vector3 targetWorldPos;

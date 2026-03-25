@@ -2,13 +2,14 @@ using UnityEngine;
 
 public class IronWillPerk : BasePerk
 {
+    private int cleanLevelStreak = 0; // Arka arkaya hasar almadan geçilen bölüm sayısı
     private bool tookDamageThisLevel = false;
-    private bool buffActive = false;
     private bool subscribed = false;
 
     void OnEnable()
     {
         rarity = PerkRarity.Rare;
+        maxLevel = 1;
     }
 
     public override void OnAcquire()
@@ -24,25 +25,23 @@ public class IronWillPerk : BasePerk
     public override void OnUnequip()
     {
         Unsubscribe();
-        buffActive = false;
+        cleanLevelStreak = 0;
         tookDamageThisLevel = false;
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
-        // Previous level was clean -> buff activates
-        if (!tookDamageThisLevel && buffActive == false)
-        {
-            // First level acquired: no buff yet (need to survive one clean level first)
-        }
         tookDamageThisLevel = false;
     }
 
     public override void OnLevelClear()
     {
-        // Finished level without damage -> activate buff for next combat
-        buffActive = !tookDamageThisLevel;
+        if (!tookDamageThisLevel)
+        {
+            cleanLevelStreak++;
+        }
+        // Hasar yediyse streak zaten OnPlayerDamaged'da sıfırlanmış olacak
     }
 
     void OnDestroy()
@@ -74,21 +73,19 @@ public class IronWillPerk : BasePerk
     private void OnPlayerDamaged(int remainingHP)
     {
         tookDamageThisLevel = true;
-        buffActive = false;
+        cleanLevelStreak = 0;
     }
 
     /// <summary>
-    /// Buff active: Lv1 +2x, Lv2 +3x, Lv3 +4x
+    /// Her hasar almadan geçilen bölüm +1x çarpan ekler.
+    /// 7 bölüm hasar almadan = 8x çarpan (1 base + 7 streak).
+    /// Hasar yiyince streak sıfırlanır.
     /// </summary>
     public override void ModifyCombat(CombatPayload payload)
     {
-        if (!buffActive) return;
+        if (cleanLevelStreak <= 0) return;
 
-        float bonus = 1f + currentLevel; // Lv1: 2, Lv2: 3, Lv3: 4
-        payload.multiplier += bonus;
+        payload.multiplier += cleanLevelStreak; // streak kadar ekstra çarpan
         TriggerVisualPop();
-
-        // Consume buff after use — need another clean level
-        buffActive = false;
     }
 }
