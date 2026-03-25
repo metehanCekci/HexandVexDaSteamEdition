@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class VolatileRollPerk : BasePerk
 {
@@ -8,34 +9,31 @@ public class VolatileRollPerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Legendary;
-        isRerollPerk = true;
-        priority = -10; // Run early so other perks see the final 1/6 values
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    /// <summary>
+    /// Base zarları 1 veya 6 olarak üretir. ShowDiceSequence'dan ÖNCE çağrılır.
+    /// </summary>
+    public void ApplyToBaseRolls(List<int> rolls)
     {
-        // Mevcut zarları 1 veya 6 yap
-        for (int i = 0; i < payload.diceRolls.Count; i++)
-            payload.diceRolls[i] = Random.value < 0.5f ? 1 : 6;
+        for (int i = 0; i < rolls.Count; i++)
+            rolls[i] = Random.value < 0.5f ? 1 : 6;
+    }
 
-        // Zincirleme: 6 gelen her zar +1 ekstra zar üretir
-        int startIndex = 0;
-        int chainCount = 0;
-        while (chainCount < MAX_CHAIN)
-        {
-            int newSixes = 0;
-            for (int i = startIndex; i < payload.diceRolls.Count; i++)
-                if (payload.diceRolls[i] == 6) newSixes++;
+    /// <summary>
+    /// 6 gelen zarlardan zincirleme extra zarlar üretir.
+    /// Her chain adımında yeni zarları döndürür (animasyon için tek tek çağrılacak).
+    /// </summary>
+    public List<int> GenerateChainRolls(List<int> allRolls, int startIndex)
+    {
+        List<int> newRolls = new List<int>();
+        int newSixes = 0;
+        for (int i = startIndex; i < allRolls.Count; i++)
+            if (allRolls[i] == 6) newSixes++;
 
-            if (newSixes == 0) break;
+        for (int i = 0; i < newSixes && allRolls.Count + newRolls.Count < startIndex + MAX_CHAIN; i++)
+            newRolls.Add(Random.value < 0.5f ? 1 : 6);
 
-            startIndex = payload.diceRolls.Count;
-            for (int i = 0; i < newSixes; i++)
-                payload.diceRolls.Add(Random.value < 0.5f ? 1 : 6);
-
-            chainCount++;
-        }
-
-        TriggerVisualPop();
+        return newRolls;
     }
 }

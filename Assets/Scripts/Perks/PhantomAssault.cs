@@ -8,15 +8,35 @@ public class PhantomAssaultPerk : BasePerk
     private List<Vector3Int> ghostCells = new List<Vector3Int>();
     private List<GameObject> ghostVisuals = new List<GameObject>();
 
+    private bool subscribed = false;
+
     void OnEnable()
     {
         maxLevel = 1;
         rarity = PerkRarity.Legendary;
     }
 
+    public override void OnAcquire()
+    {
+        SubscribeScaffold();
+        description = GetDescription();
+    }
+
+    public override void OnEquip()
+    {
+        SubscribeScaffold();
+    }
+
+    public override void OnUnequip()
+    {
+        UnsubscribeScaffold();
+        ClearGhosts();
+    }
+
     public override void OnLevelStart()
     {
         ClearGhosts();
+        SubscribeScaffold();
         description = GetDescription();
     }
 
@@ -27,7 +47,29 @@ public class PhantomAssaultPerk : BasePerk
 
     void OnDestroy()
     {
+        UnsubscribeScaffold();
         ClearGhosts();
+    }
+
+    private void SubscribeScaffold()
+    {
+        if (subscribed) return;
+        TrapTileEvents.OnTileDestroyed += OnScaffoldTileDestroyed;
+        subscribed = true;
+    }
+
+    private void UnsubscribeScaffold()
+    {
+        if (!subscribed) return;
+        TrapTileEvents.OnTileDestroyed -= OnScaffoldTileDestroyed;
+        subscribed = false;
+    }
+
+    private void OnScaffoldTileDestroyed(Vector3Int cell)
+    {
+        // Scaffold düştüğünde o cell'deki ghost'u sil
+        if (ghostCells.Contains(cell))
+            DestroyGhostAtCell(cell);
     }
 
     /// <summary>
@@ -228,8 +270,4 @@ public class PhantomAssaultPerk : BasePerk
         return $"Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each.\nGhosts: {count}";
     }
 
-    public override void OnAcquire()
-    {
-        description = GetDescription();
-    }
 }

@@ -15,6 +15,7 @@ public class IronWillPerk : BasePerk
     public override void OnAcquire()
     {
         Subscribe();
+        description = GetDescription();
     }
 
     public override void OnEquip()
@@ -27,12 +28,14 @@ public class IronWillPerk : BasePerk
         Unsubscribe();
         cleanLevelStreak = 0;
         tookDamageThisLevel = false;
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
         tookDamageThisLevel = false;
+        description = GetDescription();
     }
 
     public override void OnLevelClear()
@@ -41,7 +44,7 @@ public class IronWillPerk : BasePerk
         {
             cleanLevelStreak++;
         }
-        // Hasar yediyse streak zaten OnPlayerDamaged'da sıfırlanmış olacak
+        description = GetDescription();
     }
 
     void OnDestroy()
@@ -74,18 +77,19 @@ public class IronWillPerk : BasePerk
     {
         tookDamageThisLevel = true;
         cleanLevelStreak = 0;
+        description = GetDescription();
     }
 
-    /// <summary>
-    /// Her hasar almadan geçilen bölüm +1x çarpan ekler.
-    /// 7 bölüm hasar almadan = 8x çarpan (1 base + 7 streak).
-    /// Hasar yiyince streak sıfırlanır.
-    /// </summary>
     public override void ModifyCombat(CombatPayload payload)
     {
         if (cleanLevelStreak <= 0) return;
 
-        payload.multiplier += cleanLevelStreak; // streak kadar ekstra çarpan
+        payload.multiplier += cleanLevelStreak;
         TriggerVisualPop();
+    }
+
+    private string GetDescription()
+    {
+        return $"Each level cleared without taking damage grants +1x damage multiplier. Resets on damage.\nStreak: {cleanLevelStreak} (+{cleanLevelStreak}x)";
     }
 }
