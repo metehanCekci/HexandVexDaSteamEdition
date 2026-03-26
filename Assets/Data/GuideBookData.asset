@@ -52,8 +52,14 @@ MonoBehaviour:
     category: Combat
     subCategory: Dice
   - title: Spikes
-    bodyText: Deals damage to anyone who stepped on it.
+    bodyText: Deals damage to anyone who steps on it.
     illustration: {fileID: -5495796728273077217, guid: 7e523daeeada9bc41b425b878feadc15, type: 3}
+    category: Combat
+    subCategory: Hazards
+  - title: Scaffolding
+    bodyText: 'Scaffolding''s are very fragile. They can only be stepped on once.
+      When you leave one it will fall and modify the battlefield. '
+    illustration: {fileID: 4903512736708297273, guid: 99b1d11d96bc6d14090b3ab3263abd1b, type: 3}
     category: Combat
     subCategory: Hazards
   - title: Interruption
@@ -146,6 +152,15 @@ MonoBehaviour:
       opportunity to select a new Implant. These are permanent passive upgrades that
       integrate into your system and persist for the remainder of your run.
     illustration: {fileID: -278463727415116551, guid: bd91a29b2539e934182d963b66ef3092, type: 3}
+    category: Implants
+    subCategory: 
+  - title: Implant Order
+    bodyText: 'You can and must change the order of your implants by dragging and
+      dropping to change the outcome of your dice. They only trigger with the order
+      you set
+
+      .'
+    illustration: {fileID: -646584211181307955, guid: 2b2cb32b9f2c0d440b38eaafb3fa774c, type: 3}
     category: Implants
     subCategory: 
   - title: Rarities

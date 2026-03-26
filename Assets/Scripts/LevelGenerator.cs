@@ -473,6 +473,8 @@ public class LevelGenerator : MonoBehaviour
     private void KillUnreachableEnemies(Vector3Int playerCell)
     {
         // BFS: oyuncu cell'inden erişilebilen tüm non-hazard hücreleri bul
+        // Not: validCells'den spawn sırasında cell'ler çıkarılıyor,
+        // bu yüzden groundMap ve scaffoldMap üzerinden kontrol yapıyoruz
         HashSet<Vector3Int> reachable = new HashSet<Vector3Int>();
         Queue<Vector3Int> queue = new Queue<Vector3Int>();
         queue.Enqueue(playerCell);
@@ -486,8 +488,11 @@ public class LevelGenerator : MonoBehaviour
             {
                 Vector3Int neighbor = current + off;
                 if (reachable.Contains(neighbor)) continue;
-                if (!validCells.Contains(neighbor)) continue;
                 if (hazardCells.Contains(neighbor)) continue; // Hazard üzerinden geçilemez
+                // Hücre geçerli mi: ground veya scaffold tile'ı olmalı
+                bool hasGround = groundMap.HasTile(neighbor);
+                bool hasScaffold = scaffoldMap != null && scaffoldMap.HasTile(neighbor);
+                if (!hasGround && !hasScaffold) continue;
                 reachable.Add(neighbor);
                 queue.Enqueue(neighbor);
             }

@@ -14,6 +14,9 @@ public class DamageNumber : MonoBehaviour
         textMesh.text = damageAmount.ToString();
         textColor = textMesh.color;
 
+        // Tilemap'in önünde görünsün
+        textMesh.sortingOrder = 500;
+
         // --- DAİRESEL FIRLAMA MANTIĞI ---
         // Rastgele bir açı seçiyoruz (0 ile 360 derece arası)
         float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
