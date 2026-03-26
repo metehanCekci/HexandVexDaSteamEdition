@@ -303,8 +303,8 @@ public class LevelGenerator : MonoBehaviour
         groundMap.SetTile(playerStartCell, groundTile); // Altına sağlam zemin koy
         if (!validCells.Contains(playerStartCell)) validCells.Add(playerStartCell);
 
-        TurnManager.instance.player.transform.position = groundMap.GetCellCenterWorld(playerStartCell);
-        TurnManager.instance.player.StartKnockbackMovement(playerStartCell);
+        // ForceSetPosition: scaffold event'lerini tetiklemeden oyuncuyu doğru hücreye yerleştir
+        TurnManager.instance.player.ForceSetPosition(playerStartCell);
         validCells.Remove(playerStartCell);
 
         List<Vector3Int> spawnedEnemyCells = new List<Vector3Int>();
@@ -444,6 +444,12 @@ public class LevelGenerator : MonoBehaviour
             StartCoroutine(enemyAI.FadeSpawnCoroutine());
         }
 
+        // ========================================================
+        // ULAŞILAMAZ DÜŞMAN KONTROLÜ
+        // Oyuncudan BFS ile erişilemeyen düşmanları anında öldür
+        // ========================================================
+        KillUnreachableEnemies(playerStartCell);
+
         TurnManager.instance.isPlayerTurn = true;
         TurnManager.instance.hasAttackedThisTurn = false;
 
@@ -458,6 +464,57 @@ public class LevelGenerator : MonoBehaviour
         TurnManager.instance.Invoke("LockAllEnemyIntents", 0.1f);
 
         Debug.Log($"🗺️ Level {RunManager.instance.currentLevel} oluşturuldu!");
+    }
+
+    /// <summary>
+    /// Oyuncu pozisyonundan BFS ile erişilemeyen düşmanları anında öldürür.
+    /// Spike/hazard arkasında sıkışıp oyunu kilitleyen düşmanları engeller.
+    /// </summary>
+    private void KillUnreachableEnemies(Vector3Int playerCell)
+    {
+        // BFS: oyuncu cell'inden erişilebilen tüm non-hazard hücreleri bul
+        HashSet<Vector3Int> reachable = new HashSet<Vector3Int>();
+        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        queue.Enqueue(playerCell);
+        reachable.Add(playerCell);
+
+        while (queue.Count > 0)
+        {
+            Vector3Int current = queue.Dequeue();
+            Vector3Int[] offsets = (current.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offsets)
+            {
+                Vector3Int neighbor = current + off;
+                if (reachable.Contains(neighbor)) continue;
+                if (!validCells.Contains(neighbor)) continue;
+                if (hazardCells.Contains(neighbor)) continue; // Hazard üzerinden geçilemez
+                reachable.Add(neighbor);
+                queue.Enqueue(neighbor);
+            }
+        }
+
+        // Erişilemeyen düşmanları öldür
+        List<EnemyMovement> toKill = new List<EnemyMovement>();
+        foreach (var enemy in TurnManager.instance.enemies)
+        {
+            if (enemy == null) continue;
+            Vector3Int enemyCell = groundMap.WorldToCell(enemy.transform.position);
+            if (!reachable.Contains(enemyCell))
+            {
+                toKill.Add(enemy);
+            }
+        }
+
+        foreach (var enemy in toKill)
+        {
+            Debug.Log($"⚠️ Ulaşılamaz düşman tespit edildi, anında öldürülüyor: {enemy.name} @ {groundMap.WorldToCell(enemy.transform.position)}");
+            enemy.health.currentHP = 0;
+            if (enemy.gameObject.activeInHierarchy)
+                StartCoroutine(enemy.FadeDieCoroutine());
+        }
+
+        if (toKill.Count > 0)
+            TurnManager.instance.enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
     }
 
     // ========================================================
@@ -562,8 +619,8 @@ public class LevelGenerator : MonoBehaviour
         groundMap.SetTile(playerStartCell, groundTile); // Altına sağlam zemin koy
         if (!validCells.Contains(playerStartCell)) validCells.Add(playerStartCell);
 
-        TurnManager.instance.player.transform.position = groundMap.GetCellCenterWorld(playerStartCell);
-        TurnManager.instance.player.StartKnockbackMovement(playerStartCell);
+        // ForceSetPosition: scaffold event'lerini tetiklemeden oyuncuyu doğru hücreye yerleştir
+        TurnManager.instance.player.ForceSetPosition(playerStartCell);
         validCells.Remove(playerStartCell);
 
         List<Vector3Int> availableSpawnCells = validCells.Where(c => !hazardCells.Contains(c) && !scaffoldCells.Contains(c)).ToList();
@@ -621,6 +678,9 @@ public class LevelGenerator : MonoBehaviour
                 availableSpawnCells.RemoveAt(index);
             }
         }
+
+        // Ulaşılamaz düşman kontrolü (boss arena)
+        KillUnreachableEnemies(playerStartCell);
 
         TurnManager.instance.hasAttackedThisTurn = false;
 

@@ -249,6 +249,7 @@ public class HexMovement : MonoBehaviour
     public void ForceSetPosition(Vector3Int targetCell)
     {
         currentCellPosition = targetCell;
+        previousCellForScaffold = targetCell;
         targetWorldPosition = groundMap.GetCellCenterWorld(targetCell);
         targetWorldPosition.z = 0;
         transform.position = targetWorldPosition;

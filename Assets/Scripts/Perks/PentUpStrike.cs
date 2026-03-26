@@ -11,6 +11,7 @@ using System.Linq;
 public class PentUpStrikePerk : BasePerk
 {
     [HideInInspector] public int storedDamage = 0;
+    [HideInInspector] public int storedStacks = 0;
     [HideInInspector] public bool isReleasing = false;
 
     void OnEnable()
@@ -32,6 +33,7 @@ public class PentUpStrikePerk : BasePerk
             float bonus = storedDamage * (0.5f + currentLevel * 0.5f);
             payload.flatBonus += Mathf.FloorToInt(bonus);
             storedDamage = 0;
+            storedStacks = 0;
             isReleasing = false;
             description = GetDescription();
             TriggerVisualPop();
@@ -41,6 +43,7 @@ public class PentUpStrikePerk : BasePerk
             // Normal saldırı: zar toplamını biriktir, hasarı sıfırla
             int diceSum = payload.diceRolls.Sum();
             storedDamage += diceSum;
+            storedStacks++;
 
             // Tüm zarları 0 yap — knockback hâlâ çalışır ama hasar 0
             for (int i = 0; i < payload.diceRolls.Count; i++)
@@ -62,6 +65,7 @@ public class PentUpStrikePerk : BasePerk
     public override void OnLevelStart()
     {
         storedDamage = 0;
+        storedStacks = 0;
         isReleasing = false;
         description = GetDescription();
     }
@@ -69,6 +73,6 @@ public class PentUpStrikePerk : BasePerk
     private string GetDescription()
     {
         int percent = 50 + currentLevel * 50;
-        return $"Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}%.\nStored: {storedDamage}";
+        return $"Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}%.\nStored: {storedDamage} ({storedStacks} stacks)";
     }
 }

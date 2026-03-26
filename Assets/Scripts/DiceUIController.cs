@@ -127,6 +127,11 @@ public class DiceUIController : MonoBehaviour
         if (dieUIPrefab == null || diceUIContainer == null) return;
         GameObject newDie = Instantiate(dieUIPrefab, diceUIContainer);
         spawnedDiceUI.Add(newDie);
+
+        // Animator'ü kapat — yoksa dönme animasyonu sprite'ı override eder
+        Animator anim = newDie.GetComponent<Animator>();
+        if (anim != null) anim.enabled = false;
+
         CanvasGroup cg = newDie.GetComponent<CanvasGroup>();
         if (cg == null) cg = newDie.AddComponent<CanvasGroup>();
         cg.alpha = 1f;

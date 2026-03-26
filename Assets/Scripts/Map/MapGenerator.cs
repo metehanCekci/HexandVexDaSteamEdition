@@ -115,6 +115,9 @@ public static class MapGenerator
         // ─── SON GÜVENLİK: Layer başına en az 1 Shop garanti ───
         EnforceMinimumShop(map, totalRows);
 
+        // ─── SON GÜVENLİK: Layer başına en az 1 Rest (Campfire) garanti ───
+        EnforceMinimumRest(map, totalRows);
+
         return map;
     }
 
@@ -866,22 +869,14 @@ public static class MapGenerator
     private static void EnforceMinimumRoomTypes(MapData map, int totalRows)
     {
         // Garanti edilecek tipler (row 0 ve boss hariç node'larda)
+        // Shop, PerkSelection ve Rest her zaman en az 1 garanti
         MapNodeType[] requiredTypes = new MapNodeType[]
         {
             MapNodeType.Shop,
             MapNodeType.PerkSelection,
-            MapNodeType.EliteCombat
+            MapNodeType.EliteCombat,
+            MapNodeType.Rest
         };
-
-        // Rest sadece yeterli row varsa garanti
-        if (totalRows >= 4)
-            requiredTypes = new MapNodeType[]
-            {
-                MapNodeType.Shop,
-                MapNodeType.PerkSelection,
-                MapNodeType.EliteCombat,
-                MapNodeType.Rest
-            };
 
         foreach (var reqType in requiredTypes)
         {
@@ -939,13 +934,13 @@ public static class MapGenerator
         if (hasShop) return;
 
         // Shop yok — uygun bir Combat node'u Shop'a çevir
+        // Önce ardışık ödül yasağına uygun aday ara
         MapNode bestCandidate = null;
         foreach (var node in map.nodes)
         {
             if (node.nodeType != MapNodeType.Combat) continue;
-            if (node.row <= 1 || node.row >= totalRows) continue;
+            if (node.row <= 0 || node.row >= totalRows) continue;
 
-            // Ardışık ödül yasağı: parent veya child ödülse atla
             if (HasRewardParent(map, node)) continue;
             bool childReward = false;
             foreach (int cid in node.childIds)
@@ -955,13 +950,73 @@ public static class MapGenerator
             }
             if (childReward) continue;
 
-            // Ortaya yakın row'ları tercih et
             if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
                 bestCandidate = node;
         }
 
+        // Uygun aday yoksa yasağı gevşet — Shop KESİNLİKLE garanti olmalı
+        if (bestCandidate == null)
+        {
+            foreach (var node in map.nodes)
+            {
+                if (node.nodeType != MapNodeType.Combat) continue;
+                if (node.row <= 0 || node.row >= totalRows) continue;
+                if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
+                    bestCandidate = node;
+            }
+        }
+
         if (bestCandidate != null)
             bestCandidate.nodeType = MapNodeType.Shop;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // LAYER BAŞINA EN AZ 1 REST (CAMPFİRE) GARANTİSİ
+    // ═══════════════════════════════════════════════════════
+
+    private static void EnforceMinimumRest(MapData map, int totalRows)
+    {
+        bool hasRest = false;
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType == MapNodeType.Rest) { hasRest = true; break; }
+        }
+        if (hasRest) return;
+
+        // Rest yok — uygun bir Combat node'u Rest'e çevir
+        MapNode bestCandidate = null;
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType != MapNodeType.Combat) continue;
+            if (node.row <= 0 || node.row >= totalRows) continue;
+
+            if (HasRewardParent(map, node)) continue;
+            bool childReward = false;
+            foreach (int cid in node.childIds)
+            {
+                MapNode c = map.GetNode(cid);
+                if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
+            }
+            if (childReward) continue;
+
+            if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
+                bestCandidate = node;
+        }
+
+        // Uygun aday yoksa yasağı gevşet — Rest KESİNLİKLE garanti olmalı
+        if (bestCandidate == null)
+        {
+            foreach (var node in map.nodes)
+            {
+                if (node.nodeType != MapNodeType.Combat) continue;
+                if (node.row <= 0 || node.row >= totalRows) continue;
+                if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
+                    bestCandidate = node;
+            }
+        }
+
+        if (bestCandidate != null)
+            bestCandidate.nodeType = MapNodeType.Rest;
     }
 
     // ═══════════════════════════════════════════════════════
