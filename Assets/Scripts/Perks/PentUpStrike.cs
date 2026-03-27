@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Linq;
 
 /// <summary>
-/// Pent-Up Strike (Legendary)
+/// Pent-Up Strike (Epic)
 /// Normal saldırıda 0 hasar verir (knockback kalır), zar toplamını biriktirir.
 /// Skip ile saldırdığında biriken tüm hasarı tek seferde verir.
 /// Seviye başına birikim %25 ekstra bonus.
@@ -16,7 +16,7 @@ public class PentUpStrikePerk : BasePerk
 
     void OnEnable()
     {
-        rarity = PerkRarity.Legendary;
+        rarity = PerkRarity.Epic;
     }
 
     public override void OnAcquire()

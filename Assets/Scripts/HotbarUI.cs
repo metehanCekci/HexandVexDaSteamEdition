@@ -42,9 +42,7 @@ public class HotbarUI : MonoBehaviour
     [Header("Style")]
     public float slotSize = 60f;
     public float slotSpacing = 6f;
-    public Color emptySlotColor = new Color(0.15f, 0.15f, 0.15f, 0.7f);
     public Color occupiedSlotColor = new Color(0.25f, 0.25f, 0.25f, 0.9f);
-    public Color hoverColor = new Color(0.4f, 0.4f, 0.2f, 1f);
 
     void Awake()
     {
@@ -229,7 +227,6 @@ public class HotbarUI : MonoBehaviour
             }
             else
             {
-                slot.background.color = emptySlotColor;
                 slot.iconImage.enabled = false;
 
                 // Targeting slotu: görsel boş ama tıklanabilir (iptal için)

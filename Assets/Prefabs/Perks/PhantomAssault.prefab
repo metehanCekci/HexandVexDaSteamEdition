@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Phantom Assault
-  description: "Attacks leave a ghost at your position and teleport you to a random
-    tile. Skip to unleash all ghosts \u2014 each attacks with full dice damage."
+  description: Knockback leaves a ghost where the enemy stood. Skip to teleport through
+    all ghosts, attacking at each.
   icon: {fileID: -8311660539121137023, guid: 962e29b65ef655143bedc14f599a75f9, type: 3}
   priority: 0
   isRerollPerk: 0

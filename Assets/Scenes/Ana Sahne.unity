@@ -10223,7 +10223,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.048593793, g: 0.07551619, b: 0.11320752, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -11691,8 +11691,10 @@ MonoBehaviour:
   - {fileID: 5394549753348315536, guid: cf3a56e0f0e94264a888cb3c80fed132, type: 3}
   - {fileID: 1666585634419841794, guid: a9f64b1f3e6c7244581865d91998d322, type: 3}
   - {fileID: 4520883504955689006, guid: 02cb28d0d7f5084419350d73f47a6370, type: 3}
+  - {fileID: 2210770434232164357, guid: 0b158b73fcc7424459ddbeb84bc7ce73, type: 3}
   - {fileID: 4585818349810526154, guid: 26fd61e6f0b68ca4fb17f7fe10cd0267, type: 3}
   - {fileID: 8770049335834323996, guid: 1867db604725d11428bc9a201d26bfb0, type: 3}
+  - {fileID: 8370909524944938661, guid: 07c4326b41c5c3443ab33cbef7cd0141, type: 3}
   - {fileID: 627726755686980212, guid: d35003d2ffe1e424e86da597f8067bf3, type: 3}
   - {fileID: 575377947375056754, guid: 19a8e2458f31e9844aea1d7486c8bad8, type: 3}
   - {fileID: 4642896074790599915, guid: e17e7720bd834d14e99b460ac4184a3c, type: 3}
@@ -11702,10 +11704,8 @@ MonoBehaviour:
   - {fileID: 7263386612016704444, guid: c024d6c959b8a2e478f34e4b27bafe25, type: 3}
   - {fileID: 6227027999208693742, guid: 8899eb9f49ba3224ea873c33615ccb13, type: 3}
   - {fileID: 1111111111111111401, guid: 0c01cbaa647bca94f8399f77678ce192, type: 3}
-  - {fileID: 2210770434232164357, guid: 0b158b73fcc7424459ddbeb84bc7ce73, type: 3}
   - {fileID: 1111111111111111101, guid: a8326ac1ab2ad7543a14fc4a69b1ac38, type: 3}
   - {fileID: 7733694003799486102, guid: 33746d0890e3b1549bf3c320ca4a1ecf, type: 3}
-  - {fileID: 8370909524944938661, guid: 07c4326b41c5c3443ab33cbef7cd0141, type: 3}
   - {fileID: 3813607909340182871, guid: a140a693559f868439b7ff2cc7e43ad8, type: 3}
   - {fileID: 9102810684379735990, guid: 296dc476f5b22b54ea5b9e519e90eb73, type: 3}
   - {fileID: 1111111111111111501, guid: 9c73e59b7e793984eb928c9b30a3c6a7, type: 3}
@@ -12032,9 +12032,7 @@ MonoBehaviour:
   hotkeys: 3100000032000000330000003400000035000000
   slotSize: 59.2
   slotSpacing: 12.33
-  emptySlotColor: {r: 0.15, g: 0.15, b: 0.15, a: 0.7}
-  occupiedSlotColor: {r: 0.25, g: 0.25, b: 0.25, a: 0.9}
-  hoverColor: {r: 0.4, g: 0.4, b: 0.2, a: 1}
+  occupiedSlotColor: {r: 0.047614805, g: 0.06708348, b: 0.09433961, a: 1}
 --- !u!4 &983546607
 Transform:
   m_ObjectHideFlags: 0
@@ -12855,7 +12853,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.048593793, g: 0.07551619, b: 0.11320752, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -20540,7 +20538,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.048593793, g: 0.07551619, b: 0.11320752, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

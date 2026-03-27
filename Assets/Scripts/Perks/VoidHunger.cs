@@ -4,7 +4,7 @@ using UnityEngine;
 /// Void Hunger (Common)
 /// Çöken her tile (scaffold + seismic) başına kalıcı +0.5x damage multiplier.
 /// Run boyunca birikir, sıfırlanmaz.
-/// Lv başına birikim oranı: Lv1: +0.5x, Lv2: +0.75x, Lv3: +1.0x
+/// +0.25x per collapsed tile, max level 1
 /// </summary>
 public class VoidHungerPerk : BasePerk
 {
@@ -14,6 +14,7 @@ public class VoidHungerPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        maxLevel = 1;
     }
 
     public override void OnAcquire()
@@ -51,15 +52,13 @@ public class VoidHungerPerk : BasePerk
     {
         if (collapsedCount <= 0) return;
 
-        float bonusPerTile = 0.25f + currentLevel * 0.25f; // Lv1: 0.5, Lv2: 0.75, Lv3: 1.0
-        payload.multiplier += collapsedCount * bonusPerTile;
+        payload.multiplier += collapsedCount * 0.25f;
         TriggerVisualPop();
     }
 
     private string GetDescription()
     {
-        float bonusPerTile = 0.25f + currentLevel * 0.25f;
-        float totalBonus = collapsedCount * bonusPerTile;
-        return $"Each collapsed tile grants permanent +{bonusPerTile:F2}x damage multiplier.\nCollapsed: {collapsedCount} (+{totalBonus:F1}x)";
+        float totalBonus = collapsedCount * 0.25f;
+        return $"Each collapsed tile grants permanent +0.25x damage multiplier.\nCollapsed: {collapsedCount} (+{totalBonus:F1}x)";
     }
 }

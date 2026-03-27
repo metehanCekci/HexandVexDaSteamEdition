@@ -56,6 +56,15 @@ public class SeismicStepPerk : BasePerk
     {
         if (!shakingCells.Contains(oldCell)) return;
 
+        // Pre-collapse safety: don't collapse if it would disconnect player from all enemies
+        if (TurnManager.instance != null && !TurnManager.instance.WouldRemainConnectedToEnemies(oldCell))
+        {
+            // Tile stabilizes — cancel shake, don't collapse
+            StopShake(oldCell);
+            shakingCells.Remove(oldCell);
+            return;
+        }
+
         // Titreşimi durdur
         StopShake(oldCell);
         shakingCells.Remove(oldCell);

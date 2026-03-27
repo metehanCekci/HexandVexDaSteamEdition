@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Iron Will
-  description: Complete a level without taking damage to gain +2x multiplier next
-    combat. +1x per level.
+  description: Each level cleared without taking damage adds +1x multiplier. Stacks
+    across levels. Resets on damage.
   icon: {fileID: -378382919798162192, guid: a4d8aaef9f4e2a546a002486ae8ce803, type: 3}
   priority: 0
   isRerollPerk: 0

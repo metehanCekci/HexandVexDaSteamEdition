@@ -4,7 +4,7 @@ public class ShopRerollStackPerk : BasePerk
 {
     void OnEnable()
     {
-        rarity = PerkRarity.Legendary;
+        rarity = PerkRarity.Epic;
     }
 
     public override void OnAcquire()

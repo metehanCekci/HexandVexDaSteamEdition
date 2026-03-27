@@ -236,6 +236,17 @@ public class LevelUpManager : MonoBehaviour
         ShowLevelUpScreen();
     }
 
+    /// <summary>
+    /// Lucky Clover item perk ekranında kullanıldığında çağrılır.
+    /// Eşit rarity şanslarıyla yeniden roll atar.
+    /// </summary>
+    public void LuckyCloverReroll()
+    {
+        currentChoices.Clear();
+        StopAllCoroutines();
+        ShowLevelUpScreen();
+    }
+
     private bool IsPerkMaxedOut(GameObject perkPrefab)
     {
         if (perkPrefab == null || RunManager.instance == null) return true;
@@ -265,6 +276,21 @@ public class LevelUpManager : MonoBehaviour
         // Boss reward → legendary garanti
         if (isBossReward && legendaryPerks.Count > 0)
             return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
+
+        // Lucky Clover item aktifse: tüm rarityler eşit şans (%25)
+        if (RunManager.instance != null && RunManager.instance.hasLuckyClover)
+        {
+            float eqRoll = Random.Range(0f, 100f);
+            if (eqRoll < 25f && legendaryPerks.Count > 0)
+                return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
+            if (eqRoll < 50f && epicPerks.Count > 0)
+                return epicPerks[Random.Range(0, epicPerks.Count)];
+            if (eqRoll < 75f && rarePerks.Count > 0)
+                return rarePerks[Random.Range(0, rarePerks.Count)];
+            if (commonPerks.Count > 0)
+                return commonPerks[Random.Range(0, commonPerks.Count)];
+            return null;
+        }
 
         // Yüzdelik sistem: Legendary dahil
         // Level ilerledikçe legendary şansı artar
@@ -370,6 +396,10 @@ public class LevelUpManager : MonoBehaviour
             ? choiceIcons[index].gameObject : null;
 
         RunManager.instance.AddPerk(chosenPerk);
+
+        // Lucky Clover etkisini tüket (bir perk seçimi boyunca geçerli)
+        if (RunManager.instance.hasLuckyClover)
+            RunManager.instance.hasLuckyClover = false;
 
         // Map sistemi aktif değilse eski davranış (level++)
         if (MapManager.instance == null)

@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: PentUpStrike
   loreText: A kinetic absorption organ that converts failed impacts into stored potential
     energy. The longer you wait, the more devastating the release.
-  rarity: 3
+  rarity: 2
   unlockCondition: 14
   requiredAmount: 75
   conditionParam: 

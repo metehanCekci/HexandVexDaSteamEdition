@@ -53,6 +53,7 @@ public class RunManager : MonoBehaviour
     public bool surgeBootNextTurn = false;
     [HideInInspector] public bool surgeBootActive = false;
     public bool hasPerkReroll = false; // Bu tur 2 hex hareket edebilir mi?
+    public bool hasLuckyClover = false; // Lucky Clover item -- sonraki perk seciminde esit rarity
 
     [Header("Silah Seçimi")]
     public WeaponType selectedWeapon = WeaponType.Greatsword;

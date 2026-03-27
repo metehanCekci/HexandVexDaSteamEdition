@@ -68,7 +68,7 @@ public class SyncPerkRaritiesToPrefabs
             { "TerminalFuryGland",  PerkRarity.Legendary },
             { "HostSyndrome",       PerkRarity.Legendary },
             { "CapitalistPunch",    PerkRarity.Legendary },
-            { "GeneticCartel",      PerkRarity.Legendary },
+            { "GeneticCartel",      PerkRarity.Epic },
 
             // Secret
             { "SymbioticFury",      PerkRarity.Secret },
@@ -82,7 +82,7 @@ public class SyncPerkRaritiesToPrefabs
             { "SeismicStep",        PerkRarity.Legendary },
             { "CascadeProtocol",    PerkRarity.Legendary },
             { "DiceHoarder",        PerkRarity.Legendary },
-            { "PentUpStrike",       PerkRarity.Legendary },
+            { "PentUpStrike",       PerkRarity.Epic },
             { "VoidHunger",         PerkRarity.Common },
             { "Deadweight",         PerkRarity.Rare },
             { "KillChain",          PerkRarity.Epic },

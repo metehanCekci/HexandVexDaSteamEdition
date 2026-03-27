@@ -48,9 +48,8 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Cascade Protocol
   description: Each attack's dice total carries over to the next as bonus damage.
-    Resets each room.
+    Resets each room or when you take damage.
   icon: {fileID: -6089804444313813029, guid: 4874656e737f2054095ccfdd9bef0d9b, type: 3}
   priority: 0
   isRerollPerk: 0
   rarity: 3
-  accumulatedDamage: 0

@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: GeneticCartel
   loreText: A black-market syndicate chip that rewards market manipulation. Every
     reroll feeds data back to the cartel, and they tip you in raw firepower.
-  rarity: 3
+  rarity: 2
   unlockCondition: 0
   requiredAmount: 0
   conditionParam: 

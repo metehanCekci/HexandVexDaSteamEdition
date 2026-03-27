@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Neural Hijack
-  description: Knock an enemy into another to convert it. Ally has 3 HP, deals your
-    last attack's damage to adjacent enemies each turn.
+  description: Knock an enemy into another to convert it. Ally has 3 HP, deals the
+    dice total from the converting attack to adjacent enemies each turn.
   icon: {fileID: -5502985240677432108, guid: cdbdf0c35a5b84f42ad5df1025a513f2, type: 3}
   priority: 0
   isRerollPerk: 0

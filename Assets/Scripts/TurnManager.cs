@@ -61,6 +61,7 @@ public class TurnManager : MonoBehaviour
     public bool isPlayerTurn = true;
     public bool hasAttackedThisTurn = false;
     public bool isAttackAnimationPlaying = false;
+    private bool isCollapsingIslands = false;
 
     [HideInInspector] public bool isNecroShotTargeting = false;
     [HideInInspector] public bool isBombPlacementTargeting = false;
@@ -147,11 +148,18 @@ public class TurnManager : MonoBehaviour
         if (warningMap != null && warningMap.HasTile(cell) && !IsCellTargetedByBruiser(cell))
             warningMap.SetTile(cell, null);
 
+        // During island cascade collapse, skip turn restart and recursive checks
+        if (isCollapsingIslands) return;
+
         // Only restart the player turn if it's currently the player's turn.
         // During enemy phase, scaffold collapse must NOT trigger an extra StartPlayerTurn
         // (otherwise bruiser charge→attack happens in one perceived turn).
         if (isPlayerTurn)
             Invoke("StartPlayerTurn", 0.5f);
+
+        // After any tile collapse, check if enemies are stranded on disconnected islands
+        if (player != null && player.health.currentHP > 0 && enemies.Count > 0)
+            StartCoroutine(CollapseDisconnectedIslands());
     }
 
     private bool IsCellTargetedByBruiser(Vector3Int cell)
@@ -528,6 +536,7 @@ public class TurnManager : MonoBehaviour
             rm.surgeBootNextTurn = false;
             rm.surgeBootActive = false;
             rm.hasPerkReroll = false;
+            rm.hasLuckyClover = false;
             // selectedWeapon sıfırlanMAZ — silah seçimi MainMenu'de yapılır, ResetGame silahı ezmesin
 
             // Perkleri temizle (Sahnedeki objeleri yok et)
@@ -2800,6 +2809,203 @@ public class TurnManager : MonoBehaviour
         // No non-hazard neighbor — bounce to any walkable cell to avoid getting stuck on spikes
         if (walkableNeighbors.Count > 0) return walkableNeighbors[Random.Range(0, walkableNeighbors.Count)];
         return centerCell;
+    }
+
+    // ──────── Island Connectivity System ────────
+
+    /// <summary>
+    /// Checks if removing excludeCell would still leave the player connected to at least one hostile enemy.
+    /// Used by SeismicStep to prevent self-isolation.
+    /// </summary>
+    public bool WouldRemainConnectedToEnemies(Vector3Int excludeCell)
+    {
+        if (player == null) return true;
+        bool hasHostile = enemies.Exists(e => e != null && e.health.currentHP > 0 && !e.isAllied);
+        if (!hasHostile) return true;
+
+        Vector3Int playerCell = player.GetCurrentCellPosition();
+        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
+        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        queue.Enqueue(playerCell);
+        visited.Add(playerCell);
+
+        while (queue.Count > 0)
+        {
+            Vector3Int curr = queue.Dequeue();
+            Vector3Int[] offsets = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offsets)
+            {
+                Vector3Int n = curr + off;
+                if (n == excludeCell || visited.Contains(n)) continue;
+                if (!HasWalkableTile(n)) continue;
+                visited.Add(n);
+                queue.Enqueue(n);
+            }
+        }
+
+        foreach (var e in enemies)
+        {
+            if (e == null || e.health.currentHP <= 0 || e.isAllied) continue;
+            if (visited.Contains(e.GetCurrentCellPosition())) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// After a tile collapses, BFS from player to find reachable cells.
+    /// Any enemy on a disconnected island → island collapses, enemy dies.
+    /// </summary>
+    private IEnumerator CollapseDisconnectedIslands()
+    {
+        isCollapsingIslands = true;
+        yield return new WaitForSeconds(0.5f);
+
+        if (player == null || player.health.currentHP <= 0 || LevelGenerator.instance == null)
+        {
+            isCollapsingIslands = false;
+            yield break;
+        }
+
+        enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
+        if (enemies.Count == 0) { isCollapsingIslands = false; yield break; }
+
+        // BFS from player position
+        Vector3Int playerCell = player.GetCurrentCellPosition();
+        HashSet<Vector3Int> reachable = new HashSet<Vector3Int>();
+        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        queue.Enqueue(playerCell);
+        reachable.Add(playerCell);
+
+        while (queue.Count > 0)
+        {
+            Vector3Int curr = queue.Dequeue();
+            Vector3Int[] offsets = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offsets)
+            {
+                Vector3Int n = curr + off;
+                if (reachable.Contains(n)) continue;
+                if (!HasWalkableTile(n)) continue;
+                reachable.Add(n);
+                queue.Enqueue(n);
+            }
+        }
+
+        // Find stranded enemies (not reachable from player)
+        List<EnemyMovement> stranded = new List<EnemyMovement>();
+        foreach (var e in enemies)
+        {
+            if (e == null || e.health.currentHP <= 0) continue;
+            if (!reachable.Contains(e.GetCurrentCellPosition()))
+                stranded.Add(e);
+        }
+
+        if (stranded.Count == 0) { isCollapsingIslands = false; yield break; }
+
+        // Cancel pending StartPlayerTurn — we'll restart after collapse
+        CancelInvoke("StartPlayerTurn");
+
+        // BFS from stranded enemies to collect all disconnected island cells
+        HashSet<Vector3Int> islandCells = new HashSet<Vector3Int>();
+        foreach (var e in stranded)
+        {
+            Vector3Int start = e.GetCurrentCellPosition();
+            if (islandCells.Contains(start)) continue;
+
+            Queue<Vector3Int> iQueue = new Queue<Vector3Int>();
+            iQueue.Enqueue(start);
+            islandCells.Add(start);
+
+            while (iQueue.Count > 0)
+            {
+                Vector3Int curr = iQueue.Dequeue();
+                Vector3Int[] offsets = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+                foreach (var off in offsets)
+                {
+                    Vector3Int n = curr + off;
+                    if (islandCells.Contains(n) || reachable.Contains(n)) continue;
+                    if (!HasWalkableTile(n)) continue;
+                    islandCells.Add(n);
+                    iQueue.Enqueue(n);
+                }
+            }
+        }
+
+        // Kill stranded enemies
+        foreach (var e in stranded)
+        {
+            if (e != null && e.health.currentHP > 0)
+            {
+                e.health.TakeDamage(e.health.maxHP * 10);
+                if (e.gameObject.activeInHierarchy)
+                    StartCoroutine(e.FadeDieCoroutine());
+            }
+        }
+
+        // Cascade collapse — sort by distance from player for domino visual
+        List<Vector3Int> sorted = new List<Vector3Int>(islandCells);
+        sorted.Sort((a, b) => HexGridUtils.DistanceCube(a, playerCell).CompareTo(HexGridUtils.DistanceCube(b, playerCell)));
+
+        if (AudioManager.instance != null) AudioManager.instance.PlayWall();
+
+        Tilemap gMap = LevelGenerator.instance.groundMap;
+        Tilemap bgMap = LevelGenerator.instance.backgroundMap;
+        Tilemap sMap = LevelGenerator.instance.scaffoldMap;
+        Tilemap hMap = LevelGenerator.instance.hazardMap;
+
+        foreach (var cell in sorted)
+        {
+            StartCoroutine(CollapseIslandCellCoroutine(cell, gMap, bgMap, sMap, hMap));
+            yield return new WaitForSeconds(0.06f);
+        }
+
+        yield return new WaitForSeconds(0.4f);
+        isCollapsingIslands = false;
+
+        if (!CleanupDeadAndCheckLevelClear() && isPlayerTurn)
+            Invoke("StartPlayerTurn", 0.1f);
+    }
+
+    private IEnumerator CollapseIslandCellCoroutine(Vector3Int cell, Tilemap gMap, Tilemap bgMap, Tilemap sMap, Tilemap hMap)
+    {
+        bool hasG = gMap != null && gMap.HasTile(cell);
+        bool hasBg = bgMap != null && bgMap.HasTile(cell);
+        bool hasS = sMap != null && sMap.HasTile(cell);
+        bool hasH = hMap != null && hMap.HasTile(cell);
+        if (!hasG && !hasBg && !hasS && !hasH) yield break;
+
+        float duration = 0.35f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float scale = Mathf.Lerp(1f, 0f, t);
+            float yOff = Mathf.Lerp(0f, -0.5f, t * t);
+            Color fade = new Color(1f, 1f, 1f, 1f - t);
+            Matrix4x4 m = Matrix4x4.TRS(new Vector3(0f, yOff, 0f), Quaternion.identity, new Vector3(scale, scale, 1f));
+
+            if (hasG) { gMap.SetTransformMatrix(cell, m); gMap.SetTileFlags(cell, TileFlags.None); gMap.SetColor(cell, fade); }
+            if (hasBg) { bgMap.SetTransformMatrix(cell, m); bgMap.SetTileFlags(cell, TileFlags.None); bgMap.SetColor(cell, fade); }
+            if (hasS) { sMap.SetTransformMatrix(cell, m); sMap.SetTileFlags(cell, TileFlags.None); sMap.SetColor(cell, fade); }
+            if (hasH) { hMap.SetTransformMatrix(cell, m); hMap.SetTileFlags(cell, TileFlags.None); hMap.SetColor(cell, fade); }
+            yield return null;
+        }
+
+        // Remove tiles
+        if (hasG) { gMap.SetTransformMatrix(cell, Matrix4x4.identity); gMap.SetColor(cell, Color.white); gMap.SetTile(cell, null); }
+        if (hasBg) { bgMap.SetTransformMatrix(cell, Matrix4x4.identity); bgMap.SetColor(cell, Color.white); bgMap.SetTile(cell, null); }
+        if (hasS) { sMap.SetTransformMatrix(cell, Matrix4x4.identity); sMap.SetColor(cell, Color.white); sMap.SetTile(cell, null); }
+        if (hasH) { hMap.SetTransformMatrix(cell, Matrix4x4.identity); hMap.SetColor(cell, Color.white); hMap.SetTile(cell, null); }
+
+        if (LevelGenerator.instance != null)
+        {
+            LevelGenerator.instance.validCells.Remove(cell);
+            LevelGenerator.instance.hazardCells.Remove(cell);
+            LevelGenerator.instance.scaffoldCells.Remove(cell);
+        }
+
+        TrapTileEvents.FireTileDestroyed(cell);
     }
 
     public float DistanceCube(Vector3Int a, Vector3Int b) => HexGridUtils.DistanceCube(a, b);
