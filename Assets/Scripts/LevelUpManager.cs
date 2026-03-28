@@ -613,6 +613,7 @@ public class LevelUpManager : MonoBehaviour
 
         levelUpPanel.SetActive(false);
         ShowBlackBackground(false);
+
         if (levelUpCanvasGroup != null)
         {
             levelUpCanvasGroup.alpha = 1f; // resetle sonraki açılış için
@@ -743,4 +744,5 @@ public class LevelUpManager : MonoBehaviour
             LevelGenerator.instance.GenerateNextLevel();
         }
     }
+
 }

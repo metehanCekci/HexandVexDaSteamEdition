@@ -580,6 +580,7 @@ public class MapManager : MonoBehaviour
                 if (LevelUpManager.instance != null)
                     LevelUpManager.instance.ShowLevelUpScreen();
                 NotifyDiceHoarder();
+                showHotbar = true;
                 break;
 
             case MapNodeType.Rest:

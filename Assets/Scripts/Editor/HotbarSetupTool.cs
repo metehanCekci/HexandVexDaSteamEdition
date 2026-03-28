@@ -38,7 +38,7 @@ public class HotbarSetupTool : EditorWindow
         canvasGO.transform.SetParent(rootGO.transform, false);
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 15;
+        canvas.sortingOrder = 1000;
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);

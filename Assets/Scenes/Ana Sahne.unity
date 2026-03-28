@@ -9672,6 +9672,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cb518e6b0f8fefc4389b15930865c72b, type: 2}
   - {fileID: 11400000, guid: 9716d47d8c031c94fb498ea4bf1b366c, type: 2}
   - {fileID: 11400000, guid: b5e9a3c7d1f8264e0a9b3d5f7c1e4a68, type: 2}
+  - {fileID: 11400000, guid: 7ab82e018277e184e83b815d2372f545, type: 2}
   secretItem: {fileID: 0}
   secretItemChance: 0.02
   shopSlotCount: 3
@@ -16036,7 +16037,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 95
+  m_SortingOrder: 1000
   m_TargetDisplay: 0
 --- !u!1 &1209170622
 GameObject:
@@ -17587,6 +17588,7 @@ MonoBehaviour:
   surgeBootNextTurn: 0
   surgeBootActive: 0
   hasPerkReroll: 0
+  hasLuckyClover: 0
   selectedWeapon: 0
   fastMode: 0
   extraMovesPerTurn: 0
