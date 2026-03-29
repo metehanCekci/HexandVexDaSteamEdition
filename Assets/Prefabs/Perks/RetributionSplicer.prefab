@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Retribution Splicer
-  description: Consecutive hits on the same target deal +2 bonus damage.
+  description: Consecutive hits on the same target adds +2 bonus damage to total
+    dice.
   icon: {fileID: -1752765643127241397, guid: a9be665cb8180c0488ecd08f1df59b9a, type: 3}
   priority: 1
   isRerollPerk: 0

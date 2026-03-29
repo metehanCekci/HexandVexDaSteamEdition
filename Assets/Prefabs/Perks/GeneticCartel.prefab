@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShopRerollStackPerk
   currentLevel: 1
   maxLevel: 1
-  perkName: GeneticCartel
+  perkName: Genetic Cartel
   description: Each shop reroll permanently adds one to all dice.
   icon: {fileID: -1501830745789406389, guid: ad2b30684b497194f9a5dec48fc39f3c, type: 3}
   priority: 1

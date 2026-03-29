@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Mutant Swarm
-  description: Each die adds +0.5x damage multiplier.
+  description: Each die adds +0.5X damage multiplier.
   icon: {fileID: 2887690202466212411, guid: 3d4da4974027a774f8b3dbcca2f31f89, type: 3}
   priority: 2
   isRerollPerk: 0
