@@ -17,15 +17,13 @@ public class CondensedFuryPerk : BasePerk
     }
 
     /// <summary>
-    /// Kalan her zara +3 flat damage (+1 per level) ekler.
-    /// Lv1: +3, Lv2: +4, Lv3: +5
+    /// Zar 1'e düşünce atılan zarı 2 katına çıkarır (toplam değil, zar değeri).
     /// </summary>
     public override void ModifyCombat(CombatPayload payload)
     {
-        int bonusPerDie = 2 + currentLevel;
         for (int i = 0; i < payload.diceRolls.Count; i++)
         {
-            payload.diceRolls[i] += bonusPerDie;
+            payload.diceRolls[i] *= 2;
         }
         if (payload.diceRolls.Count > 0)
             TriggerVisualPop();

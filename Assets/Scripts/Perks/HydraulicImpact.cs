@@ -14,7 +14,7 @@ public class HydraulicImpactPerk : BasePerk
         switch (currentLevel)
         {
             case 1: return 0.25f;
-            case 2: return 0.50f;
+            case 2: return 0.40f;
             default: return 0.50f;
         }
     }

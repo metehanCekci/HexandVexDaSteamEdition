@@ -2289,7 +2289,10 @@ public class TurnManager : MonoBehaviour
                 foreach (var e in knockedEnemies)
                 {
                     if (e == null) continue;
-                    var pulled = gravitonPerk.PullAdjacentEnemies(e.GetCurrentCellPosition(), e);
+                    Vector3Int originCell = e.GetCurrentCellPosition();
+                    var pulled = gravitonPerk.PullAdjacentEnemies(originCell, e);
+                    if (pulled.Count > 0 && vacuumVfxPrefab != null)
+                        StartCoroutine(VacuumVFXCoroutine(groundMap.GetCellCenterWorld(originCell)));
                     foreach (var pe in pulled)
                         if (!knockedEnemies.Contains(pe) && !gravitonPulled.Contains(pe))
                             gravitonPulled.Add(pe);

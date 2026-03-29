@@ -572,20 +572,19 @@ public class MapManager : MonoBehaviour
             case MapNodeType.Shop:
                 if (Shopmanager.instance != null)
                     Shopmanager.instance.OpenAsMapNode();
-                NotifyDiceHoarder();
                 showHotbar = true;
                 break;
 
             case MapNodeType.PerkSelection:
                 if (LevelUpManager.instance != null)
                     LevelUpManager.instance.ShowLevelUpScreen();
-                NotifyDiceHoarder();
                 showHotbar = true;
                 break;
 
             case MapNodeType.Rest:
                 if (RestNodeUI.instance != null)
                     RestNodeUI.instance.Show();
+                NotifyDiceHoarder();
                 break;
 
             case MapNodeType.Boss:
@@ -950,7 +949,7 @@ public class MapManager : MonoBehaviour
     {
         if (RunManager.instance == null) return;
         foreach (var p in RunManager.instance.activePerks)
-            if (p is DiceHoarderPerk hoarder) hoarder.OnNonCombatLevelVisited();
+            if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
     }
 
     // ─── Layer config'i güvenli al (fallback: son config) ───

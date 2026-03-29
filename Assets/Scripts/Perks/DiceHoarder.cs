@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Dice Hoarder (Legendary)
-/// Uğradığın her perk seçim ve shop leveli başına kalıcı +1 zar.
+/// Her campfire'da kalıcı +1 zar.
 /// GetExtraDice() ile TurnManager'a entegre edilir.
 /// </summary>
 public class DiceHoarderPerk : BasePerk
@@ -23,7 +23,7 @@ public class DiceHoarderPerk : BasePerk
         description = GetDescription();
     }
 
-    public void OnNonCombatLevelVisited()
+    public void OnCampfireVisited()
     {
         visitedLevels++;
         description = GetDescription();
@@ -43,6 +43,6 @@ public class DiceHoarderPerk : BasePerk
 
     private string GetDescription()
     {
-        return $"Each non-combat level visited grants permanent +1 die.\nVisited: {visitedLevels} (+{visitedLevels} dice)";
+        return $"Each campfire visited grants a permanent +1 die.\nCampfires: {visitedLevels} (+{visitedLevels} dice)";
     }
 }

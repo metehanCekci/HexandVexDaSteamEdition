@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Void Hunger
-  description: Gain +0.5x damage multiplier for every tile that collapses. Permanent.
+  description: Gain +0.5x permanent damage multiplier for every tile that collapses.
   icon: {fileID: -8890849902105655448, guid: 5afc43e857ab3694dacebdfeab1ac130, type: 3}
   priority: 0
   isRerollPerk: 0

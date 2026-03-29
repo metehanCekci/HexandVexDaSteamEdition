@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Kill Chain
-  description: Killing an enemy grants +1 extra move this turn. +1 per level.
+  description: Killing an enemy grants one extra move this turn.
   icon: {fileID: -5809632006269741919, guid: e6d69a0e0fc2e424fb4e04c353f11a90, type: 3}
   priority: 0
   isRerollPerk: 0

@@ -26,6 +26,9 @@ public abstract class BasePerk : MonoBehaviour
     // 2. Her saldırı yapıldığında, hasar hesaplanırken çalışır
     public virtual void ModifyCombat(CombatPayload payload) { }
 
+    // 2b. ModifyCombat sonrası adım adım animasyonlu efekt (CarrionFeeder gibi perkler için)
+    public virtual IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI) { yield break; }
+
     // 3. Tur geçildiğinde (Skip) çalışır
     public virtual void OnSkip() { }
 

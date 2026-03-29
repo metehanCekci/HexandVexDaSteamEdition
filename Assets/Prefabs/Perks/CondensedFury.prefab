@@ -45,10 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CondensedFuryPerk
   currentLevel: 1
-  maxLevel: 3
+  maxLevel: 2
   perkName: Condensed Fury
-  description: Roll 1 fewer die, but add +3 flat damage to each remaining die. +1
-    per level.
+  description: Condense your dice into one. It strikes twice.
   icon: {fileID: -3640765556101371145, guid: e7b443cf17ebcc54b8b7126637424d58, type: 3}
   priority: 0
   isRerollPerk: 0

@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Volatile Cells
-  description: Attacks trigger an explosion. Explosion damage 25% per level of your
-    attack.
+  description: Attacks trigger an explosion, dealing damage to nearby enemies based
+    on their max health.
   icon: {fileID: 5924252578520605724, guid: a97a0cdfdcad3f442abb5abac12f5e21, type: 3}
   priority: 0
   isRerollPerk: 0

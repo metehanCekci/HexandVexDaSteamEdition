@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Spore Cloud
-  description: When you take damage, stun nearby enemies. Radius grows with level.
+  description: When you take damage, stun nearby enemies.
   icon: {fileID: 2452988725578156918, guid: d24e2e5d72636a749b6dc77bfae45a26, type: 3}
   priority: 0
   isRerollPerk: 0

@@ -1,12 +1,16 @@
 using UnityEngine;
+using System.Collections;
 
 public class CarrionFeederPerk : BasePerk
 {
-    private int stacks = 0;
+    private int killStreak = 0;
+    private bool pendingReset = false;
+
+    private int MaxStacks => currentLevel; // lv1: 1, lv2: 2, lv3: 3
 
     void OnEnable()
     {
-        maxLevel = 1;
+        maxLevel = 3;
         rarity = PerkRarity.Rare;
     }
 
@@ -15,38 +19,55 @@ public class CarrionFeederPerk : BasePerk
         description = GetDescription();
     }
 
-    public override void OnEnemyKilled(EnemyMovement enemy)
+    public override void ModifyCombat(CombatPayload payload)
     {
-        // Heal 1 HP
-        if (TurnManager.instance != null && TurnManager.instance.player != null)
+        if (pendingReset)
         {
-            TurnManager.instance.player.health.Heal(1);
-            if (RunManager.instance != null)
-                RunManager.instance.playerCurrentHealth = TurnManager.instance.player.health.currentHP;
+            killStreak = 0;
         }
 
-        // Stack +2 flat bonus for next attack
-        stacks += 2;
+        pendingReset = true;
+        description = GetDescription();
+    }
+
+    public override IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI)
+    {
+        if (killStreak <= 0) yield break;
+
+        for (int i = 0; i < killStreak; i++)
+        {
+            payload.multiplier *= 2f;
+            TriggerVisualPop();
+            if (PerkListUI.instance != null)
+                PerkListUI.instance.TriggerShakeForPerk(this);
+            if (diceUI != null && !diceUI.skipDiceVisuals)
+            {
+                diceUI.UpdateTotalDamageDisplay(payload.GetFinalDamage());
+                yield return StartCoroutine(diceUI.SkippableWait(0.3f));
+            }
+        }
+        description = GetDescription();
+    }
+
+    public override void OnEnemyKilled(EnemyMovement enemy)
+    {
+        if (killStreak < MaxStacks)
+            killStreak++;
+        pendingReset = false;
         description = GetDescription();
         TriggerVisualPop();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override void Upgrade()
     {
-        if (stacks <= 0) return;
-        payload.flatBonus += stacks;
-        stacks = 0; // Consume stacks on attack
-        description = GetDescription();
-    }
-
-    public override void OnLevelStart()
-    {
-        stacks = 0;
+        base.Upgrade();
         description = GetDescription();
     }
 
     private string GetDescription()
     {
-        return $"Heal 1 HP on kill. Each kill grants +2 flat damage for next attack (stacks).\nStacks: {stacks} (+{stacks} dmg)";
+        float currentMultiplier = killStreak > 0 ? Mathf.Pow(2, killStreak) : 1;
+        float maxMultiplier = Mathf.Pow(2, MaxStacks);
+        return $"Each consecutive kill doubles your total damage (max x{maxMultiplier}). Resets when an attack fails to kill.\nKill Streak: {killStreak}/{MaxStacks} (x{currentMultiplier} dmg)";
     }
 }

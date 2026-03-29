@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Neuro-Aim
-  description: +25% critical hit chance per level.
+  description: +25% critical hit chance.
   icon: {fileID: -7165852469820128834, guid: 191b1c784a29af34182e859b8845f4e2, type: 3}
   priority: 0
   isRerollPerk: 0

@@ -151,6 +151,9 @@ public class PerkCombatProcessor : MonoBehaviour
                     yield return StartCoroutine(diceUI.SkippableWait(0.3f));
                 }
             }
+
+            // Adım adım animasyonlu efektler (ör. CarrionFeeder x2 x2 x2)
+            yield return StartCoroutine(perk.AnimatedCombatEffect(payload, diceUI));
         }
     }
 }

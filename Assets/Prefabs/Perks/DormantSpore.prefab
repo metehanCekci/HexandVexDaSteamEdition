@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Dormant Spore
-  description: Each skipped turn stores +1 bonus die for your next attack.
+  description: Each skipped turn stores one bonus die for your next attack.
   icon: {fileID: 8890502143960562090, guid: 7d9db08a35bcf674fbfea6fb5d1d3bc5, type: 3}
   priority: 0
   isRerollPerk: 0

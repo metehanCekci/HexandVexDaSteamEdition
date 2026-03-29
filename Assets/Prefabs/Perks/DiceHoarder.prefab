@@ -45,9 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceHoarderPerk
   currentLevel: 1
-  maxLevel: 3
+  maxLevel: 1
   perkName: Dice Hoarder
-  description: Gain +1 permanent die for every perk selection and shop you visit.
+  description: Each campfire visited grants a permanent +1 die.
   icon: {fileID: -85115335567304150, guid: de005610044509e4f9725c7f92c9fb73, type: 3}
   priority: 0
   isRerollPerk: 0

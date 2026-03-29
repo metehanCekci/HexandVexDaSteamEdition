@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Volatile Roll
-  description: All dice become 1 or 6. Every 6 generates an extra die. Chain 6s create
-    infinite dice.
+  description: All dice become 1 or 6. Every 6 generates an extra die.
   icon: {fileID: -4363507172755077261, guid: 89ebaf46365c7c840a712eae6c2490d1, type: 3}
   priority: 0
   isRerollPerk: 0
