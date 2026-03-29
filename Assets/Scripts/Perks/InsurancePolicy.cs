@@ -7,6 +7,7 @@ public class InsurancePolicyPerk : BasePerk
 
     void OnEnable()
     {
+        maxLevel = 3;
         rarity = PerkRarity.Rare;
     }
 
@@ -69,8 +70,10 @@ public class InsurancePolicyPerk : BasePerk
         int lost = previousHP - remainingHP;
         if (lost <= 0) { previousHP = remainingHP; return; }
 
-        int goldPerHP = 1 + (2 * currentLevel); // Lv1: 3, Lv2: 5, Lv3: 7
-        int goldGain = lost * goldPerHP;
+        int maxHP = TurnManager.instance.player.health.maxHP;
+        int missingHP = maxHP - remainingHP;
+        int goldPerMissing = currentLevel + 1; // Lv1: 2, Lv2: 3, Lv3: 4
+        int goldGain = goldPerMissing * missingHP;
 
         if (RunManager.instance != null)
         {

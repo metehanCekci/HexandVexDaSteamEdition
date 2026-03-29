@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Insurance Policy
-  description: 'Gain +3 gold when you take damage. '
+  description: Gain gold when you take damage. The lower your health, the higher
+    the payout.
   icon: {fileID: 5304701917418821374, guid: 9d12841ca03dea845afd217ffb9c4b83, type: 3}
   priority: 0
   isRerollPerk: 0
