@@ -11896,7 +11896,7 @@ MonoBehaviour:
   skipButton: {fileID: 0}
   skipButtonImage: {fileID: 0}
   levelUpCanvasGroup: {fileID: 1574552225}
-  forcedPerk: {fileID: 0}
+  forcedPerk: {fileID: 7733694003799486102, guid: 33746d0890e3b1549bf3c320ca4a1ecf, type: 3}
   forcedPerk2: {fileID: 0}
   forcedPerk3: {fileID: 0}
 --- !u!4 &937609419

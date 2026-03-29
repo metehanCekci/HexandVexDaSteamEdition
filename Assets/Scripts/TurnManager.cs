@@ -1863,7 +1863,8 @@ public class TurnManager : MonoBehaviour
         if (LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Count > 0)
         {
             List<Vector3Int> explodedThisPhase = new List<Vector3Int>();
-            foreach (var e in enemies)
+            List<EnemyMovement> explosionSnapshot = new List<EnemyMovement>(enemies);
+            foreach (var e in explosionSnapshot)
             {
                 if (e == null || e.health.currentHP <= 0) continue;
                 Vector3Int eCell = e.GetCurrentCellPosition();
@@ -2872,7 +2873,7 @@ public class TurnManager : MonoBehaviour
         yield return new WaitUntil(() => { foreach (var a in allies) if (a != null && a.IsMoving()) return false; return true; });
         yield return new WaitForSeconds(0.15f);
 
-        // 2) Saldırı: komşu düşmanlara vur (hedefin max HP'sinin %25'i)
+        // 2) Saldırı: tip bazlı ally saldırısı
         bool anyAttack = false;
 
         foreach (var ally in allies)
@@ -2880,6 +2881,25 @@ public class TurnManager : MonoBehaviour
             if (ally == null || ally.health.currentHP <= 0) continue;
 
             Vector3Int allyCell = ally.GetCurrentCellPosition();
+
+            // ── BRUISER ALLY: AoE charge saldırısı ──
+            var bruiserAI = ally.GetComponent<BruiserEnemyAI>();
+            if (bruiserAI != null)
+            {
+                yield return StartCoroutine(AllyBruiserAttack(ally, bruiserAI, allyCell));
+                anyAttack = true;
+                continue;
+            }
+
+            // ── WARLOCK ALLY: Menzilli saldırı ──
+            if (ally.IsWarlock)
+            {
+                yield return StartCoroutine(AllyWarlockAttack(ally, allyCell));
+                anyAttack = true;
+                continue;
+            }
+
+            // ── NORMAL MELEE ALLY ──
             Vector3Int[] offsets = (allyCell.y % 2 != 0) ? evenOffsets : oddOffsets;
             List<EnemyMovement> targets = new List<EnemyMovement>();
 
@@ -2893,7 +2913,6 @@ public class TurnManager : MonoBehaviour
 
             if (targets.Count > 0)
             {
-                // Saldırı animasyonu
                 if (ally.animator != null) ally.animator.SetTrigger("Attack");
                 anyAttack = true;
 
@@ -2901,27 +2920,7 @@ public class TurnManager : MonoBehaviour
                 {
                     int allyDamage = Mathf.Max(1, ally.hijackDamage);
                     target.health.TakeDamage(allyDamage);
-
-                    // Knockback: düşmanı ally'den uzağa it
-                    if (target.health.currentHP > 0)
-                    {
-                        Vector3Int knockTarget = GetRawOppositeCell(target.GetCurrentCellPosition(), allyCell);
-                        if (HasWalkableTile(knockTarget) && !IsEnemyAtCell(knockTarget)
-                            && (player == null || player.GetCurrentCellPosition() != knockTarget))
-                        {
-                            target.ApplyStun(1, false);
-                            target.StartKnockbackMovement(knockTarget);
-                        }
-                        else
-                        {
-                            // Duvara çarptı — bump
-                            target.ApplyStun(2, true);
-                            Vector3 cPos = groundMap.GetCellCenterWorld(target.GetCurrentCellPosition());
-                            Vector3 aPos = groundMap.GetCellCenterWorld(allyCell);
-                            cPos.z = 0; aPos.z = 0;
-                            target.StartWallBump((cPos - aPos).normalized);
-                        }
-                    }
+                    AllyKnockbackTarget(target, allyCell);
                 }
             }
         }
@@ -2930,13 +2929,287 @@ public class TurnManager : MonoBehaviour
         {
             if (AudioManager.instance != null) AudioManager.instance.PlayHit();
             yield return new WaitForSeconds(0.3f);
-            // Knockback bitmesini bekle
             yield return new WaitUntil(() =>
             {
                 foreach (var e in enemies)
                     if (e != null && !e.isAllied && e.IsMoving()) return false;
                 return true;
             });
+        }
+    }
+
+    // ─── ALLY ATTACK HELPERS ───
+
+    private IEnumerator AllyBruiserAttack(EnemyMovement ally, BruiserEnemyAI bruiserAI, Vector3Int allyCell)
+    {
+        // Find nearest non-allied enemy within range
+        EnemyMovement bestTarget = null;
+        float bestDist = float.MaxValue;
+        foreach (var e in enemies)
+        {
+            if (e == null || e.isAllied || e.health.currentHP <= 0) continue;
+            float dist = HexGridUtils.DistanceCube(allyCell, e.GetCurrentCellPosition());
+            if (dist < bestDist && dist <= bruiserAI.aoeAttackRange)
+            {
+                bestDist = dist;
+                bestTarget = e;
+            }
+        }
+        if (bestTarget == null) yield break;
+
+        // Calculate AoE line from ally toward target
+        Vector3Int targetCell = bestTarget.GetCurrentCellPosition();
+        List<Vector3Int> lineCells = GetAllyBruiserLine(allyCell, targetCell, bruiserAI.aoeAttackRange);
+        if (lineCells.Count == 0) yield break;
+
+        // Charge animation + warning tiles
+        if (ally.animator != null) ally.animator.SetBool("IsCharging", true);
+        if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
+        foreach (var c in lineCells) DrawWarningTile(c);
+
+        yield return new WaitForSeconds(0.35f);
+
+        // Attack animation
+        if (ally.animator != null)
+        {
+            ally.animator.SetBool("IsCharging", false);
+            ally.animator.SetTrigger("Attack");
+        }
+
+        // Flash warning tiles
+        Color attackFlash = new Color(0f, 1f, 0.5f, 1f);
+        if (warningMap != null)
+        {
+            foreach (var c in lineCells)
+            {
+                if (warningMap.HasTile(c))
+                {
+                    warningMap.SetTileFlags(c, TileFlags.None);
+                    warningMap.SetColor(c, attackFlash);
+                }
+            }
+        }
+
+        yield return new WaitForSeconds(0.08f);
+
+        // VFX
+        if (bruiserAI.hammerImpactVFXPrefab != null)
+        {
+            foreach (var c in lineCells)
+            {
+                Vector3 worldPos = groundMap.GetCellCenterWorld(c);
+                worldPos.z = 0f;
+                worldPos.x += bruiserAI.vfxXOffset;
+                worldPos.y += bruiserAI.vfxYOffset;
+                GameObject vfx = Instantiate(bruiserAI.hammerImpactVFXPrefab, worldPos, Quaternion.identity);
+                Destroy(vfx, 3f);
+                if (HitstopManager.instance != null) HitstopManager.instance.TriggerHitstop();
+                CameraController.ShakeLighter();
+            }
+        }
+
+        // Damage non-allied enemies on the line
+        int allyDamage = Mathf.Max(1, ally.hijackDamage);
+        foreach (var c in lineCells)
+        {
+            EnemyMovement hit = GetEnemyAtCell(c);
+            if (hit != null && !hit.isAllied && hit.health.currentHP > 0)
+            {
+                hit.health.TakeDamage(allyDamage);
+                AllyKnockbackTarget(hit, allyCell);
+            }
+        }
+
+        // Fade and clear warning tiles
+        if (warningMap != null)
+        {
+            float fadeDur = 0.3f;
+            float elapsed = 0f;
+            Color endFade = new Color(attackFlash.r, attackFlash.g, attackFlash.b, 0f);
+            while (elapsed < fadeDur)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / fadeDur;
+                Color current = Color.Lerp(attackFlash, endFade, t);
+                foreach (var c in lineCells)
+                {
+                    if (warningMap.HasTile(c)) warningMap.SetColor(c, current);
+                }
+                yield return null;
+            }
+            foreach (var c in lineCells)
+            {
+                if (warningMap.HasTile(c)) warningMap.SetTile(c, null);
+            }
+        }
+    }
+
+    private List<Vector3Int> GetAllyBruiserLine(Vector3Int startCell, Vector3Int targetCell, int length)
+    {
+        List<Vector3Int> line = new List<Vector3Int>();
+        int bestDirIndex = 0;
+        float minDist = float.MaxValue;
+        Vector3Int[] startOffsets = (startCell.y % 2 != 0) ? evenOffsets : oddOffsets;
+
+        for (int i = 0; i < 6; i++)
+        {
+            float d = HexGridUtils.DistanceCube(startCell + startOffsets[i], targetCell);
+            if (d < minDist) { minDist = d; bestDirIndex = i; }
+        }
+
+        Vector3Int currentStep = startCell;
+        for (int i = 0; i < length; i++)
+        {
+            Vector3Int[] currOffsets = (currentStep.y % 2 != 0) ? evenOffsets : oddOffsets;
+            currentStep += currOffsets[bestDirIndex];
+            if (HasWalkableTile(currentStep)) line.Add(currentStep);
+        }
+        return line;
+    }
+
+    private IEnumerator AllyWarlockAttack(EnemyMovement ally, Vector3Int allyCell)
+    {
+        // Find nearest non-allied enemy (no range limit — warlock is ranged)
+        EnemyMovement bestTarget = null;
+        float bestDist = float.MaxValue;
+        foreach (var e in enemies)
+        {
+            if (e == null || e.isAllied || e.health.currentHP <= 0) continue;
+            float dist = HexGridUtils.DistanceCube(allyCell, e.GetCurrentCellPosition());
+            if (dist < bestDist) { bestDist = dist; bestTarget = e; }
+        }
+        if (bestTarget == null) yield break;
+
+        Vector3Int targetCell = bestTarget.GetCurrentCellPosition();
+
+        // AoE cells around target (center + 3 alternating neighbors, like warlock attack1)
+        List<Vector3Int> aoeCells = new List<Vector3Int> { targetCell };
+        Vector3Int[] targetOffsets = (targetCell.y % 2 != 0) ? evenOffsets : oddOffsets;
+        int[] indices = { 0, 2, 4 };
+        foreach (int i in indices)
+        {
+            Vector3Int neighbor = targetCell + targetOffsets[i];
+            if (HasWalkableTile(neighbor)) aoeCells.Add(neighbor);
+        }
+
+        // Charge animation + warning tiles
+        var warlockAI = ally.GetComponent<WarlockEnemyAI>();
+        if (warlockAI != null && warlockAI.animator != null)
+            warlockAI.animator.SetBool("IsCharging", true);
+        else if (ally.animator != null)
+            ally.animator.SetBool("IsCharging", true);
+
+        if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
+
+        Color warnColor = new Color(0.4f, 0.8f, 1f, 0.7f);
+        if (warningMap != null)
+        {
+            foreach (var c in aoeCells)
+            {
+                warningMap.SetTile(c, warningTile);
+                warningMap.SetTileFlags(c, TileFlags.None);
+                warningMap.SetColor(c, warnColor);
+            }
+        }
+
+        yield return new WaitForSeconds(0.35f);
+
+        // Attack animation
+        if (warlockAI != null && warlockAI.animator != null)
+        {
+            warlockAI.animator.SetBool("IsCharging", false);
+            warlockAI.animator.SetBool("IsAttacking", true);
+        }
+        else if (ally.animator != null)
+            ally.animator.SetTrigger("Attack");
+
+        // Flash warning tiles
+        Color flashColor = new Color(0.4f, 0.8f, 1f, 1f);
+        if (warningMap != null)
+        {
+            foreach (var c in aoeCells)
+            {
+                if (warningMap.HasTile(c)) warningMap.SetColor(c, flashColor);
+            }
+        }
+
+        yield return new WaitForSeconds(0.05f);
+
+        // Sound + VFX
+        if (AudioManager.instance != null) AudioManager.instance.PlayLightning();
+        if (HitstopManager.instance != null) HitstopManager.instance.TriggerHitstop();
+        CameraController.ShakeLighter();
+
+        if (warlockAI != null && warlockAI.impactVFXPrefab != null)
+        {
+            foreach (var c in aoeCells)
+            {
+                Vector3 worldPos = groundMap.GetCellCenterWorld(c);
+                worldPos.z = 0f;
+                worldPos.y += warlockAI.vfxYOffset;
+                GameObject vfx = Instantiate(warlockAI.impactVFXPrefab, worldPos, Quaternion.identity);
+                Destroy(vfx, 3f);
+            }
+        }
+
+        // Damage non-allied enemies in AoE
+        int allyDamage = Mathf.Max(1, ally.hijackDamage);
+        foreach (var c in aoeCells)
+        {
+            EnemyMovement hit = GetEnemyAtCell(c);
+            if (hit != null && !hit.isAllied && hit.health.currentHP > 0)
+            {
+                hit.health.TakeDamage(allyDamage);
+                AllyKnockbackTarget(hit, allyCell);
+            }
+        }
+
+        // Fade and clear warning tiles
+        if (warningMap != null)
+        {
+            float fadeDur = 0.25f;
+            float elapsed = 0f;
+            Color endFade = new Color(flashColor.r, flashColor.g, flashColor.b, 0f);
+            while (elapsed < fadeDur)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / fadeDur;
+                t = t * t * (3f - 2f * t);
+                Color current = Color.Lerp(flashColor, endFade, t);
+                foreach (var c in aoeCells)
+                {
+                    if (warningMap.HasTile(c)) warningMap.SetColor(c, current);
+                }
+                yield return null;
+            }
+            foreach (var c in aoeCells)
+            {
+                if (warningMap.HasTile(c)) warningMap.SetTile(c, null);
+            }
+        }
+
+        // Reset animator
+        if (warlockAI != null && warlockAI.animator != null)
+            warlockAI.animator.SetBool("IsAttacking", false);
+    }
+
+    private void AllyKnockbackTarget(EnemyMovement target, Vector3Int allyCell)
+    {
+        if (target == null || target.health.currentHP <= 0) return;
+        Vector3Int targetCell = target.GetCurrentCellPosition();
+        Vector3Int rawOpposite = GetRawOppositeCell(targetCell, allyCell);
+
+        if (HasWalkableTile(rawOpposite) && !IsEnemyAtCell(rawOpposite)
+            && (player == null || player.GetCurrentCellPosition() != rawOpposite))
+        {
+            // Knockback + stun 1
+            target.StartKnockbackMovement(rawOpposite);
+            target.skipTurns = Mathf.Max(target.skipTurns, 1);
+        }
+        else
+        {
+            // Wall bump — stun 2
+            target.skipTurns = Mathf.Max(target.skipTurns, 2);
         }
     }
 

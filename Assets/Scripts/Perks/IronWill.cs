@@ -39,6 +39,17 @@ public class IronWillPerk : BasePerk
 
     public override void OnLevelClear()
     {
+        // Sadece Combat, EliteCombat ve Boss levellerinde stack toplanir
+        if (RunManager.instance != null)
+        {
+            var nodeType = RunManager.instance.currentNodeType;
+            if (nodeType != MapNodeType.Combat && nodeType != MapNodeType.EliteCombat && nodeType != MapNodeType.Boss)
+            {
+                description = GetDescription();
+                return;
+            }
+        }
+
         if (!tookDamageThisLevel)
         {
             cleanLevelStreak++;

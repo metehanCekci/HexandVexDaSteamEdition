@@ -12,13 +12,17 @@ public class HypertrophicShellPerk : BasePerk
 
     public override void OnAcquire()
     {
-        ApplyHPBonus(1);
+        // Sadece aktif slottaysa HP bonusu uygula
+        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
+            ApplyHPBonus(1);
     }
 
     public override void Upgrade()
     {
         base.Upgrade();
-        ApplyHPBonus(1);
+        // Sadece aktif slottaysa HP bonusu uygula
+        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
+            ApplyHPBonus(1);
     }
 
     public override void OnEquip()
