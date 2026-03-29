@@ -8,68 +8,49 @@ public class LevelGenerator : MonoBehaviour
 {
     public static LevelGenerator instance;
 
+    // ── Tilemaps ──
     [Header("Tilemaps")]
     public Tilemap groundMap;
     public Tilemap backgroundMap;
-    // ==========================================
-    // YENİ: DİKENLER İÇİN AYRI TİLEMAP
-    // ==========================================
     public Tilemap hazardMap;
-
-    // ==========================================
-    // SCAFFOLD: ÇÖKEN PLATFORM TİLEMAP
-    // ==========================================
     public Tilemap scaffoldMap;
+    public Tilemap teleportMap;
 
-    [Header("Tiles (Üst Zemin)")]
-    public TileBase groundTile;
-    public TileBase hazardTile;
+    // ── Tile Set ──
+    [Header("Tile Set (MapManager yokken fallback)")]
+    public LayerTileSet defaultTileSet;
 
-    [Header("Scaffold (Çöken Platform)")]
-    public TileBase scaffoldTile; // Üst kısım (tileMap_303)
-    public TileBase lowerScaffoldTile; // Alt kısım (tileMap_101)
-    [Range(0f, 1f)] public float scaffoldSpawnChance = 0.08f;
-
-    [Header("Tiles (Arka Plan Sütun)")]
-    public TileBase columnTile;
-
-    [Header("Prefabs & Settings")]
+    // ── Prefablar ──
+    [Header("Prefablar")]
     public GameObject playerPrefab;
-    public GameObject meleeEnemyPrefab;
-    public GameObject aoeEnemyPrefab;
 
-    [Header("Boss Arenası Prefableri")]
-    public GameObject bossPrefab;
-    public GameObject totemPrefab;
+    // ── Harita Ayarları ──
+    [Header("Harita")]
+    public int baseMapRadius = 3;
 
-    [Header("Shop Arena")]
-    public GameObject shopDealerPrefab; // Optional — if null, creates a placeholder sprite
+    // ── Runtime Cell Takibi ──
+    [HideInInspector] public List<Vector3Int> validCells = new List<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> hazardCells = new HashSet<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> scaffoldCells = new HashSet<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> explosionCells = new HashSet<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> teleportCells = new HashSet<Vector3Int>();
+    [HideInInspector] public Dictionary<Vector3Int, Vector3Int> teleportPairs = new Dictionary<Vector3Int, Vector3Int>();
 
-    [Header("Warlock Düşman")]
-    public GameObject warlockEnemyPrefab;
-    public int warlockStartLevel = 0; // Her bölümde çıkabilir
-    [Range(0f, 1f)] public float warlockSpawnChance = 0.15f;
-    private static float bossLegendaryMultiplier = 1f;  // Her bosstan sonra 2 ile çarpılır
+    // ── Sabitler ──
+    private static float bossLegendaryMultiplier = 1f;
+    private static readonly Vector3Int[] oddOffsets  = { new Vector3Int(+1, 0, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0) };
+    private static readonly Vector3Int[] evenOffsets = { new Vector3Int(+1, 0, 0), new Vector3Int(+1, +1, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(0, -1, 0), new Vector3Int(+1, -1, 0) };
 
     public static void ResetBossMultiplier() { bossLegendaryMultiplier = 1f; }
 
     public float CurrentEnemyHealth
     {
-        get { 
+        get
+        {
             float baseHealth = 7f * bossLegendaryMultiplier;
-            return baseHealth * Mathf.Pow(1.2f, RunManager.instance.currentLevel); 
+            return baseHealth * Mathf.Pow(1.2f, RunManager.instance.currentLevel);
         }
     }
-
-    public int baseMapRadius = 3;
-    public int aoeStartLevel = 1; // Her bölümde çıkabilir
-
-    public List<Vector3Int> validCells = new List<Vector3Int>();
-    public HashSet<Vector3Int> hazardCells = new HashSet<Vector3Int>();
-    public HashSet<Vector3Int> scaffoldCells = new HashSet<Vector3Int>();
-
-    private static readonly Vector3Int[] oddOffsets = { new Vector3Int(+1, 0, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0) };
-    private static readonly Vector3Int[] evenOffsets = { new Vector3Int(+1, 0, 0), new Vector3Int(+1, +1, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(0, -1, 0), new Vector3Int(+1, -1, 0) };
 
     void Awake()
     {
@@ -92,6 +73,28 @@ public class LevelGenerator : MonoBehaviour
             GameObject scObj = GameObject.Find("ScaffoldMap");
             if (scObj != null) scaffoldMap = scObj.GetComponent<Tilemap>();
         }
+
+        if (teleportMap == null)
+        {
+            GameObject tpObj = GameObject.Find("TeleportMap");
+            if (tpObj != null) teleportMap = tpObj.GetComponent<Tilemap>();
+        }
+    }
+
+    /// <summary>
+    /// Aktif layer'ın tile set'ini döndürür.
+    /// MapManager varsa o anki layer config'inden okur, yoksa defaultTileSet'i kullanır.
+    /// </summary>
+    public LayerTileSet GetActiveTileSet()
+    {
+        if (MapManager.instance != null)
+        {
+            int layerIdx = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
+            MapLayerData config = MapManager.instance.GetLayerConfig(layerIdx);
+            if (config != null && config.tileSet != null)
+                return config.tileSet;
+        }
+        return defaultTileSet;
     }
 
     void Start()
@@ -159,17 +162,26 @@ public class LevelGenerator : MonoBehaviour
         if (backgroundMap != null) backgroundMap.ClearAllTiles();
         if (hazardMap != null) hazardMap.ClearAllTiles();
         if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
+        if (teleportMap != null) teleportMap.ClearAllTiles();
         if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
 
         validCells.Clear();
         hazardCells.Clear();
         scaffoldCells.Clear();
+        explosionCells.Clear();
+        teleportCells.Clear();
+        teleportPairs.Clear();
 
         foreach (var enemy in TurnManager.instance.enemies)
         {
             if (enemy != null) Destroy(enemy.gameObject);
         }
         TurnManager.instance.enemies.Clear();
+
+        LayerTileSet ts = GetActiveTileSet();
+        TileBase activeGroundTile = ts != null ? ts.groundTile : null;
+        TileBase activeColumnTile = ts != null ? ts.columnTile : null;
+        float scaffoldSpawnChance = ts != null ? ts.scaffoldSpawnChance : 0.08f;
 
         bool isPostBossLevel = RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1;
         bool isEliteNode = RunManager.instance.currentNodeType == MapNodeType.EliteCombat;
@@ -191,36 +203,45 @@ public class LevelGenerator : MonoBehaviour
                     {
                         float roll = Random.value;
 
-                        groundMap.SetTile(cell, groundTile);
+                        groundMap.SetTile(cell, activeGroundTile);
                         groundMap.SetColor(cell, Color.white);
 
                         // Merkeze asla tehlikeli tile koyma
                         if (cell != Vector3Int.zero)
                         {
-                            float hazardThreshold = scaffoldSpawnChance + 0.08f;
-                            float scaffoldThreshold = hazardThreshold + scaffoldSpawnChance;
+                            bool hasExplosionTile = ts != null && ts.explosionTile != null;
+                            bool hasScaffoldTile  = ts != null && ts.scaffoldTile != null;
+                            float hazardThreshold    = scaffoldSpawnChance + 0.08f;
+                            float scaffoldThreshold  = hazardThreshold + scaffoldSpawnChance;
 
                             if (roll < hazardThreshold)
                             {
-                                // Diken (Hazard) tile
-                                // Komşusunda 2+ hazard varsa spawn etme → geçilmez duvarlar engellenir
+                                // Diken / Explosion tile — Komşusunda 2+ hazard varsa spawn etme
                                 int adjacentHazardCount = 0;
                                 Vector3Int[] hazOffsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
                                 foreach (var off in hazOffsets)
-                                {
                                     if (hazardCells.Contains(cell + off)) adjacentHazardCount++;
-                                }
 
                                 if (adjacentHazardCount < 2)
                                 {
-                                    if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
-                                    hazardCells.Add(cell);
+                                    if (hasExplosionTile)
+                                    {
+                                        // Explosion tile — hazardCells'e de eklenir (düşman kaçar)
+                                        if (hazardMap != null) hazardMap.SetTile(cell, ts.explosionTile);
+                                        hazardCells.Add(cell);
+                                        explosionCells.Add(cell);
+                                    }
+                                    else if (ts != null && ts.hazardTile != null)
+                                    {
+                                        // Normal spike tile
+                                        if (hazardMap != null) hazardMap.SetTile(cell, ts.hazardTile);
+                                        hazardCells.Add(cell);
+                                    }
                                 }
                             }
-                            else if (roll < scaffoldThreshold)
+                            else if (roll < scaffoldThreshold && hasScaffoldTile && !hasExplosionTile)
                             {
-                                // Scaffold (Çöken Platform) tile
-                                // Komşusunda zaten scaffold varsa spawn etme → kümeleme ve adacık oluşumunu engelle
+                                // Scaffold — sadece explosionTile olmayan layer'larda
                                 bool hasAdjacentScaffold = false;
                                 Vector3Int[] cellOffsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
                                 foreach (var off in cellOffsets)
@@ -228,10 +249,10 @@ public class LevelGenerator : MonoBehaviour
                                     if (scaffoldCells.Contains(cell + off)) { hasAdjacentScaffold = true; break; }
                                 }
 
-                                if (!hasAdjacentScaffold && scaffoldMap != null && scaffoldTile != null)
+                                if (!hasAdjacentScaffold && scaffoldMap != null)
                                 {
                                     groundMap.SetTile(cell, null);
-                                    scaffoldMap.SetTile(cell, scaffoldTile);
+                                    scaffoldMap.SetTile(cell, ts.scaffoldTile);
                                     scaffoldCells.Add(cell);
                                 }
                             }
@@ -264,7 +285,7 @@ public class LevelGenerator : MonoBehaviour
                     Vector3Int neighbor = existing + off;
                     if (!validCells.Contains(neighbor))
                     {
-                        groundMap.SetTile(neighbor, groundTile);
+                        groundMap.SetTile(neighbor, activeGroundTile);
                         groundMap.SetColor(neighbor, Color.white);
                         validCells.Add(neighbor);
                         needed--;
@@ -273,7 +294,7 @@ public class LevelGenerator : MonoBehaviour
             }
         }
 
-        GenerateColumns();
+        GenerateColumns(activeColumnTile);
 
         Vector3 worldCenter = groundMap.GetCellCenterWorld(Vector3Int.zero);
         List<Vector3Int> safePlayerSpawns = validCells.Where(c => !hazardCells.Contains(c) && !scaffoldCells.Contains(c)).ToList();
@@ -295,12 +316,23 @@ public class LevelGenerator : MonoBehaviour
         // KESİN ÇÖZÜM: OYUNCU DOĞDUĞU KAREYİ ZORLA TERTEMİZ YAP!
         // ========================================================
         hazardCells.Remove(playerStartCell);
+        explosionCells.Remove(playerStartCell);
         if (hazardMap != null) hazardMap.SetTile(playerStartCell, null);
 
         scaffoldCells.Remove(playerStartCell);
         if (scaffoldMap != null) scaffoldMap.SetTile(playerStartCell, null);
 
-        groundMap.SetTile(playerStartCell, groundTile); // Altına sağlam zemin koy
+        teleportCells.Remove(playerStartCell);
+        if (teleportMap != null) teleportMap.SetTile(playerStartCell, null);
+        if (teleportPairs.ContainsKey(playerStartCell))
+        {
+            Vector3Int paired = teleportPairs[playerStartCell];
+            teleportPairs.Remove(playerStartCell);
+            teleportPairs.Remove(paired);
+            teleportCells.Remove(paired);
+        }
+
+        groundMap.SetTile(playerStartCell, activeGroundTile); // Altına sağlam zemin koy
         if (!validCells.Contains(playerStartCell)) validCells.Add(playerStartCell);
 
         // ForceSetPosition: scaffold event'lerini tetiklemeden oyuncuyu doğru hücreye yerleştir
@@ -308,7 +340,6 @@ public class LevelGenerator : MonoBehaviour
         validCells.Remove(playerStartCell);
 
         List<Vector3Int> spawnedEnemyCells = new List<Vector3Int>();
-        int spawnedWarlockCount = 0;
         Vector3 playerWorldPos = groundMap.GetCellCenterWorld(playerStartCell);
 
         for (int i = 0; i < enemyCountToSpawn; i++)
@@ -386,28 +417,25 @@ public class LevelGenerator : MonoBehaviour
 
             Vector3 spawnPos = groundMap.GetCellCenterWorld(bestSpawnCell);
 
-            GameObject prefabToSpawn = meleeEnemyPrefab;
-
-            if (warlockEnemyPrefab != null && spawnedWarlockCount < 3 &&
-                (RunManager.instance.currentLevel >= warlockStartLevel || RunManager.instance.currentLevel == 0))
+            // Düşman seçimi: enemies dizisini sırayla kontrol et, ilk geçeni spawn et
+            GameObject prefabToSpawn = null;
+            if (ts != null && ts.enemies != null && ts.enemies.Length > 0)
             {
-                float effectiveChance = (RunManager.instance.currentLevel == 0) ? 0.50f : warlockSpawnChance;
-                if (Random.value < effectiveChance)
+                foreach (var entry in ts.enemies)
                 {
-                    prefabToSpawn = warlockEnemyPrefab;
+                    if (entry.prefab != null && Random.value < entry.spawnChance)
+                    {
+                        prefabToSpawn = entry.prefab;
+                        break;
+                    }
                 }
+                // Hiçbiri geçmediyse index 0 (varsayılan melee)
+                if (prefabToSpawn == null)
+                    prefabToSpawn = ts.enemies[0].prefab;
             }
 
-            if (prefabToSpawn == meleeEnemyPrefab && RunManager.instance.currentLevel >= aoeStartLevel)
-            {
-                if (Random.value < 0.30f && aoeEnemyPrefab != null)
-                {
-                    prefabToSpawn = aoeEnemyPrefab;
-                }
-            }
-
+            if (prefabToSpawn == null) continue;
             GameObject newEnemyObj = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
-            if (prefabToSpawn == warlockEnemyPrefab) spawnedWarlockCount++;
             EnemyMovement enemyAI = newEnemyObj.GetComponent<EnemyMovement>();
             enemyAI.groundMap = this.groundMap;
 
@@ -449,6 +477,13 @@ public class LevelGenerator : MonoBehaviour
         // Oyuncudan BFS ile erişilemeyen düşmanları anında öldür
         // ========================================================
         KillUnreachableEnemies(playerStartCell);
+
+        // Teleport tile'ları olan layer'larda pair'ları yerleştir
+        if (ts != null && ts.teleportTileA != null && ts.teleportTileB != null)
+        {
+            int numPairs = Mathf.Clamp(1 + (RunManager.instance.currentLevel / 5), 1, 2);
+            SpawnTeleportPairs(numPairs, playerStartCell, ts);
+        }
 
         TurnManager.instance.isPlayerTurn = true;
         TurnManager.instance.hasAttackedThisTurn = false;
@@ -575,13 +610,14 @@ public class LevelGenerator : MonoBehaviour
                         float roll = Random.value;
                         
                         // Zemin banko konuluyor
-                        groundMap.SetTile(cell, groundTile);
+                        LayerTileSet bossTs = GetActiveTileSet();
+                        groundMap.SetTile(cell, bossTs?.groundTile);
                         groundMap.SetColor(cell, Color.white);
 
                         // Boss arenasında merkeze değil de rastgele bir yerlere sadece diken (hazard) serpiştiriyoruz. Scaffold YÖK EDİLDİ!
-                        if (roll < 0.08f && Vector3Int.zero != cell)
+                        if (roll < 0.08f && Vector3Int.zero != cell && bossTs?.hazardTile != null)
                         {
-                            if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
+                            if (hazardMap != null) hazardMap.SetTile(cell, bossTs.hazardTile);
                             hazardCells.Add(cell);
                         }
 
@@ -621,7 +657,7 @@ public class LevelGenerator : MonoBehaviour
         scaffoldCells.Remove(playerStartCell);
         if (scaffoldMap != null) scaffoldMap.SetTile(playerStartCell, null);
 
-        groundMap.SetTile(playerStartCell, groundTile); // Altına sağlam zemin koy
+        groundMap.SetTile(playerStartCell, GetActiveTileSet()?.groundTile); // Altına sağlam zemin koy
         if (!validCells.Contains(playerStartCell)) validCells.Add(playerStartCell);
 
         // ForceSetPosition: scaffold event'lerini tetiklemeden oyuncuyu doğru hücreye yerleştir
@@ -640,16 +676,16 @@ public class LevelGenerator : MonoBehaviour
 
         availableSpawnCells = availableSpawnCells.OrderByDescending(c => Vector3.Distance(groundMap.GetCellCenterWorld(c), worldCenter)).ToList();
 
+        LayerTileSet bossLayerTs = GetActiveTileSet();
         EnemyMovement spawnedBossAI = null;
-        if (bossPrefab != null && availableSpawnCells.Count > 0)
+        if (bossLayerTs?.bossPrefab != null && availableSpawnCells.Count > 0)
         {
             Vector3Int bossCell = availableSpawnCells[0];
             Vector3 bossPos = groundMap.GetCellCenterWorld(bossCell);
 
-            GameObject bossObj = Instantiate(bossPrefab, bossPos, Quaternion.identity);
+            GameObject bossObj = Instantiate(bossLayerTs.bossPrefab, bossPos, Quaternion.identity);
             EnemyMovement bossAI = bossObj.GetComponent<EnemyMovement>();
 
-            // Boss sahnesinde legendary multiplier'ı uyguLAMA, ama normal düşmanın 3 katı HP'ye sahip
             float bossHealth = LevelGenerator.instance.CurrentEnemyHealth * 2f;
             bossAI.health.maxHP = Mathf.RoundToInt(bossHealth);
             bossAI.health.currentHP = bossAI.health.maxHP;
@@ -657,11 +693,10 @@ public class LevelGenerator : MonoBehaviour
 
             StartCoroutine(bossAI.FadeSpawnCoroutine());
             spawnedBossAI = bossAI;
-
             availableSpawnCells.RemoveAt(0);
         }
 
-        if (totemPrefab != null)
+        if (bossLayerTs?.totemPrefab != null)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -671,7 +706,7 @@ public class LevelGenerator : MonoBehaviour
                 Vector3Int totemCell = availableSpawnCells[index];
                 Vector3 totemPos = groundMap.GetCellCenterWorld(totemCell);
 
-                GameObject totemObj = Instantiate(totemPrefab, totemPos, Quaternion.identity);
+                GameObject totemObj = Instantiate(bossLayerTs.totemPrefab, totemPos, Quaternion.identity);
                 EnemyMovement totemAI = totemObj.GetComponent<EnemyMovement>();
 
                 totemAI.health.maxHP = 1;
@@ -679,7 +714,6 @@ public class LevelGenerator : MonoBehaviour
                 totemAI.health.updateHealth();
 
                 StartCoroutine(totemAI.FadeSpawnCoroutine());
-
                 availableSpawnCells.RemoveAt(index);
             }
         }
@@ -706,26 +740,26 @@ public class LevelGenerator : MonoBehaviour
         BossIntroSequence.instance.PlayIntro(boss);
     }
 
-    private void GenerateColumns()
+    private void GenerateColumns(TileBase activeColumnTile = null)
     {
         if (backgroundMap == null) return;
         backgroundMap.ClearAllTiles();
+
+        LayerTileSet ts = GetActiveTileSet();
+        TileBase col = activeColumnTile ?? ts?.columnTile;
+        TileBase lowerScaffold = ts?.lowerScaffoldTile;
 
         foreach (var cell in validCells)
         {
             if (scaffoldCells.Contains(cell))
             {
-                if (lowerScaffoldTile != null)
-                {
-                    backgroundMap.SetTile(cell, lowerScaffoldTile);
-                }
+                if (lowerScaffold != null)
+                    backgroundMap.SetTile(cell, lowerScaffold);
             }
             else
             {
-                if (columnTile != null)
-                {
-                    backgroundMap.SetTile(cell, columnTile);
-                }
+                if (col != null)
+                    backgroundMap.SetTile(cell, col);
             }
         }
     }
@@ -1109,7 +1143,7 @@ public class LevelGenerator : MonoBehaviour
                 if (Mathf.Abs(x + y) <= shopRadius)
                 {
                     Vector3Int cell = new Vector3Int(x, y, 0);
-                    groundMap.SetTile(cell, groundTile);
+                    groundMap.SetTile(cell, GetActiveTileSet()?.groundTile);
                     groundMap.SetColor(cell, Color.white);
                     validCells.Add(cell);
                 }
@@ -1151,13 +1185,8 @@ public class LevelGenerator : MonoBehaviour
         Vector3 dealerWorldPos = groundMap.GetCellCenterWorld(dealerVisualCell);
 
         GameObject dealerGO;
-        if (shopDealerPrefab != null)
         {
-            dealerGO = Instantiate(shopDealerPrefab, dealerWorldPos, Quaternion.identity);
-        }
-        else
-        {
-            // Capsule placeholder dealer
+            // Placeholder dealer (prefab yok)
             dealerGO = new GameObject("ShopDealer");
             dealerGO.transform.position = dealerWorldPos;
             SpriteRenderer sr = dealerGO.AddComponent<SpriteRenderer>();
@@ -1237,4 +1266,42 @@ public class LevelGenerator : MonoBehaviour
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
     }
+
+    // ──────── Layer 2: Teleport Pair Spawn ────────
+
+    private void SpawnTeleportPairs(int numPairs, Vector3Int playerStartCell, LayerTileSet ts)
+    {
+        if (teleportMap == null || ts == null || ts.teleportTileA == null || ts.teleportTileB == null) return;
+
+        List<Vector3Int> candidates = validCells.Where(c =>
+            !hazardCells.Contains(c) &&
+            !scaffoldCells.Contains(c) &&
+            !teleportCells.Contains(c) &&
+            c != playerStartCell
+        ).ToList();
+
+        for (int p = 0; p < numPairs; p++)
+        {
+            if (candidates.Count < 2) break;
+
+            int idxA = Random.Range(0, candidates.Count);
+            Vector3Int cellA = candidates[idxA];
+            candidates.RemoveAt(idxA);
+
+            List<Vector3Int> farCandidates = candidates.Where(c => HexDistance(c, cellA) >= 4).ToList();
+            if (farCandidates.Count == 0) farCandidates = candidates;
+
+            int idxB = Random.Range(0, farCandidates.Count);
+            Vector3Int cellB = farCandidates[idxB];
+            candidates.Remove(cellB);
+
+            teleportMap.SetTile(cellA, ts.teleportTileA);
+            teleportMap.SetTile(cellB, ts.teleportTileB);
+            teleportCells.Add(cellA);
+            teleportCells.Add(cellB);
+            teleportPairs[cellA] = cellB;
+            teleportPairs[cellB] = cellA;
+        }
+    }
+
 }

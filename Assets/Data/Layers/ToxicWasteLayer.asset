@@ -22,3 +22,4 @@ MonoBehaviour:
   restChance: 0.2
   eliteChance: 0.1
   eventChance: 0
+  tileSet: {fileID: 11400000, guid: 35091130f4302544a85805dec1096a75, type: 2}

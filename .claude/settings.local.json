@@ -57,7 +57,9 @@
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets -type f -name *hitin* -o -name *odge*)",
       "Bash(find c:UserskutusDesktopGithubRepoHexandVexDaSteamEditionAssets -name *.asset -type f)",
       "Bash(find c:UserskutusDesktopGithubRepoHexandVexDaSteamEditionAssets -name *.unity -type f)",
-      "Bash(grep -r \"secretItem\\\\|secretItemChance\" c:UserskutusDesktopGithubRepoHexandVexDaSteamEditionAssetsScripts --include=*.cs)"
+      "Bash(grep -r \"secretItem\\\\|secretItemChance\" c:UserskutusDesktopGithubRepoHexandVexDaSteamEditionAssetsScripts --include=*.cs)",
+      "Bash(grep -l \"Enemy\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*AI.cs)",
+      "Bash(wc -l /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)"
     ]
   }
 }

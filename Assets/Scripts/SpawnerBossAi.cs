@@ -479,7 +479,11 @@ public class SpawnerBossAI : MonoBehaviour
             }
             if (tooCloseToSpawned) continue;
 
-            GameObject prefab = Random.value > 0.5f ? LevelGenerator.instance.meleeEnemyPrefab : LevelGenerator.instance.aoeEnemyPrefab;
+            var bossSpawnTs = LevelGenerator.instance?.GetActiveTileSet();
+            GameObject prefab = null;
+            if (bossSpawnTs != null && bossSpawnTs.enemies != null && bossSpawnTs.enemies.Length > 0)
+                prefab = bossSpawnTs.enemies[Random.Range(0, bossSpawnTs.enemies.Length)].prefab;
+            if (prefab == null) continue;
             Vector3 spawnPos = groundMap.GetCellCenterWorld(cell);
             GameObject minionObj = Instantiate(prefab, spawnPos, Quaternion.identity);
 

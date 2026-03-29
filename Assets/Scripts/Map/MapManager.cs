@@ -953,7 +953,7 @@ public class MapManager : MonoBehaviour
     }
 
     // ─── Layer config'i güvenli al (fallback: son config) ───
-    private MapLayerData GetLayerConfig(int layerIndex)
+    public MapLayerData GetLayerConfig(int layerIndex)
     {
         if (layerConfigs == null || layerConfigs.Length == 0)
         {

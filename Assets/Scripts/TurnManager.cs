@@ -378,7 +378,8 @@ public class TurnManager : MonoBehaviour
 #if UNITY_EDITOR
     private void SpawnDebugAoEEnemies()
     {
-        if (LevelGenerator.instance == null || LevelGenerator.instance.aoeEnemyPrefab == null) return;
+        var _dbgTs = LevelGenerator.instance?.GetActiveTileSet();
+        if (LevelGenerator.instance == null || _dbgTs?.enemies == null || _dbgTs.enemies.Length == 0) return;
         Vector3Int playerCell = player.GetCurrentCellPosition();
         Vector3Int[] oddOff = { new Vector3Int(+1, 0, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0) };
         Vector3Int[] evenOff = { new Vector3Int(+1, 0, 0), new Vector3Int(+1, +1, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(0, -1, 0), new Vector3Int(+1, -1, 0) };
@@ -402,7 +403,8 @@ public class TurnManager : MonoBehaviour
         foreach (var spawnCell in spawnCells)
         {
             Vector3 spawnPos = groundMap.GetCellCenterWorld(spawnCell); spawnPos.z = 0;
-            GameObject obj = Instantiate(LevelGenerator.instance.aoeEnemyPrefab, spawnPos, Quaternion.identity);
+            var _dbgEnemies = LevelGenerator.instance.GetActiveTileSet().enemies;
+            GameObject obj = Instantiate(_dbgEnemies[Mathf.Min(1, _dbgEnemies.Length - 1)].prefab, spawnPos, Quaternion.identity);
             EnemyMovement ai = obj.GetComponent<EnemyMovement>(); ai.groundMap = groundMap;
             ai.health.maxHP = 50; ai.health.currentHP = 50; ai.health.updateHealth();
             RegisterEnemy(ai); StartCoroutine(ai.FadeSpawnCoroutine());
@@ -1183,7 +1185,8 @@ public class TurnManager : MonoBehaviour
         if (thornPreviewObj != null) return;
 
         Sprite previewSprite = null;
-        if (LevelGenerator.instance != null && LevelGenerator.instance.hazardTile is Tile ht && ht.sprite != null)
+        var _ts = LevelGenerator.instance?.GetActiveTileSet();
+        if (_ts != null && _ts.hazardTile is Tile ht && ht.sprite != null)
             previewSprite = ht.sprite;
 
         if (previewSprite == null) return;
@@ -1339,7 +1342,8 @@ public class TurnManager : MonoBehaviour
         DestroyThornPreview();
         ClearTargetingCache();
         LevelGenerator.instance.hazardCells.Add(cell);
-        if (LevelGenerator.instance.hazardMap != null && LevelGenerator.instance.hazardTile != null) LevelGenerator.instance.hazardMap.SetTile(cell, LevelGenerator.instance.hazardTile);
+        var thornTs = LevelGenerator.instance?.GetActiveTileSet();
+        if (LevelGenerator.instance.hazardMap != null && thornTs?.hazardTile != null) LevelGenerator.instance.hazardMap.SetTile(cell, thornTs.hazardTile);
         thornTurnsRemaining[cell] = 3;
         if (player != null) player.UpdateHighlights();
     }
@@ -1497,6 +1501,139 @@ public class TurnManager : MonoBehaviour
         enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
     }
 
+    // ──────── Layer 2: Explosion Tile Trigger ────────
+
+    /// <summary>
+    /// Explosion tile tetiklendiğinde çağrılır.
+    /// Merkez + 6 komşuya hasar verir. Tile yok olmaz (kalıcı tehlike).
+    /// </summary>
+    private IEnumerator TriggerExplosionTileCoroutine(Vector3Int cell)
+    {
+        if (isCollapsingIslands) yield break;
+        if (LevelGenerator.instance == null || !LevelGenerator.instance.explosionCells.Contains(cell)) yield break;
+
+        TrapTileEvents.FireExplosionTileTriggered(cell);
+
+        Vector3 spawnPos = groundMap.GetCellCenterWorld(cell);
+        spawnPos.z = 0;
+        StartCoroutine(AnimateExplosionFX(spawnPos));
+
+        yield return new WaitForSeconds(0.1f);
+
+        Vector3Int[] offsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+
+        // Merkez + 6 komşu — tüm entity'ler hasar alır
+        List<Vector3Int> cellsToHit = new List<Vector3Int> { cell };
+        foreach (var off in offsets) cellsToHit.Add(cell + off);
+
+        // Düşman hasarı
+        HashSet<EnemyMovement> enemiesToHit = new HashSet<EnemyMovement>();
+        foreach (var hitCell in cellsToHit)
+        {
+            EnemyMovement e = GetEnemyAtCell(hitCell);
+            if (e != null && e.health.currentHP > 0) enemiesToHit.Add(e);
+        }
+        foreach (var e in enemiesToHit)
+        {
+            if (e == null) continue;
+            e.health.TakeDamage(Mathf.Max(1, e.health.maxHP / 2));
+        }
+
+        // Oyuncu hasarı (merkez veya komşuda ise)
+        if (player != null && player.health.currentHP > 0 && cellsToHit.Contains(player.GetCurrentCellPosition()))
+        {
+            if (RunManager.instance.hasBioBarrier)
+                TryBreakBioBarrier();
+            else
+                PlayerTakeDamage(1);
+        }
+
+        yield return new WaitForSeconds(0.2f);
+
+        List<EnemyMovement> killed = enemies.FindAll(e => e != null && e.health.currentHP <= 0);
+        foreach (var dead in killed) coinService.ProcessKillRewards(dead);
+        UpdateCoinUI();
+    }
+
+    // ──────── Layer 2: Teleport Tile Trigger ────────
+
+    // Double-fire koruması: aynı turda aynı tile iki kez tetiklenmesin
+    private HashSet<Vector3Int> teleportFiredThisTurn = new HashSet<Vector3Int>();
+
+    /// <summary>
+    /// Oyuncu bir teleport tile'ına bastığında çağrılır.
+    /// </summary>
+    private IEnumerator TriggerPlayerTeleportTile(Vector3Int fromCell)
+    {
+        if (LevelGenerator.instance == null) yield break;
+        if (!LevelGenerator.instance.teleportCells.Contains(fromCell)) yield break;
+        if (teleportFiredThisTurn.Contains(fromCell)) yield break;
+        if (!LevelGenerator.instance.teleportPairs.TryGetValue(fromCell, out Vector3Int destCell)) yield break;
+
+        teleportFiredThisTurn.Add(fromCell);
+        teleportFiredThisTurn.Add(destCell);
+
+        // Hedef dolu mu?
+        EnemyMovement swapEnemy = GetEnemyAtCell(destCell);
+
+        // ScaffoldManager bildirimi (ayrılma)
+        if (ScaffoldManager.instance != null) ScaffoldManager.instance.OnEntityLeave(fromCell);
+
+        yield return StartCoroutine(TeleportAnimHelper.TeleportEntity(
+            this,
+            player.gameObject,
+            () =>
+            {
+                player.ForceSetPosition(destCell);
+                if (swapEnemy != null) swapEnemy.ForceSetPosition(fromCell);
+            }
+        ));
+
+        // ScaffoldManager bildirimi (varış)
+        if (ScaffoldManager.instance != null) ScaffoldManager.instance.OnEntityEnter(destCell);
+
+        CameraController.ShakeLight();
+        TrapTileEvents.FireTeleportTileTriggered(fromCell, destCell);
+    }
+
+    /// <summary>
+    /// Bir düşman teleport tile'ına bastığında çağrılır.
+    /// </summary>
+    private IEnumerator TriggerEnemyTeleportTile(EnemyMovement enemy)
+    {
+        if (enemy == null || enemy.health.currentHP <= 0) yield break;
+        if (LevelGenerator.instance == null) yield break;
+
+        Vector3Int fromCell = enemy.GetCurrentCellPosition();
+        if (!LevelGenerator.instance.teleportCells.Contains(fromCell)) yield break;
+        if (teleportFiredThisTurn.Contains(fromCell)) yield break;
+        if (!LevelGenerator.instance.teleportPairs.TryGetValue(fromCell, out Vector3Int destCell)) yield break;
+
+        teleportFiredThisTurn.Add(fromCell);
+        teleportFiredThisTurn.Add(destCell);
+
+        // Hedef dolu mu? Oyuncu varsa güvenli komşuya gönder
+        bool destHasPlayer = player != null && player.GetCurrentCellPosition() == destCell;
+        EnemyMovement swapEnemy = destHasPlayer ? null : GetEnemyAtCell(destCell);
+
+        Vector3Int actualDest = destHasPlayer ? GetSafeNeighborForEnemy(destCell) : destCell;
+
+        if (ScaffoldManager.instance != null) ScaffoldManager.instance.OnEntityLeave(fromCell);
+
+        yield return StartCoroutine(TeleportAnimHelper.TeleportEntity(
+            this,
+            enemy.gameObject,
+            () =>
+            {
+                enemy.ForceSetPosition(actualDest);
+                if (swapEnemy != null) swapEnemy.ForceSetPosition(fromCell);
+            }
+        ));
+
+        if (ScaffoldManager.instance != null) ScaffoldManager.instance.OnEntityEnter(actualDest);
+        TrapTileEvents.FireTeleportTileTriggered(fromCell, actualDest);
+    }
+
     private IEnumerator AnimateExplosionFX(Vector3 pos)
     {
         if (AudioManager.instance != null) AudioManager.instance.PlayExplosion();
@@ -1536,6 +1673,7 @@ public class TurnManager : MonoBehaviour
     private IEnumerator HandlePlayerPhase(Vector3Int playerCell)
     {
         hexesMovedThisTurn++;
+        teleportFiredThisTurn.Clear();
 
         // Notify listeners (ShopDealer uses this to detect player stepping on its tile)
         GameEvents.PlayerMoved(playerCell);
@@ -1544,7 +1682,17 @@ public class TurnManager : MonoBehaviour
         if (RunManager.instance != null)
             RunManager.instance.surgeBootActive = false;
 
-        if (LevelGenerator.instance.hazardCells.Contains(playerCell))
+        // Layer 2: Explosion tile kontrolü (hazardCells içinde, bu yüzden önce kontrol et)
+        if (LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Contains(playerCell))
+        {
+            yield return StartCoroutine(TriggerExplosionTileCoroutine(playerCell));
+            if (CleanupDeadAndCheckLevelClear()) yield break;
+            // Explosion tile oyuncuyu itmez — normal akışa devam et
+        }
+
+        // Normal spike hazard: sadece explosion tile DEĞİLSE knockback uygula
+        bool isExplosionCell = LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Contains(playerCell);
+        if (!isExplosionCell && LevelGenerator.instance.hazardCells.Contains(playerCell))
         {
             yield return new WaitForSeconds(0.15f);
             StartCoroutine(FlashHazardTileCoroutine(playerCell));
@@ -1565,6 +1713,14 @@ public class TurnManager : MonoBehaviour
                 player.ClearHighlights(); yield return new WaitForSeconds(0.1f); StartCoroutine(EnemyPhase());
             }
             yield break;
+        }
+
+        // Layer 2: Teleport tile kontrolü
+        if (LevelGenerator.instance != null && LevelGenerator.instance.teleportCells.Contains(playerCell))
+        {
+            yield return StartCoroutine(TriggerPlayerTeleportTile(playerCell));
+            if (player != null && player.health.currentHP <= 0) yield break;
+            // Işınlandıktan sonra yeni konumdaki adjacentEnemies ile devam et
         }
 
         List<EnemyMovement> adjacentEnemies = GetAdjacentEnemies(player.GetCurrentCellPosition());
@@ -1691,9 +1847,42 @@ public class TurnManager : MonoBehaviour
         // Düşmanları speed değerine göre sırala (yüksek speed = önce hareket)
         enemies.Sort((a, b) => (b != null ? b.speed : 0).CompareTo(a != null ? a.speed : 0));
 
+        teleportFiredThisTurn.Clear();
         foreach (var e in enemies) if (e != null && e.skipTurns <= 0 && !e.isAllied) e.ExecuteLockedMove();
         yield return new WaitUntil(() => { foreach (var e in enemies) if (e != null && e.IsMoving()) return false; return true; });
         yield return new WaitForSeconds(0.2f);
+
+        // Layer 2: Explosion tile — düşman üzerinde patlayan tile var mı?
+        if (LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Count > 0)
+        {
+            List<Vector3Int> explodedThisPhase = new List<Vector3Int>();
+            foreach (var e in enemies)
+            {
+                if (e == null || e.health.currentHP <= 0) continue;
+                Vector3Int eCell = e.GetCurrentCellPosition();
+                if (LevelGenerator.instance.explosionCells.Contains(eCell) && !explodedThisPhase.Contains(eCell))
+                {
+                    explodedThisPhase.Add(eCell);
+                    yield return StartCoroutine(TriggerExplosionTileCoroutine(eCell));
+                    if (CleanupDeadAndCheckLevelClear()) yield break;
+                }
+            }
+        }
+
+        // Layer 2: Teleport tile — düşman teleport tile üzerinde mi?
+        if (LevelGenerator.instance != null && LevelGenerator.instance.teleportCells.Count > 0)
+        {
+            List<EnemyMovement> enemySnapshot = new List<EnemyMovement>(enemies);
+            foreach (var e in enemySnapshot)
+            {
+                if (e == null || e.health.currentHP <= 0) continue;
+                Vector3Int eCell = e.GetCurrentCellPosition();
+                if (LevelGenerator.instance.teleportCells.Contains(eCell) && !teleportFiredThisTurn.Contains(eCell))
+                {
+                    yield return StartCoroutine(TriggerEnemyTeleportTile(e));
+                }
+            }
+        }
 
         // Phantom Assault: düşmanlar hayaletlerin üstüne yürürse o hayalet yok olur
         if (RunManager.instance != null)
@@ -2389,8 +2578,28 @@ public class TurnManager : MonoBehaviour
         UpdateCoinUI();
         if (CleanupDeadAndCheckLevelClear()) yield break;
 
+        // Layer 2: Knockback ile explosion tile'a itilen düşmanlar
+        if (LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Count > 0)
+        {
+            List<Vector3Int> knockbackExplosions = new List<Vector3Int>();
+            foreach (var s in knockedEnemies)
+            {
+                if (s == null || s.health.currentHP <= 0) continue;
+                Vector3Int eCell = s.GetCurrentCellPosition();
+                if (LevelGenerator.instance.explosionCells.Contains(eCell) && !knockbackExplosions.Contains(eCell))
+                {
+                    knockbackExplosions.Add(eCell);
+                    yield return StartCoroutine(TriggerExplosionTileCoroutine(eCell));
+                    if (CleanupDeadAndCheckLevelClear()) yield break;
+                }
+            }
+        }
+
         List<EnemyMovement> spikedEnemies = new List<EnemyMovement>(); bool anyoneBounced = false;
-        foreach (var s in knockedEnemies) if (s != null && LevelGenerator.instance.hazardCells.Contains(s.GetCurrentCellPosition())) spikedEnemies.Add(s);
+        // Explosion cell'ler hazardCells içinde ama spike olarak davranmamalı
+        foreach (var s in knockedEnemies) if (s != null
+            && LevelGenerator.instance.hazardCells.Contains(s.GetCurrentCellPosition())
+            && !LevelGenerator.instance.explosionCells.Contains(s.GetCurrentCellPosition())) spikedEnemies.Add(s);
 
         if (spikedEnemies.Count > 0)
         {
@@ -2473,16 +2682,22 @@ public class TurnManager : MonoBehaviour
         player.StartKnockbackMovement(playerTarget);
         yield return new WaitUntil(() => !player.IsMoving());
 
-        if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(player.GetCurrentCellPosition()))
+        Vector3Int playerAfterKnockback = player.GetCurrentCellPosition();
+        if (LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Contains(playerAfterKnockback))
+        {
+            yield return StartCoroutine(TriggerExplosionTileCoroutine(playerAfterKnockback));
+            if (CleanupDeadAndCheckLevelClear()) yield break;
+        }
+        else if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(playerAfterKnockback))
         {
             yield return new WaitForSeconds(0.4f);
             if (RunManager.instance.hasBioBarrier)
                 TryBreakBioBarrier();
             else PlayerTakeDamage(1);
 
-            StartCoroutine(FlashHazardTileCoroutine(player.GetCurrentCellPosition()));
+            StartCoroutine(FlashHazardTileCoroutine(playerAfterKnockback));
             // Güvenli komşu hücreye it (eski hücre scaffold ise kırılmış olabilir)
-            Vector3Int safeCell = GetSafeNeighbor(player.GetCurrentCellPosition());
+            Vector3Int safeCell = GetSafeNeighbor(playerAfterKnockback);
             player.StartKnockbackMovement(safeCell);
             yield return new WaitUntil(() => !player.IsMoving());
         }
