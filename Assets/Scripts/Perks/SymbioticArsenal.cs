@@ -5,6 +5,7 @@ public class SymbioticArsenalPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Rare;
+        processLast = true;
     }
 
     /// <summary>

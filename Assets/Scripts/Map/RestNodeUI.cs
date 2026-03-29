@@ -55,6 +55,8 @@ public class RestNodeUI : MonoBehaviour
         {
             canTrain = RunManager.instance.activePerks.Exists(
                 p => p != null && p.currentLevel < p.maxLevel
+            ) || RunManager.instance.inventoryPerks.Exists(
+                p => p != null && p.currentLevel < p.maxLevel
             );
         }
 
@@ -113,30 +115,39 @@ public class RestNodeUI : MonoBehaviour
 
     private void OnTrain()
     {
-        if (RunManager.instance == null || RunManager.instance.activePerks.Count == 0) return;
+        if (RunManager.instance == null) return;
 
-        var upgradeablePerks = RunManager.instance.activePerks.FindAll(
-            p => p != null && p.currentLevel < p.maxLevel
-        );
+        // Perk stash panelini ac ve upgrade moduna al
+        if (PerkInventoryUI.instance == null)
+            PerkInventoryUI.CreateFromCode();
 
-        if (upgradeablePerks.Count > 0)
+        if (PerkInventoryUI.instance != null)
         {
-            BasePerk chosen = upgradeablePerks[Random.Range(0, upgradeablePerks.Count)];
-            chosen.Upgrade();
-            if (infoText != null) infoText.text = $"{chosen.perkName} upgraded!";
-
-            // Upgrade olan perkte pop animasyonu
-            if (PerkInventoryUI.instance != null)
-                PerkInventoryUI.instance.TriggerPopForPerk(chosen);
-            if (ActivePerkBar.instance != null)
-                ActivePerkBar.instance.TriggerPopForPerk(chosen);
-        }
-        else
-        {
-            if (infoText != null) infoText.text = "All perks maxed!";
+            PerkInventoryUI.instance.Show();
+            PerkInventoryUI.instance.EnterUpgradeMode(OnPerkChosenForUpgrade);
         }
 
+        if (infoText != null) infoText.text = "Choose a perk to upgrade";
         DisableButtons();
+    }
+
+    private void OnPerkChosenForUpgrade(BasePerk chosen)
+    {
+        if (chosen == null) return;
+
+        chosen.Upgrade();
+        if (infoText != null) infoText.text = $"{chosen.perkName} upgraded!";
+
+        // Upgrade olan perkte pop animasyonu
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.TriggerPopForPerk(chosen);
+        if (ActivePerkBar.instance != null)
+            ActivePerkBar.instance.TriggerPopForPerk(chosen);
+
+        // Stash panelini yenile (yeni level gosterilsin)
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.RefreshUI();
+
         StartCoroutine(CloseAfterDelay());
     }
 

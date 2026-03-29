@@ -6,6 +6,9 @@ public class LuckyCloverPerk : BasePerk
         maxLevel = 3;
     }
 
+    /// <summary>Lucky Clover artik perk secim havuzunda cikmaz.</summary>
+    public override bool CanBeOffered() { return false; }
+
     public override void OnAcquire()
     {
         RunManager.instance.luckyCloverLevel = currentLevel;

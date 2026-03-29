@@ -53,6 +53,10 @@ public class PerkInventoryUI : MonoBehaviour
     private Coroutine tooltipFadeCoroutine;
     private bool stashWasOpen;
 
+    // Campfire upgrade mode — tıklanan perk upgrade olur
+    private System.Action<BasePerk> upgradeCallback;
+    public bool IsUpgradeMode => upgradeCallback != null;
+
     // Fly animasyonu state — perk taşınırken eski pozisyondan yenisine uçar
     private BasePerk flyingPerk;
     private Vector3 flyStartWorldPos;
@@ -187,9 +191,25 @@ public class PerkInventoryUI : MonoBehaviour
     {
         CancelDrag();
         HideTooltip();
+        ExitUpgradeMode();
         if (canvasGO == null) return;
 
         canvasGO.SetActive(false);
+    }
+
+    /// <summary>
+    /// Campfire upgrade modu — tiklanan perk upgrade olur.
+    /// Sadece upgradeable (currentLevel < maxLevel) perkler tiklanabilir.
+    /// </summary>
+    public void EnterUpgradeMode(System.Action<BasePerk> callback)
+    {
+        upgradeCallback = callback;
+        RefreshUI();
+    }
+
+    public void ExitUpgradeMode()
+    {
+        upgradeCallback = null;
     }
 
     // PanelSlideIn / PanelSlideOut kaldırıldı — panel artık animasyonsuz açılıp kapanıyor.
@@ -860,7 +880,12 @@ public class PerkInventoryUI : MonoBehaviour
             RebuildStashSection();
 
         if (activeTitleText != null)
-            activeTitleText.text = $"ACTIVE ({RunManager.instance.activePerks.Count}/{RunManager.MAX_ACTIVE_PERKS})";
+        {
+            if (IsUpgradeMode)
+                activeTitleText.text = "<color=#00FF00>CHOOSE A PERK TO UPGRADE</color>";
+            else
+                activeTitleText.text = $"ACTIVE ({RunManager.instance.activePerks.Count}/{RunManager.MAX_ACTIVE_PERKS})";
+        }
 
         int stashCount = RunManager.instance.inventoryPerks.Count;
 
@@ -1077,19 +1102,41 @@ public class PerkInventoryUI : MonoBehaviour
             }
 
 
+            // Upgrade modunda max level perkleri soluk goster
+            bool canUpgrade = perk.currentLevel < perk.maxLevel;
+            if (IsUpgradeMode && !canUpgrade)
+            {
+                iconImg.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+            }
+
             // Event'ler
             EventTrigger trigger = iconGO.AddComponent<EventTrigger>();
             int ci = index;
             bool cia = isActiveSlot;
             BasePerk cp = perk;
 
+            // Sol tık — upgrade modunda perk upgrade et
             // Sağ tık — fly animasyonu ile taşı
             var clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
             clickEntry.callback.AddListener((data) =>
             {
                 PointerEventData ped = (PointerEventData)data;
+
+                // Upgrade mode: sol tikla upgrade
+                if (IsUpgradeMode && ped.button == PointerEventData.InputButton.Left)
+                {
+                    if (cp != null && cp.currentLevel < cp.maxLevel && upgradeCallback != null)
+                    {
+                        var cb = upgradeCallback;
+                        ExitUpgradeMode();
+                        cb.Invoke(cp);
+                    }
+                    return;
+                }
+
                 if (ped.button == PointerEventData.InputButton.Right)
                 {
+                    if (IsUpgradeMode) return; // Upgrade modunda sag tik engelle
                     if (cia)
                     {
                         if (RunManager.instance != null && ci < RunManager.instance.activePerks.Count)
@@ -1115,9 +1162,9 @@ public class PerkInventoryUI : MonoBehaviour
             });
             trigger.triggers.Add(clickEntry);
 
-            // Drag
+            // Drag (upgrade modunda devre disi)
             var beginEntry = new EventTrigger.Entry { eventID = EventTriggerType.BeginDrag };
-            beginEntry.callback.AddListener((data) => BeginDrag(cia, ci, cp, (PointerEventData)data));
+            beginEntry.callback.AddListener((data) => { if (!IsUpgradeMode) BeginDrag(cia, ci, cp, (PointerEventData)data); });
             trigger.triggers.Add(beginEntry);
 
             var dragEntry = new EventTrigger.Entry { eventID = EventTriggerType.Drag };

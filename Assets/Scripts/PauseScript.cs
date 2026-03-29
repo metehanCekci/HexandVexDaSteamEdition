@@ -36,6 +36,13 @@ public class PauseManager : MonoBehaviour
         // Normal ESC basma kodun...
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            // Targeting aktifse once onu iptal et, pause acma
+            if (!isPaused && TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive)
+            {
+                TurnManager.instance.CancelTargeting();
+                return;
+            }
+
             if (isPaused) Resume();
             else Pause();
         }

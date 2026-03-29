@@ -13,6 +13,8 @@ public abstract class BasePerk : MonoBehaviour
     public Sprite icon;
     public int priority = 0;
     public bool isRerollPerk = false;
+    /// <summary>true ise bu perk diger perklerin ModifyCombat'i bittikten sonra islenir.</summary>
+    public bool processLast = false;
 
     [Header("Rarity")]
     public PerkRarity rarity = PerkRarity.Common;

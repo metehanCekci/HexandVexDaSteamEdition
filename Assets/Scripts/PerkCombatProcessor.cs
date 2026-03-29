@@ -19,6 +19,9 @@ public class PerkCombatProcessor : MonoBehaviour
 
         List<BasePerk> perksToProcess = RunManager.instance.activePerks.FindAll(p => p != null);
 
+        // processLast perkleri sona at (SymbioticArsenal vb.)
+        perksToProcess.Sort((a, b) => a.processLast.CompareTo(b.processLast));
+
         yield return StartCoroutine(ProcessPerksFromList(payload, rolls, perksToProcess));
     }
 

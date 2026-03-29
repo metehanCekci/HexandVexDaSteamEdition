@@ -26,8 +26,7 @@ public class IronWillPerk : BasePerk
     public override void OnUnequip()
     {
         Unsubscribe();
-        cleanLevelStreak = 0;
-        tookDamageThisLevel = false;
+        // cleanLevelStreak sifirlanmaz — stash'ten cikarip takinca stack korunur
         description = GetDescription();
     }
 

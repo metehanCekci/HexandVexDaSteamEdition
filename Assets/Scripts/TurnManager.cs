@@ -133,6 +133,13 @@ public class TurnManager : MonoBehaviour
         SetupCoinIcon();
         UpdateCoinUI();
 
+        // Warning tile'lar scaffold'larin ustunde gorunsun
+        if (warningMap != null)
+        {
+            var renderer = warningMap.GetComponent<TilemapRenderer>();
+            if (renderer != null) renderer.sortingOrder = 2;
+        }
+
         // Scaffold yıkıldığında warning tile'ı temizle
         TrapTileEvents.OnTileDestroyed += OnScaffoldDestroyed;
     }
