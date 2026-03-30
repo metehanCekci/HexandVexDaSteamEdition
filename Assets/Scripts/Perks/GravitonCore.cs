@@ -9,55 +9,71 @@ public class GravitonCorePerk : BasePerk
         rarity = PerkRarity.Common;
     }
 
-    /// <summary>
-    /// Called by TurnManager after an enemy is knocked back.
-    /// Pulls adjacent enemies 1 hex toward the knockback origin cell.
-    /// Returns the list of pulled enemies so TurnManager can check spike/scaffold.
-    /// </summary>
-    public List<EnemyMovement> PullAdjacentEnemies(Vector3Int originCell, EnemyMovement knockedEnemy)
+    public override void OnSkip()
     {
-        List<EnemyMovement> pulled = new List<EnemyMovement>();
-        if (TurnManager.instance == null) return pulled;
+        if (TurnManager.instance == null || TurnManager.instance.player == null) return;
 
         var tm = TurnManager.instance;
-        Vector3Int[] offsets = (originCell.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
+        Vector3Int playerCell = tm.player.GetCurrentCellPosition();
 
-        foreach (var off in offsets)
+        List<EnemyMovement> pulled = new List<EnemyMovement>();
+
+        foreach (var enemy in tm.enemies)
         {
-            Vector3Int neighborCell = originCell + off;
-            EnemyMovement neighbor = tm.GetEnemyAtCell(neighborCell);
-            if (neighbor == null || neighbor == knockedEnemy || neighbor.health.currentHP <= 0) continue;
-            if (neighbor.IsBoss) continue;
+            if (enemy == null || enemy.health.currentHP <= 0 || enemy.isAllied || enemy.IsBoss) continue;
 
-            // Pull toward origin: find the neighbor hex of this enemy that is closest to origin
-            Vector3 originWorld = tm.groundMap.GetCellCenterWorld(originCell);
-            Vector3Int bestCell = neighborCell;
-            float bestDist = float.MaxValue;
+            Vector3Int enemyCell = enemy.GetCurrentCellPosition();
+            float dist = HexGridUtils.DistanceCube(enemyCell, playerCell);
+            if (dist < 1.5f || dist > 3.5f) continue; // 2-3 hex range (skip adjacent, skip >3)
 
-            Vector3Int[] nOffsets = (neighborCell.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
-            foreach (var nOff in nOffsets)
+            // Find neighbor hex closest to player
+            Vector3Int[] offsets = (enemyCell.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
+            Vector3Int bestCell = enemyCell;
+            float bestDist = dist;
+
+            foreach (var off in offsets)
             {
-                Vector3Int candidate = neighborCell + nOff;
+                Vector3Int candidate = enemyCell + off;
                 if (!tm.HasWalkableTile(candidate)) continue;
                 if (tm.IsEnemyAtCell(candidate)) continue;
-                if (tm.player != null && tm.player.GetCurrentCellPosition() == candidate) continue;
+                if (tm.player.GetCurrentCellPosition() == candidate) continue;
 
-                float dist = Vector3.Distance(tm.groundMap.GetCellCenterWorld(candidate), originWorld);
-                if (dist < bestDist)
+                float d = HexGridUtils.DistanceCube(candidate, playerCell);
+                if (d < bestDist)
                 {
-                    bestDist = dist;
+                    bestDist = d;
                     bestCell = candidate;
                 }
             }
 
-            if (bestCell != neighborCell)
+            if (bestCell != enemyCell)
             {
-                neighbor.StartKnockbackMovement(bestCell);
-                pulled.Add(neighbor);
+                // %50 max HP hasar
+                int damage = Mathf.Max(1, Mathf.CeilToInt(enemy.health.maxHP * 0.5f));
+                enemy.health.TakeDamage(damage);
+
+                if (enemy.health.currentHP > 0)
+                    enemy.StartKnockbackMovement(bestCell);
+
+                pulled.Add(enemy);
             }
         }
 
-        if (pulled.Count > 0) TriggerVisualPop();
-        return pulled;
+        if (pulled.Count > 0)
+        {
+            TriggerVisualPop();
+            CameraController.ShakeLight();
+            if (AudioManager.instance != null) AudioManager.instance.PlayHit();
+
+            // Kill reward
+            if (tm.coinService != null)
+            {
+                foreach (var e in pulled)
+                {
+                    if (e != null && e.health.currentHP <= 0)
+                        tm.coinService.ProcessKillRewards(e);
+                }
+            }
+        }
     }
 }

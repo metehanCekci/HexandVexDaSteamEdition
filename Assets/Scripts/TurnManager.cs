@@ -77,6 +77,9 @@ public class TurnManager : MonoBehaviour
     private GameObject thornPreviewObj;
     private Dictionary<Vector3Int, int> thornTurnsRemaining = new Dictionary<Vector3Int, int>();
 
+    // Ally charge state: ally → pending attack cells (bruiser line veya warlock AoE)
+    private Dictionary<EnemyMovement, List<Vector3Int>> allyChargeCells = new Dictionary<EnemyMovement, List<Vector3Int>>();
+
     public bool IsAnyTargetingActive => isNecroShotTargeting || isBombPlacementTargeting || isPhaseShiftTargeting || isThornPlacementTargeting || isMitsuriTargeting;
 
     public int hexesMovedThisTurn = 0;
@@ -343,11 +346,7 @@ public class TurnManager : MonoBehaviour
 #if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.F2))
         {
-            if (PerkCollectionManager.instance != null)
-            {
-                PerkCollectionManager.instance.ResetAll();
-                Debug.Log("<color=#FF0000>[CHEAT]</color> All collection progress reset!");
-            }
+            DebugSpawnWalkerAndBruiser();
         }
         if (Input.GetKeyDown(KeyCode.F6))
         {
@@ -383,6 +382,55 @@ public class TurnManager : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    private void DebugSpawnWalkerAndBruiser()
+    {
+        if (LevelGenerator.instance == null || player == null) return;
+        var ts = LevelGenerator.instance.GetActiveTileSet();
+        if (ts?.enemies == null || ts.enemies.Length == 0) return;
+
+        Vector3Int playerCell = player.GetCurrentCellPosition();
+        // 1 hex altı = (0, -1), 2 hex altı = (0, -2)
+        Vector3Int walkerCell = playerCell + new Vector3Int(0, -1, 0);
+        Vector3Int bruiserCell = walkerCell + new Vector3Int(0, -1, 0);
+
+        // Walker = enemies[0] (varsayılan melee)
+        GameObject walkerPrefab = ts.enemies[0].prefab;
+
+        // Bruiser = BruiserEnemyAI olan prefab
+        GameObject bruiserPrefab = null;
+        foreach (var entry in ts.enemies)
+        {
+            if (entry.prefab != null && entry.prefab.GetComponent<BruiserEnemyAI>() != null)
+            {
+                bruiserPrefab = entry.prefab;
+                break;
+            }
+        }
+        if (bruiserPrefab == null) { Debug.Log("[F2] Bu tileset'te bruiser prefab yok!"); return; }
+
+        // Walker spawn (yukarıda)
+        if (HasWalkableTile(walkerCell) && !IsEnemyAtCell(walkerCell) && (player.GetCurrentCellPosition() != walkerCell))
+            DebugSpawnSingleEnemy(walkerPrefab, walkerCell);
+
+        // Bruiser spawn (aşağıda)
+        if (HasWalkableTile(bruiserCell) && !IsEnemyAtCell(bruiserCell) && (player.GetCurrentCellPosition() != bruiserCell))
+            DebugSpawnSingleEnemy(bruiserPrefab, bruiserCell);
+
+        StartCoroutine(LockIntentsNextFrame());
+        Debug.Log("[F2] Walker + Bruiser spawned below player");
+    }
+
+    private void DebugSpawnSingleEnemy(GameObject prefab, Vector3Int cell)
+    {
+        Vector3 pos = groundMap.GetCellCenterWorld(cell); pos.z = 0;
+        GameObject obj = Instantiate(prefab, pos, Quaternion.identity);
+        EnemyMovement ai = obj.GetComponent<EnemyMovement>();
+        ai.groundMap = groundMap;
+        ai.health.maxHP = 50; ai.health.currentHP = 50; ai.health.updateHealth();
+        RegisterEnemy(ai);
+        StartCoroutine(ai.FadeSpawnCoroutine());
+    }
+
     private void SpawnDebugAoEEnemies()
     {
         var _dbgTs = LevelGenerator.instance?.GetActiveTileSet();
@@ -471,6 +519,10 @@ public class TurnManager : MonoBehaviour
             // Surge Boot: her tur başında sıfırla (Use() anında aktifleştirir)
             RunManager.instance.surgeBootActive = false;
             RunManager.instance.surgeBootNextTurn = false;
+
+            // Blue Magic Tile: activate surge boot (range-2 movement) while standing on it
+            if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType blueCheck) && blueCheck == MagicTileType.Blue)
+                RunManager.instance.surgeBootActive = true;
         }
         TickThornLifetimes();
         if (CleanupDeadAndCheckLevelClear()) return;
@@ -554,6 +606,7 @@ public class TurnManager : MonoBehaviour
                 if (perk != null) Destroy(perk.gameObject);
             }
             rm.activePerks.Clear();
+            rm.acquiredMagicTiles.Clear();
 
             // İstatistikleri (Stats) sıfırla
             rm.totalEnemiesKilled = 0;
@@ -1359,7 +1412,7 @@ public class TurnManager : MonoBehaviour
     {
         if (player == null || player.health.currentHP <= 0) return;
         Vector3Int pCell = player.GetCurrentCellPosition();
-        foreach (var e in enemies) if (e != null) { bool isStunned = e.skipTurns > 0; e.LockNextMove(pCell, isStunned); }
+        foreach (var e in enemies) if (e != null && !e.isAllied) { bool isStunned = e.skipTurns > 0; e.LockNextMove(pCell, isStunned); }
     }
 
     private IEnumerator LockIntentsNextFrame()
@@ -1408,6 +1461,14 @@ public class TurnManager : MonoBehaviour
         PlayerPrefs.SetInt("total_skips", totalSkips);
         GameEvents.SkipTurnPerformed(totalSkips);
         RunManager.instance.currentGold += RunManager.instance.skipBonusGold;
+
+        // Yellow Magic Tile: +10 gold on skip while standing on it
+        if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType yellowCheck) && yellowCheck == MagicTileType.Yellow)
+        {
+            RunManager.instance.currentGold += 10;
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
+        }
+
         UpdateCoinUI();
 
         bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
@@ -1460,6 +1521,25 @@ public class TurnManager : MonoBehaviour
                     if (CleanupDeadAndCheckLevelClear()) break;
                 }
                 phantomAssaultPerk.ConsumeGhosts();
+            }
+        }
+
+        // Viral Cysts: marklı düşmanlara zar atarak saldır
+        if (!CleanupDeadAndCheckLevelClear())
+        {
+            var viralPerk = RunManager.instance.activePerks.Find(p => p is ViralCystsPerk) as ViralCystsPerk;
+            if (viralPerk != null)
+            {
+                int markCount = viralPerk.GetMarkedCount();
+                if (markCount > 0)
+                {
+                    List<EnemyMovement> cystTargets = viralPerk.ConsumeMarkedTargets();
+                    if (cystTargets.Count > 0)
+                    {
+                        isAttackAnimationPlaying = true;
+                        yield return StartCoroutine(MultiAttack(cystTargets, markCount));
+                    }
+                }
             }
         }
 
@@ -1952,9 +2032,9 @@ public class TurnManager : MonoBehaviour
             if (e != null && e.skipTurns <= 0)
             {
                 if (e.IsBoss && SpawnerBossAI.instance != null && SpawnerBossAI.instance.readyToExplodeThisTurn) readyToBossAttack.Add(e);
-                else if (e.IsBruiser && e.isChargingAttack) readyToAoEAttack.Add(e);
+                else if (e.IsBruiser && !e.isAllied && e.isChargingAttack) readyToAoEAttack.Add(e);
                 else if (e.IsMelee && !e.isAllied && IsNeighbor(e.GetCurrentCellPosition(), player.GetCurrentCellPosition())) readyToMeleeAttack.Add(e);
-                else if (e.IsWarlock)
+                else if (e.IsWarlock && !e.isAllied)
                 {
                     WarlockEnemyAI warlock = e.GetComponent<WarlockEnemyAI>();
                     if (warlock != null)
@@ -2035,7 +2115,7 @@ public class TurnManager : MonoBehaviour
     }
 
     public void HideAllEnemyIntents() { foreach (var e in enemies) if (e != null) e.SetArrowVisibility(false); }
-    public void ShowAllEnemyIntents() { foreach (var e in enemies) if (e != null && e.skipTurns <= 0) e.SetArrowVisibility(true); }
+    public void ShowAllEnemyIntents() { foreach (var e in enemies) if (e != null && e.skipTurns <= 0 && !e.isAllied) e.SetArrowVisibility(true); }
 
     public void ToggleFastMode()
     {
@@ -2069,7 +2149,7 @@ public class TurnManager : MonoBehaviour
     }
     public bool GetSpeedDice() => speedDiceMode;
 
-    private IEnumerator MultiAttack(List<EnemyMovement> targets)
+    private IEnumerator MultiAttack(List<EnemyMovement> targets, int bonusDice = 0)
     {
 
         bool hasBioMag = RunManager.instance.activePerks.Exists(p => p is BioMagnetismPerk);
@@ -2156,15 +2236,16 @@ public class TurnManager : MonoBehaviour
             if (maxDist >= 3f) diceCount = 1;
         }
 
-        int extraDices = 0;
+        int extraDices = bonusDice;
         foreach (var p in RunManager.instance.activePerks) if (p is DormantSporePerk ambushPerk) { extraDices += ambushPerk.ConsumeStoredDice(); }
         if (RunManager.instance.bonusDiceNextCombat > 0) { extraDices += RunManager.instance.bonusDiceNextCombat; RunManager.instance.bonusDiceNextCombat = 0; }
         // Host Syndrome: +1 die per adjacent enemy
         foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
-        // Viral Cysts: +1 die per marked enemy
-        foreach (var p in RunManager.instance.activePerks) if (p is ViralCystsPerk viralPerk) { extraDices += viralPerk.GetExtraDice(); }
         // Dice Hoarder: +1 die per visited perk/shop level
         foreach (var p in RunManager.instance.activePerks) if (p is DiceHoarderPerk hoardPerk) { extraDices += hoardPerk.GetExtraDice(); }
+        // Green Magic Tile: +1 die while standing on it
+        if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType magicType) && magicType == MagicTileType.Green)
+            extraDices += 1;
         // Condensed Fury: roll 1 fewer die (minimum 1 die always)
         int diceReduction = 0;
         foreach (var p in RunManager.instance.activePerks) if (p is CondensedFuryPerk cfPerk) { diceReduction += cfPerk.GetDiceReduction(); }
@@ -2257,6 +2338,16 @@ public class TurnManager : MonoBehaviour
         {
             finalDamage *= 2;
             RunManager.instance.doubleDamageNextCombat = false;
+            if (!skipDiceVisuals)
+            {
+                UpdateTotalDamageDisplay(finalDamage);
+                yield return StartCoroutine(diceUI.SkippableWait(0.5f));
+            }
+        }
+        // Red Magic Tile: 2x damage while standing on it
+        if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType redCheck) && redCheck == MagicTileType.Red)
+        {
+            finalDamage *= 2;
             if (!skipDiceVisuals)
             {
                 UpdateTotalDamageDisplay(finalDamage);
@@ -2415,24 +2506,24 @@ public class TurnManager : MonoBehaviour
 
             if (enemyBehind != null)
             {
-                // Neural Hijack: itilen düşman (enemyBehind) taraf değiştirir
+                // Neural Hijack: knockback yapan düşman (e) dönüşür
                 var neuralPerk = RunManager.instance != null
                     ? RunManager.instance.activePerks.Find(p => p is NeuralHijackPerk) as NeuralHijackPerk
                     : null;
                 bool converted = false;
-                if (neuralPerk != null && !enemyBehind.isAllied && !enemyBehind.wasAllied && !enemyBehind.IsBoss)
+                if (neuralPerk != null && !e.isAllied && !e.wasAllied && !e.IsBoss)
                 {
-                    ConvertToAlly(enemyBehind, damagePerEnemy, e);
+                    ConvertToAlly(e, damagePerEnemy, enemyBehind);
                     neuralPerk.TriggerVisualPop();
                     converted = true;
                 }
 
-                e.ApplyStun(2, true);
-                if (!converted) { enemyBehind.ApplyStun(2, true); }
+                if (!converted) { e.ApplyStun(2, true); }
+                enemyBehind.ApplyStun(2, true);
                 Vector3 cPos = groundMap.GetCellCenterWorld(e.GetCurrentCellPosition()); Vector3 pPos = groundMap.GetCellCenterWorld(player.GetCurrentCellPosition());
                 cPos.z = 0; pPos.z = 0; Vector3 bumpDir = (cPos - pPos).normalized;
-                e.StartWallBump(bumpDir);
-                if (!converted) { enemyBehind.StartWallBump(bumpDir); }
+                if (!converted) { e.StartWallBump(bumpDir); }
+                enemyBehind.StartWallBump(bumpDir);
 
                 // Hydraulic Impact: düşmanı düşmana çarptırınca ikisine de hasar
                 if (RunManager.instance != null)
@@ -2473,28 +2564,6 @@ public class TurnManager : MonoBehaviour
                     if (paPerk != null) paPerk.SpawnGhostAtCell(e.GetCurrentCellPosition());
                 }
                 e.ApplyStun(1, false); e.StartKnockbackMovement(rawTargetCell);
-            }
-        }
-
-        // Graviton Core: knockback olan dusmanlarin eski pozisyonlarina komsu dusmanlari cek
-        if (RunManager.instance != null)
-        {
-            var gravitonPerk = RunManager.instance.activePerks.Find(p => p is GravitonCorePerk) as GravitonCorePerk;
-            if (gravitonPerk != null)
-            {
-                List<EnemyMovement> gravitonPulled = new List<EnemyMovement>();
-                foreach (var e in knockedEnemies)
-                {
-                    if (e == null) continue;
-                    Vector3Int originCell = e.GetCurrentCellPosition();
-                    var pulled = gravitonPerk.PullAdjacentEnemies(originCell, e);
-                    if (pulled.Count > 0 && vacuumVfxPrefab != null)
-                        StartCoroutine(VacuumVFXCoroutine(groundMap.GetCellCenterWorld(originCell)));
-                    foreach (var pe in pulled)
-                        if (!knockedEnemies.Contains(pe) && !gravitonPulled.Contains(pe))
-                            gravitonPulled.Add(pe);
-                }
-                knockedEnemies.AddRange(gravitonPulled);
             }
         }
 
@@ -2802,6 +2871,28 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // Bruiser: charge state iptal et
+        var bruiser = enemy.GetComponent<BruiserEnemyAI>();
+        if (bruiser != null)
+        {
+            bruiser.CancelCharge();
+            bruiser.isChargingAttack = false;
+        }
+
+        // Warlock: saldırı döngüsü iptal et
+        var warlock = enemy.GetComponent<WarlockEnemyAI>();
+        if (warlock != null)
+            warlock.OnWarlockDied(); // Tüm warning'leri temizler, döngüyü sıfırlar
+
+        // Animator'ı idle'a çek
+        if (enemy.animator != null)
+        {
+            enemy.animator.SetBool("IsCharging", false);
+            enemy.animator.SetBool("IsAttacking", false);
+            enemy.animator.ResetTrigger("Attack");
+            enemy.animator.ResetTrigger("GotHit");
+        }
+
         // Okları gizle — ally'nin yön oku göstermesine gerek yok
         enemy.SetArrowVisibility(false);
 
@@ -2821,9 +2912,11 @@ public class TurnManager : MonoBehaviour
         List<EnemyMovement> allies = enemies.FindAll(e => e != null && e.isAllied && e.health.currentHP > 0);
         if (allies.Count == 0) yield break;
 
-        // 1) Hareket: en yakın düşmana doğru 1 hex
+        // 1) Hareket: en yakın düşmana doğru 1 hex (charge durumundaki ally hareket etmez)
         foreach (var ally in allies)
         {
+            if (allyChargeCells.ContainsKey(ally)) continue; // Charge turunda — yerinde kal
+
             Vector3Int allyCell = ally.GetCurrentCellPosition();
             Vector3Int bestTarget = allyCell;
             float bestDist = float.MaxValue;
@@ -2873,8 +2966,14 @@ public class TurnManager : MonoBehaviour
         yield return new WaitUntil(() => { foreach (var a in allies) if (a != null && a.IsMoving()) return false; return true; });
         yield return new WaitForSeconds(0.15f);
 
-        // 2) Saldırı: tip bazlı ally saldırısı
+        // 2) Saldırı: tip bazlı ally saldırısı (tur bazlı charge → attack)
         bool anyAttack = false;
+
+        // Ölmüş ally'lerin charge state'ini temizle
+        List<EnemyMovement> deadKeys = new List<EnemyMovement>();
+        foreach (var kv in allyChargeCells)
+            if (kv.Key == null || kv.Key.health.currentHP <= 0) deadKeys.Add(kv.Key);
+        foreach (var dk in deadKeys) { ClearAllyWarnings(allyChargeCells[dk]); allyChargeCells.Remove(dk); }
 
         foreach (var ally in allies)
         {
@@ -2882,20 +2981,36 @@ public class TurnManager : MonoBehaviour
 
             Vector3Int allyCell = ally.GetCurrentCellPosition();
 
-            // ── BRUISER ALLY: AoE charge saldırısı ──
+            // ── BRUISER ALLY ──
             var bruiserAI = ally.GetComponent<BruiserEnemyAI>();
             if (bruiserAI != null)
             {
-                yield return StartCoroutine(AllyBruiserAttack(ally, bruiserAI, allyCell));
-                anyAttack = true;
+                if (allyChargeCells.ContainsKey(ally))
+                {
+                    // ATTACK TURN: önceki turda charge edildi, şimdi saldır
+                    yield return StartCoroutine(AllyBruiserExecute(ally, bruiserAI, allyCell));
+                    anyAttack = true;
+                }
+                else
+                {
+                    // CHARGE TURN: hedef bul, warning göster, charge animasyonu
+                    yield return StartCoroutine(AllyBruiserCharge(ally, bruiserAI, allyCell));
+                }
                 continue;
             }
 
-            // ── WARLOCK ALLY: Menzilli saldırı ──
+            // ── WARLOCK ALLY ──
             if (ally.IsWarlock)
             {
-                yield return StartCoroutine(AllyWarlockAttack(ally, allyCell));
-                anyAttack = true;
+                if (allyChargeCells.ContainsKey(ally))
+                {
+                    yield return StartCoroutine(AllyWarlockExecute(ally, allyCell));
+                    anyAttack = true;
+                }
+                else
+                {
+                    yield return StartCoroutine(AllyWarlockCharge(ally, allyCell));
+                }
                 continue;
             }
 
@@ -2940,7 +3055,8 @@ public class TurnManager : MonoBehaviour
 
     // ─── ALLY ATTACK HELPERS ───
 
-    private IEnumerator AllyBruiserAttack(EnemyMovement ally, BruiserEnemyAI bruiserAI, Vector3Int allyCell)
+    /// <summary>Bruiser ally CHARGE turu: hedef bul, warning göster, charge animasyonu.</summary>
+    private IEnumerator AllyBruiserCharge(EnemyMovement ally, BruiserEnemyAI bruiserAI, Vector3Int allyCell)
     {
         // Find nearest non-allied enemy within range
         EnemyMovement bestTarget = null;
@@ -2957,22 +3073,31 @@ public class TurnManager : MonoBehaviour
         }
         if (bestTarget == null) yield break;
 
-        // Calculate AoE line from ally toward target
         Vector3Int targetCell = bestTarget.GetCurrentCellPosition();
         List<Vector3Int> lineCells = GetAllyBruiserLine(allyCell, targetCell, bruiserAI.aoeAttackRange);
         if (lineCells.Count == 0) yield break;
 
-        // Charge animation + warning tiles
+        // Charge animasyonu + warning tile'lar
         if (ally.animator != null) ally.animator.SetBool("IsCharging", true);
+        yield return null;
         if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
         foreach (var c in lineCells) DrawWarningTile(c);
 
-        yield return new WaitForSeconds(0.35f);
+        // State'i kaydet — bir sonraki tur attack yapacak
+        allyChargeCells[ally] = new List<Vector3Int>(lineCells);
+    }
 
-        // Attack animation
+    /// <summary>Bruiser ally ATTACK turu: önceki turda charge edilen hücrelere saldır.</summary>
+    private IEnumerator AllyBruiserExecute(EnemyMovement ally, BruiserEnemyAI bruiserAI, Vector3Int allyCell)
+    {
+        List<Vector3Int> lineCells = allyChargeCells[ally];
+        allyChargeCells.Remove(ally);
+
+        // Attack animasyonu
         if (ally.animator != null)
         {
             ally.animator.SetBool("IsCharging", false);
+            yield return null;
             ally.animator.SetTrigger("Attack");
         }
 
@@ -3008,7 +3133,7 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        // Damage non-allied enemies on the line
+        // Damage
         int allyDamage = Mathf.Max(1, ally.hijackDamage);
         foreach (var c in lineCells)
         {
@@ -3042,6 +3167,15 @@ public class TurnManager : MonoBehaviour
                 if (warningMap.HasTile(c)) warningMap.SetTile(c, null);
             }
         }
+
+        // Animator cleanup
+        if (ally.animator != null)
+        {
+            ally.animator.SetBool("IsCharging", false);
+            ally.animator.SetBool("IsAttacking", false);
+            ally.animator.ResetTrigger("Attack");
+            ally.animator.ResetTrigger("GotHit");
+        }
     }
 
     private List<Vector3Int> GetAllyBruiserLine(Vector3Int startCell, Vector3Int targetCell, int length)
@@ -3067,9 +3201,13 @@ public class TurnManager : MonoBehaviour
         return line;
     }
 
-    private IEnumerator AllyWarlockAttack(EnemyMovement ally, Vector3Int allyCell)
+    /// <summary>Warlock ally CHARGE turu: hedef bul, warning göster, charge animasyonu.</summary>
+    private IEnumerator AllyWarlockCharge(EnemyMovement ally, Vector3Int allyCell)
     {
-        // Find nearest non-allied enemy (no range limit — warlock is ranged)
+        var warlockAI = ally.GetComponent<WarlockEnemyAI>();
+        Animator wAnimator = (warlockAI != null && warlockAI.animator != null) ? warlockAI.animator : ally.animator;
+
+        // Find nearest non-allied enemy
         EnemyMovement bestTarget = null;
         float bestDist = float.MaxValue;
         foreach (var e in enemies)
@@ -3081,8 +3219,6 @@ public class TurnManager : MonoBehaviour
         if (bestTarget == null) yield break;
 
         Vector3Int targetCell = bestTarget.GetCurrentCellPosition();
-
-        // AoE cells around target (center + 3 alternating neighbors, like warlock attack1)
         List<Vector3Int> aoeCells = new List<Vector3Int> { targetCell };
         Vector3Int[] targetOffsets = (targetCell.y % 2 != 0) ? evenOffsets : oddOffsets;
         int[] indices = { 0, 2, 4 };
@@ -3092,13 +3228,9 @@ public class TurnManager : MonoBehaviour
             if (HasWalkableTile(neighbor)) aoeCells.Add(neighbor);
         }
 
-        // Charge animation + warning tiles
-        var warlockAI = ally.GetComponent<WarlockEnemyAI>();
-        if (warlockAI != null && warlockAI.animator != null)
-            warlockAI.animator.SetBool("IsCharging", true);
-        else if (ally.animator != null)
-            ally.animator.SetBool("IsCharging", true);
-
+        // Charge animasyonu + warning tile'lar
+        if (wAnimator != null) wAnimator.SetBool("IsCharging", true);
+        yield return null;
         if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
 
         Color warnColor = new Color(0.4f, 0.8f, 1f, 0.7f);
@@ -3112,16 +3244,25 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        yield return new WaitForSeconds(0.35f);
+        allyChargeCells[ally] = new List<Vector3Int>(aoeCells);
+    }
 
-        // Attack animation
-        if (warlockAI != null && warlockAI.animator != null)
+    /// <summary>Warlock ally ATTACK turu: önceki turda charge edilen hücrelere saldır.</summary>
+    private IEnumerator AllyWarlockExecute(EnemyMovement ally, Vector3Int allyCell)
+    {
+        List<Vector3Int> aoeCells = allyChargeCells[ally];
+        allyChargeCells.Remove(ally);
+
+        var warlockAI = ally.GetComponent<WarlockEnemyAI>();
+        Animator wAnimator = (warlockAI != null && warlockAI.animator != null) ? warlockAI.animator : ally.animator;
+
+        // Attack animasyonu
+        if (wAnimator != null)
         {
-            warlockAI.animator.SetBool("IsCharging", false);
-            warlockAI.animator.SetBool("IsAttacking", true);
+            wAnimator.SetBool("IsCharging", false);
+            yield return null;
+            wAnimator.SetBool("IsAttacking", true);
         }
-        else if (ally.animator != null)
-            ally.animator.SetTrigger("Attack");
 
         // Flash warning tiles
         Color flashColor = new Color(0.4f, 0.8f, 1f, 1f);
@@ -3152,7 +3293,7 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        // Damage non-allied enemies in AoE
+        // Damage
         int allyDamage = Mathf.Max(1, ally.hijackDamage);
         foreach (var c in aoeCells)
         {
@@ -3188,9 +3329,23 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-        // Reset animator
-        if (warlockAI != null && warlockAI.animator != null)
-            warlockAI.animator.SetBool("IsAttacking", false);
+        // Animator cleanup
+        if (wAnimator != null)
+        {
+            wAnimator.SetBool("IsCharging", false);
+            wAnimator.SetBool("IsAttacking", false);
+            wAnimator.ResetTrigger("Attack");
+            wAnimator.ResetTrigger("GotHit");
+        }
+    }
+
+    private void ClearAllyWarnings(List<Vector3Int> cells)
+    {
+        if (warningMap == null || cells == null) return;
+        foreach (var c in cells)
+        {
+            if (warningMap.HasTile(c)) warningMap.SetTile(c, null);
+        }
     }
 
     private void AllyKnockbackTarget(EnemyMovement target, Vector3Int allyCell)

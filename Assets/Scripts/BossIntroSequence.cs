@@ -62,12 +62,12 @@ public class BossIntroSequence : MonoBehaviour
         camController = FindFirstObjectByType<CameraController>();
     }
 
-    public void PlayIntro(EnemyMovement boss)
+    public void PlayIntro(EnemyMovement boss, System.Action onComplete = null)
     {
-        StartCoroutine(IntroRoutine(boss));
+        StartCoroutine(IntroRoutine(boss, onComplete));
     }
 
-    private IEnumerator IntroRoutine(EnemyMovement boss)
+    private IEnumerator IntroRoutine(EnemyMovement boss, System.Action onComplete = null)
     {
         if (cam == null)           cam           = Camera.main;
         if (camController == null) camController = FindFirstObjectByType<CameraController>();
@@ -126,6 +126,8 @@ public class BossIntroSequence : MonoBehaviour
         if (camController != null)        camController.enabled = true;
         if (TurnManager.instance != null) TurnManager.instance.isPlayerTurn = true;
         if (TurnManager.instance != null) TurnManager.instance.player?.UpdateHighlights();
+
+        onComplete?.Invoke();
     }
 
     // ── Shake ───────────────────────────────────────────────────────────────

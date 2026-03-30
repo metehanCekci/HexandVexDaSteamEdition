@@ -127,6 +127,9 @@ public class EnemyMovement : MonoBehaviour
 
     private void HandleDamaged(int remainingHP)
     {
+        // Ally iken hasar alınca charge animasyonunu bozma
+        if (isAllied) return;
+
         var bruiser = GetComponent<BruiserEnemyAI>();
         if (bruiser != null) bruiser.HandleDamaged();
     }

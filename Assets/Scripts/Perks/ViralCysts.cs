@@ -32,36 +32,29 @@ public class ViralCystsPerk : BasePerk
         description = GetDescription();
     }
 
-    /// <summary>Returns extra dice count equal to marked enemy count. Called by TurnManager before rolling.</summary>
-    public int GetExtraDice()
+    /// <summary>
+    /// Skip basınca TurnManager tarafından çağrılır.
+    /// Marklı düşmanları döndürür, marker VFX'lerini patlatır, markleri temizler.
+    /// Hasar TurnManager'da zar atılarak verilecek.
+    /// </summary>
+    public List<EnemyMovement> ConsumeMarkedTargets()
     {
         CleanDeadMarks();
-        int count = markedEnemies.Count;
-        if (count > 0) TriggerVisualPop();
-        return count;
-    }
-
-    public override void OnSkip()
-    {
-        if (TurnManager.instance == null) return;
-
-        CleanDeadMarks();
-
-        int markedCount = markedEnemies.Count;
-        if (markedCount == 0) return;
+        if (markedEnemies.Count == 0) return new List<EnemyMovement>();
 
         TriggerVisualPop();
 
-        float damagePercent = GetDamagePercent();
-
         List<EnemyMovement> targets = new List<EnemyMovement>();
-        foreach (var enemy in TurnManager.instance.enemies)
+        if (TurnManager.instance != null)
         {
-            if (enemy != null && enemy.health.currentHP > 0 && markedEnemies.ContainsKey(enemy.GetInstanceID()))
-                targets.Add(enemy);
+            foreach (var enemy in TurnManager.instance.enemies)
+            {
+                if (enemy != null && enemy.health.currentHP > 0 && markedEnemies.ContainsKey(enemy.GetInstanceID()))
+                    targets.Add(enemy);
+            }
         }
 
-        // Pop ile marker'lari yok et, sonra hasar ver
+        // Marker pop VFX
         foreach (var kvp in markedEnemies)
         {
             if (kvp.Value != null && kvp.Value.activeInHierarchy)
@@ -74,20 +67,16 @@ public class ViralCystsPerk : BasePerk
             }
         }
 
-        foreach (var enemy in targets)
-        {
-            int damage = Mathf.CeilToInt(enemy.health.maxHP * damagePercent * markedCount);
-            damage = Mathf.Max(1, damage);
-            enemy.health.TakeDamage(damage);
-            ShowDetonateVFX(enemy);
-
-            // Cyst patlamasıyla öldüyse kill reward ver (PerkLeech stack vs.)
-            if (enemy.health.currentHP <= 0 && TurnManager.instance.coinService != null)
-                TurnManager.instance.coinService.ProcessKillRewards(enemy);
-        }
-
         markedEnemies.Clear();
         description = GetDescription();
+        return targets;
+    }
+
+    /// <summary>Kaç düşman marklı? Skip'te bonus zar sayısı olarak kullanılır.</summary>
+    public int GetMarkedCount()
+    {
+        CleanDeadMarks();
+        return markedEnemies.Count;
     }
 
     public override void OnLevelStart()
@@ -100,16 +89,6 @@ public class ViralCystsPerk : BasePerk
     {
         if (enemy != null) RemoveMarker(enemy.GetInstanceID());
         description = GetDescription();
-    }
-
-    private float GetDamagePercent()
-    {
-        switch (currentLevel)
-        {
-            case 1: return 0.15f;
-            case 2: return 0.20f;
-            default: return 0.25f;
-        }
     }
 
     private void CleanDeadMarks()
@@ -133,12 +112,11 @@ public class ViralCystsPerk : BasePerk
 
     private string GetDescription()
     {
-        int percent = currentLevel == 1 ? 15 : currentLevel == 2 ? 20 : 25;
         CleanDeadMarks();
-        return $"Attacks plant cysts. +1 die per marked enemy. Skip to detonate.\n{percent}% max HP damage per marked enemy.\nMarked: {markedEnemies.Count}";
+        return $"Attacks plant cysts. Skip to detonate: +1 die per mark, damage split among marked.\nMarked: {markedEnemies.Count}";
     }
 
-    // --- Persistent Visual Marker (MarkEffect prefab + breathe anim) ---
+    // --- Persistent Visual Marker ---
 
     private GameObject CreateCystMarker(EnemyMovement enemy)
     {
@@ -159,25 +137,21 @@ public class ViralCystsPerk : BasePerk
 
         marker.transform.localPosition = markOffset;
 
-        // Prefab varsa kendi scale'ini koru, yoksa fallback
         if (markEffectPrefab == null)
             marker.transform.localScale = Vector3.one * 0.3f;
 
-        // Breathe animasyonu ekle — prefab'in mevcut scale'ini baz al
         CystBreatheAnim breathe = marker.AddComponent<CystBreatheAnim>();
         breathe.baseScale = marker.transform.localScale.x;
 
         return marker;
     }
 
-    /// <summary>Skip basinca marker pop ile buyuyup kaybolur.</summary>
     private IEnumerator PopAndDestroy(GameObject marker)
     {
         if (marker == null) yield break;
         Transform t = marker.transform;
         Vector3 startScale = t.localScale;
 
-        // Pop buyume
         float dur = 0.15f;
         float elapsed = 0f;
         while (elapsed < dur)
@@ -189,7 +163,6 @@ public class ViralCystsPerk : BasePerk
             yield return null;
         }
 
-        // Hizli kucul + fade
         SpriteRenderer sr = marker.GetComponentInChildren<SpriteRenderer>();
         Color origColor = sr != null ? sr.color : Color.white;
         dur = 0.1f;
@@ -258,8 +231,6 @@ public class ViralCystsPerk : BasePerk
         }
         if (sr != null) sr.color = original;
     }
-
-    // --- Placeholder circle sprite ---
 
     private static Sprite cachedCircle;
     private static Sprite CreateCircleSprite()

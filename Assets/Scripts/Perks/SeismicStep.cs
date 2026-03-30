@@ -41,6 +41,9 @@ public class SeismicStepPerk : BasePerk
         // Hazard tile'ına da dokunma — diken çökerse mantık bozulur
         if (LevelGenerator.instance.hazardCells.Contains(playerCell)) return;
 
+        // Magic tile'lar yıkılmaz
+        if (MagicTileManager.instance != null && MagicTileManager.instance.IsMagicTileCell(playerCell)) return;
+
         shakingCells.Add(playerCell);
         Coroutine shake = TurnManager.instance.StartCoroutine(ShakeCoroutine(playerCell));
         shakeCoroutines[playerCell] = shake;

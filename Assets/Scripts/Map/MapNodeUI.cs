@@ -117,7 +117,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Shop:          return "SHOP";
             case MapNodeType.PerkSelection: return "PERK";
             case MapNodeType.Rest:          return "REST";
-            case MapNodeType.Event:         return "EVENT";
+            case MapNodeType.Enchant:       return "ENCHANT";
             case MapNodeType.Boss:          return "BOSS";
             default:                        return "?";
         }
@@ -203,7 +203,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Shop:          icon = shopIcon; break;
             case MapNodeType.PerkSelection: icon = perkIcon; break;
             case MapNodeType.Rest:          icon = restIcon; break;
-            case MapNodeType.Event:         icon = eventIcon; break;
+            case MapNodeType.Enchant:       icon = eventIcon; break;
             case MapNodeType.Boss:          icon = bossIcon; break;
         }
 
@@ -230,7 +230,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Shop:          return new Color(1f, 0.85f, 0.2f);
             case MapNodeType.PerkSelection: return new Color(0.6f, 0.2f, 1f);
             case MapNodeType.Rest:          return new Color(0.2f, 0.8f, 0.4f);
-            case MapNodeType.Event:         return new Color(0.2f, 0.6f, 1f);
+            case MapNodeType.Enchant:       return new Color(0.3f, 0.8f, 1f);
             case MapNodeType.Boss:          return new Color(1f, 0f, 0f);
             default:                        return Color.white;
         }

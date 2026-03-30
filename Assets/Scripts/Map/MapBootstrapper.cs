@@ -58,7 +58,7 @@ public class MapBootstrapper : MonoBehaviour
             defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
             defaultConfig.eliteChance = 0.10f;
-            defaultConfig.eventChance = 0.08f;
+            defaultConfig.enchantChance = 0.08f;
             mm.layerConfigs = new MapLayerData[] { defaultConfig };
         }
     }

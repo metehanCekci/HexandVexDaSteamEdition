@@ -47,8 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Graviton Core
-  description: When an enemy is knocked back, pull adjacent enemies toward the impact.
+  description: Skip to create a gravity well, pulling nearby enemies closer. Pulled
+    enemies take heavy damage.
   icon: {fileID: 4557775558309134271, guid: 11124347f0585de479e4d1d65aad9372, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
   rarity: 0

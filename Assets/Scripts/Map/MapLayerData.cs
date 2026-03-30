@@ -15,7 +15,7 @@ public class MapLayerData : ScriptableObject
     [Range(0f, 1f)] public float perkChance = 0.15f;
     [Range(0f, 1f)] public float restChance = 0.10f;
     [Range(0f, 1f)] public float eliteChance = 0.10f;
-    [Range(0f, 1f)] public float eventChance = 0f;
+    [Range(0f, 1f)] public float enchantChance = 0.10f;
     // Combat fills the remainder
 
     [Header("Tile Set")]

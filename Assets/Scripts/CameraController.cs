@@ -192,4 +192,17 @@ public class CameraController : MonoBehaviour
         if (controller != null)
             controller.Shake(0.1f, 0.0375f);
     }
+
+    /// <summary>
+    /// External zoom control — modifies targetPosition.z so LateUpdate respects it.
+    /// </summary>
+    public Vector3 GetTargetPosition()
+    {
+        return targetPosition;
+    }
+
+    public void SetTargetPosition(Vector3 pos)
+    {
+        targetPosition = pos;
+    }
 }

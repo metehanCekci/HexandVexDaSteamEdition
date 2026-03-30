@@ -37,6 +37,9 @@ public class RunManager : MonoBehaviour
     public float criticalChance = 0.10f; // 0.0 to 1.0
     public float criticalDamageMultiplier = 2.0f;
 
+    [Header("Magic Tiles")]
+    public List<MagicTileType> acquiredMagicTiles = new List<MagicTileType>();
+
     [Header("Active Perks")]
     public const int MAX_ACTIVE_PERKS = 6;
     public Transform perkUIContainer; // Assign a Horizontal Layout Group UI panel here!

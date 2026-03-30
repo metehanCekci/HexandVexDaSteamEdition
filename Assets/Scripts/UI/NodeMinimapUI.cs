@@ -322,7 +322,7 @@ public class NodeMinimapUI : MonoBehaviour
             case MapNodeType.Shop:           return shop;
             case MapNodeType.PerkSelection:  return perk;
             case MapNodeType.Rest:           return rest;
-            case MapNodeType.Event:          return evt;
+            case MapNodeType.Enchant:        return evt;
             case MapNodeType.Boss:           return boss;
             default:                         return null;
         }
@@ -337,7 +337,7 @@ public class NodeMinimapUI : MonoBehaviour
             case MapNodeType.Shop:           return "S";
             case MapNodeType.PerkSelection:  return "P";
             case MapNodeType.Rest:           return "R";
-            case MapNodeType.Event:          return "?";
+            case MapNodeType.Enchant:        return "E";
             case MapNodeType.Boss:           return "B";
             default:                         return "?";
         }
@@ -353,7 +353,7 @@ public class NodeMinimapUI : MonoBehaviour
             case MapNodeType.Shop:           c = new Color(1f, 0.85f, 0.2f); break;
             case MapNodeType.PerkSelection:  c = new Color(0.6f, 0.2f, 1f); break;
             case MapNodeType.Rest:           c = new Color(0.2f, 0.8f, 0.4f); break;
-            case MapNodeType.Event:          c = new Color(0.2f, 0.6f, 1f); break;
+            case MapNodeType.Enchant:        c = new Color(0.3f, 0.8f, 1f); break;
             case MapNodeType.Boss:           c = new Color(1f, 0f, 0f); break;
             default:                         c = Color.white; break;
         }

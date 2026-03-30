@@ -164,6 +164,7 @@ public class LevelGenerator : MonoBehaviour
         if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
         if (teleportMap != null) teleportMap.ClearAllTiles();
         if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
+        if (MagicTileManager.instance != null) MagicTileManager.instance.ClearActiveTiles();
 
         validCells.Clear();
         hazardCells.Clear();
@@ -498,6 +499,10 @@ public class LevelGenerator : MonoBehaviour
 
         TurnManager.instance.Invoke("LockAllEnemyIntents", 0.1f);
 
+        // Magic tile'ları haritaya yerleştir
+        if (MagicTileManager.instance != null)
+            MagicTileManager.instance.SpawnMagicTiles();
+
         Debug.Log($"🗺️ Level {RunManager.instance.currentLevel} oluşturuldu!");
     }
 
@@ -585,6 +590,7 @@ public class LevelGenerator : MonoBehaviour
         if (hazardMap != null) hazardMap.ClearAllTiles();
         if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
         if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
+        if (MagicTileManager.instance != null) MagicTileManager.instance.ClearActiveTiles();
         validCells.Clear();
         hazardCells.Clear();
         scaffoldCells.Clear();
@@ -725,10 +731,14 @@ public class LevelGenerator : MonoBehaviour
 
         if (spawnedBossAI != null && BossIntroSequence.instance != null)
         {
+            // Boss intro önce oynasın, bitince magic tile'lar spawn olsun
             StartCoroutine(DelayedBossIntro(spawnedBossAI));
         }
         else
         {
+            // Magic tile'ları boss arenasına yerleştir
+            if (MagicTileManager.instance != null)
+                MagicTileManager.instance.SpawnMagicTiles();
             TurnManager.instance.isPlayerTurn = true;
             TurnManager.instance.player.UpdateHighlights();
         }
@@ -737,7 +747,11 @@ public class LevelGenerator : MonoBehaviour
     private IEnumerator DelayedBossIntro(EnemyMovement boss)
     {
         yield return new WaitForSeconds(0.8f);
-        BossIntroSequence.instance.PlayIntro(boss);
+        BossIntroSequence.instance.PlayIntro(boss, () =>
+        {
+            if (MagicTileManager.instance != null)
+                MagicTileManager.instance.SpawnMagicTiles();
+        });
     }
 
     private void GenerateColumns(TileBase activeColumnTile = null)

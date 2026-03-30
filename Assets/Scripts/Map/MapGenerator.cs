@@ -6,7 +6,7 @@ public static class MapGenerator
     // Ödül node'ları — combat olmayan, oyuncuya fayda sağlayan
     private static readonly HashSet<MapNodeType> rewardTypes = new HashSet<MapNodeType>
     {
-        MapNodeType.Shop, MapNodeType.PerkSelection, MapNodeType.Rest
+        MapNodeType.Shop, MapNodeType.PerkSelection, MapNodeType.Rest, MapNodeType.Enchant
     };
 
     // Risk node'ları — düşmanlı
@@ -117,6 +117,9 @@ public static class MapGenerator
 
         // ─── SON GÜVENLİK: Layer başına en az 1 Rest (Campfire) garanti ───
         EnforceMinimumRest(map, totalRows);
+
+        // ─── SON GÜVENLİK: Layer başına en az 1 Enchant garanti ───
+        EnforceMinimumEnchant(map, totalRows);
 
         return map;
     }
@@ -398,6 +401,7 @@ public static class MapGenerator
         if (!used.Contains(MapNodeType.Shop)) return false;
         if (!used.Contains(MapNodeType.PerkSelection)) return false;
         if (canRest && !used.Contains(MapNodeType.Rest)) return false;
+        if (!used.Contains(MapNodeType.Enchant)) return false;
         return true;
     }
 
@@ -426,6 +430,11 @@ public static class MapGenerator
         {
             candidates.Add(MapNodeType.Rest);
             weights.Add(config.restChance);
+        }
+        if (!usedTypes.Contains(MapNodeType.Enchant))
+        {
+            candidates.Add(MapNodeType.Enchant);
+            weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
         }
 
         // Hepsi kullanılmışsa fallback — tekrar seçebilir
@@ -627,6 +636,8 @@ public static class MapGenerator
                                 node.nodeType = MapNodeType.PerkSelection;
                             else if (canRest && !seen.Contains(MapNodeType.Rest))
                                 node.nodeType = MapNodeType.Rest;
+                            else if (!seen.Contains(MapNodeType.Enchant))
+                                node.nodeType = MapNodeType.Enchant;
                             else if (!seen.Contains(MapNodeType.EliteCombat))
                                 node.nodeType = MapNodeType.EliteCombat;
                             else if (!seen.Contains(MapNodeType.Combat))
@@ -875,7 +886,8 @@ public static class MapGenerator
             MapNodeType.Shop,
             MapNodeType.PerkSelection,
             MapNodeType.EliteCombat,
-            MapNodeType.Rest
+            MapNodeType.Rest,
+            MapNodeType.Enchant
         };
 
         foreach (var reqType in requiredTypes)
@@ -1057,6 +1069,54 @@ public static class MapGenerator
 
         if (bestCandidate != null)
             bestCandidate.nodeType = MapNodeType.Rest;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // LAYER BAŞINA EN AZ 1 ENCHANT GARANTİSİ
+    // ═══════════════════════════════════════════════════════
+
+    private static void EnforceMinimumEnchant(MapData map, int totalRows)
+    {
+        bool hasEnchant = false;
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType == MapNodeType.Enchant) { hasEnchant = true; break; }
+        }
+        if (hasEnchant) return;
+
+        MapNode bestCandidate = null;
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType != MapNodeType.Combat) continue;
+            if (node.row <= 1 || node.row >= totalRows) continue;
+
+            if (HasRewardParent(map, node)) continue;
+            bool childReward = false;
+            foreach (int cid in node.childIds)
+            {
+                MapNode c = map.GetNode(cid);
+                if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
+            }
+            if (childReward) continue;
+
+            if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
+                bestCandidate = node;
+        }
+
+        // Uygun aday yoksa yasagi gevset
+        if (bestCandidate == null)
+        {
+            foreach (var node in map.nodes)
+            {
+                if (node.nodeType != MapNodeType.Combat) continue;
+                if (node.row <= 0 || node.row >= totalRows) continue;
+                if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
+                    bestCandidate = node;
+            }
+        }
+
+        if (bestCandidate != null)
+            bestCandidate.nodeType = MapNodeType.Enchant;
     }
 
     // ═══════════════════════════════════════════════════════

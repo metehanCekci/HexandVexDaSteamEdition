@@ -187,6 +187,17 @@ public class LevelUpManager : MonoBehaviour
                     }
                 }
 
+                // Rarity efekti
+                PerkCardRarityEffect rarityFX = choiceButtons[i].GetComponent<PerkCardRarityEffect>();
+                if (rarityFX == null) rarityFX = choiceButtons[i].gameObject.AddComponent<PerkCardRarityEffect>();
+                RectTransform iconRT = (choiceIcons != null && choiceIcons.Length > i && choiceIcons[i] != null)
+                    ? choiceIcons[i].rectTransform : null;
+                rarityFX.Setup(detectedRarity, iconRT);
+
+                // 3D tilt efekti
+                if (choiceButtons[i].GetComponent<CardTilt3D>() == null)
+                    choiceButtons[i].gameObject.AddComponent<CardTilt3D>();
+
                 int index = i;
                 choiceButtons[i].onClick.RemoveAllListeners();
                 choiceButtons[i].onClick.AddListener(() => SelectPerk(index));
@@ -711,6 +722,8 @@ public class LevelUpManager : MonoBehaviour
                 btn.gameObject.SetActive(false);
                 CanvasGroup cg = btn.GetComponent<CanvasGroup>();
                 if (cg != null) cg.alpha = 1f;
+                PerkCardRarityEffect fx = btn.GetComponent<PerkCardRarityEffect>();
+                if (fx != null) fx.Cleanup();
             }
         }
 

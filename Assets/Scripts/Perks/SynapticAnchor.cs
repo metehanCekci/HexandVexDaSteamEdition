@@ -20,6 +20,22 @@ public class SynapticAnchorPerk : BasePerk
         ClearAnchorVisual();
     }
 
+    void Update()
+    {
+        // Scaffold kırılırsa anchor da yok olsun
+        if (hasAnchor && !IsAnchorCellValid())
+        {
+            hasAnchor = false;
+            ClearAnchorVisual();
+        }
+    }
+
+    private bool IsAnchorCellValid()
+    {
+        if (TurnManager.instance == null) return false;
+        return TurnManager.instance.HasWalkableTile(anchorCell);
+    }
+
     /// <summary>true ise bu skip'te teleport yapılacak — TurnManager bekleyecek.</summary>
     [System.NonSerialized] public bool teleportPending = false;
 

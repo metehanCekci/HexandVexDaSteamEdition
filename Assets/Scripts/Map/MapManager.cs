@@ -74,7 +74,7 @@ public class MapManager : MonoBehaviour
             defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
             defaultConfig.eliteChance = 0.10f;
-            defaultConfig.eventChance = 0.08f;
+            defaultConfig.enchantChance = 0.08f;
             layerConfigs = new MapLayerData[] { defaultConfig };
         }
 
@@ -94,6 +94,21 @@ public class MapManager : MonoBehaviour
         if (RestNodeUI.instance == null)
         {
             LoadRestUIFromPrefab();
+        }
+
+        // Enchant UI yoksa otomatik oluştur
+        if (EnchantNodeUI.instance == null)
+        {
+            GameObject enchantGO = new GameObject("EnchantNodeUI");
+            enchantGO.AddComponent<EnchantNodeUI>();
+            DontDestroyOnLoad(enchantGO);
+        }
+
+        // MagicTileManager yoksa otomatik oluştur
+        if (MagicTileManager.instance == null)
+        {
+            GameObject mtGO = new GameObject("MagicTileManager");
+            mtGO.AddComponent<MagicTileManager>();
         }
 
         // Auto-spawn Inventory & Hotbar if not present
@@ -416,6 +431,21 @@ public class MapManager : MonoBehaviour
             PerkInventoryUI.CreateFromCode();
         }
 
+        // EnchantNodeUI yok olmuş olabilir
+        if (EnchantNodeUI.instance == null)
+        {
+            GameObject enchantGO = new GameObject("EnchantNodeUI");
+            enchantGO.AddComponent<EnchantNodeUI>();
+            DontDestroyOnLoad(enchantGO);
+        }
+
+        // MagicTileManager yok olmuş olabilir
+        if (MagicTileManager.instance == null)
+        {
+            GameObject mtGO = new GameObject("MagicTileManager");
+            mtGO.AddComponent<MagicTileManager>();
+        }
+
         // Inventory & Hotbar yok olmuş olabilir
         EnsureInventoryAndHotbar();
     }
@@ -532,8 +562,7 @@ public class MapManager : MonoBehaviour
     {
         bool isCombatNode = node.nodeType == MapNodeType.Combat
                          || node.nodeType == MapNodeType.EliteCombat
-                         || node.nodeType == MapNodeType.Boss
-                         || node.nodeType == MapNodeType.Event;
+                         || node.nodeType == MapNodeType.Boss;
 
         if (isCombatNode)
         {
@@ -564,9 +593,9 @@ public class MapManager : MonoBehaviour
                 showHotbar = true;
                 break;
 
-            case MapNodeType.Event:
-                LevelGenerator.instance.GenerateNextLevel();
-                showHotbar = true;
+            case MapNodeType.Enchant:
+                if (EnchantNodeUI.instance != null)
+                    EnchantNodeUI.instance.Show();
                 break;
 
             case MapNodeType.Shop:
@@ -721,7 +750,8 @@ public class MapManager : MonoBehaviour
 
         bool wasNonCombat = lastType == MapNodeType.Shop
                          || lastType == MapNodeType.PerkSelection
-                         || lastType == MapNodeType.Rest;
+                         || lastType == MapNodeType.Rest
+                         || lastType == MapNodeType.Enchant;
 
         if (wasNonCombat)
         {
