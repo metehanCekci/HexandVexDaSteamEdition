@@ -135,6 +135,10 @@ public class EnemyMovement : MonoBehaviour
 
         var bruiser = GetComponent<BruiserEnemyAI>();
         if (bruiser != null) bruiser.HandleDamaged();
+
+        // Ninja: vurulunca hemen kaç (sersem gibi)
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null) ninja.OnHit();
     }
 
     // ─── Movement ───
