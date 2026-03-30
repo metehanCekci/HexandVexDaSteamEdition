@@ -2026,6 +2026,7 @@ public class TurnManager : MonoBehaviour
         List<EnemyMovement> readyToMeleeAttack = new List<EnemyMovement>();
         List<WarlockEnemyAI> readyWarlockAttack1 = new List<WarlockEnemyAI>();
         List<WarlockEnemyAI> readyWarlockAttack2 = new List<WarlockEnemyAI>();
+        List<NinjaEnemyAI> readyNinjaStrike = new List<NinjaEnemyAI>();
 
         foreach (var e in enemies)
         {
@@ -2042,6 +2043,11 @@ public class TurnManager : MonoBehaviour
                         if (warlock.IsReadyToExplodeAttack1()) readyWarlockAttack1.Add(warlock);
                         if (warlock.IsReadyToExplodeAttack2()) readyWarlockAttack2.Add(warlock);
                     }
+                }
+                else if (e.IsNinja && !e.isAllied)
+                {
+                    NinjaEnemyAI ninja = e.GetComponent<NinjaEnemyAI>();
+                    if (ninja != null && ninja.IsReadyToStrike()) readyNinjaStrike.Add(ninja);
                 }
             }
         }
@@ -2061,6 +2067,15 @@ public class TurnManager : MonoBehaviour
             List<Coroutine> attack2Coroutines = new List<Coroutine>();
             foreach (var warlock in readyWarlockAttack2) attack2Coroutines.Add(StartCoroutine(warlock.ExecuteAttack2()));
             foreach (var coroutine in attack2Coroutines) yield return coroutine;
+            yield return new WaitForSeconds(0.2f);
+        }
+
+        // Ninja saldırıları (ışınlan + AoE) - PARALLEL
+        if (readyNinjaStrike.Count > 0)
+        {
+            List<Coroutine> ninjaCoroutines = new List<Coroutine>();
+            foreach (var ninja in readyNinjaStrike) ninjaCoroutines.Add(StartCoroutine(ninja.ExecuteStrike()));
+            foreach (var c in ninjaCoroutines) yield return c;
             yield return new WaitForSeconds(0.2f);
         }
 
@@ -2883,6 +2898,11 @@ public class TurnManager : MonoBehaviour
         var warlock = enemy.GetComponent<WarlockEnemyAI>();
         if (warlock != null)
             warlock.OnWarlockDied(); // Tüm warning'leri temizler, döngüyü sıfırlar
+
+        // Ninja: warning'leri temizle, döngüyü sıfırla
+        var ninja = enemy.GetComponent<NinjaEnemyAI>();
+        if (ninja != null)
+            ninja.OnNinjaDied();
 
         // Animator'ı idle'a çek
         if (enemy.animator != null)
