@@ -19,8 +19,13 @@ public class NinjaEnemyAI : MonoBehaviour
     public int stunTurnsOnMiss = 2;          // Iskalayınca stun süresi
     public int attackDamage = 2;
 
+    [Header("Warning Tile'ları")]
+    public TileBase centerWarningTile;   // Ortadaki hücre (ışınlanacak nokta) — Inspector'dan bağla
+    // Dış 6 hücre için normal warningTile kullanılır (TurnManager.warningTile)
+
     [Header("Warning Rengi")]
-    public Color warningColor = new Color(0.2f, 0.8f, 1f, 1f);   // Mavi-cyan
+    public Color centerWarningColor = new Color(0.2f, 0.8f, 1f, 1f);  // Merkez rengi (cyan)
+    public Color outerWarningColor  = new Color(1f, 0.3f, 0.3f, 1f);  // Dış halka rengi (kırmızı)
 
     [Header("Animasyon")]
     public Animator animator;   // Inspector'dan bağla; boşsa movement.animator kullanılır
@@ -92,8 +97,9 @@ public class NinjaEnemyAI : MonoBehaviour
         Vector3Int playerCell = TurnManager.instance.player.GetCurrentCellPosition();
         Vector3Int myCell     = movement.GetCurrentCellPosition();
 
-        // Oyuncu çok yakınsa → önce kaç, sonra döngüye devam etme (bu tur atla)
-        if (movement.Distance(myCell, playerCell) <= fleeDistanceThreshold)
+        // Oyuncu çok yakınsa ve sadece bekleme fazındaysak kaç
+        // (hazırlanma veya saldırı fazındaysa kaçma — warning tile'lar zaten konulmuş)
+        if (cyclePhase == 0 && movement.Distance(myCell, playerCell) <= fleeDistanceThreshold)
         {
             yield return StartCoroutine(TeleportToFarCell(playerCell));
             yield break;
@@ -107,7 +113,14 @@ public class NinjaEnemyAI : MonoBehaviour
                 cyclePhase = 1;
                 break;
 
-            case 1: // ─── HAZIRLAN: warning tile'ları koy ───
+            case 1: // ─── HAZIRLAN: warning tile'ları koy, BU TUR SADECE BEKLE ───
+                // Başka bir ninja zaten saldırı hazırlığındaysa bu tur bekle
+                if (AnotherNinjaIsAttacking())
+                {
+                    FlipTowardPlayer(playerCell);
+                    break;  // cyclePhase değişmez, bir tur daha bekler
+                }
+
                 FlipTowardPlayer(playerCell);
                 AnimSetBool("IsCharging", true);
                 if (AudioManager.instance != null) AudioManager.instance.PlayCharge();
@@ -115,15 +128,11 @@ public class NinjaEnemyAI : MonoBehaviour
                 warningCells = GetStrikeCells(myCell, playerCell);
                 ShowWarningCells(warningCells);
 
-                readyToStrike = true;   // TurnManager faz 2'yi execute etsin
-                cyclePhase = 2;
+                cyclePhase = 2;  // readyToStrike YOK — bir sonraki tura kadar bekle
                 break;
 
-            case 2: // ─── SALDIRI: TurnManager ExecuteStrike() üzerinden çağırılır ───
-                // Bu case normalde buradan çağrılmaz; TurnManager ExecuteStrike'ı yönetir.
-                // Güvenlik: eğer buraya gelindiyse sadece döngüyü sıfırla.
-                readyToStrike = false;
-                ClearWarnings();
+            case 2: // ─── SALDIRI: bu tur TurnManager ExecuteStrike() çağırır ───
+                readyToStrike = true;  // TurnManager bu turu execute etsin
                 cyclePhase = 0;
                 break;
         }
@@ -202,25 +211,10 @@ public class NinjaEnemyAI : MonoBehaviour
         }
         else
         {
-            // Stun
+            // Stun — biz vurursak OnHit() kaçışı halleder, vurmassak stun bitince döngü başa döner
             movement.ApplyStun(stunTurnsOnMiss, true);
             cyclePhase = 0;
-            // Stun bitince kaçış: EnemyMovement.DecreaseStunTurn stun'u yönetir.
-            // Stun bittikten sonra kaçış için StunEndFlee coroutine'i başlatıyoruz.
-            StartCoroutine(FleeAfterStunEnds());
         }
-    }
-
-    // ─── Stun bitince kaç ───
-
-    private IEnumerator FleeAfterStunEnds()
-    {
-        // skipTurns 0'a düşene kadar bekle
-        yield return new WaitUntil(() => movement.skipTurns <= 0 && !isTransitioning);
-        if (movement.health.currentHP <= 0) yield break;
-
-        Vector3Int playerCell = TurnManager.instance.player.GetCurrentCellPosition();
-        yield return StartCoroutine(TeleportToFarCell(playerCell));
     }
 
     // ─── Yakınlaşma Kaçışı: LockNextMove'dan çağrılır ───
@@ -228,6 +222,7 @@ public class NinjaEnemyAI : MonoBehaviour
     public bool ShouldFlee(Vector3Int playerCell)
     {
         if (isTransitioning) return false;
+        if (cyclePhase != 0) return false;  // hazırlanma/saldırı fazında kaçma
         return movement.Distance(movement.GetCurrentCellPosition(), playerCell) <= fleeDistanceThreshold;
     }
 
@@ -244,8 +239,8 @@ public class NinjaEnemyAI : MonoBehaviour
         Vector3Int direction = GetHexDirectionIndex(ninjaCell, playerCell);  // ninja→player yönü
         Vector3Int strikeCenter = playerCell + direction;  // oyuncunun "ninja tarafındaki" komşusu
 
-        // Eğer strikeCenter walkable değilse fallback: playerCell'in komşularından en yakınını al
-        if (!HasWalkableTile(strikeCenter) || strikeCenter == ninjaCell)
+        // Strike center geçersizse (hazard, explosion, ninja'nın kendi hücresi) fallback
+        if (!HasWalkableTile(strikeCenter) || strikeCenter == ninjaCell || IsDangerousCell(strikeCenter))
         {
             strikeCenter = GetClosestWalkableNeighborToward(playerCell, ninjaCell);
         }
@@ -296,6 +291,7 @@ public class NinjaEnemyAI : MonoBehaviour
         {
             Vector3Int n = center + off;
             if (!HasWalkableTile(n)) continue;
+            if (IsDangerousCell(n)) continue;
             float d = movement.Distance(n, toward);
             if (d < bestDist)
             {
@@ -304,6 +300,13 @@ public class NinjaEnemyAI : MonoBehaviour
             }
         }
         return best;
+    }
+
+    private bool IsDangerousCell(Vector3Int c)
+    {
+        if (LevelGenerator.instance == null) return false;
+        return LevelGenerator.instance.hazardCells.Contains(c)
+            || LevelGenerator.instance.explosionCells.Contains(c);
     }
 
     // ─── Uzak Hücreye Işınlan ───
@@ -337,15 +340,21 @@ public class NinjaEnemyAI : MonoBehaviour
                 Vector3Int c = new Vector3Int(x, y, 0);
                 if (!HasWalkableTile(c)) continue;
                 if (TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(c)) continue;
-                if (LevelGenerator.instance != null && LevelGenerator.instance.hazardCells.Contains(c)) continue;
+                if (LevelGenerator.instance == null) continue;
+                if (LevelGenerator.instance.hazardCells.Contains(c)) continue;
+                if (LevelGenerator.instance.explosionCells.Contains(c)) continue;
                 if (movement.Distance(c, playerCell) >= minDist)
                     candidates.Add(c);
             }
         }
 
-        // Fallback: daha az mesafe
-        if (candidates.Count == 0)
+        // Fallback: mesafe eşiğini düşür, en az 0'a kadar
+        if (candidates.Count == 0 && minDist > 0f)
             return FindFarCell(playerCell, minDist - 1f);
+
+        // Son çare: mevcut hücrede kal
+        if (candidates.Count == 0)
+            return movement.GetCurrentCellPosition();
 
         return candidates[Random.Range(0, candidates.Count)];
     }
@@ -355,20 +364,28 @@ public class NinjaEnemyAI : MonoBehaviour
     private void ShowWarningCells(List<Vector3Int> cells)
     {
         if (myPersonalMap == null) return;
-        TileBase tile = movement.warningTile;
-        if (tile == null && TurnManager.instance != null) tile = TurnManager.instance.warningTile;
-        if (tile == null) return;
 
-        foreach (var cell in cells)
-            StartCoroutine(FadeInWarningCell(cell, tile));
+        TileBase outerTile = movement.warningTile;
+        if (outerTile == null && TurnManager.instance != null) outerTile = TurnManager.instance.warningTile;
+
+        TileBase innerTile = centerWarningTile != null ? centerWarningTile : outerTile;
+
+        for (int i = 0; i < cells.Count; i++)
+        {
+            bool isCenter = (i == 0);
+            TileBase tile  = isCenter ? innerTile  : outerTile;
+            Color    color = isCenter ? centerWarningColor : outerWarningColor;
+            if (tile != null)
+                StartCoroutine(FadeInWarningCell(cells[i], tile, color));
+        }
     }
 
-    private IEnumerator FadeInWarningCell(Vector3Int cell, TileBase tile)
+    private IEnumerator FadeInWarningCell(Vector3Int cell, TileBase tile, Color targetColor)
     {
         myPersonalMap.SetTile(cell, tile);
         myPersonalMap.SetTileFlags(cell, TileFlags.None);
 
-        Color start = new Color(warningColor.r, warningColor.g, warningColor.b, 0f);
+        Color start = new Color(targetColor.r, targetColor.g, targetColor.b, 0f);
         myPersonalMap.SetColor(cell, start);
 
         float duration = 0.3f, elapsed = 0f;
@@ -377,10 +394,10 @@ public class NinjaEnemyAI : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
             t = t * t * (3f - 2f * t);
-            myPersonalMap.SetColor(cell, Color.Lerp(start, warningColor, t));
+            myPersonalMap.SetColor(cell, Color.Lerp(start, targetColor, t));
             yield return null;
         }
-        myPersonalMap.SetColor(cell, warningColor);
+        myPersonalMap.SetColor(cell, targetColor);
     }
 
     private void FlashWarningCells(List<Vector3Int> cells)
@@ -469,6 +486,20 @@ public class NinjaEnemyAI : MonoBehaviour
         return ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(c);
     }
 
+    // ─── Senkron Kontrol ───
+
+    private bool AnotherNinjaIsAttacking()
+    {
+        foreach (var ninja in FindObjectsByType<NinjaEnemyAI>(FindObjectsSortMode.None))
+        {
+            if (ninja == this) continue;
+            if (ninja.movement == null || ninja.movement.health.currentHP <= 0) continue;
+            // cyclePhase 2 = warning koyulmuş, saldırı bekleniyor
+            if (ninja.cyclePhase == 2 || ninja.readyToStrike) return true;
+        }
+        return false;
+    }
+
     // ─── Animator Helpers (parametre yoksa sessizce geçer) ───
 
     private void AnimSetBool(string param, bool value)
@@ -498,5 +529,25 @@ public class NinjaEnemyAI : MonoBehaviour
         cyclePhase = 0;
         StopAllCoroutines();
         if (myPersonalMap != null) myPersonalMap.ClearAllTiles();
+    }
+
+    /// <summary>
+    /// Vurulunca çağrılır. Warning'leri temizler, döngüyü sıfırlar, uzağa kaçar.
+    /// </summary>
+    public void OnHit()
+    {
+        if (isTransitioning) return;
+        if (movement.health.currentHP <= 0) return;
+
+        isTransitioning = true;  // anında set et — aynı frame'de gelen ikinci çağrıyı engelle
+
+        ClearWarnings();
+        cyclePhase = 0;
+
+        Vector3Int playerCell = TurnManager.instance != null
+            ? TurnManager.instance.player.GetCurrentCellPosition()
+            : Vector3Int.zero;
+
+        StartCoroutine(TeleportToFarCell(playerCell));
     }
 }
