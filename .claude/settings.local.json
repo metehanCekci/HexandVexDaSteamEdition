@@ -59,7 +59,19 @@
       "Bash(find c:UserskutusDesktopGithubRepoHexandVexDaSteamEditionAssets -name *.unity -type f)",
       "Bash(grep -r \"secretItem\\\\|secretItemChance\" c:UserskutusDesktopGithubRepoHexandVexDaSteamEditionAssetsScripts --include=*.cs)",
       "Bash(grep -l \"Enemy\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*AI.cs)",
-      "Bash(wc -l /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)"
+      "Bash(wc -l /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
+      "Bash(grep -n \"--- !u![0-9]* &1574552220\\\\|--- !u![0-9]* &1574552221\\\\|--- !u![0-9]* &1574552224\\\\|--- !u![0-9]* &1574552223\\\\|--- !u![0-9]* &1574552222\\\\|--- !u![0-9]* &1574552225\\\\|--- !u![0-9]* &337334377\\\\|--- !u![0-9]* &478774106\\\\|--- !u![0-9]* &1403122829\" \"c:\\\\Users\\\\kutus\\\\Desktop\\\\GithubRepo\\\\HexandVexDaSteamEdition\\\\Assets\\\\Scenes\\\\Ana Sahne.unity\")",
+      "Bash(grep -n \"--- !u![0-9]* &1325545937\\\\|--- !u![0-9]* &1325545938\\\\|--- !u![0-9]* &1325545939\" \"c:\\\\Users\\\\kutus\\\\Desktop\\\\GithubRepo\\\\HexandVexDaSteamEdition\\\\Assets\\\\Scenes\\\\Ana Sahne.unity\")",
+      "Bash(python3.exe --version)",
+      "Bash(python.exe --version)",
+      "Bash(py --version)",
+      "Bash(where python:*)",
+      "Bash(where py:*)",
+      "Bash(py -3 -c \"print\\(''ok''\\)\")",
+      "Bash(/c/Users/kutus/AppData/Local/Microsoft/WindowsApps/python.exe -c \"print\\(''ok''\\)\")",
+      "Bash(powershell -Command \"Get-Command powershell | Select-Object -ExpandProperty Version\")",
+      "Bash(\"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/Ana Sahne.unity\":*)",
+      "Bash(powershell -Command \":*)"
     ]
   }
 }

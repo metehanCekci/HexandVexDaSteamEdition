@@ -6,5 +6,6 @@ public enum MapNodeType
     PerkSelection,
     Rest,
     Enchant,
-    Boss
+    Boss,
+    Sacrifice
 }

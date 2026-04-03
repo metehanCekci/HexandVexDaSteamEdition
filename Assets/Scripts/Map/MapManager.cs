@@ -599,14 +599,8 @@ public class MapManager : MonoBehaviour
                 break;
 
             case MapNodeType.Shop:
-                if (Shopmanager.instance != null)
-                    Shopmanager.instance.OpenAsMapNode();
-                showHotbar = true;
-                break;
-
-            case MapNodeType.PerkSelection:
-                if (LevelUpManager.instance != null)
-                    LevelUpManager.instance.ShowLevelUpScreen();
+                if (MergedShopManager.instance != null)
+                    MergedShopManager.instance.OpenAsMapNode();
                 showHotbar = true;
                 break;
 
@@ -614,6 +608,11 @@ public class MapManager : MonoBehaviour
                 if (RestNodeUI.instance != null)
                     RestNodeUI.instance.Show();
                 NotifyDiceHoarder();
+                break;
+
+            case MapNodeType.Sacrifice:
+                if (SacrificeNodeManager.instance != null)
+                    SacrificeNodeManager.instance.Show();
                 break;
 
             case MapNodeType.Boss:
@@ -749,7 +748,6 @@ public class MapManager : MonoBehaviour
             lastType = RunManager.instance.currentNodeType;
 
         bool wasNonCombat = lastType == MapNodeType.Shop
-                         || lastType == MapNodeType.PerkSelection
                          || lastType == MapNodeType.Rest
                          || lastType == MapNodeType.Enchant;
 

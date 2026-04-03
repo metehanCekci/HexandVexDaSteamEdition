@@ -6,7 +6,7 @@ public static class MapGenerator
     // Ödül node'ları — combat olmayan, oyuncuya fayda sağlayan
     private static readonly HashSet<MapNodeType> rewardTypes = new HashSet<MapNodeType>
     {
-        MapNodeType.Shop, MapNodeType.PerkSelection, MapNodeType.Rest, MapNodeType.Enchant
+        MapNodeType.Shop, MapNodeType.Rest, MapNodeType.Enchant, MapNodeType.Sacrifice
     };
 
     // Risk node'ları — düşmanlı
@@ -102,12 +102,6 @@ public static class MapGenerator
 
         // ─── Her oda tipinden en az 1 garanti ───
         EnforceMinimumRoomTypes(map, totalRows);
-
-        // ─── Layer başına en az 2 perk garanti ───
-        EnforceMinimumPerkCount(map, totalRows, 2);
-
-        // ─── İlk savaştan sonra perk garanti ───
-        EnforcePerkAfterFirstCombat(map);
 
         // ─── SON GÜVENLİK: Ardışık ödül yasağı (tüm post-processing sonrası) ───
         EnforceNoConsecutiveRewards(map);
@@ -399,9 +393,9 @@ public static class MapGenerator
     private static bool AllRewardsUsed(List<MapNodeType> used, bool canRest)
     {
         if (!used.Contains(MapNodeType.Shop)) return false;
-        if (!used.Contains(MapNodeType.PerkSelection)) return false;
         if (canRest && !used.Contains(MapNodeType.Rest)) return false;
         if (!used.Contains(MapNodeType.Enchant)) return false;
+        if (!used.Contains(MapNodeType.Sacrifice)) return false;
         return true;
     }
 
@@ -419,12 +413,7 @@ public static class MapGenerator
         if (!usedTypes.Contains(MapNodeType.Shop))
         {
             candidates.Add(MapNodeType.Shop);
-            weights.Add(config.shopChance);
-        }
-        if (!usedTypes.Contains(MapNodeType.PerkSelection))
-        {
-            candidates.Add(MapNodeType.PerkSelection);
-            weights.Add(config.perkChance);
+            weights.Add(config.shopChance + config.perkChance); // merged shop covers both
         }
         if (canRest && !usedTypes.Contains(MapNodeType.Rest))
         {
@@ -436,14 +425,17 @@ public static class MapGenerator
             candidates.Add(MapNodeType.Enchant);
             weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
         }
+        if (!usedTypes.Contains(MapNodeType.Sacrifice))
+        {
+            candidates.Add(MapNodeType.Sacrifice);
+            weights.Add(0.10f);
+        }
 
         // Hepsi kullanılmışsa fallback — tekrar seçebilir
         if (candidates.Count == 0)
         {
             candidates.Add(MapNodeType.Shop);
-            weights.Add(config.shopChance);
-            candidates.Add(MapNodeType.PerkSelection);
-            weights.Add(config.perkChance);
+            weights.Add(config.shopChance + config.perkChance);
             if (canRest)
             {
                 candidates.Add(MapNodeType.Rest);
@@ -454,7 +446,7 @@ public static class MapGenerator
         // Ağırlıklı random
         float total = 0f;
         foreach (float w in weights) total += w;
-        if (total <= 0f) return MapNodeType.PerkSelection;
+        if (total <= 0f) return MapNodeType.Shop;
 
         float roll = Random.value * total;
         float cum = 0f;
@@ -632,8 +624,6 @@ public static class MapGenerator
                             // Parent risk → ödül tipleri de seçilebilir
                             if (!seen.Contains(MapNodeType.Shop))
                                 node.nodeType = MapNodeType.Shop;
-                            else if (!seen.Contains(MapNodeType.PerkSelection))
-                                node.nodeType = MapNodeType.PerkSelection;
                             else if (canRest && !seen.Contains(MapNodeType.Rest))
                                 node.nodeType = MapNodeType.Rest;
                             else if (!seen.Contains(MapNodeType.Enchant))
@@ -880,14 +870,14 @@ public static class MapGenerator
     private static void EnforceMinimumRoomTypes(MapData map, int totalRows)
     {
         // Garanti edilecek tipler (row 0 ve boss hariç node'larda)
-        // Shop, PerkSelection ve Rest her zaman en az 1 garanti
+        // Shop (merged shop), Rest, EliteCombat, Enchant ve Sacrifice her zaman en az 1 garanti
         MapNodeType[] requiredTypes = new MapNodeType[]
         {
             MapNodeType.Shop,
-            MapNodeType.PerkSelection,
             MapNodeType.EliteCombat,
             MapNodeType.Rest,
-            MapNodeType.Enchant
+            MapNodeType.Enchant,
+            MapNodeType.Sacrifice
         };
 
         foreach (var reqType in requiredTypes)
@@ -1119,120 +1109,4 @@ public static class MapGenerator
             bestCandidate.nodeType = MapNodeType.Enchant;
     }
 
-    // ═══════════════════════════════════════════════════════
-    // LAYER BAŞINA EN AZ N PERK GARANTİSİ
-    // ═══════════════════════════════════════════════════════
-
-    private static void EnforceMinimumPerkCount(MapData map, int totalRows, int minCount)
-    {
-        // Mevcut perk sayısını say
-        int perkCount = 0;
-        foreach (var node in map.nodes)
-        {
-            if (node.nodeType == MapNodeType.PerkSelection) perkCount++;
-        }
-
-        // Yeterince varsa çık
-        while (perkCount < minCount)
-        {
-            // Uygun bir Combat node'u PerkSelection'a çevir
-            // Row 0, row 1, boss row'u atla. Ardışık ödül yasağını koru.
-            MapNode bestCandidate = null;
-            int bestScore = int.MaxValue;
-
-            foreach (var node in map.nodes)
-            {
-                if (node.nodeType != MapNodeType.Combat) continue;
-                if (node.row <= 1 || node.row >= totalRows) continue;
-
-                // Ardışık ödül yasağı: parent veya child ödülse atla
-                if (HasRewardParent(map, node)) continue;
-                bool childReward = false;
-                foreach (int cid in node.childIds)
-                {
-                    MapNode c = map.GetNode(cid);
-                    if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
-                }
-                if (childReward) continue;
-
-                // Ortaya yakın olanı tercih et
-                int score = Mathf.Abs(node.row - totalRows / 2);
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    bestCandidate = node;
-                }
-            }
-
-            if (bestCandidate != null)
-            {
-                bestCandidate.nodeType = MapNodeType.PerkSelection;
-                perkCount++;
-            }
-            else
-            {
-                break; // Uygun aday kalmadı
-            }
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // İLK SAVAŞTAN SONRA PERK GARANTİSİ
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Row 0 (ilk savaş) sonrasında en az bir patikada PerkSelection olmalı.
-    /// Row 1'deki node'lardan birini (veya tek node row'da tek node'u)
-    /// PerkSelection'a çevirir.
-    /// </summary>
-    private static void EnforcePerkAfterFirstCombat(MapData map)
-    {
-        // Row 0'ın child'larını bul
-        MapNode startNode = null;
-        foreach (var node in map.nodes)
-        {
-            if (node.row == 0) { startNode = node; break; }
-        }
-        if (startNode == null || startNode.childIds.Count == 0) return;
-
-        // Child'larda zaten perk var mı?
-        bool hasPerk = false;
-        foreach (int cid in startNode.childIds)
-        {
-            MapNode child = map.GetNode(cid);
-            if (child != null && child.nodeType == MapNodeType.PerkSelection)
-            { hasPerk = true; break; }
-        }
-        if (hasPerk) return;
-
-        // Tek child varsa onu PerkSelection yap
-        if (startNode.childIds.Count == 1)
-        {
-            MapNode child = map.GetNode(startNode.childIds[0]);
-            if (child != null) child.nodeType = MapNodeType.PerkSelection;
-            return;
-        }
-
-        // Birden fazla child varsa birini PerkSelection yap (tercihen Combat olanı)
-        foreach (int cid in startNode.childIds)
-        {
-            MapNode child = map.GetNode(cid);
-            if (child != null && child.nodeType == MapNodeType.Combat)
-            {
-                child.nodeType = MapNodeType.PerkSelection;
-                return;
-            }
-        }
-
-        // Combat child yoksa herhangi birini çevir (boss veya elite değilse)
-        foreach (int cid in startNode.childIds)
-        {
-            MapNode child = map.GetNode(cid);
-            if (child != null && child.nodeType != MapNodeType.Boss)
-            {
-                child.nodeType = MapNodeType.PerkSelection;
-                return;
-            }
-        }
-    }
 }

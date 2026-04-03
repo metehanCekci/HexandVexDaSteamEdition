@@ -33,8 +33,9 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     private static Sprite restIcon;
     private static Sprite eventIcon;
     private static Sprite bossIcon;
+    private static Sprite sacrificeIcon;
 
-    public static void SetIcons(Sprite combat, Sprite elite, Sprite shop, Sprite perk, Sprite rest, Sprite evt, Sprite boss)
+    public static void SetIcons(Sprite combat, Sprite elite, Sprite shop, Sprite perk, Sprite rest, Sprite evt, Sprite boss, Sprite sacrifice = null)
     {
         combatIcon = combat;
         eliteIcon = elite;
@@ -43,6 +44,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         restIcon = rest;
         eventIcon = evt;
         bossIcon = boss;
+        sacrificeIcon = sacrifice;
     }
 
     public void Setup(MapNode node)
@@ -115,10 +117,11 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Combat:        return "FIGHT";
             case MapNodeType.EliteCombat:   return "ELITE";
             case MapNodeType.Shop:          return "SHOP";
-            case MapNodeType.PerkSelection: return "PERK";
+            case MapNodeType.PerkSelection: return "SHOP"; // merged, same as Shop
             case MapNodeType.Rest:          return "REST";
             case MapNodeType.Enchant:       return "ENCHANT";
             case MapNodeType.Boss:          return "BOSS";
+            case MapNodeType.Sacrifice:     return "SACRIFICE";
             default:                        return "?";
         }
     }
@@ -198,13 +201,14 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         Sprite icon = null;
         switch (type)
         {
-            case MapNodeType.Combat:       icon = combatIcon; break;
+            case MapNodeType.Combat:        icon = combatIcon; break;
             case MapNodeType.EliteCombat:   icon = eliteIcon; break;
-            case MapNodeType.Shop:          icon = shopIcon; break;
-            case MapNodeType.PerkSelection: icon = perkIcon; break;
+            case MapNodeType.Shop:          icon = perkIcon != null ? perkIcon : shopIcon; break;
+            case MapNodeType.PerkSelection: icon = perkIcon != null ? perkIcon : shopIcon; break;
             case MapNodeType.Rest:          icon = restIcon; break;
             case MapNodeType.Enchant:       icon = eventIcon; break;
             case MapNodeType.Boss:          icon = bossIcon; break;
+            case MapNodeType.Sacrifice:     icon = sacrificeIcon != null ? sacrificeIcon : perkIcon; break;
         }
 
         if (icon != null)
@@ -225,13 +229,14 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     {
         switch (type)
         {
-            case MapNodeType.Combat:       return new Color(0.8f, 0.2f, 0.2f);
+            case MapNodeType.Combat:        return new Color(0.8f, 0.2f, 0.2f);
             case MapNodeType.EliteCombat:   return new Color(1f, 0.4f, 0f);
-            case MapNodeType.Shop:          return new Color(1f, 0.85f, 0.2f);
+            case MapNodeType.Shop:          return new Color(0.6f, 0.2f, 1f); // merged shop uses perk color
             case MapNodeType.PerkSelection: return new Color(0.6f, 0.2f, 1f);
             case MapNodeType.Rest:          return new Color(0.2f, 0.8f, 0.4f);
             case MapNodeType.Enchant:       return new Color(0.3f, 0.8f, 1f);
             case MapNodeType.Boss:          return new Color(1f, 0f, 0f);
+            case MapNodeType.Sacrifice:     return new Color(0.8f, 0.1f, 0.6f);
             default:                        return Color.white;
         }
     }
