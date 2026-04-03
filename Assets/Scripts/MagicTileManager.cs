@@ -12,6 +12,7 @@ public class MagicTileManager : MonoBehaviour
     public TileBase blueTile;
     public TileBase greenTile;
     public TileBase yellowTile;
+    public TileBase orangeTile;
 
     [Header("Tilemap")]
     public Tilemap magicTileMap;
@@ -100,6 +101,54 @@ public class MagicTileManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Tek kullanım: tile'ı tüket ve haritadan kaldır.
+    /// </summary>
+    public void ConsumeTile(Vector3Int cell)
+    {
+        if (!activeTiles.ContainsKey(cell)) return;
+        activeTiles.Remove(cell);
+        if (magicTileMap != null)
+            magicTileMap.SetTile(cell, null);
+    }
+
+    /// <summary>
+    /// Oyuncunun üzerinde durduğu magic tile'ı tüket.
+    /// </summary>
+    public void ConsumePlayerTile()
+    {
+        if (TurnManager.instance == null || TurnManager.instance.player == null) return;
+        Vector3Int playerCell = TurnManager.instance.player.GetCurrentCellPosition();
+        ConsumeTile(playerCell);
+    }
+
+    // ─── Blue tile tracking (consumed after 2-hex move) ───
+    private Vector3Int blueTileActiveCell = new Vector3Int(0, -999, 0);
+
+    public void MarkBlueTileActive(Vector3Int cell) { blueTileActiveCell = cell; }
+
+    public void CheckBlueTileConsumption(Vector3Int newPlayerCell)
+    {
+        if (blueTileActiveCell.y == -999) return;
+        float dist = HexGridUtils.DistanceCube(blueTileActiveCell, newPlayerCell);
+        if (dist >= 2f)
+            ConsumeTile(blueTileActiveCell);
+        blueTileActiveCell = new Vector3Int(0, -999, 0);
+    }
+
+    // ─── Orange tile tracking (consumed when player leaves) ───
+    private Vector3Int orangeTileActiveCell = new Vector3Int(0, -999, 0);
+
+    public void MarkOrangeTileActive(Vector3Int cell) { orangeTileActiveCell = cell; }
+
+    public void CheckOrangeTileConsumption(Vector3Int newPlayerCell)
+    {
+        if (orangeTileActiveCell.y == -999) return;
+        if (orangeTileActiveCell != newPlayerCell)
+            ConsumeTile(orangeTileActiveCell);
+        orangeTileActiveCell = new Vector3Int(0, -999, 0);
+    }
+
+    /// <summary>
     /// Level sonunda veya reset'te temizle.
     /// </summary>
     public void ClearActiveTiles()
@@ -107,6 +156,8 @@ public class MagicTileManager : MonoBehaviour
         if (magicTileMap != null)
             magicTileMap.ClearAllTiles();
         activeTiles.Clear();
+        blueTileActiveCell = new Vector3Int(0, -999, 0);
+        orangeTileActiveCell = new Vector3Int(0, -999, 0);
     }
 
     // ─── Smart Positioning ───
@@ -134,6 +185,8 @@ public class MagicTileManager : MonoBehaviour
                 return PickCellMediumDistance(candidates, playerCell);
             case MagicTileType.Yellow:
                 return PickCellAwayFromEnemies(candidates, playerCell);
+            case MagicTileType.Orange:
+                return PickCellMediumDistance(candidates, playerCell);
             default:
                 return candidates[Random.Range(0, candidates.Count)];
         }
@@ -291,6 +344,7 @@ public class MagicTileManager : MonoBehaviour
             case MagicTileType.Blue: tile = blueTile; break;
             case MagicTileType.Green: tile = greenTile; break;
             case MagicTileType.Yellow: tile = yellowTile; break;
+            case MagicTileType.Orange: tile = orangeTile; break;
         }
 
         // Fallback: if tile asset not assigned, try loading from Resources
@@ -306,6 +360,7 @@ public class MagicTileManager : MonoBehaviour
                     case MagicTileType.Blue: blueTile = tile; break;
                     case MagicTileType.Green: greenTile = tile; break;
                     case MagicTileType.Yellow: yellowTile = tile; break;
+                    case MagicTileType.Orange: orangeTile = tile; break;
                 }
             }
         }
@@ -333,6 +388,7 @@ public class MagicTileManager : MonoBehaviour
             case MagicTileType.Blue: color = new Color(0.15f, 0.4f, 0.9f, 0.6f); break;
             case MagicTileType.Green: color = new Color(0.15f, 0.75f, 0.25f, 0.6f); break;
             case MagicTileType.Yellow: color = new Color(0.9f, 0.8f, 0.15f, 0.6f); break;
+            case MagicTileType.Orange: color = new Color(1f, 0.5f, 0.1f, 0.6f); break;
             default: color = Color.white; break;
         }
 

@@ -30,7 +30,7 @@ public class MagicTileSetup
         if (!AssetDatabase.IsValidFolder(resourcesDir))
             AssetDatabase.CreateFolder("Assets", "Resources");
 
-        string[] names = { "RedMagicTile", "BlueMagicTile", "GreenMagicTile", "YellowMagicTile" };
+        string[] names = { "RedMagicTile", "BlueMagicTile", "GreenMagicTile", "YellowMagicTile", "OrangeMagicTile" };
         string spritePath = "Assets/Sprites/Tiles";
         int created = 0;
 
@@ -113,6 +113,32 @@ public class MagicTileSetup
     // ─────────────────────────────────────────────
     // 2. MapLayerData asset'lerinde enchantChance ayarla
     // ─────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────
+    // 3. EnchantNodeUI + Canvas'ı sahneye ekle
+    // ─────────────────────────────────────────────
+
+    [MenuItem("Tools/Hex and Vex/Add Enchant Canvas to Scene")]
+    public static void AddEnchantCanvas()
+    {
+        // Zaten varsa uyar
+        if (Object.FindFirstObjectByType<EnchantNodeUI>() != null)
+        {
+            EditorUtility.DisplayDialog("Enchant Canvas", "EnchantNodeUI already exists in the scene.", "OK");
+            return;
+        }
+
+        GameObject go = new GameObject("EnchantNodeUI");
+        go.AddComponent<EnchantNodeUI>();
+        Undo.RegisterCreatedObjectUndo(go, "Add EnchantNodeUI");
+        UnityEditor.Selection.activeGameObject = go;
+
+        Debug.Log("[MagicTileSetup] EnchantNodeUI added to scene. Canvas will be built at runtime on first Show().");
+        EditorUtility.DisplayDialog("Enchant Canvas",
+            "EnchantNodeUI GameObject added to the scene.\n\n" +
+            "The canvas is built procedurally at runtime when Show() is first called.",
+            "OK");
+    }
 
     [MenuItem("Tools/Hex and Vex/Update Layer Data (Enchant Chance)")]
     public static void UpdateLayerDataAssets()

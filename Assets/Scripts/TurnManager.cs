@@ -522,7 +522,17 @@ public class TurnManager : MonoBehaviour
 
             // Blue Magic Tile: activate surge boot (range-2 movement) while standing on it
             if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType blueCheck) && blueCheck == MagicTileType.Blue)
+            {
                 RunManager.instance.surgeBootActive = true;
+                MagicTileManager.instance.MarkBlueTileActive(player.GetCurrentCellPosition());
+            }
+
+            // Orange Magic Tile: +1 extra move while standing on it (consumed on leave)
+            if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType orangeCheck) && orangeCheck == MagicTileType.Orange)
+            {
+                RunManager.instance.remainingMoves += 1;
+                MagicTileManager.instance.MarkOrangeTileActive(player.GetCurrentCellPosition());
+            }
         }
         TickThornLifetimes();
         if (CleanupDeadAndCheckLevelClear()) return;
@@ -1462,13 +1472,6 @@ public class TurnManager : MonoBehaviour
         GameEvents.SkipTurnPerformed(totalSkips);
         RunManager.instance.currentGold += RunManager.instance.skipBonusGold;
 
-        // Yellow Magic Tile: +10 gold on skip while standing on it
-        if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType yellowCheck) && yellowCheck == MagicTileType.Yellow)
-        {
-            RunManager.instance.currentGold += 10;
-            GameEvents.GoldChanged(RunManager.instance.currentGold);
-        }
-
         UpdateCoinUI();
 
         bool isMitsuri = RunManager.instance != null && RunManager.instance.selectedWeapon == WeaponType.MitsuriBlade;
@@ -1768,6 +1771,23 @@ public class TurnManager : MonoBehaviour
         // Surge Boot: hareketten sonra kapat
         if (RunManager.instance != null)
             RunManager.instance.surgeBootActive = false;
+
+        // Blue Magic Tile: 2+ hex hareket edildiyse tüket
+        if (MagicTileManager.instance != null)
+            MagicTileManager.instance.CheckBlueTileConsumption(playerCell);
+
+        // Yellow Magic Tile: üstüne basınca +10 gold ve tüket (single-use)
+        if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType yellowStep) && yellowStep == MagicTileType.Yellow)
+        {
+            RunManager.instance.currentGold += 10;
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
+            UpdateCoinUI();
+            MagicTileManager.instance.ConsumePlayerTile();
+        }
+
+        // Orange Magic Tile: üstünden ayrılınca tüket
+        if (MagicTileManager.instance != null)
+            MagicTileManager.instance.CheckOrangeTileConsumption(playerCell);
 
         // Layer 2: Explosion tile kontrolü (hazardCells içinde, bu yüzden önce kontrol et)
         if (LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Contains(playerCell))
@@ -2258,9 +2278,12 @@ public class TurnManager : MonoBehaviour
         foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
         // Dice Hoarder: +1 die per visited perk/shop level
         foreach (var p in RunManager.instance.activePerks) if (p is DiceHoarderPerk hoardPerk) { extraDices += hoardPerk.GetExtraDice(); }
-        // Green Magic Tile: +1 die while standing on it
+        // Green Magic Tile: +1 die while standing on it (single-use)
         if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType magicType) && magicType == MagicTileType.Green)
+        {
             extraDices += 1;
+            MagicTileManager.instance.ConsumePlayerTile();
+        }
         // Condensed Fury: roll 1 fewer die (minimum 1 die always)
         int diceReduction = 0;
         foreach (var p in RunManager.instance.activePerks) if (p is CondensedFuryPerk cfPerk) { diceReduction += cfPerk.GetDiceReduction(); }
@@ -2359,10 +2382,11 @@ public class TurnManager : MonoBehaviour
                 yield return StartCoroutine(diceUI.SkippableWait(0.5f));
             }
         }
-        // Red Magic Tile: 2x damage while standing on it
+        // Red Magic Tile: 2x damage while standing on it (single-use)
         if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType redCheck) && redCheck == MagicTileType.Red)
         {
             finalDamage *= 2;
+            MagicTileManager.instance.ConsumePlayerTile();
             if (!skipDiceVisuals)
             {
                 UpdateTotalDamageDisplay(finalDamage);

@@ -117,7 +117,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Shop:          return "SHOP";
             case MapNodeType.PerkSelection: return "PERK";
             case MapNodeType.Rest:          return "REST";
-            case MapNodeType.Enchant:       return "ENCHANT";
+            case MapNodeType.Enchant:       return "";
             case MapNodeType.Boss:          return "BOSS";
             default:                        return "?";
         }

@@ -462,9 +462,9 @@ ScriptedImporter:
       additiveSortOrder: 0
       cellRect:
         x: 22
-        y: 736
-        width: 633
-        height: 256
+        y: 638
+        width: 429
+        height: 345
       spriteId: 5c724cbf2b6575944af8539af7ca7662
     linkedCells: []
     tileCells: []
@@ -500,4 +500,4 @@ ScriptedImporter:
   secondarySpriteTextures: []
   spritePackingTag: 
   canvasSize: {x: 1000, y: 1000}
-  previousTextureSize: {x: 1024, y: 512}
+  previousTextureSize: {x: 512, y: 512}

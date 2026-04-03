@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class GravitonCorePerk : BasePerk
@@ -24,7 +25,7 @@ public class GravitonCorePerk : BasePerk
 
             Vector3Int enemyCell = enemy.GetCurrentCellPosition();
             float dist = HexGridUtils.DistanceCube(enemyCell, playerCell);
-            if (dist < 1.5f || dist > 3.5f) continue; // 2-3 hex range (skip adjacent, skip >3)
+            if (dist < 1.5f || dist > 3.5f) continue; // 2-3 hex range
 
             // Find neighbor hex closest to player
             Vector3Int[] offsets = (enemyCell.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
@@ -48,32 +49,41 @@ public class GravitonCorePerk : BasePerk
 
             if (bestCell != enemyCell)
             {
-                // %50 max HP hasar
-                int damage = Mathf.Max(1, Mathf.CeilToInt(enemy.health.maxHP * 0.5f));
-                enemy.health.TakeDamage(damage);
-
-                if (enemy.health.currentHP > 0)
-                    enemy.StartKnockbackMovement(bestCell);
-
+                // Sadece çek, hasar yok
+                enemy.StartKnockbackMovement(bestCell);
                 pulled.Add(enemy);
             }
         }
 
         if (pulled.Count > 0)
         {
+            // Vacuum VFX + ses (BioMagnetism ile aynı)
+            if (tm.vacuumVfxPrefab != null)
+                tm.StartCoroutine(VacuumVFX(tm.player.transform.position, tm.vacuumVfxPrefab));
+            if (AudioManager.instance != null) AudioManager.instance.PlayVacuum();
+
             TriggerVisualPop();
             CameraController.ShakeLight();
-            if (AudioManager.instance != null) AudioManager.instance.PlayHit();
-
-            // Kill reward
-            if (tm.coinService != null)
-            {
-                foreach (var e in pulled)
-                {
-                    if (e != null && e.health.currentHP <= 0)
-                        tm.coinService.ProcessKillRewards(e);
-                }
-            }
         }
+    }
+
+    private IEnumerator VacuumVFX(Vector3 pos, GameObject prefab)
+    {
+        GameObject vfx = Instantiate(prefab, pos, Quaternion.identity);
+        SpriteRenderer[] renderers = vfx.GetComponentsInChildren<SpriteRenderer>();
+        float duration = 0.4f;
+        float elapsed = 0f;
+        Vector3 startScale = Vector3.one * 12f;
+        Vector3 endScale = Vector3.one * 1.2f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float alpha = t < 0.2f ? Mathf.Lerp(0f, 0.4f, t / 0.2f) : Mathf.Lerp(0.4f, 0f, (t - 0.2f) / 0.8f);
+            vfx.transform.localScale = Vector3.Lerp(startScale, endScale, t);
+            foreach (var sr in renderers) { if (sr != null) { Color c = sr.color; c.a = alpha; sr.color = c; } }
+            yield return null;
+        }
+        Destroy(vfx);
     }
 }
