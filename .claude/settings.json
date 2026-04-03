@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(C:/Users/deniz/AppData/Local/Programs/Python/Python312/python.exe -c ':*)",
+      "Bash(C:/Users/deniz/AppData/Local/Programs/Python/Python312/python.exe)"
+    ]
+  }
+}

@@ -1067,6 +1067,13 @@ public static class MapGenerator
 
     private static void EnforceMinimumEnchant(MapData map, int totalRows)
     {
+        // Enchant sadece çift satırlarda olabilir — tek satırdaki enchant'ı combat'a çevir
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType == MapNodeType.Enchant && node.row % 2 != 0)
+                node.nodeType = MapNodeType.Combat;
+        }
+
         bool hasEnchant = false;
         foreach (var node in map.nodes)
         {
@@ -1079,6 +1086,7 @@ public static class MapGenerator
         {
             if (node.nodeType != MapNodeType.Combat) continue;
             if (node.row <= 1 || node.row >= totalRows) continue;
+            if (node.row % 2 != 0) continue; // sadece çift satırlar
 
             if (HasRewardParent(map, node)) continue;
             bool childReward = false;
@@ -1093,13 +1101,14 @@ public static class MapGenerator
                 bestCandidate = node;
         }
 
-        // Uygun aday yoksa yasagi gevset
+        // Uygun aday yoksa yasagi gevset — ama yine çift satır
         if (bestCandidate == null)
         {
             foreach (var node in map.nodes)
             {
                 if (node.nodeType != MapNodeType.Combat) continue;
                 if (node.row <= 0 || node.row >= totalRows) continue;
+                if (node.row % 2 != 0) continue;
                 if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
                     bestCandidate = node;
             }
