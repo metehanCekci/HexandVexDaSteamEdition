@@ -123,6 +123,9 @@ public class EnemyMovement : MonoBehaviour
 
         var warlock = GetComponent<WarlockEnemyAI>();
         if (warlock != null) { warlock.OnWarlockDied(); return; }
+
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null) { ninja.OnNinjaDied(); return; }
     }
 
     private void HandleDamaged(int remainingHP)
@@ -132,6 +135,10 @@ public class EnemyMovement : MonoBehaviour
 
         var bruiser = GetComponent<BruiserEnemyAI>();
         if (bruiser != null) bruiser.HandleDamaged();
+
+        // Ninja: vurulunca hemen kaç (sersem gibi)
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null) ninja.OnHit();
     }
 
     // ─── Movement ───
@@ -476,6 +483,19 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null)
+        {
+            // Ninja: sadece kaçış intent'i göster (saldırı döngüsü ExecuteLockedMove'da)
+            if (!isStunned && health.currentHP > 0 && ninja.ShouldFlee(playerCell))
+            {
+                hasLockedTarget = false;
+                var visuals = GetComponent<EnemyVisuals>();
+                if (visuals != null) visuals.SetArrowVisibility(false);
+            }
+            return;
+        }
+
         var melee = GetComponent<MeleeEnemyAI>();
         if (melee != null)
         {
@@ -503,6 +523,14 @@ public class EnemyMovement : MonoBehaviour
         if (warlock != null)
         {
             ExecuteWarlockMove(warlock);
+            return;
+        }
+
+        // Ninja: kendi turn coroutine'ini başlat
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null)
+        {
+            StartCoroutine(ninja.ExecuteNinjaTurn());
             return;
         }
 
@@ -862,4 +890,5 @@ public class EnemyMovement : MonoBehaviour
     public bool IsTotem => GetComponent<TotemEnemyAI>() != null;
     public bool IsBoss => GetComponent<SpawnerBossAI>() != null;
     public bool IsWarlock => GetComponent<WarlockEnemyAI>() != null;
+    public bool IsNinja => GetComponent<NinjaEnemyAI>() != null;
 }
