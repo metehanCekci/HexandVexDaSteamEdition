@@ -404,8 +404,7 @@ public class EnchantNodeUI : MonoBehaviour
         panelRT.anchorMax = Vector2.one;
         panelRT.offsetMin = Vector2.zero;
         panelRT.offsetMax = Vector2.zero;
-        Image panelBG = panelGO.AddComponent<Image>();
-        panelBG.color = new Color(0.02f, 0.02f, 0.06f, 0f);
+        // No background image — keep the normal map visible behind enchant cards
         panelCG = panelGO.AddComponent<CanvasGroup>();
         enchantPanel = panelGO;
 
