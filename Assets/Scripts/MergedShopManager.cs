@@ -293,8 +293,8 @@ public class MergedShopManager : MonoBehaviour
         foreach (var item in allItems)
         {
             if (item == null) continue;
-            // MutationCatalyst = secret item
-            if (item is MutationCatalyst)
+            // MutationCatalyst artık normal item — secret item değil
+            if (item is SecretPerkOrb)
             {
                 if (secretItem == null) secretItem = item;
                 continue;
@@ -434,6 +434,7 @@ public class MergedShopManager : MonoBehaviour
             perkRerollButton.onClick.RemoveAllListeners();
             perkRerollButton.onClick.AddListener(TryReroll);
             AddRuntimeHoverScale(perkRerollButton.gameObject);
+            Debug.Log($"[MergedShop] Reroll button wired. Listeners after bind: {perkRerollButton.onClick.GetPersistentEventCount()} persistent. hasPerkReroll={RunManager.instance?.hasPerkReroll}");
         }
 
         StopAllCoroutines();
@@ -638,10 +639,12 @@ public class MergedShopManager : MonoBehaviour
 
     private void TryReroll()
     {
-        if (RunManager.instance == null) return;
+        Debug.Log($"[MergedShop] >>> TryReroll CALLED on {this.GetType().Name}");
+        if (RunManager.instance == null) { Debug.Log("[MergedShop] TryReroll: RunManager null!"); return; }
 
         // Mutation Catalyst: bedava reroll (tek seferlik)
         bool freeReroll = RunManager.instance.hasPerkReroll;
+        Debug.Log($"[MergedShop] TryReroll: hasPerkReroll={freeReroll}, cost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={RunManager.instance.currentGold}");
         if (!freeReroll)
         {
             int cost = Mathf.RoundToInt(currentPerkRerollCost);
@@ -652,10 +655,14 @@ public class MergedShopManager : MonoBehaviour
         else
         {
             RunManager.instance.hasPerkReroll = false;
+            // Bedava reroll maliyeti artırmasın
         }
 
-        perkRerollCount++;
-        currentPerkRerollCost = perkRerollBaseCost + perkRerollIncrement * perkRerollCount;
+        if (!freeReroll)
+        {
+            perkRerollCount++;
+            currentPerkRerollCost = perkRerollBaseCost + perkRerollIncrement * perkRerollCount;
+        }
 
         GeneratePerkChoices();
         GenerateItemChoices();
@@ -666,12 +673,13 @@ public class MergedShopManager : MonoBehaviour
     private void RefreshRerollButton()
     {
         if (RunManager.instance == null) return;
-        int cost = Mathf.RoundToInt(currentPerkRerollCost);
+        bool free = RunManager.instance.hasPerkReroll;
+        int cost = free ? 0 : Mathf.RoundToInt(currentPerkRerollCost);
         if (perkRerollPriceText != null)
             perkRerollPriceText.text = $"REROLL  <color=#FFD933>{cost}</color>";
         PositionCoinIcon(rerollCoinRT, perkRerollPriceText);
         if (perkRerollButton != null)
-            perkRerollButton.interactable = RunManager.instance.currentGold >= cost;
+            perkRerollButton.interactable = free || RunManager.instance.currentGold >= cost;
     }
 
     private void HidePerkSection()
@@ -720,7 +728,7 @@ public class MergedShopManager : MonoBehaviour
             while (used.Contains(itemPool.IndexOf(picked))
                 || shownItemNames.Contains(picked.itemName)
                 || (secretItem != null && picked.itemName == secretItem.itemName)
-                || (RunManager.instance != null && RunManager.instance.hasPerkReroll && picked is MutationCatalyst));
+                || (RunManager.instance != null && RunManager.instance.hasPerkReroll && picked is MutationCatalyst)); // Zaten reroll hakkı varsa Catalyst gösterme
 
             if (picked != null) { used.Add(itemPool.IndexOf(picked)); shownItemNames.Add(picked.itemName); }
             currentItems.Add(picked);
