@@ -90,7 +90,13 @@ public class MergedShopManager : MonoBehaviour
 
     void Awake()
     {
-        if (instance == null) instance = this;
+        if (instance != null && instance != this)
+        {
+            Debug.LogWarning("[MergedShop] Duplicate instance destroyed!");
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
 
         // Referanslar kopuksa runtime'da otomatik bul
         if (panel == null) AutoWireReferences();
@@ -644,12 +650,14 @@ public class MergedShopManager : MonoBehaviour
 
         // Mutation Catalyst: bedava reroll (tek seferlik)
         bool freeReroll = RunManager.instance.hasPerkReroll;
-        Debug.Log($"[MergedShop] TryReroll: hasPerkReroll={freeReroll}, cost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={RunManager.instance.currentGold}");
+        int goldBefore = RunManager.instance.currentGold;
+        Debug.Log($"[MergedShop] TryReroll: hasPerkReroll={freeReroll}, baseCost={perkRerollBaseCost}, increment={perkRerollIncrement}, rerollCount={perkRerollCount}, currentCost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={goldBefore}");
         if (!freeReroll)
         {
             int cost = Mathf.RoundToInt(currentPerkRerollCost);
             if (RunManager.instance.currentGold < cost) { StartCoroutine(FlashText(goldText)); return; }
             RunManager.instance.currentGold -= cost;
+            Debug.Log($"[MergedShop] TryReroll CHARGED: {cost} gold. Before={goldBefore}, After={RunManager.instance.currentGold}");
             GameEvents.GoldChanged(RunManager.instance.currentGold);
         }
         else
