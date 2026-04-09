@@ -995,9 +995,9 @@ public class MergedShopPerkSlot
     {
         switch (r)
         {
-            case PerkRarity.Common:    return 8;
-            case PerkRarity.Rare:      return 15;
-            case PerkRarity.Epic:      return 25;
+            case PerkRarity.Common:    return 15;
+            case PerkRarity.Rare:      return 20;
+            case PerkRarity.Epic:      return 30;
             case PerkRarity.Legendary: return 40;
             case PerkRarity.Secret:    return 50;
             default:                   return 10;
