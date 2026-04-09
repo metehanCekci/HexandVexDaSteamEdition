@@ -691,6 +691,16 @@ public class TurnManager : MonoBehaviour
     // ========================================================
     // DODGE / BRIBE İÇİN KALKAN KIRILMA EFEKTİ
     // ========================================================
+
+    /// <summary>
+    /// Public wrapper: düşman AI'ları dahil her yerden çağrılabilir.
+    /// Kalkan kırılma efektini başlatır ve otomatik olarak temizler.
+    /// </summary>
+    public void PlayShieldBreakFX(Vector3 pos)
+    {
+        StartCoroutine(AnimateShieldBreakFX(pos));
+    }
+
     private IEnumerator AnimateShieldBreakFX(Vector3 pos)
     {
         if (dodgeEffectPrefab == null) yield break;

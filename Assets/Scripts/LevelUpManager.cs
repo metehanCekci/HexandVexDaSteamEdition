@@ -209,9 +209,11 @@ public class LevelUpManager : MonoBehaviour
                 choiceButtons[i].onClick.AddListener(() => SelectPerk(index));
                 choiceButtons[i].gameObject.SetActive(true);
                 choiceButtons[i].transform.localScale = Vector3.zero; // flash önleme
-                // CardTilt3D'nin scale'ı geri yazmasını engelle
+                // Scale kontrol eden scriptlerin müdahalesini engelle
                 var tilt = choiceButtons[i].GetComponent<CardTilt3D>();
                 if (tilt != null) tilt.scaleOverridden = true;
+                var hoverFx = choiceButtons[i].GetComponent<ShopCardHover>();
+                if (hoverFx != null) hoverFx.scaleOverridden = true;
             }
             else
             {
@@ -540,9 +542,11 @@ public class LevelUpManager : MonoBehaviour
         }
         card.localScale = Vector3.one;
 
-        // CardTilt3D'ye animasyon bitti, scale kontrolü sende de
+        // Scale kontrol eden scriptlere animasyon bitti sinyali
         var tilt = card.GetComponent<CardTilt3D>();
         if (tilt != null) tilt.RefreshBaseScale();
+        var hover = card.GetComponent<ShopCardHover>();
+        if (hover != null) hover.RefreshBaseScale();
     }
 
     private IEnumerator CardIdleBounce(Transform card)

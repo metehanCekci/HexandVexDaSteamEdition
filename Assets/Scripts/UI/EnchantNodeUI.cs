@@ -66,6 +66,8 @@ public class EnchantNodeUI : MonoBehaviour
                 choiceButtons[i].transform.localScale = Vector3.zero;
                 var tilt = choiceButtons[i].GetComponent<CardTilt3D>();
                 if (tilt != null) tilt.scaleOverridden = true;
+                var hover = choiceButtons[i].GetComponent<ShopCardHover>();
+                if (hover != null) hover.scaleOverridden = true;
             }
         }
 
@@ -181,6 +183,8 @@ public class EnchantNodeUI : MonoBehaviour
 
         var tilt = card.GetComponent<CardTilt3D>();
         if (tilt != null) tilt.RefreshBaseScale();
+        var hoverFx = card.GetComponent<ShopCardHover>();
+        if (hoverFx != null) hoverFx.RefreshBaseScale();
 
         StartCoroutine(CardIdleBounce(card, index));
     }

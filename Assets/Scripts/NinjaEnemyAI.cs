@@ -180,9 +180,8 @@ public class NinjaEnemyAI : MonoBehaviour
 
             if (dodged)
             {
-                if (AudioManager.instance != null) AudioManager.instance.PlayShieldBreak();
-                if (TurnManager.instance.dodgeEffectPrefab != null)
-                    Object.Instantiate(TurnManager.instance.dodgeEffectPrefab, TurnManager.instance.player.transform.position, Quaternion.identity);
+                if (TurnManager.instance != null)
+                    TurnManager.instance.PlayShieldBreakFX(TurnManager.instance.player.transform.position);
             }
             else if (RunManager.instance != null && RunManager.instance.hasBioBarrier)
             {

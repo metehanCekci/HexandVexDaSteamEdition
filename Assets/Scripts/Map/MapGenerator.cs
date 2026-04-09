@@ -637,6 +637,30 @@ public static class MapGenerator
             for (int c = 0; c < remaining.Count; c++)
                 remaining[c].column = c;
         }
+
+        // ─── ID Reindex ───
+        // GetNode(id) id'yi list index olarak kullanıyor.
+        // Node silindikten sonra id'ler ve childIds'ler yeniden eşlenmeli.
+        Dictionary<int, int> idRemap = new Dictionary<int, int>();
+        for (int i = 0; i < map.nodes.Count; i++)
+        {
+            idRemap[map.nodes[i].id] = i;
+            map.nodes[i].id = i;
+        }
+
+        // childIds'leri yeni id'lerle güncelle
+        foreach (var node in map.nodes)
+        {
+            for (int c = 0; c < node.childIds.Count; c++)
+            {
+                if (idRemap.ContainsKey(node.childIds[c]))
+                    node.childIds[c] = idRemap[node.childIds[c]];
+            }
+        }
+
+        // bossNodeId güncelle
+        if (idRemap.ContainsKey(map.bossNodeId))
+            map.bossNodeId = idRemap[map.bossNodeId];
     }
 
     // ═══════════════════════════════════════════════════════

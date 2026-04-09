@@ -334,12 +334,30 @@ public static class MergedShopSetup
     // ─── Hover Scale ───
     static void AddHoverScale(GameObject go)
     {
-        EventTrigger trigger = go.AddComponent<EventTrigger>();
+        // ShopCardHover varsa onu kullan (kartlar icin dramatik efekt)
+        if (go.GetComponent<ShopCardHover>() == null)
+            go.AddComponent<ShopCardHover>();
+
+        EventTrigger trigger = go.GetComponent<EventTrigger>();
+        if (trigger == null) trigger = go.AddComponent<EventTrigger>();
+        trigger.triggers.Clear();
+
         EventTrigger.Entry enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-        enter.callback.AddListener((_) => go.transform.localScale = new Vector3(1.05f, 1.05f, 1f));
+        enter.callback.AddListener((_) =>
+        {
+            var hover = go.GetComponent<ShopCardHover>();
+            if (hover != null) hover.HoverIn();
+            else go.transform.localScale = new Vector3(1.18f, 1.18f, 1f);
+        });
         trigger.triggers.Add(enter);
+
         EventTrigger.Entry exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
-        exit.callback.AddListener((_) => go.transform.localScale = Vector3.one);
+        exit.callback.AddListener((_) =>
+        {
+            var hover = go.GetComponent<ShopCardHover>();
+            if (hover != null) hover.HoverOut();
+            else go.transform.localScale = Vector3.one;
+        });
         trigger.triggers.Add(exit);
     }
 

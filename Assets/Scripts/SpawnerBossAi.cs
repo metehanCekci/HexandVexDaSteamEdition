@@ -388,8 +388,8 @@ public class SpawnerBossAI : MonoBehaviour
                 bool dodged = Random.value < RunManager.instance.dodgeChance;
                 if (dodged)
                 {
-                    if (TurnManager.instance.dodgeEffectPrefab != null)
-                        Instantiate(TurnManager.instance.dodgeEffectPrefab, TurnManager.instance.player.transform.position, Quaternion.identity);
+                    if (TurnManager.instance != null)
+                        TurnManager.instance.PlayShieldBreakFX(TurnManager.instance.player.transform.position);
                 }
                 else if (RunManager.instance.hasBioBarrier)
                 {
