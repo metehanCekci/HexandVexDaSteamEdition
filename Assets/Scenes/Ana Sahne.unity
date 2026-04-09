@@ -25744,7 +25744,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000029}
-  - component: {fileID: 9100000029b}
+  - component: {fileID: 9100100001}
   m_Layer: 5
   m_Name: ContinueButton
   m_TagString: Untagged
@@ -25771,7 +25771,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 50}
   m_SizeDelta: {x: 220, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000029b
+--- !u!114 &9100100001
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -25848,7 +25848,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000040}
-  - component: {fileID: 9100000040b}
+  - component: {fileID: 9100100002}
   m_Layer: 5
   m_Name: PerkCard_0
   m_TagString: Untagged
@@ -25868,12 +25868,12 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 9100000040i}
-  - {fileID: 9100000040n}
-  - {fileID: 9100000040r}
-  - {fileID: 9100000040l}
-  - {fileID: 9100000040d}
-  - {fileID: 9100000040s}
+  - {fileID: 9100100004}
+  - {fileID: 9100100006}
+  - {fileID: 9100100007}
+  - {fileID: 9100100005}
+  - {fileID: 9100100003}
+  - {fileID: 9100100008}
   m_Father: {fileID: 9100000031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.1, y: 0.05}
@@ -25881,7 +25881,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000040b
+--- !u!114 &9100100002
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -25906,11 +25906,11 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 9100000040i}
+  m_TargetGraphic: {fileID: 9100100004}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9100000040i
+--- !u!114 &9100100004
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -25925,7 +25925,7 @@ MonoBehaviour:
   m_Color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_RaycastTarget: 1
   m_Sprite: {fileID: 0}
---- !u!114 &9100000040n
+--- !u!114 &9100100006
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -25946,7 +25946,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_enableWordWrapping: 1
   m_overflowMode: 0
---- !u!114 &9100000040r
+--- !u!114 &9100100007
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -25966,7 +25966,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_enableWordWrapping: 0
   m_overflowMode: 0
---- !u!114 &9100000040l
+--- !u!114 &9100100005
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -25986,7 +25986,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_enableWordWrapping: 0
   m_overflowMode: 0
---- !u!114 &9100000040d
+--- !u!114 &9100100003
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -26006,7 +26006,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_enableWordWrapping: 1
   m_overflowMode: 0
---- !u!1 &9100000040sg
+--- !u!1 &9100100009
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -26014,7 +26014,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9100000040s}
+  - component: {fileID: 9100100008}
   m_Layer: 5
   m_Name: SoldOutOverlay_P0
   m_TagString: Untagged
@@ -26022,13 +26022,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!224 &9100000040s
+--- !u!224 &9100100008
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9100000040sg}
+  m_GameObject: {fileID: 9100100009}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -26041,7 +26041,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &9100000041g
+--- !u!1 &9100100010
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -26050,7 +26050,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000042}
-  - component: {fileID: 9100000042b}
+  - component: {fileID: 9100100011}
   m_Layer: 5
   m_Name: PerkCard_1
   m_TagString: Untagged
@@ -26064,18 +26064,18 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9100000041g}
+  m_GameObject: {fileID: 9100100010}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 9100000042i}
-  - {fileID: 9100000042n}
-  - {fileID: 9100000042r}
-  - {fileID: 9100000042l}
-  - {fileID: 9100000042d}
-  - {fileID: 9100000042s}
+  - {fileID: 9100100013}
+  - {fileID: 9100100015}
+  - {fileID: 9100100016}
+  - {fileID: 9100100014}
+  - {fileID: 9100100012}
+  - {fileID: 9100100017}
   m_Father: {fileID: 9100000031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.37, y: 0.05}
@@ -26083,13 +26083,13 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000042b
+--- !u!114 &9100100011
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9100000041g}
+  m_GameObject: {fileID: 9100100010}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -26108,11 +26108,11 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 9100000042i}
+  m_TargetGraphic: {fileID: 9100100013}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9100000042i
+--- !u!114 &9100100013
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -26120,7 +26120,7 @@ MonoBehaviour:
   m_Color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_RaycastTarget: 1
   m_Sprite: {fileID: 0}
---- !u!114 &9100000042n
+--- !u!114 &9100100015
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26130,7 +26130,7 @@ MonoBehaviour:
   m_fontSize: 22
   m_fontStyle: 1
   m_enableWordWrapping: 1
---- !u!114 &9100000042r
+--- !u!114 &9100100016
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26138,7 +26138,7 @@ MonoBehaviour:
   m_Color: {r: 0.8, g: 0.8, b: 0.8, a: 1}
   m_text: COMMON
   m_fontSize: 16
---- !u!114 &9100000042l
+--- !u!114 &9100100014
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26146,7 +26146,7 @@ MonoBehaviour:
   m_Color: {r: 0.5, g: 1, b: 0.5, a: 1}
   m_text: Lv 0
   m_fontSize: 16
---- !u!114 &9100000042d
+--- !u!114 &9100100012
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26155,19 +26155,19 @@ MonoBehaviour:
   m_text: Description
   m_fontSize: 14
   m_enableWordWrapping: 1
---- !u!1 &9100000042sg
+--- !u!1 &9100100018
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9100000042s}
+  - component: {fileID: 9100100017}
   m_Layer: 5
   m_Name: SoldOutOverlay_P1
   m_IsActive: 0
---- !u!224 &9100000042s
+--- !u!224 &9100100017
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000042sg}
+  m_GameObject: {fileID: 9100100018}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 9100000042}
@@ -26176,7 +26176,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &9100000043g
+--- !u!1 &9100100019
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -26185,7 +26185,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000044}
-  - component: {fileID: 9100000044b}
+  - component: {fileID: 9100100020}
   m_Layer: 5
   m_Name: PerkCard_2
   m_TagString: Untagged
@@ -26199,18 +26199,18 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9100000043g}
+  m_GameObject: {fileID: 9100100019}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 9100000044i}
-  - {fileID: 9100000044n}
-  - {fileID: 9100000044r}
-  - {fileID: 9100000044l}
-  - {fileID: 9100000044d}
-  - {fileID: 9100000044s}
+  - {fileID: 9100100022}
+  - {fileID: 9100100024}
+  - {fileID: 9100100025}
+  - {fileID: 9100100023}
+  - {fileID: 9100100021}
+  - {fileID: 9100100026}
   m_Father: {fileID: 9100000031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.65, y: 0.05}
@@ -26218,7 +26218,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000044b
+--- !u!114 &9100100020
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -26236,11 +26236,11 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 9100000044i}
+  m_TargetGraphic: {fileID: 9100100022}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9100000044i
+--- !u!114 &9100100022
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -26248,7 +26248,7 @@ MonoBehaviour:
   m_Color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_RaycastTarget: 1
   m_Sprite: {fileID: 0}
---- !u!114 &9100000044n
+--- !u!114 &9100100024
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26258,7 +26258,7 @@ MonoBehaviour:
   m_fontSize: 22
   m_fontStyle: 1
   m_enableWordWrapping: 1
---- !u!114 &9100000044r
+--- !u!114 &9100100025
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26266,7 +26266,7 @@ MonoBehaviour:
   m_Color: {r: 0.8, g: 0.8, b: 0.8, a: 1}
   m_text: COMMON
   m_fontSize: 16
---- !u!114 &9100000044l
+--- !u!114 &9100100023
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26274,7 +26274,7 @@ MonoBehaviour:
   m_Color: {r: 0.5, g: 1, b: 0.5, a: 1}
   m_text: Lv 0
   m_fontSize: 16
---- !u!114 &9100000044d
+--- !u!114 &9100100021
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26283,19 +26283,19 @@ MonoBehaviour:
   m_text: Description
   m_fontSize: 14
   m_enableWordWrapping: 1
---- !u!1 &9100000044sg
+--- !u!1 &9100100027
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9100000044s}
+  - component: {fileID: 9100100026}
   m_Layer: 5
   m_Name: SoldOutOverlay_P2
   m_IsActive: 0
---- !u!224 &9100000044s
+--- !u!224 &9100100026
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000044sg}
+  m_GameObject: {fileID: 9100100027}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 9100000044}
@@ -26304,30 +26304,30 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &9100000049g
+--- !u!1 &9100100028
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000050}
-  - component: {fileID: 9100000050b}
+  - component: {fileID: 9100100029}
   m_Layer: 5
   m_Name: PerkRerollButton
   m_IsActive: 1
 --- !u!224 &9100000050
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000049g}
+  m_GameObject: {fileID: 9100100028}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 9100000050t}
+  - {fileID: 9100100030}
   m_Father: {fileID: 9100000031}
   m_AnchorMin: {x: 0.2, y: 0}
   m_AnchorMax: {x: 0.8, y: 0.12}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000050b
+--- !u!114 &9100100029
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -26349,7 +26349,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9100000050t
+--- !u!114 &9100100030
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26360,7 +26360,7 @@ MonoBehaviour:
   m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
---- !u!1 &9100000060g
+--- !u!1 &9100100031
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
@@ -26372,7 +26372,7 @@ GameObject:
 --- !u!224 &9100000061
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000060g}
+  m_GameObject: {fileID: 9100100031}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 9100000070}
@@ -26384,34 +26384,34 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: -80}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &9100000069g
+--- !u!1 &9100100032
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000070}
-  - component: {fileID: 9100000070b}
+  - component: {fileID: 9100100033}
   m_Layer: 5
   m_Name: ItemCard_0
   m_IsActive: 1
 --- !u!224 &9100000070
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000069g}
+  m_GameObject: {fileID: 9100100032}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 9100000070i}
-  - {fileID: 9100000070n}
-  - {fileID: 9100000070d}
-  - {fileID: 9100000070p}
-  - {fileID: 9100000070s}
+  - {fileID: 9100100035}
+  - {fileID: 9100100036}
+  - {fileID: 9100100034}
+  - {fileID: 9100100037}
+  - {fileID: 9100100038}
   m_Father: {fileID: 9100000061}
   m_AnchorMin: {x: 0.03, y: 0.05}
   m_AnchorMax: {x: 0.3, y: 0.9}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000070b
+--- !u!114 &9100100033
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -26429,11 +26429,11 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 9100000070i}
+  m_TargetGraphic: {fileID: 9100100035}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9100000070i
+--- !u!114 &9100100035
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -26441,7 +26441,7 @@ MonoBehaviour:
   m_Color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_RaycastTarget: 1
   m_Sprite: {fileID: 0}
---- !u!114 &9100000070n
+--- !u!114 &9100100036
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26451,7 +26451,7 @@ MonoBehaviour:
   m_fontSize: 22
   m_fontStyle: 1
   m_enableWordWrapping: 1
---- !u!114 &9100000070d
+--- !u!114 &9100100034
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26460,7 +26460,7 @@ MonoBehaviour:
   m_text: Description
   m_fontSize: 14
   m_enableWordWrapping: 1
---- !u!114 &9100000070p
+--- !u!114 &9100100037
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26469,19 +26469,19 @@ MonoBehaviour:
   m_text: '0'
   m_fontSize: 20
   m_fontStyle: 1
---- !u!1 &9100000070sg
+--- !u!1 &9100100039
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9100000070s}
+  - component: {fileID: 9100100038}
   m_Layer: 5
   m_Name: SoldOutOverlay_I0
   m_IsActive: 0
---- !u!224 &9100000070s
+--- !u!224 &9100100038
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000070sg}
+  m_GameObject: {fileID: 9100100039}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 9100000070}
@@ -26490,34 +26490,34 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &9100000071g
+--- !u!1 &9100100040
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000072}
-  - component: {fileID: 9100000072b}
+  - component: {fileID: 9100100041}
   m_Layer: 5
   m_Name: ItemCard_1
   m_IsActive: 1
 --- !u!224 &9100000072
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000071g}
+  m_GameObject: {fileID: 9100100040}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 9100000072i}
-  - {fileID: 9100000072n}
-  - {fileID: 9100000072d}
-  - {fileID: 9100000072p}
-  - {fileID: 9100000072s}
+  - {fileID: 9100100043}
+  - {fileID: 9100100044}
+  - {fileID: 9100100042}
+  - {fileID: 9100100045}
+  - {fileID: 9100100046}
   m_Father: {fileID: 9100000061}
   m_AnchorMin: {x: 0.35, y: 0.05}
   m_AnchorMax: {x: 0.62, y: 0.9}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000072b
+--- !u!114 &9100100041
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -26535,11 +26535,11 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 9100000072i}
+  m_TargetGraphic: {fileID: 9100100043}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9100000072i
+--- !u!114 &9100100043
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -26547,7 +26547,7 @@ MonoBehaviour:
   m_Color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_RaycastTarget: 1
   m_Sprite: {fileID: 0}
---- !u!114 &9100000072n
+--- !u!114 &9100100044
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26557,7 +26557,7 @@ MonoBehaviour:
   m_fontSize: 22
   m_fontStyle: 1
   m_enableWordWrapping: 1
---- !u!114 &9100000072d
+--- !u!114 &9100100042
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26566,7 +26566,7 @@ MonoBehaviour:
   m_text: Description
   m_fontSize: 14
   m_enableWordWrapping: 1
---- !u!114 &9100000072p
+--- !u!114 &9100100045
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26575,19 +26575,19 @@ MonoBehaviour:
   m_text: '0'
   m_fontSize: 20
   m_fontStyle: 1
---- !u!1 &9100000072sg
+--- !u!1 &9100100047
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9100000072s}
+  - component: {fileID: 9100100046}
   m_Layer: 5
   m_Name: SoldOutOverlay_I1
   m_IsActive: 0
---- !u!224 &9100000072s
+--- !u!224 &9100100046
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000072sg}
+  m_GameObject: {fileID: 9100100047}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 9100000072}
@@ -26596,34 +26596,34 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &9100000073g
+--- !u!1 &9100100048
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9100000074}
-  - component: {fileID: 9100000074b}
+  - component: {fileID: 9100100049}
   m_Layer: 5
   m_Name: ItemCard_2
   m_IsActive: 1
 --- !u!224 &9100000074
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000073g}
+  m_GameObject: {fileID: 9100100048}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 9100000074i}
-  - {fileID: 9100000074n}
-  - {fileID: 9100000074d}
-  - {fileID: 9100000074p}
-  - {fileID: 9100000074s}
+  - {fileID: 9100100051}
+  - {fileID: 9100100052}
+  - {fileID: 9100100050}
+  - {fileID: 9100100053}
+  - {fileID: 9100100054}
   m_Father: {fileID: 9100000061}
   m_AnchorMin: {x: 0.67, y: 0.05}
   m_AnchorMax: {x: 0.94, y: 0.9}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &9100000074b
+--- !u!114 &9100100049
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -26641,11 +26641,11 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 9100000074i}
+  m_TargetGraphic: {fileID: 9100100051}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9100000074i
+--- !u!114 &9100100051
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -26653,7 +26653,7 @@ MonoBehaviour:
   m_Color: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_RaycastTarget: 1
   m_Sprite: {fileID: 0}
---- !u!114 &9100000074n
+--- !u!114 &9100100052
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26663,7 +26663,7 @@ MonoBehaviour:
   m_fontSize: 22
   m_fontStyle: 1
   m_enableWordWrapping: 1
---- !u!114 &9100000074d
+--- !u!114 &9100100050
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26672,7 +26672,7 @@ MonoBehaviour:
   m_text: Description
   m_fontSize: 14
   m_enableWordWrapping: 1
---- !u!114 &9100000074p
+--- !u!114 &9100100053
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -26681,19 +26681,19 @@ MonoBehaviour:
   m_text: '0'
   m_fontSize: 20
   m_fontStyle: 1
---- !u!1 &9100000074sg
+--- !u!1 &9100100055
 GameObject:
   m_ObjectHideFlags: 0
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9100000074s}
+  - component: {fileID: 9100100054}
   m_Layer: 5
   m_Name: SoldOutOverlay_I2
   m_IsActive: 0
---- !u!224 &9100000074s
+--- !u!224 &9100100054
 RectTransform:
   m_ObjectHideFlags: 0
-  m_GameObject: {fileID: 9100000074sg}
+  m_GameObject: {fileID: 9100100055}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 9100000074}
@@ -26749,66 +26749,66 @@ MonoBehaviour:
   panel: {fileID: 9100000006}
   canvasGroup: {fileID: 9100000008}
   goldText: {fileID: 9100000021}
-  continueButton: {fileID: 9100000029b}
+  continueButton: {fileID: 9100100001}
   perkSection: {fileID: 9100000030}
   perkSlots:
   - root: {fileID: 9100000039}
-    background: {fileID: 9100000040i}
-    button: {fileID: 9100000040b}
-    nameText: {fileID: 9100000040n}
-    rarityText: {fileID: 9100000040r}
-    levelText: {fileID: 9100000040l}
-    descriptionText: {fileID: 9100000040d}
-    iconImage: {fileID: 9100000040i}
-    soldOutOverlay: {fileID: 9100000040sg}
-  - root: {fileID: 9100000041g}
-    background: {fileID: 9100000042i}
-    button: {fileID: 9100000042b}
-    nameText: {fileID: 9100000042n}
-    rarityText: {fileID: 9100000042r}
-    levelText: {fileID: 9100000042l}
-    descriptionText: {fileID: 9100000042d}
-    iconImage: {fileID: 9100000042i}
-    soldOutOverlay: {fileID: 9100000042sg}
-  - root: {fileID: 9100000043g}
-    background: {fileID: 9100000044i}
-    button: {fileID: 9100000044b}
-    nameText: {fileID: 9100000044n}
-    rarityText: {fileID: 9100000044r}
-    levelText: {fileID: 9100000044l}
-    descriptionText: {fileID: 9100000044d}
-    iconImage: {fileID: 9100000044i}
-    soldOutOverlay: {fileID: 9100000044sg}
-  perkRerollButton: {fileID: 9100000050b}
-  perkRerollPriceText: {fileID: 9100000050t}
+    background: {fileID: 9100100004}
+    button: {fileID: 9100100002}
+    nameText: {fileID: 9100100006}
+    rarityText: {fileID: 9100100007}
+    levelText: {fileID: 9100100005}
+    descriptionText: {fileID: 9100100003}
+    iconImage: {fileID: 9100100004}
+    soldOutOverlay: {fileID: 9100100009}
+  - root: {fileID: 9100100010}
+    background: {fileID: 9100100013}
+    button: {fileID: 9100100011}
+    nameText: {fileID: 9100100015}
+    rarityText: {fileID: 9100100016}
+    levelText: {fileID: 9100100014}
+    descriptionText: {fileID: 9100100012}
+    iconImage: {fileID: 9100100013}
+    soldOutOverlay: {fileID: 9100100018}
+  - root: {fileID: 9100100019}
+    background: {fileID: 9100100022}
+    button: {fileID: 9100100020}
+    nameText: {fileID: 9100100024}
+    rarityText: {fileID: 9100100025}
+    levelText: {fileID: 9100100023}
+    descriptionText: {fileID: 9100100021}
+    iconImage: {fileID: 9100100022}
+    soldOutOverlay: {fileID: 9100100027}
+  perkRerollButton: {fileID: 9100100029}
+  perkRerollPriceText: {fileID: 9100100030}
   perkRerollBaseCost: 15
   perkRerollMultiplier: 1.6
-  itemSection: {fileID: 9100000060g}
+  itemSection: {fileID: 9100100031}
   itemSlots:
-  - root: {fileID: 9100000069g}
-    background: {fileID: 9100000070i}
-    button: {fileID: 9100000070b}
-    nameText: {fileID: 9100000070n}
-    descriptionText: {fileID: 9100000070d}
-    priceText: {fileID: 9100000070p}
-    iconImage: {fileID: 9100000070i}
-    soldOutOverlay: {fileID: 9100000070sg}
-  - root: {fileID: 9100000071g}
-    background: {fileID: 9100000072i}
-    button: {fileID: 9100000072b}
-    nameText: {fileID: 9100000072n}
-    descriptionText: {fileID: 9100000072d}
-    priceText: {fileID: 9100000072p}
-    iconImage: {fileID: 9100000072i}
-    soldOutOverlay: {fileID: 9100000072sg}
-  - root: {fileID: 9100000073g}
-    background: {fileID: 9100000074i}
-    button: {fileID: 9100000074b}
-    nameText: {fileID: 9100000074n}
-    descriptionText: {fileID: 9100000074d}
-    priceText: {fileID: 9100000074p}
-    iconImage: {fileID: 9100000074i}
-    soldOutOverlay: {fileID: 9100000074sg}
+  - root: {fileID: 9100100032}
+    background: {fileID: 9100100035}
+    button: {fileID: 9100100033}
+    nameText: {fileID: 9100100036}
+    descriptionText: {fileID: 9100100034}
+    priceText: {fileID: 9100100037}
+    iconImage: {fileID: 9100100035}
+    soldOutOverlay: {fileID: 9100100039}
+  - root: {fileID: 9100100040}
+    background: {fileID: 9100100043}
+    button: {fileID: 9100100041}
+    nameText: {fileID: 9100100044}
+    descriptionText: {fileID: 9100100042}
+    priceText: {fileID: 9100100045}
+    iconImage: {fileID: 9100100043}
+    soldOutOverlay: {fileID: 9100100047}
+  - root: {fileID: 9100100048}
+    background: {fileID: 9100100051}
+    button: {fileID: 9100100049}
+    nameText: {fileID: 9100100052}
+    descriptionText: {fileID: 9100100050}
+    priceText: {fileID: 9100100053}
+    iconImage: {fileID: 9100100051}
+    soldOutOverlay: {fileID: 9100100055}
   itemPool: []
   secretItem: {fileID: 0}
   secretItemChance: 0.0005
