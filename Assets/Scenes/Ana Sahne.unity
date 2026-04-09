@@ -33213,7 +33213,6 @@ MonoBehaviour:
   continueButton: {fileID: 0}
   perkSection: {fileID: 0}
   perkSlots:
-<<<<<<< HEAD
   - root: {fileID: 0}
     background: {fileID: 0}
     button: {fileID: 0}
@@ -33244,46 +33243,12 @@ MonoBehaviour:
     priceText: {fileID: 0}
     iconImage: {fileID: 0}
     soldOutOverlay: {fileID: 0}
-=======
-  - root: {fileID: 9100000039}
-    background: {fileID: 9100100004}
-    button: {fileID: 9100100002}
-    nameText: {fileID: 9100100006}
-    rarityText: {fileID: 9100100007}
-    levelText: {fileID: 9100100005}
-    descriptionText: {fileID: 9100100003}
-    iconImage: {fileID: 9100100004}
-    soldOutOverlay: {fileID: 9100100009}
-  - root: {fileID: 9100100010}
-    background: {fileID: 9100100013}
-    button: {fileID: 9100100011}
-    nameText: {fileID: 9100100015}
-    rarityText: {fileID: 9100100016}
-    levelText: {fileID: 9100100014}
-    descriptionText: {fileID: 9100100012}
-    iconImage: {fileID: 9100100013}
-    soldOutOverlay: {fileID: 9100100018}
-  - root: {fileID: 9100100019}
-    background: {fileID: 9100100022}
-    button: {fileID: 9100100020}
-    nameText: {fileID: 9100100024}
-    rarityText: {fileID: 9100100025}
-    levelText: {fileID: 9100100023}
-    descriptionText: {fileID: 9100100021}
-    iconImage: {fileID: 9100100022}
-    soldOutOverlay: {fileID: 9100100027}
->>>>>>> 6d4fe6556436d265ac2532b48f1b59999dbd9989
   commonPerks: []
   rarePerks: []
   epicPerks: []
   legendaryPerks: []
-<<<<<<< HEAD
   perkRerollButton: {fileID: 0}
   perkRerollPriceText: {fileID: 0}
-=======
-  perkRerollButton: {fileID: 9100100029}
-  perkRerollPriceText: {fileID: 9100100030}
->>>>>>> 6d4fe6556436d265ac2532b48f1b59999dbd9989
   perkRerollBaseCost: 15
   perkRerollIncrement: 5
   itemSection: {fileID: 0}
