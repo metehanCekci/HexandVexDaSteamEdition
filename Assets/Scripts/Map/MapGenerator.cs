@@ -101,7 +101,7 @@ public static class MapGenerator
         AssignTypesPathAware(map, config, totalRows);
 
         // ─── Her oda tipinden en az 1 garanti ───
-        EnforceMinimumRoomTypes(map, totalRows);
+        EnforceMinimumRoomTypes(map, totalRows, config);
 
         // ─── SON GÜVENLİK: Ardışık ödül yasağı (tüm post-processing sonrası) ───
         EnforceNoConsecutiveRewards(map);
@@ -1014,18 +1014,19 @@ public static class MapGenerator
     /// Haritada her kritik oda tipinden en az 1 tane olmasını garanti eder.
     /// Eksik tipler için uygun Combat node'larını dönüştürür.
     /// </summary>
-    private static void EnforceMinimumRoomTypes(MapData map, int totalRows)
+    private static void EnforceMinimumRoomTypes(MapData map, int totalRows, MapLayerData config)
     {
         // Garanti edilecek tipler (row 0 ve boss hariç node'larda)
-        // Shop (merged shop), Rest, EliteCombat, Enchant ve Sacrifice her zaman en az 1 garanti
-        MapNodeType[] requiredTypes = new MapNodeType[]
+        // Layer config'e göre devre dışı tipler listeye eklenmez
+        List<MapNodeType> requiredList = new List<MapNodeType>
         {
             MapNodeType.Shop,
             MapNodeType.EliteCombat,
-            MapNodeType.Rest,
-            MapNodeType.Enchant,
             MapNodeType.Sacrifice
         };
+        if (config == null || config.restEnabled)    requiredList.Add(MapNodeType.Rest);
+        if (config == null || config.enchantEnabled)  requiredList.Add(MapNodeType.Enchant);
+        MapNodeType[] requiredTypes = requiredList.ToArray();
 
         foreach (var reqType in requiredTypes)
         {
