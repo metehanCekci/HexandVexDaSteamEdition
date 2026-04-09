@@ -102,7 +102,7 @@ public class SeismicStepPerk : BasePerk
         if (LevelGenerator.instance != null)
         {
             Tilemap groundMap = LevelGenerator.instance.groundMap;
-            Tilemap bgMap = LevelGenerator.instance.backgroundMap;
+            Tilemap bgMap = LevelGenerator.instance.columnMap;
             foreach (var cell in shakingCells)
             {
                 if (groundMap != null && groundMap.HasTile(cell))
@@ -125,7 +125,7 @@ public class SeismicStepPerk : BasePerk
     {
         if (LevelGenerator.instance == null) yield break;
         Tilemap groundMap = LevelGenerator.instance.groundMap;
-        Tilemap bgMap = LevelGenerator.instance.backgroundMap;
+        Tilemap bgMap = LevelGenerator.instance.columnMap;
         if (groundMap == null) yield break;
 
         float elapsed = 0f;
@@ -158,7 +158,7 @@ public class SeismicStepPerk : BasePerk
     {
         if (LevelGenerator.instance == null) yield break;
         Tilemap groundMap = LevelGenerator.instance.groundMap;
-        Tilemap bgMap = LevelGenerator.instance.backgroundMap;
+        Tilemap bgMap = LevelGenerator.instance.columnMap;
 
         if (AudioManager.instance != null) AudioManager.instance.PlayWall();
 
@@ -237,7 +237,7 @@ public class SeismicStepPerk : BasePerk
         if (LevelGenerator.instance != null)
         {
             Tilemap groundMap = LevelGenerator.instance.groundMap;
-            Tilemap bgMap = LevelGenerator.instance.backgroundMap;
+            Tilemap bgMap = LevelGenerator.instance.columnMap;
 
             if (groundMap != null && groundMap.HasTile(cell))
                 groundMap.SetTransformMatrix(cell, Matrix4x4.identity);

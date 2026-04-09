@@ -1371,7 +1371,7 @@ public class TurnManager : MonoBehaviour
         // 2. turda (1 tur kaldı) blink efekti
         foreach (var cell in blinkCells)
         {
-            if (LevelGenerator.instance.hazardMap != null && LevelGenerator.instance.hazardMap.HasTile(cell))
+            if (LevelGenerator.instance.foreGroundA != null && LevelGenerator.instance.foreGroundA.HasTile(cell))
                 StartCoroutine(BlinkThornTile(cell));
         }
 
@@ -1380,16 +1380,16 @@ public class TurnManager : MonoBehaviour
         {
             thornTurnsRemaining.Remove(cell);
             LevelGenerator.instance.hazardCells.Remove(cell);
-            if (LevelGenerator.instance.hazardMap != null)
+            if (LevelGenerator.instance.foreGroundA != null)
             {
-                LevelGenerator.instance.hazardMap.SetTile(cell, null);
+                LevelGenerator.instance.foreGroundA.SetTile(cell, null);
             }
         }
     }
 
     private IEnumerator BlinkThornTile(Vector3Int cell)
     {
-        var map = LevelGenerator.instance != null ? LevelGenerator.instance.hazardMap : null;
+        var map = LevelGenerator.instance != null ? LevelGenerator.instance.foreGroundA : null;
         if (map == null) yield break;
         // LockColor flag'ini kaldır yoksa SetColor çalışmaz
         if (map.HasTile(cell)) map.SetTileFlags(cell, TileFlags.None);
@@ -1413,7 +1413,7 @@ public class TurnManager : MonoBehaviour
         ClearTargetingCache();
         LevelGenerator.instance.hazardCells.Add(cell);
         var thornTs = LevelGenerator.instance?.GetActiveTileSet();
-        if (LevelGenerator.instance.hazardMap != null && thornTs?.hazardTile != null) LevelGenerator.instance.hazardMap.SetTile(cell, thornTs.hazardTile);
+        if (LevelGenerator.instance.foreGroundA != null && thornTs?.hazardTile != null) LevelGenerator.instance.foreGroundA.SetTile(cell, thornTs.hazardTile);
         thornTurnsRemaining[cell] = 3;
         if (player != null) player.UpdateHighlights();
     }
@@ -3645,13 +3645,13 @@ public class TurnManager : MonoBehaviour
         if (AudioManager.instance != null) AudioManager.instance.PlayWall();
 
         Tilemap gMap = LevelGenerator.instance.groundMap;
-        Tilemap bgMap = LevelGenerator.instance.backgroundMap;
-        Tilemap sMap = LevelGenerator.instance.scaffoldMap;
-        Tilemap hMap = LevelGenerator.instance.hazardMap;
+        Tilemap bgMap = LevelGenerator.instance.columnMap;
+        Tilemap fgAMap = LevelGenerator.instance.foreGroundA;
+        Tilemap fgBMap = LevelGenerator.instance.foreGroundB;
 
         foreach (var cell in sorted)
         {
-            StartCoroutine(CollapseIslandCellCoroutine(cell, gMap, bgMap, sMap, hMap));
+            StartCoroutine(CollapseIslandCellCoroutine(cell, gMap, bgMap, fgAMap, fgBMap));
             yield return new WaitForSeconds(0.06f);
         }
 
@@ -3662,13 +3662,13 @@ public class TurnManager : MonoBehaviour
             Invoke("StartPlayerTurn", 0.1f);
     }
 
-    private IEnumerator CollapseIslandCellCoroutine(Vector3Int cell, Tilemap gMap, Tilemap bgMap, Tilemap sMap, Tilemap hMap)
+    private IEnumerator CollapseIslandCellCoroutine(Vector3Int cell, Tilemap gMap, Tilemap bgMap, Tilemap fgAMap, Tilemap fgBMap)
     {
         bool hasG = gMap != null && gMap.HasTile(cell);
         bool hasBg = bgMap != null && bgMap.HasTile(cell);
-        bool hasS = sMap != null && sMap.HasTile(cell);
-        bool hasH = hMap != null && hMap.HasTile(cell);
-        if (!hasG && !hasBg && !hasS && !hasH) yield break;
+        bool hasFgA = fgAMap != null && fgAMap.HasTile(cell);
+        bool hasFgB = fgBMap != null && fgBMap.HasTile(cell);
+        if (!hasG && !hasBg && !hasFgA && !hasFgB) yield break;
 
         float duration = 0.35f;
         float elapsed = 0f;
@@ -3684,16 +3684,16 @@ public class TurnManager : MonoBehaviour
 
             if (hasG) { gMap.SetTransformMatrix(cell, m); gMap.SetTileFlags(cell, TileFlags.None); gMap.SetColor(cell, fade); }
             if (hasBg) { bgMap.SetTransformMatrix(cell, m); bgMap.SetTileFlags(cell, TileFlags.None); bgMap.SetColor(cell, fade); }
-            if (hasS) { sMap.SetTransformMatrix(cell, m); sMap.SetTileFlags(cell, TileFlags.None); sMap.SetColor(cell, fade); }
-            if (hasH) { hMap.SetTransformMatrix(cell, m); hMap.SetTileFlags(cell, TileFlags.None); hMap.SetColor(cell, fade); }
+            if (hasFgA) { fgAMap.SetTransformMatrix(cell, m); fgAMap.SetTileFlags(cell, TileFlags.None); fgAMap.SetColor(cell, fade); }
+            if (hasFgB) { fgBMap.SetTransformMatrix(cell, m); fgBMap.SetTileFlags(cell, TileFlags.None); fgBMap.SetColor(cell, fade); }
             yield return null;
         }
 
         // Remove tiles
         if (hasG) { gMap.SetTransformMatrix(cell, Matrix4x4.identity); gMap.SetColor(cell, Color.white); gMap.SetTile(cell, null); }
         if (hasBg) { bgMap.SetTransformMatrix(cell, Matrix4x4.identity); bgMap.SetColor(cell, Color.white); bgMap.SetTile(cell, null); }
-        if (hasS) { sMap.SetTransformMatrix(cell, Matrix4x4.identity); sMap.SetColor(cell, Color.white); sMap.SetTile(cell, null); }
-        if (hasH) { hMap.SetTransformMatrix(cell, Matrix4x4.identity); hMap.SetColor(cell, Color.white); hMap.SetTile(cell, null); }
+        if (hasFgA) { fgAMap.SetTransformMatrix(cell, Matrix4x4.identity); fgAMap.SetColor(cell, Color.white); fgAMap.SetTile(cell, null); }
+        if (hasFgB) { fgBMap.SetTransformMatrix(cell, Matrix4x4.identity); fgBMap.SetColor(cell, Color.white); fgBMap.SetTile(cell, null); }
 
         if (LevelGenerator.instance != null)
         {
@@ -3711,7 +3711,7 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator FlashHazardTileCoroutine(Vector3Int cell)
     {
-        Tilemap targetMap = LevelGenerator.instance.hazardMap;
+        Tilemap targetMap = LevelGenerator.instance.foreGroundA;
         if (targetMap == null) yield break;
 
         targetMap.SetTileFlags(cell, TileFlags.None);
