@@ -28,6 +28,10 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     private Camera canvasCamera;
     private bool isHovered;
 
+    /// <summary>Scale dışarıdan kontrol ediliyorsa (pop-in animasyonu vb.) true yap.
+    /// CardTilt3D scale'a dokunmaz.</summary>
+    [System.NonSerialized] public bool scaleOverridden;
+
     private Quaternion targetRotation;
     private Vector3 targetScale;
     private Vector3 baseScale;
@@ -97,8 +101,9 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
             rectTransform.localRotation = Quaternion.Lerp(
                 rectTransform.localRotation, targetRotation, Time.unscaledDeltaTime * tiltSpeed);
-            rectTransform.localScale = Vector3.Lerp(
-                rectTransform.localScale, targetScale, Time.unscaledDeltaTime * tiltSpeed);
+            if (!scaleOverridden)
+                rectTransform.localScale = Vector3.Lerp(
+                    rectTransform.localScale, targetScale, Time.unscaledDeltaTime * tiltSpeed);
 
             if (shineOverlay != null)
             {
@@ -110,8 +115,9 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         {
             rectTransform.localRotation = Quaternion.Lerp(
                 rectTransform.localRotation, Quaternion.identity, Time.unscaledDeltaTime * returnSpeed);
-            rectTransform.localScale = Vector3.Lerp(
-                rectTransform.localScale, baseScale, Time.unscaledDeltaTime * returnSpeed);
+            if (!scaleOverridden)
+                rectTransform.localScale = Vector3.Lerp(
+                    rectTransform.localScale, baseScale, Time.unscaledDeltaTime * returnSpeed);
 
             currentNx = Mathf.Lerp(currentNx, 0f, Time.unscaledDeltaTime * returnSpeed);
             currentNy = Mathf.Lerp(currentNy, 0f, Time.unscaledDeltaTime * returnSpeed);
@@ -125,7 +131,7 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             if (Quaternion.Angle(rectTransform.localRotation, Quaternion.identity) < 0.1f)
             {
                 rectTransform.localRotation = Quaternion.identity;
-                rectTransform.localScale = baseScale;
+                if (!scaleOverridden) rectTransform.localScale = baseScale;
             }
         }
     }
@@ -146,8 +152,16 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         isHovered = false;
         rectTransform.localRotation = Quaternion.identity;
-        rectTransform.localScale = baseScale;
+        if (!scaleOverridden) rectTransform.localScale = baseScale;
         currentNx = 0f;
         currentNy = 0f;
+    }
+
+    /// <summary>Pop-in animasyonu bittikten sonra çağır — baseScale'i günceller.</summary>
+    public void RefreshBaseScale()
+    {
+        baseScale = rectTransform.localScale;
+        targetScale = baseScale;
+        scaleOverridden = false;
     }
 }

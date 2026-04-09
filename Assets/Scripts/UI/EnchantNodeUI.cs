@@ -41,6 +41,13 @@ public class EnchantNodeUI : MonoBehaviour
 
         if (enchantPanel != null)
         {
+            // panelCG yoksa al/oluştur — fade in/out için gerekli
+            if (panelCG == null) panelCG = enchantPanel.GetComponent<CanvasGroup>();
+            if (panelCG == null) panelCG = enchantPanel.AddComponent<CanvasGroup>();
+
+            // Flash önleme: alpha 0 ÖNCE, sonra panel aktif
+            panelCG.alpha = 0f;
+
             if (enchantPanel.transform.parent != null)
                 enchantPanel.transform.parent.gameObject.SetActive(true);
             enchantPanel.SetActive(true);
@@ -50,6 +57,17 @@ public class EnchantNodeUI : MonoBehaviour
 
         // Pick 3 random tile types (no duplicates)
         currentChoices = PickThreeChoices();
+
+        // Kartları scale 0 yap (flash önleme — panel aktifken görünmesinler)
+        for (int i = 0; i < 3; i++)
+        {
+            if (choiceButtons != null && i < choiceButtons.Length && choiceButtons[i] != null)
+            {
+                choiceButtons[i].transform.localScale = Vector3.zero;
+                var tilt = choiceButtons[i].GetComponent<CardTilt3D>();
+                if (tilt != null) tilt.scaleOverridden = true;
+            }
+        }
 
         for (int i = 0; i < 3; i++)
         {
@@ -160,6 +178,9 @@ public class EnchantNodeUI : MonoBehaviour
         }
         card.localScale = Vector3.one;
         cardAnimDone[index] = true;
+
+        var tilt = card.GetComponent<CardTilt3D>();
+        if (tilt != null) tilt.RefreshBaseScale();
 
         StartCoroutine(CardIdleBounce(card, index));
     }

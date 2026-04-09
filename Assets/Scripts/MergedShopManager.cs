@@ -128,6 +128,9 @@ public class MergedShopManager : MonoBehaviour
         perkSection = FindChild(panelT, "PerkSection");
         itemSection = FindChild(panelT, "ItemSection");
 
+        // Shop canvas sorting: PerkInventoryUI'den düşük olmalı (100)
+        shopCanvas.sortingOrder = 90;
+
         // Butonlar
         Transform rerollT = panelT.Find("RerollButton");
         if (rerollT != null)
@@ -191,7 +194,61 @@ public class MergedShopManager : MonoBehaviour
             }
         }
 
+        // GoldText yanına CoinIcon ekle (yoksa oluştur)
+        EnsureGoldCoinIcon(panelT);
+
         Debug.Log($"[MergedShop] AutoWire done: panel={panel != null}, perkSlots={perkSlots.Count}, itemSlots={itemSlots.Count}");
+    }
+
+    private void EnsureGoldCoinIcon(Transform panelT)
+    {
+        Transform goldT = panelT.Find("GoldText");
+        if (goldT == null) return;
+
+        // Zaten varsa çık
+        Transform existing = panelT.Find("GoldCoinIcon");
+        if (existing != null) return;
+
+        // Coin sprite'ı mevcut kartlardan al
+        Sprite coinSprite = null;
+        if (perkSlots.Count > 0)
+        {
+            Transform coinT = perkSlots[0].root?.transform.Find("CoinIcon");
+            if (coinT != null)
+            {
+                Image coinImg = coinT.GetComponent<Image>();
+                if (coinImg != null) coinSprite = coinImg.sprite;
+            }
+        }
+        if (coinSprite == null && itemSlots.Count > 0)
+        {
+            Transform coinT = itemSlots[0].root?.transform.Find("CoinIcon");
+            if (coinT != null)
+            {
+                Image coinImg = coinT.GetComponent<Image>();
+                if (coinImg != null) coinSprite = coinImg.sprite;
+            }
+        }
+
+        // GoldText'in yanına coin icon oluştur
+        GameObject iconGO = new GameObject("GoldCoinIcon", typeof(RectTransform));
+        iconGO.transform.SetParent(panelT, false);
+
+        RectTransform goldRT = goldT.GetComponent<RectTransform>();
+        RectTransform iconRT = iconGO.GetComponent<RectTransform>();
+
+        // GoldText'in sağına yerleştir (kartlardaki gibi)
+        float iconSize = 0.02f;
+        iconRT.anchorMin = new Vector2(goldRT.anchorMax.x + 0.003f, goldRT.anchorMin.y);
+        iconRT.anchorMax = new Vector2(goldRT.anchorMax.x + 0.003f + iconSize, goldRT.anchorMax.y);
+        iconRT.offsetMin = Vector2.zero;
+        iconRT.offsetMax = Vector2.zero;
+
+        Image img = iconGO.AddComponent<Image>();
+        if (coinSprite != null) { img.sprite = coinSprite; img.color = Color.white; }
+        else img.color = new Color(1f, 0.85f, 0.2f); // fallback gold color
+        img.preserveAspect = true;
+        img.raycastTarget = false;
     }
 
     private void AutoPopulatePerkPools()
@@ -326,6 +383,18 @@ public class MergedShopManager : MonoBehaviour
 
     private IEnumerator OpenSequence()
     {
+        // Önce tüm kartları scale 0 yap (flash önleme)
+        List<GameObject> allCards = new List<GameObject>();
+        foreach (var s in perkSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
+        foreach (var s in itemSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
+
+        foreach (var card in allCards)
+        {
+            card.transform.localScale = Vector3.zero;
+            var tilt = card.GetComponent<CardTilt3D>();
+            if (tilt != null) tilt.scaleOverridden = true;
+        }
+
         // Panel fade in
         if (canvasGroup != null)
         {
@@ -338,14 +407,6 @@ public class MergedShopManager : MonoBehaviour
                 yield return null;
             }
         }
-
-        // Kartları sıfırla (scale 0) — önce perkler (üst), sonra itemler (alt)
-        List<GameObject> allCards = new List<GameObject>();
-        foreach (var s in perkSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
-        foreach (var s in itemSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
-
-        foreach (var card in allCards)
-            card.transform.localScale = Vector3.zero;
 
         // Pop-in: soldan sağa, üstten alta
         if (AudioManager.instance != null) AudioManager.instance.PlayCard();
@@ -378,6 +439,8 @@ public class MergedShopManager : MonoBehaviour
             yield return null;
         }
         card.localScale = Vector3.one;
+        var tilt = card.GetComponent<CardTilt3D>();
+        if (tilt != null) tilt.RefreshBaseScale();
     }
 
     private void OnContinue()
@@ -513,10 +576,21 @@ public class MergedShopManager : MonoBehaviour
     private void TryReroll()
     {
         if (RunManager.instance == null) return;
-        int cost = Mathf.RoundToInt(currentPerkRerollCost);
-        if (RunManager.instance.currentGold < cost) { StartCoroutine(FlashText(goldText)); return; }
 
-        RunManager.instance.currentGold -= cost;
+        // Mutation Catalyst: bedava reroll (tek seferlik)
+        bool freeReroll = RunManager.instance.hasPerkReroll;
+        if (!freeReroll)
+        {
+            int cost = Mathf.RoundToInt(currentPerkRerollCost);
+            if (RunManager.instance.currentGold < cost) { StartCoroutine(FlashText(goldText)); return; }
+            RunManager.instance.currentGold -= cost;
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
+        }
+        else
+        {
+            RunManager.instance.hasPerkReroll = false;
+        }
+
         perkRerollCount++;
         currentPerkRerollCost = perkRerollBaseCost + perkRerollIncrement * perkRerollCount;
 
@@ -524,7 +598,6 @@ public class MergedShopManager : MonoBehaviour
         GenerateItemChoices();
         RefreshGold();
         RefreshRerollButton();
-        GameEvents.GoldChanged(RunManager.instance.currentGold);
     }
 
     private void RefreshRerollButton()

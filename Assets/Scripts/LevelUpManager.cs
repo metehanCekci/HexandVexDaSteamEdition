@@ -82,8 +82,14 @@ public class LevelUpManager : MonoBehaviour
         }
 
         ShowBlackBackground(true);
+        // CanvasGroup yoksa oluştur — fade animasyonu için şart
+        if (levelUpCanvasGroup == null && levelUpPanel != null)
+            levelUpCanvasGroup = levelUpPanel.GetComponent<CanvasGroup>();
+        if (levelUpCanvasGroup == null && levelUpPanel != null)
+            levelUpCanvasGroup = levelUpPanel.AddComponent<CanvasGroup>();
+        // Flash önleme: alpha 0 ÖNCE panel aktif
+        if (levelUpCanvasGroup != null) { levelUpCanvasGroup.alpha = 0f; levelUpCanvasGroup.gameObject.SetActive(true); }
         levelUpPanel.SetActive(true);
-        if (levelUpCanvasGroup != null) levelUpCanvasGroup.gameObject.SetActive(true);
 
         // Perk stash panelini göster (yoksa oluştur)
         if (PerkInventoryUI.instance == null)
@@ -202,6 +208,10 @@ public class LevelUpManager : MonoBehaviour
                 choiceButtons[i].onClick.RemoveAllListeners();
                 choiceButtons[i].onClick.AddListener(() => SelectPerk(index));
                 choiceButtons[i].gameObject.SetActive(true);
+                choiceButtons[i].transform.localScale = Vector3.zero; // flash önleme
+                // CardTilt3D'nin scale'ı geri yazmasını engelle
+                var tilt = choiceButtons[i].GetComponent<CardTilt3D>();
+                if (tilt != null) tilt.scaleOverridden = true;
             }
             else
             {
@@ -529,6 +539,10 @@ public class LevelUpManager : MonoBehaviour
             yield return null;
         }
         card.localScale = Vector3.one;
+
+        // CardTilt3D'ye animasyon bitti, scale kontrolü sende de
+        var tilt = card.GetComponent<CardTilt3D>();
+        if (tilt != null) tilt.RefreshBaseScale();
     }
 
     private IEnumerator CardIdleBounce(Transform card)
