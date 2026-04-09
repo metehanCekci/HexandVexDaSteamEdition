@@ -5,18 +5,15 @@ using UnityEngine.UI;
 /// <summary>
 /// Balatro tarzı 3D kart tilt efekti.
 /// Mouse kartın üzerinde gezdirildiğinde kart, mouse yönüne doğru 3D döner.
-/// Perspektif illüzyonu için asimetrik scale + hafif shine offset kullanır.
+/// NOT: Scale artık ShopCardHover tarafından yönetiliyor.
+/// Bu script sadece rotation + shine ile ilgilenir (çakışma olmasın diye).
 /// </summary>
 public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("Tilt Ayarları")]
     public float maxTiltAngle = 15f;
-    public float tiltSpeed = 10f;
-    public float returnSpeed = 8f;
-
-    [Header("Perspektif Skew (sahte 3D derinlik)")]
-    [Tooltip("Mouse yönündeki kenar küçülür, karşı kenar büyür")]
-    public float maxSkewAmount = 0.06f;
+    public float tiltSpeed = 12f;
+    public float returnSpeed = 10f;
 
     [Header("Shine Efekti (opsiyonel)")]
     [Tooltip("Kartın üzerinde gezen parlama için bir Image atayın (null ise devre dışı)")]
@@ -29,8 +26,6 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     private bool isHovered;
 
     private Quaternion targetRotation;
-    private Vector3 targetScale;
-    private Vector3 baseScale;
     private Vector2 targetShinePos;
 
     // Smooth için mevcut değerler
@@ -41,8 +36,6 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         rectTransform = GetComponent<RectTransform>();
         targetRotation = Quaternion.identity;
-        baseScale = rectTransform.localScale;
-        targetScale = baseScale;
     }
 
     void OnEnable()
@@ -81,12 +74,6 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
                     float rotY = currentNx * maxTiltAngle;
                     targetRotation = Quaternion.Euler(rotX, rotY, 0f);
 
-                    // Perspektif skew: mouse'a yakın kenar küçülür (uzaklaşır gibi)
-                    // Bu sağ üst vs sol alt arasındaki farkı görünür kılar
-                    float scaleX = baseScale.x * (1f - Mathf.Abs(currentNx) * maxSkewAmount);
-                    float scaleY = baseScale.y * (1f - Mathf.Abs(currentNy) * maxSkewAmount);
-                    targetScale = new Vector3(scaleX, scaleY, baseScale.z);
-
                     // Shine overlay
                     if (shineOverlay != null)
                     {
@@ -97,8 +84,6 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
             rectTransform.localRotation = Quaternion.Lerp(
                 rectTransform.localRotation, targetRotation, Time.unscaledDeltaTime * tiltSpeed);
-            rectTransform.localScale = Vector3.Lerp(
-                rectTransform.localScale, targetScale, Time.unscaledDeltaTime * tiltSpeed);
 
             if (shineOverlay != null)
             {
@@ -110,8 +95,6 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         {
             rectTransform.localRotation = Quaternion.Lerp(
                 rectTransform.localRotation, Quaternion.identity, Time.unscaledDeltaTime * returnSpeed);
-            rectTransform.localScale = Vector3.Lerp(
-                rectTransform.localScale, baseScale, Time.unscaledDeltaTime * returnSpeed);
 
             currentNx = Mathf.Lerp(currentNx, 0f, Time.unscaledDeltaTime * returnSpeed);
             currentNy = Mathf.Lerp(currentNy, 0f, Time.unscaledDeltaTime * returnSpeed);
@@ -125,7 +108,6 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             if (Quaternion.Angle(rectTransform.localRotation, Quaternion.identity) < 0.1f)
             {
                 rectTransform.localRotation = Quaternion.identity;
-                rectTransform.localScale = baseScale;
             }
         }
     }
@@ -139,14 +121,13 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         isHovered = false;
         targetRotation = Quaternion.identity;
-        targetScale = baseScale;
     }
 
     void OnDisable()
     {
         isHovered = false;
-        rectTransform.localRotation = Quaternion.identity;
-        rectTransform.localScale = baseScale;
+        if (rectTransform != null)
+            rectTransform.localRotation = Quaternion.identity;
         currentNx = 0f;
         currentNy = 0f;
     }

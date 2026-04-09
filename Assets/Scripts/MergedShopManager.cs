@@ -98,6 +98,9 @@ public class MergedShopManager : MonoBehaviour
         Debug.Log($"[MergedShop] Awake: panel={panel != null}, perkSlots={perkSlots.Count}, itemSlots={itemSlots.Count}, canvasGroup={canvasGroup != null}, continueButton={continueButton != null}, rerollButton={perkRerollButton != null}");
         if (panel != null) panel.SetActive(false);
 
+        // Kartlara ShopCardHover ekle (editor'den bake edilen eski EventTrigger'lari guncelle)
+        UpgradeCardHovers();
+
         // Perk listeleri boşsa runtime'da prefab'lardan doldur
         if (commonPerks.Count == 0)
             AutoPopulatePerkPools();
@@ -242,15 +245,68 @@ public class MergedShopManager : MonoBehaviour
         Debug.Log($"[MergedShop] AutoPopulate itemPool: {itemPool.Count} items, secretItem={secretItem != null}");
     }
 
+    /// <summary>
+    /// Sahnede zaten var olan kartlara ShopCardHover ekler ve
+    /// EventTrigger callback'lerini yeni sisteme baglar.
+    /// </summary>
+    private void UpgradeCardHovers()
+    {
+        var allRoots = new List<GameObject>();
+        foreach (var s in perkSlots) if (s.root != null) allRoots.Add(s.root);
+        foreach (var s in itemSlots) if (s.root != null) allRoots.Add(s.root);
+
+        foreach (var go in allRoots)
+        {
+            // ShopCardHover yoksa ekle
+            if (go.GetComponent<ShopCardHover>() == null)
+                go.AddComponent<ShopCardHover>();
+
+            // EventTrigger varsa callback'leri guncelle
+            var trigger = go.GetComponent<UnityEngine.EventSystems.EventTrigger>();
+            if (trigger != null)
+            {
+                trigger.triggers.Clear();
+                var enter = new UnityEngine.EventSystems.EventTrigger.Entry
+                    { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
+                var capturedGo = go;
+                enter.callback.AddListener((_) =>
+                {
+                    var hover = capturedGo.GetComponent<ShopCardHover>();
+                    if (hover != null) hover.HoverIn();
+                });
+                trigger.triggers.Add(enter);
+
+                var exit = new UnityEngine.EventSystems.EventTrigger.Entry
+                    { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
+                exit.callback.AddListener((_) =>
+                {
+                    var hover = capturedGo.GetComponent<ShopCardHover>();
+                    if (hover != null) hover.HoverOut();
+                });
+                trigger.triggers.Add(exit);
+            }
+        }
+    }
+
     private static void AddRuntimeHoverScale(GameObject go)
     {
         if (go.GetComponent<UnityEngine.EventSystems.EventTrigger>() != null) return;
         var trigger = go.AddComponent<UnityEngine.EventSystems.EventTrigger>();
         var enter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
-        enter.callback.AddListener((_) => go.transform.localScale = new Vector3(1.05f, 1.05f, 1f));
+        enter.callback.AddListener((_) =>
+        {
+            var hover = go.GetComponent<ShopCardHover>();
+            if (hover != null) hover.HoverIn();
+            else go.transform.localScale = new Vector3(1.12f, 1.12f, 1f);
+        });
         trigger.triggers.Add(enter);
         var exit = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
-        exit.callback.AddListener((_) => go.transform.localScale = Vector3.one);
+        exit.callback.AddListener((_) =>
+        {
+            var hover = go.GetComponent<ShopCardHover>();
+            if (hover != null) hover.HoverOut();
+            else go.transform.localScale = Vector3.one;
+        });
         trigger.triggers.Add(exit);
     }
 
