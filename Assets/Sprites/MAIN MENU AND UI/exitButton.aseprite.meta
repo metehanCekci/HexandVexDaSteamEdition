@@ -138,7 +138,7 @@ ScriptedImporter:
       x: 4
       y: 4
       width: 121
-      height: 39
+      height: 37
     spriteID: 275621d452a9f344b8f0b508af6ce13d
     spriteBone: []
     spriteOutline: []
@@ -170,7 +170,7 @@ ScriptedImporter:
         x: 0
         y: 0
         width: 121
-        height: 39
+        height: 37
       spriteId: 275621d452a9f344b8f0b508af6ce13d
     linkedCells: []
     tileCells: []
