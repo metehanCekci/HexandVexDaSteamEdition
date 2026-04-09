@@ -182,8 +182,12 @@ public class LevelGenerator : MonoBehaviour
         int currentRadius = Mathf.Min(baseMapRadius + (RunManager.instance.currentLevel / 8), baseMapRadius + 3); // Max radius cap
         int enemyCountToSpawn = Mathf.Min(3 + (RunManager.instance.currentLevel / 8), 6); // Max 6 enemy limit
 
-        // Elite node'larda daha fazla ve güçlü düşman
-        if (isEliteNode) enemyCountToSpawn += 2;
+        // Elite node'larda daha büyük harita ve daha fazla güçlü düşman
+        if (isEliteNode)
+        {
+            currentRadius += 2;
+            enemyCountToSpawn += 2;
+        }
 
         for (int x = -currentRadius; x <= currentRadius; x++)
         {

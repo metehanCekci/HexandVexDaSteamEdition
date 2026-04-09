@@ -89,16 +89,19 @@ public class Shopmanager : MonoBehaviour
         // HIDE legacy scene UI so it doesn't overlap
         HideLegacyUI();
 
-        // Wire button listeners
-        if (rerollButtonRef != null)
+        // MergedShopManager varsa buton bağlamayı ona bırak
+        if (MergedShopManager.instance == null)
         {
-            rerollButtonRef.onClick.RemoveAllListeners();
-            rerollButtonRef.onClick.AddListener(TryReroll);
-        }
-        if (continueButtonRef != null)
-        {
-            continueButtonRef.onClick.RemoveAllListeners();
-            continueButtonRef.onClick.AddListener(CloseMapNodeShop);
+            if (rerollButtonRef != null)
+            {
+                rerollButtonRef.onClick.RemoveAllListeners();
+                rerollButtonRef.onClick.AddListener(TryReroll);
+            }
+            if (continueButtonRef != null)
+            {
+                continueButtonRef.onClick.RemoveAllListeners();
+                continueButtonRef.onClick.AddListener(CloseMapNodeShop);
+            }
         }
 
         // Wire card buy buttons + hover
@@ -297,6 +300,13 @@ public class Shopmanager : MonoBehaviour
 
     public void TryReroll()
     {
+        // MergedShopManager aktifse eski Shopmanager reroll'u çalışmasın
+        if (MergedShopManager.instance != null)
+        {
+            Debug.Log("[Shopmanager] TryReroll BLOCKED — MergedShopManager active");
+            return;
+        }
+        Debug.Log($"[Shopmanager] >>> TryReroll CALLED on OLD Shopmanager! gold={RunManager.instance?.currentGold}");
         if (RunManager.instance == null) return;
         if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive) return;
         if (SecretPerkCinematic.instance != null && SecretPerkCinematic.instance.IsPlaying) return;

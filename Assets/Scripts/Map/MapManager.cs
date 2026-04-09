@@ -600,8 +600,11 @@ public class MapManager : MonoBehaviour
 
             case MapNodeType.Shop:
             case MapNodeType.PerkSelection:
+                Debug.Log($"[MapManager] Shop/PerkSelection node. MergedShopManager.instance={MergedShopManager.instance != null}");
                 if (MergedShopManager.instance != null)
                     MergedShopManager.instance.OpenAsMapNode();
+                else
+                    Debug.LogError("[MapManager] MergedShopManager.instance is NULL! Check if MergedShopManager exists in scene and is active.");
                 showHotbar = true;
                 break;
 

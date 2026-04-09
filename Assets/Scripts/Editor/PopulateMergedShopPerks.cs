@@ -7,7 +7,7 @@ public static class PopulateMergedShopPerks
     [MenuItem("Tools/Hex and Vex/Populate MergedShop Perk Lists")]
     public static void Populate()
     {
-        var shop = Object.FindObjectOfType<MergedShopManager>();
+        var shop = Object.FindObjectOfType<MergedShopManager>(true);
         if (shop == null)
         {
             Debug.LogError("MergedShopManager not found in scene!");

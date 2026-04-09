@@ -50,8 +50,8 @@ public class MergedShopManager : MonoBehaviour
     [Header("Perk Reroll")]
     public Button perkRerollButton;
     public TMP_Text perkRerollPriceText;
-    public float perkRerollBaseCost = 15f;
-    public float perkRerollMultiplier = 1.6f;
+    public float perkRerollBaseCost = 10f;
+    public float perkRerollIncrement = 5f;
 
     // ═══════════════════════════════════════════
     // ITEM SECTION
@@ -90,17 +90,301 @@ public class MergedShopManager : MonoBehaviour
 
     void Awake()
     {
-        if (instance == null) instance = this;
+        if (instance != null && instance != this)
+        {
+            Debug.LogWarning("[MergedShop] Duplicate instance destroyed!");
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+
+        // Referanslar kopuksa runtime'da otomatik bul
+        if (panel == null) AutoWireReferences();
+
+        Debug.Log($"[MergedShop] Awake: panel={panel != null}, perkSlots={perkSlots.Count}, itemSlots={itemSlots.Count}, canvasGroup={canvasGroup != null}, continueButton={continueButton != null}, rerollButton={perkRerollButton != null}");
         if (panel != null) panel.SetActive(false);
 
-        // Inspector'da perk listeleri boşsa LevelUpManager'dan otomatik al
-        if (commonPerks.Count == 0 && LevelUpManager.instance != null)
+        // Kartlara ShopCardHover ekle (editor'den bake edilen eski EventTrigger'lari guncelle)
+        UpgradeCardHovers();
+
+        // Perk listeleri boşsa runtime'da prefab'lardan doldur
+        if (commonPerks.Count == 0)
+            AutoPopulatePerkPools();
+
+        // Item pool boşsa runtime'da doldur
+        if (itemPool.Count == 0)
+            AutoPopulateItemPool();
+    }
+
+    private void AutoWireReferences()
+    {
+        // MergedShopCanvas'ı bul
+        Canvas shopCanvas = null;
+        foreach (var c in Resources.FindObjectsOfTypeAll<Canvas>())
+        {
+            if (c.gameObject.name == "MergedShopCanvas" && c.gameObject.scene.IsValid())
+            { shopCanvas = c; break; }
+        }
+        if (shopCanvas == null) { Debug.LogError("[MergedShop] AutoWire: MergedShopCanvas not found!"); return; }
+
+        Transform canvasT = shopCanvas.transform;
+        Transform panelT = canvasT.Find("ShopPanel");
+        if (panelT == null) { Debug.LogError("[MergedShop] AutoWire: ShopPanel not found!"); return; }
+
+        panel = panelT.gameObject;
+        canvasGroup = panelT.GetComponent<CanvasGroup>();
+        goldText = FindTMP(panelT, "GoldText");
+        perkSection = FindChild(panelT, "PerkSection");
+        itemSection = FindChild(panelT, "ItemSection");
+
+        // Shop canvas sorting: PerkInventoryUI'den düşük olmalı (100)
+        shopCanvas.sortingOrder = 90;
+
+        // Butonlar
+        Transform rerollT = panelT.Find("RerollButton");
+        if (rerollT != null)
+        {
+            perkRerollButton = rerollT.GetComponent<UnityEngine.UI.Button>();
+            Transform rerollTextT = rerollT.Find("Text");
+            if (rerollTextT != null) perkRerollPriceText = rerollTextT.GetComponent<TMPro.TMP_Text>();
+            AddRuntimeHoverScale(rerollT.gameObject);
+        }
+
+        Transform contT = panelT.Find("ContinueButton");
+        if (contT != null)
+        {
+            continueButton = contT.GetComponent<UnityEngine.UI.Button>();
+            AddRuntimeHoverScale(contT.gameObject);
+        }
+
+        // Perk slots
+        if (perkSection != null)
+        {
+            perkSlots.Clear();
+            for (int i = 0; i < 3; i++)
+            {
+                Transform card = perkSection.transform.Find($"PerkCard_{i}");
+                if (card == null) continue;
+                var slot = new MergedShopPerkSlot();
+                slot.root = card.gameObject;
+                slot.background = card.GetComponent<UnityEngine.UI.Image>();
+                slot.button = card.GetComponent<UnityEngine.UI.Button>();
+                slot.nameText = FindTMP(card, "Name");
+                slot.rarityText = FindTMP(card, "Rarity");
+                slot.levelText = FindTMP(card, "Level");
+                slot.descriptionText = FindTMP(card, "Description");
+                slot.priceText = FindTMP(card, "PriceText");
+                Transform iconT = card.Find("Icon");
+                if (iconT != null) slot.iconImage = iconT.GetComponent<UnityEngine.UI.Image>();
+                slot.soldOutOverlay = FindChild(card, "SoldOutOverlay");
+                perkSlots.Add(slot);
+            }
+        }
+
+        // Item slots
+        if (itemSection != null)
+        {
+            itemSlots.Clear();
+            for (int i = 0; i < 3; i++)
+            {
+                Transform card = itemSection.transform.Find($"ItemCard_{i}");
+                if (card == null) continue;
+                var slot = new MergedShopItemSlot();
+                slot.root = card.gameObject;
+                slot.background = card.GetComponent<UnityEngine.UI.Image>();
+                slot.button = card.GetComponent<UnityEngine.UI.Button>();
+                slot.nameText = FindTMP(card, "Name");
+                slot.descriptionText = FindTMP(card, "Description");
+                slot.priceText = FindTMP(card, "PriceText");
+                Transform iconT = card.Find("Icon");
+                if (iconT != null) slot.iconImage = iconT.GetComponent<UnityEngine.UI.Image>();
+                slot.soldOutOverlay = FindChild(card, "SoldOut");
+                itemSlots.Add(slot);
+            }
+        }
+
+        Debug.Log($"[MergedShop] AutoWire done: panel={panel != null}, perkSlots={perkSlots.Count}, itemSlots={itemSlots.Count}");
+    }
+
+    // ─── Coin Icon Helper (text child olarak, text ile birlikte kayar) ───
+
+    private RectTransform goldCoinRT;
+    private RectTransform rerollCoinRT;
+
+    private Sprite FindCoinSprite()
+    {
+        foreach (var s in perkSlots)
+        {
+            if (s.root == null) continue;
+            var ci = s.root.transform.Find("CoinIcon");
+            if (ci != null) { var img = ci.GetComponent<Image>(); if (img != null && img.sprite != null) return img.sprite; }
+        }
+        foreach (var s in itemSlots)
+        {
+            if (s.root == null) continue;
+            var ci = s.root.transform.Find("CoinIcon");
+            if (ci != null) { var img = ci.GetComponent<Image>(); if (img != null && img.sprite != null) return img.sprite; }
+        }
+        return null;
+    }
+
+    private RectTransform EnsureCoinChild(TMP_Text parent, string childName)
+    {
+        if (parent == null) return null;
+        Transform existing = parent.transform.Find(childName);
+        if (existing != null) return existing.GetComponent<RectTransform>();
+
+        var go = new GameObject(childName, typeof(RectTransform));
+        go.transform.SetParent(parent.transform, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(20f, 20f);
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+
+        Sprite coinSprite = FindCoinSprite();
+        var icon = go.AddComponent<Image>();
+        if (coinSprite != null) { icon.sprite = coinSprite; icon.color = Color.white; }
+        else icon.color = new Color(1f, 0.85f, 0.2f);
+        icon.preserveAspect = true;
+        icon.raycastTarget = false;
+        return rt;
+    }
+
+    private void EnsureAllCoinIcons()
+    {
+        goldCoinRT = EnsureCoinChild(goldText, "GoldCoinIcon");
+        rerollCoinRT = EnsureCoinChild(perkRerollPriceText, "RerollCoinIcon");
+    }
+
+    private static void PositionCoinIcon(RectTransform coinRT, TMP_Text text)
+    {
+        if (coinRT == null || text == null) return;
+        float halfW = text.preferredWidth * 0.5f;
+        coinRT.anchoredPosition = new Vector2(halfW + 4f + coinRT.sizeDelta.x * 0.5f, 0f);
+    }
+
+    private void AutoPopulatePerkPools()
+    {
+        // Önce LevelUpManager'dan dene
+        if (LevelUpManager.instance != null && LevelUpManager.instance.commonPerks.Count > 0)
         {
             commonPerks    = new List<GameObject>(LevelUpManager.instance.commonPerks);
             rarePerks      = new List<GameObject>(LevelUpManager.instance.rarePerks);
             epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
             legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
+            Debug.Log($"[MergedShop] Perk pools from LevelUpManager: C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
+            return;
         }
+
+        // LevelUpManager yoksa: projedeki tüm BasePerk prefab'larını tara
+        var allPerks = Resources.FindObjectsOfTypeAll<BasePerk>();
+        foreach (var perk in allPerks)
+        {
+            // Scene objeleri değil, sadece prefab asset'leri al
+            if (perk.gameObject.scene.IsValid()) continue;
+            GameObject prefab = perk.gameObject;
+            switch (perk.rarity)
+            {
+                case PerkRarity.Common:    commonPerks.Add(prefab); break;
+                case PerkRarity.Rare:      rarePerks.Add(prefab); break;
+                case PerkRarity.Epic:      epicPerks.Add(prefab); break;
+                case PerkRarity.Legendary: legendaryPerks.Add(prefab); break;
+            }
+        }
+        Debug.Log($"[MergedShop] AutoPopulate perk pools (FindObjectsOfTypeAll): C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
+    }
+
+    private void AutoPopulateItemPool()
+    {
+        var allItems = Resources.FindObjectsOfTypeAll<BaseItem>();
+        foreach (var item in allItems)
+        {
+            if (item == null) continue;
+            // MutationCatalyst artık normal item — secret item değil
+            if (item is SecretPerkOrb)
+            {
+                if (secretItem == null) secretItem = item;
+                continue;
+            }
+            itemPool.Add(item);
+        }
+        Debug.Log($"[MergedShop] AutoPopulate itemPool: {itemPool.Count} items, secretItem={secretItem != null}");
+    }
+
+    /// <summary>
+    /// Sahnede zaten var olan kartlara ShopCardHover ekler ve
+    /// EventTrigger callback'lerini yeni sisteme baglar.
+    /// </summary>
+    private void UpgradeCardHovers()
+    {
+        var allRoots = new List<GameObject>();
+        foreach (var s in perkSlots) if (s.root != null) allRoots.Add(s.root);
+        foreach (var s in itemSlots) if (s.root != null) allRoots.Add(s.root);
+
+        foreach (var go in allRoots)
+        {
+            // ShopCardHover yoksa ekle
+            if (go.GetComponent<ShopCardHover>() == null)
+                go.AddComponent<ShopCardHover>();
+
+            // EventTrigger varsa callback'leri guncelle
+            var trigger = go.GetComponent<UnityEngine.EventSystems.EventTrigger>();
+            if (trigger != null)
+            {
+                trigger.triggers.Clear();
+                var enter = new UnityEngine.EventSystems.EventTrigger.Entry
+                    { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
+                var capturedGo = go;
+                enter.callback.AddListener((_) =>
+                {
+                    var hover = capturedGo.GetComponent<ShopCardHover>();
+                    if (hover != null) hover.HoverIn();
+                });
+                trigger.triggers.Add(enter);
+
+                var exit = new UnityEngine.EventSystems.EventTrigger.Entry
+                    { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
+                exit.callback.AddListener((_) =>
+                {
+                    var hover = capturedGo.GetComponent<ShopCardHover>();
+                    if (hover != null) hover.HoverOut();
+                });
+                trigger.triggers.Add(exit);
+            }
+        }
+    }
+
+    private static void AddRuntimeHoverScale(GameObject go)
+    {
+        if (go.GetComponent<UnityEngine.EventSystems.EventTrigger>() != null) return;
+        var trigger = go.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+        var enter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
+        enter.callback.AddListener((_) =>
+        {
+            var hover = go.GetComponent<ShopCardHover>();
+            if (hover != null) hover.HoverIn();
+            else go.transform.localScale = new Vector3(1.12f, 1.12f, 1f);
+        });
+        trigger.triggers.Add(enter);
+        var exit = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
+        exit.callback.AddListener((_) =>
+        {
+            var hover = go.GetComponent<ShopCardHover>();
+            if (hover != null) hover.HoverOut();
+            else go.transform.localScale = Vector3.one;
+        });
+        trigger.triggers.Add(exit);
+    }
+
+    private static TMPro.TMP_Text FindTMP(Transform parent, string childName)
+    {
+        Transform t = parent.Find(childName);
+        return t != null ? t.GetComponent<TMPro.TMP_Text>() : null;
+    }
+
+    private static GameObject FindChild(Transform parent, string childName)
+    {
+        Transform t = parent.Find(childName);
+        return t != null ? t.gameObject : null;
     }
 
     // ═══════════════════════════════════════════
@@ -127,6 +411,7 @@ public class MergedShopManager : MonoBehaviour
         currentPerkRerollCost   = perkRerollBaseCost;
         shownItemNames.Clear();
 
+        EnsureAllCoinIcons();
         GeneratePerkChoices();
         GenerateItemChoices();
         RefreshGold();
@@ -134,6 +419,9 @@ public class MergedShopManager : MonoBehaviour
 
         if (panel != null)
         {
+            // Önce alpha 0 yap ki flash olmasın
+            if (canvasGroup != null) canvasGroup.alpha = 0f;
+
             // Parent canvas kapalıysa onu da aç
             Canvas parentCanvas = panel.GetComponentInParent<Canvas>(true);
             if (parentCanvas != null && !parentCanvas.gameObject.activeSelf)
@@ -145,11 +433,14 @@ public class MergedShopManager : MonoBehaviour
         {
             continueButton.onClick.RemoveAllListeners();
             continueButton.onClick.AddListener(OnContinue);
+            AddRuntimeHoverScale(continueButton.gameObject);
         }
         if (perkRerollButton != null)
         {
             perkRerollButton.onClick.RemoveAllListeners();
             perkRerollButton.onClick.AddListener(TryReroll);
+            AddRuntimeHoverScale(perkRerollButton.gameObject);
+            Debug.Log($"[MergedShop] Reroll button wired. Listeners after bind: {perkRerollButton.onClick.GetPersistentEventCount()} persistent. hasPerkReroll={RunManager.instance?.hasPerkReroll}");
         }
 
         StopAllCoroutines();
@@ -158,6 +449,20 @@ public class MergedShopManager : MonoBehaviour
 
     private IEnumerator OpenSequence()
     {
+        // Önce tüm kartları scale 0 yap (flash önleme)
+        List<GameObject> allCards = new List<GameObject>();
+        foreach (var s in perkSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
+        foreach (var s in itemSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
+
+        foreach (var card in allCards)
+        {
+            card.transform.localScale = Vector3.zero;
+            var tilt = card.GetComponent<CardTilt3D>();
+            if (tilt != null) tilt.scaleOverridden = true;
+            var hover = card.GetComponent<ShopCardHover>();
+            if (hover != null) hover.scaleOverridden = true;
+        }
+
         // Panel fade in
         if (canvasGroup != null)
         {
@@ -170,14 +475,6 @@ public class MergedShopManager : MonoBehaviour
                 yield return null;
             }
         }
-
-        // Kartları sıfırla (scale 0) — önce perkler (üst), sonra itemler (alt)
-        List<GameObject> allCards = new List<GameObject>();
-        foreach (var s in perkSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
-        foreach (var s in itemSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
-
-        foreach (var card in allCards)
-            card.transform.localScale = Vector3.zero;
 
         // Pop-in: soldan sağa, üstten alta
         if (AudioManager.instance != null) AudioManager.instance.PlayCard();
@@ -210,6 +507,10 @@ public class MergedShopManager : MonoBehaviour
             yield return null;
         }
         card.localScale = Vector3.one;
+        var tilt = card.GetComponent<CardTilt3D>();
+        if (tilt != null) tilt.RefreshBaseScale();
+        var hover = card.GetComponent<ShopCardHover>();
+        if (hover != null) hover.RefreshBaseScale();
     }
 
     private void OnContinue()
@@ -301,49 +602,92 @@ public class MergedShopManager : MonoBehaviour
     public void SelectPerk(int index)
     {
         if (index >= currentPerkChoices.Count) return;
+        if (index >= perkSlots.Count) return;
         GameObject perkGO = currentPerkChoices[index];
         if (perkGO == null) return;
 
+        // Gold kontrolü
+        int cost = perkSlots[index].price;
+        if (RunManager.instance != null && RunManager.instance.currentGold < cost)
+        {
+            StartCoroutine(FlashText(goldText));
+            return;
+        }
+
         if (RunManager.instance != null)
+        {
+            RunManager.instance.currentGold -= cost;
             RunManager.instance.AddPerk(perkGO);
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
+        }
 
         if (AudioManager.instance != null) AudioManager.instance.PlayPurchase();
 
         // Seçilen slot'u sold-out yap
-        if (index < perkSlots.Count)
-        {
-            if (perkSlots[index].soldOutOverlay != null) perkSlots[index].soldOutOverlay.SetActive(true);
-            if (perkSlots[index].button != null) perkSlots[index].button.interactable = false;
-        }
+        if (perkSlots[index].soldOutOverlay != null) perkSlots[index].soldOutOverlay.SetActive(true);
+        if (perkSlots[index].button != null) perkSlots[index].button.interactable = false;
 
         RefreshGold();
+        RefreshPerkAffordability();
+    }
+
+    private void RefreshPerkAffordability()
+    {
+        if (RunManager.instance == null) return;
+        for (int i = 0; i < perkSlots.Count; i++)
+        {
+            if (perkSlots[i].button == null || !perkSlots[i].button.interactable) continue;
+            bool canAfford = RunManager.instance.currentGold >= perkSlots[i].price;
+            if (perkSlots[i].priceText != null)
+                perkSlots[i].priceText.color = canAfford ? new Color(1f, 0.85f, 0.2f) : new Color(1f, 0.3f, 0.3f);
+        }
     }
 
     private void TryReroll()
     {
-        if (RunManager.instance == null) return;
-        int cost = Mathf.RoundToInt(currentPerkRerollCost);
-        if (RunManager.instance.currentGold < cost) { StartCoroutine(FlashText(goldText)); return; }
+        Debug.Log($"[MergedShop] >>> TryReroll CALLED on {this.GetType().Name}");
+        if (RunManager.instance == null) { Debug.Log("[MergedShop] TryReroll: RunManager null!"); return; }
 
-        RunManager.instance.currentGold -= cost;
-        perkRerollCount++;
-        currentPerkRerollCost = perkRerollBaseCost * Mathf.Pow(perkRerollMultiplier, perkRerollCount);
+        // Mutation Catalyst: bedava reroll (tek seferlik)
+        bool freeReroll = RunManager.instance.hasPerkReroll;
+        int goldBefore = RunManager.instance.currentGold;
+        Debug.Log($"[MergedShop] TryReroll: hasPerkReroll={freeReroll}, baseCost={perkRerollBaseCost}, increment={perkRerollIncrement}, rerollCount={perkRerollCount}, currentCost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={goldBefore}");
+        if (!freeReroll)
+        {
+            int cost = Mathf.RoundToInt(currentPerkRerollCost);
+            if (RunManager.instance.currentGold < cost) { StartCoroutine(FlashText(goldText)); return; }
+            RunManager.instance.currentGold -= cost;
+            Debug.Log($"[MergedShop] TryReroll CHARGED: {cost} gold. Before={goldBefore}, After={RunManager.instance.currentGold}");
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
+        }
+        else
+        {
+            RunManager.instance.hasPerkReroll = false;
+            // Bedava reroll maliyeti artırmasın
+        }
+
+        if (!freeReroll)
+        {
+            perkRerollCount++;
+            currentPerkRerollCost = perkRerollBaseCost + perkRerollIncrement * perkRerollCount;
+        }
 
         GeneratePerkChoices();
         GenerateItemChoices();
         RefreshGold();
         RefreshRerollButton();
-        GameEvents.GoldChanged(RunManager.instance.currentGold);
     }
 
     private void RefreshRerollButton()
     {
         if (RunManager.instance == null) return;
-        int cost = Mathf.RoundToInt(currentPerkRerollCost);
+        bool free = RunManager.instance.hasPerkReroll;
+        int cost = free ? 0 : Mathf.RoundToInt(currentPerkRerollCost);
         if (perkRerollPriceText != null)
             perkRerollPriceText.text = $"REROLL  <color=#FFD933>{cost}</color>";
+        PositionCoinIcon(rerollCoinRT, perkRerollPriceText);
         if (perkRerollButton != null)
-            perkRerollButton.interactable = RunManager.instance.currentGold >= cost;
+            perkRerollButton.interactable = free || RunManager.instance.currentGold >= cost;
     }
 
     private void HidePerkSection()
@@ -392,7 +736,7 @@ public class MergedShopManager : MonoBehaviour
             while (used.Contains(itemPool.IndexOf(picked))
                 || shownItemNames.Contains(picked.itemName)
                 || (secretItem != null && picked.itemName == secretItem.itemName)
-                || (RunManager.instance != null && RunManager.instance.hasPerkReroll && picked is MutationCatalyst));
+                || (RunManager.instance != null && RunManager.instance.hasPerkReroll && picked is MutationCatalyst)); // Zaten reroll hakkı varsa Catalyst gösterme
 
             if (picked != null) { used.Add(itemPool.IndexOf(picked)); shownItemNames.Add(picked.itemName); }
             currentItems.Add(picked);
@@ -489,8 +833,10 @@ public class MergedShopManager : MonoBehaviour
     {
         if (goldText != null && RunManager.instance != null)
             goldText.text = RunManager.instance.currentGold.ToString();
+        PositionCoinIcon(goldCoinRT, goldText);
         RefreshRerollButton();
         RefreshItemAffordability();
+        RefreshPerkAffordability();
     }
 
     // ═══════════════════════════════════════════
@@ -606,8 +952,10 @@ public class MergedShopPerkSlot
     public TMP_Text    rarityText;
     public TMP_Text    levelText;
     public TMP_Text    descriptionText;
+    public TMP_Text    priceText;
     public Image       iconImage;
     public GameObject  soldOutOverlay;
+    [System.NonSerialized] public int price;
 
     public void Setup(GameObject perkGO, int index, MergedShopManager manager)
     {
@@ -645,6 +993,10 @@ public class MergedShopPerkSlot
             fx.Setup(perk.rarity, iconRT);
         }
 
+        // Fiyat (rarity'ye göre)
+        price = GetRarityPrice(perk.rarity);
+        if (priceText != null) priceText.text = price.ToString();
+
         if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
 
         if (button != null)
@@ -652,6 +1004,19 @@ public class MergedShopPerkSlot
             button.interactable = true;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => manager.SelectPerk(index));
+        }
+    }
+
+    public static int GetRarityPrice(PerkRarity r)
+    {
+        switch (r)
+        {
+            case PerkRarity.Common:    return 15;
+            case PerkRarity.Rare:      return 20;
+            case PerkRarity.Epic:      return 30;
+            case PerkRarity.Legendary: return 40;
+            case PerkRarity.Secret:    return 50;
+            default:                   return 10;
         }
     }
 

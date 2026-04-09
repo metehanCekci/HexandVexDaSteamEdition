@@ -3,7 +3,7 @@ using UnityEditor;
 
 public static class SyncCardLayouts
 {
-    [MenuItem("Tools/Hex and Vex/Sync Card Layouts from ItemCard_0")]
+    [MenuItem("Tools/Hex and Vex/Sync Card Layouts")]
     public static void Sync()
     {
         // MergedShopCanvas'ı bul
@@ -18,7 +18,6 @@ public static class SyncCardLayouts
         }
         if (canvasGO == null) { Debug.LogError("MergedShopCanvas not found!"); return; }
 
-        // ShopPanel > ItemSection & PerkSection bul
         Transform panel = canvasGO.transform.Find("ShopPanel");
         if (panel == null) { Debug.LogError("ShopPanel not found!"); return; }
 
@@ -26,73 +25,75 @@ public static class SyncCardLayouts
         Transform perkSection = panel.Find("PerkSection");
         if (itemSection == null || perkSection == null) { Debug.LogError("ItemSection or PerkSection not found!"); return; }
 
-        // Kaynak: ItemCard_0
-        Transform source = itemSection.Find("ItemCard_0");
-        if (source == null) { Debug.LogError("ItemCard_0 not found!"); return; }
-
-        RectTransform sourceRT = source.GetComponent<RectTransform>();
-
-        // === ITEM KARTLARI (ItemCard_1, ItemCard_2) ===
-        // Kart boyutu aynı, sadece X pozisyonu kaydırılacak
-        float cardWidth = sourceRT.anchorMax.x - sourceRT.anchorMin.x; // ~0.313
-        float gap = 0.015f;
-
-        for (int i = 1; i <= 2; i++)
+        // === ITEM KARTLARI: ItemCard_0 -> ItemCard_1, ItemCard_2 ===
+        Transform itemSource = itemSection.Find("ItemCard_0");
+        if (itemSource != null)
         {
-            Transform target = itemSection.Find($"ItemCard_{i}");
-            if (target == null) continue;
+            RectTransform srcRT = itemSource.GetComponent<RectTransform>();
+            float cardWidth = srcRT.anchorMax.x - srcRT.anchorMin.x;
+            float gap = srcRT.anchorMin.x; // ilk kartın sol boşluğu = gap
 
-            float x = sourceRT.anchorMin.x + (cardWidth + gap) * i;
-            RectTransform targetRT = target.GetComponent<RectTransform>();
-            targetRT.anchorMin = new Vector2(x, sourceRT.anchorMin.y);
-            targetRT.anchorMax = new Vector2(x + cardWidth, sourceRT.anchorMax.y);
-            targetRT.anchoredPosition = sourceRT.anchoredPosition;
-            targetRT.sizeDelta = sourceRT.sizeDelta;
-            targetRT.pivot = sourceRT.pivot;
+            for (int i = 1; i <= 2; i++)
+            {
+                Transform target = itemSection.Find($"ItemCard_{i}");
+                if (target == null) continue;
 
-            // Child'ları kopyala (isim eşleştirmesi)
-            CopyChildRT(source, target, "Icon");
-            CopyChildRT(source, target, "Name");
-            CopyChildRT(source, target, "Description");
-            CopyChildRT(source, target, "PriceText");
-            CopyChildRT(source, target, "CoinIcon");
-            CopyChildRT(source, target, "SoldOut");
+                float x = srcRT.anchorMin.x + (cardWidth + gap) * i;
+                RectTransform tgt = target.GetComponent<RectTransform>();
+                tgt.anchorMin = new Vector2(x, srcRT.anchorMin.y);
+                tgt.anchorMax = new Vector2(x + cardWidth, srcRT.anchorMax.y);
+                tgt.anchoredPosition = srcRT.anchoredPosition;
+                tgt.sizeDelta = srcRT.sizeDelta;
+                tgt.pivot = srcRT.pivot;
 
-            EditorUtility.SetDirty(target.gameObject);
+                CopyChildRT(itemSource, target, "Icon");
+                CopyChildRT(itemSource, target, "Name");
+                CopyChildRT(itemSource, target, "Description");
+                CopyChildRT(itemSource, target, "PriceText");
+                CopyChildRT(itemSource, target, "CoinIcon");
+                CopyChildRT(itemSource, target, "SoldOut");
+
+                EditorUtility.SetDirty(target.gameObject);
+            }
+            Debug.Log("[Sync] ItemCard_0 -> ItemCard_1, ItemCard_2");
         }
 
-        // === PERK KARTLARI (PerkCard_0, PerkCard_1, PerkCard_2) ===
-        for (int i = 0; i <= 2; i++)
+        // === PERK KARTLARI: PerkCard_0 -> PerkCard_1, PerkCard_2 ===
+        Transform perkSource = perkSection.Find("PerkCard_0");
+        if (perkSource != null)
         {
-            Transform target = perkSection.Find($"PerkCard_{i}");
-            if (target == null) continue;
+            RectTransform srcRT = perkSource.GetComponent<RectTransform>();
+            float cardWidth = srcRT.anchorMax.x - srcRT.anchorMin.x;
+            float gap = srcRT.anchorMin.x;
 
-            float x = sourceRT.anchorMin.x + (cardWidth + gap) * i;
-            RectTransform targetRT = target.GetComponent<RectTransform>();
-            targetRT.anchorMin = new Vector2(x, sourceRT.anchorMin.y);
-            targetRT.anchorMax = new Vector2(x + cardWidth, sourceRT.anchorMax.y);
-            targetRT.anchoredPosition = sourceRT.anchoredPosition;
-            targetRT.sizeDelta = sourceRT.sizeDelta;
-            targetRT.pivot = sourceRT.pivot;
+            for (int i = 1; i <= 2; i++)
+            {
+                Transform target = perkSection.Find($"PerkCard_{i}");
+                if (target == null) continue;
 
-            // Ortak child'lar
-            CopyChildRT(source, target, "Icon");
-            CopyChildRT(source, target, "Name");
-            CopyChildRT(source, target, "Description");
+                float x = srcRT.anchorMin.x + (cardWidth + gap) * i;
+                RectTransform tgt = target.GetComponent<RectTransform>();
+                tgt.anchorMin = new Vector2(x, srcRT.anchorMin.y);
+                tgt.anchorMax = new Vector2(x + cardWidth, srcRT.anchorMax.y);
+                tgt.anchoredPosition = srcRT.anchoredPosition;
+                tgt.sizeDelta = srcRT.sizeDelta;
+                tgt.pivot = srcRT.pivot;
 
-            // SoldOut -> SoldOutOverlay (isim farklı, aynı layout)
-            CopyChildRTRenamed(source, "SoldOut", target, "SoldOutOverlay");
+                CopyChildRT(perkSource, target, "Icon");
+                CopyChildRT(perkSource, target, "Name");
+                CopyChildRT(perkSource, target, "Rarity");
+                CopyChildRT(perkSource, target, "Level");
+                CopyChildRT(perkSource, target, "Description");
+                CopyChildRT(perkSource, target, "PriceText");
+                CopyChildRT(perkSource, target, "CoinIcon");
+                CopyChildRT(perkSource, target, "SoldOutOverlay");
 
-            // Perk-specific: Rarity ve Level, ItemCard_0'daki PriceText ve CoinIcon pozisyonlarına map'le
-            // Rarity -> PriceText pozisyonuna
-            CopyChildRTRenamed(source, "PriceText", target, "Rarity");
-            // Level -> CoinIcon pozisyonuna
-            CopyChildRTRenamed(source, "CoinIcon", target, "Level");
-
-            EditorUtility.SetDirty(target.gameObject);
+                EditorUtility.SetDirty(target.gameObject);
+            }
+            Debug.Log("[Sync] PerkCard_0 -> PerkCard_1, PerkCard_2");
         }
 
-        Debug.Log("[SyncCardLayouts] All cards synced from ItemCard_0. Save scene (Ctrl+S).");
+        Debug.Log("[SyncCardLayouts] Done. Save scene (Ctrl+S).");
     }
 
     static void CopyChildRT(Transform source, Transform target, string childName)
@@ -101,26 +102,13 @@ public static class SyncCardLayouts
         Transform tgtChild = target.Find(childName);
         if (srcChild == null || tgtChild == null) return;
 
-        CopyRectTransform(srcChild.GetComponent<RectTransform>(), tgtChild.GetComponent<RectTransform>());
-        EditorUtility.SetDirty(tgtChild.gameObject);
-    }
-
-    static void CopyChildRTRenamed(Transform source, string srcChildName, Transform target, string tgtChildName)
-    {
-        Transform srcChild = source.Find(srcChildName);
-        Transform tgtChild = target.Find(tgtChildName);
-        if (srcChild == null || tgtChild == null) return;
-
-        CopyRectTransform(srcChild.GetComponent<RectTransform>(), tgtChild.GetComponent<RectTransform>());
-        EditorUtility.SetDirty(tgtChild.gameObject);
-    }
-
-    static void CopyRectTransform(RectTransform src, RectTransform tgt)
-    {
+        RectTransform src = srcChild.GetComponent<RectTransform>();
+        RectTransform tgt = tgtChild.GetComponent<RectTransform>();
         tgt.anchorMin = src.anchorMin;
         tgt.anchorMax = src.anchorMax;
         tgt.anchoredPosition = src.anchoredPosition;
         tgt.sizeDelta = src.sizeDelta;
         tgt.pivot = src.pivot;
+        EditorUtility.SetDirty(tgtChild.gameObject);
     }
 }

@@ -41,6 +41,13 @@ public class EnchantNodeUI : MonoBehaviour
 
         if (enchantPanel != null)
         {
+            // panelCG yoksa al/oluştur — fade in/out için gerekli
+            if (panelCG == null) panelCG = enchantPanel.GetComponent<CanvasGroup>();
+            if (panelCG == null) panelCG = enchantPanel.AddComponent<CanvasGroup>();
+
+            // Flash önleme: alpha 0 ÖNCE, sonra panel aktif
+            panelCG.alpha = 0f;
+
             if (enchantPanel.transform.parent != null)
                 enchantPanel.transform.parent.gameObject.SetActive(true);
             enchantPanel.SetActive(true);
@@ -50,6 +57,19 @@ public class EnchantNodeUI : MonoBehaviour
 
         // Pick 3 random tile types (no duplicates)
         currentChoices = PickThreeChoices();
+
+        // Kartları scale 0 yap (flash önleme — panel aktifken görünmesinler)
+        for (int i = 0; i < 3; i++)
+        {
+            if (choiceButtons != null && i < choiceButtons.Length && choiceButtons[i] != null)
+            {
+                choiceButtons[i].transform.localScale = Vector3.zero;
+                var tilt = choiceButtons[i].GetComponent<CardTilt3D>();
+                if (tilt != null) tilt.scaleOverridden = true;
+                var hover = choiceButtons[i].GetComponent<ShopCardHover>();
+                if (hover != null) hover.scaleOverridden = true;
+            }
+        }
 
         for (int i = 0; i < 3; i++)
         {
@@ -160,6 +180,11 @@ public class EnchantNodeUI : MonoBehaviour
         }
         card.localScale = Vector3.one;
         cardAnimDone[index] = true;
+
+        var tilt = card.GetComponent<CardTilt3D>();
+        if (tilt != null) tilt.RefreshBaseScale();
+        var hoverFx = card.GetComponent<ShopCardHover>();
+        if (hoverFx != null) hoverFx.RefreshBaseScale();
 
         StartCoroutine(CardIdleBounce(card, index));
     }
@@ -379,8 +404,7 @@ public class EnchantNodeUI : MonoBehaviour
         panelRT.anchorMax = Vector2.one;
         panelRT.offsetMin = Vector2.zero;
         panelRT.offsetMax = Vector2.zero;
-        Image panelBG = panelGO.AddComponent<Image>();
-        panelBG.color = new Color(0.02f, 0.02f, 0.06f, 0f);
+        // No background image — keep the normal map visible behind enchant cards
         panelCG = panelGO.AddComponent<CanvasGroup>();
         enchantPanel = panelGO;
 

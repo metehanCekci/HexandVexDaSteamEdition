@@ -6,7 +6,7 @@ public static class MapGenerator
     // Ödül node'ları — combat olmayan, oyuncuya fayda sağlayan
     private static readonly HashSet<MapNodeType> rewardTypes = new HashSet<MapNodeType>
     {
-        MapNodeType.Shop, MapNodeType.Rest, MapNodeType.Enchant, MapNodeType.Sacrifice
+        MapNodeType.Shop, MapNodeType.Rest, MapNodeType.Enchant
     };
 
     // Risk node'ları — düşmanlı
@@ -101,7 +101,7 @@ public static class MapGenerator
         AssignTypesPathAware(map, config, totalRows);
 
         // ─── Her oda tipinden en az 1 garanti ───
-        EnforceMinimumRoomTypes(map, totalRows);
+        EnforceMinimumRoomTypes(map, totalRows, config);
 
         // ─── SON GÜVENLİK: Ardışık ödül yasağı (tüm post-processing sonrası) ───
         EnforceNoConsecutiveRewards(map);
@@ -110,13 +110,19 @@ public static class MapGenerator
         EnforceMinimumShop(map, totalRows);
 
         // ─── SON GÜVENLİK: Layer başına en az 1 Rest (Campfire) garanti ───
-        EnforceMinimumRest(map, totalRows);
+        if (config.restEnabled) EnforceMinimumRest(map, totalRows);
 
         // ─── SON GÜVENLİK: Layer başına en az 1 Enchant garanti ───
-        EnforceMinimumEnchant(map, totalRows);
+        if (config.enchantEnabled) EnforceMinimumEnchant(map, totalRows);
+
+        // ─── Layer'a göre devre dışı node tiplerini kaldır ───
+        EnforceLayerNodeRestrictions(map, config);
 
         // ─── SON GÜVENLİK: Arka arkaya ASLA aynı node tipi gelmesin ───
         EnforceNoConsecutiveSameType(map, config);
+
+        // ─── EN SON: Aynı derinlikteki aynı tipteki node'ları birleştir ───
+        MergeSameTypeAtSameDepth(map, totalRows);
 
         return map;
     }
@@ -401,7 +407,6 @@ public static class MapGenerator
         if (!used.Contains(MapNodeType.Shop)) return false;
         if (canRest && !used.Contains(MapNodeType.Rest)) return false;
         if (!used.Contains(MapNodeType.Enchant)) return false;
-        if (!used.Contains(MapNodeType.Sacrifice)) return false;
         return true;
     }
 
@@ -421,28 +426,22 @@ public static class MapGenerator
             candidates.Add(MapNodeType.Shop);
             weights.Add(config.shopChance + config.perkChance); // merged shop covers both
         }
-        if (canRest && !usedTypes.Contains(MapNodeType.Rest))
+        if (canRest && config.restEnabled && !usedTypes.Contains(MapNodeType.Rest))
         {
             candidates.Add(MapNodeType.Rest);
             weights.Add(config.restChance);
         }
-        if (!usedTypes.Contains(MapNodeType.Enchant))
+        if (config.enchantEnabled && !usedTypes.Contains(MapNodeType.Enchant))
         {
             candidates.Add(MapNodeType.Enchant);
             weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
         }
-        if (!usedTypes.Contains(MapNodeType.Sacrifice))
-        {
-            candidates.Add(MapNodeType.Sacrifice);
-            weights.Add(0.10f);
-        }
-
         // Hepsi kullanılmışsa fallback — tekrar seçebilir
         if (candidates.Count == 0)
         {
             candidates.Add(MapNodeType.Shop);
             weights.Add(config.shopChance + config.perkChance);
-            if (canRest)
+            if (canRest && config.restEnabled)
             {
                 candidates.Add(MapNodeType.Rest);
                 weights.Add(config.restChance);
@@ -565,6 +564,99 @@ public static class MapGenerator
     }
 
     // ═══════════════════════════════════════════════════════
+    // AYNI DERİNLİKTE AYNI TİP → BİRLEŞTİR
+    // ═══════════════════════════════════════════════════════
+
+    private static void MergeSameTypeAtSameDepth(MapData map, int totalRows)
+    {
+        for (int r = 1; r < totalRows; r++)
+        {
+            List<MapNode> rowNodes = map.GetRow(r);
+            if (rowNodes.Count < 2) continue;
+
+            // Aynı tipteki node'ları grupla
+            Dictionary<MapNodeType, List<MapNode>> typeGroups = new Dictionary<MapNodeType, List<MapNode>>();
+            foreach (var node in rowNodes)
+            {
+                if (!typeGroups.ContainsKey(node.nodeType))
+                    typeGroups[node.nodeType] = new List<MapNode>();
+                typeGroups[node.nodeType].Add(node);
+            }
+
+            // Birleştirilecekleri topla (iteration sırasında list bozmamak için)
+            List<System.Tuple<MapNode, MapNode>> mergeList = new List<System.Tuple<MapNode, MapNode>>();
+            foreach (var kvp in typeGroups)
+            {
+                List<MapNode> group = kvp.Value;
+                if (group.Count < 2) continue;
+                MapNode keeper = group[0];
+                for (int i = 1; i < group.Count; i++)
+                    mergeList.Add(new System.Tuple<MapNode, MapNode>(keeper, group[i]));
+            }
+
+            foreach (var merge in mergeList)
+            {
+                MapNode keeper = merge.Item1;
+                MapNode removed = merge.Item2;
+                if (!map.nodes.Contains(removed)) continue;
+
+                // removed'un child'larını keeper'a aktar
+                foreach (int childId in removed.childIds)
+                {
+                    if (childId != keeper.id && !keeper.childIds.Contains(childId))
+                        keeper.childIds.Add(childId);
+                }
+
+                // removed'a bağlı parent'ları keeper'a yönlendir
+                for (int p = 0; p < map.nodes.Count; p++)
+                {
+                    MapNode pNode = map.nodes[p];
+                    if (pNode == removed) continue;
+                    int idx = pNode.childIds.IndexOf(removed.id);
+                    if (idx >= 0)
+                    {
+                        pNode.childIds.RemoveAt(idx);
+                        if (!pNode.childIds.Contains(keeper.id))
+                            pNode.childIds.Add(keeper.id);
+                    }
+                }
+
+                map.nodes.Remove(removed);
+            }
+
+            // Column indekslerini yeniden sırala
+            List<MapNode> remaining = map.GetRow(r);
+            remaining.Sort((a, b) => a.column.CompareTo(b.column));
+            for (int c = 0; c < remaining.Count; c++)
+                remaining[c].column = c;
+        }
+
+        // ─── ID Reindex ───
+        // GetNode(id) id'yi list index olarak kullanıyor.
+        // Node silindikten sonra id'ler ve childIds'ler yeniden eşlenmeli.
+        Dictionary<int, int> idRemap = new Dictionary<int, int>();
+        for (int i = 0; i < map.nodes.Count; i++)
+        {
+            idRemap[map.nodes[i].id] = i;
+            map.nodes[i].id = i;
+        }
+
+        // childIds'leri yeni id'lerle güncelle
+        foreach (var node in map.nodes)
+        {
+            for (int c = 0; c < node.childIds.Count; c++)
+            {
+                if (idRemap.ContainsKey(node.childIds[c]))
+                    node.childIds[c] = idRemap[node.childIds[c]];
+            }
+        }
+
+        // bossNodeId güncelle
+        if (idRemap.ContainsKey(map.bossNodeId))
+            map.bossNodeId = idRemap[map.bossNodeId];
+    }
+
+    // ═══════════════════════════════════════════════════════
     // ARDIŞIK AYNI TİP YASAĞI (Combat dahil her şey)
     // ═══════════════════════════════════════════════════════
 
@@ -574,7 +666,7 @@ public static class MapGenerator
     /// </summary>
     private static void EnforceNoConsecutiveSameType(MapData map, MapLayerData config)
     {
-        bool canRest = config != null && config.campfireEnabled;
+        bool canRest = config != null && config.restEnabled;
 
         foreach (var parent in map.nodes)
         {
@@ -915,18 +1007,18 @@ public static class MapGenerator
     /// Haritada her kritik oda tipinden en az 1 tane olmasını garanti eder.
     /// Eksik tipler için uygun Combat node'larını dönüştürür.
     /// </summary>
-    private static void EnforceMinimumRoomTypes(MapData map, int totalRows)
+    private static void EnforceMinimumRoomTypes(MapData map, int totalRows, MapLayerData config)
     {
         // Garanti edilecek tipler (row 0 ve boss hariç node'larda)
-        // Shop (merged shop), Rest, EliteCombat, Enchant ve Sacrifice her zaman en az 1 garanti
-        MapNodeType[] requiredTypes = new MapNodeType[]
+        // Layer config'e göre devre dışı tipler listeye eklenmez
+        List<MapNodeType> requiredList = new List<MapNodeType>
         {
             MapNodeType.Shop,
-            MapNodeType.EliteCombat,
-            MapNodeType.Rest,
-            MapNodeType.Enchant,
-            MapNodeType.Sacrifice
+            MapNodeType.EliteCombat
         };
+        if (config == null || config.restEnabled)    requiredList.Add(MapNodeType.Rest);
+        if (config == null || config.enchantEnabled)  requiredList.Add(MapNodeType.Enchant);
+        MapNodeType[] requiredTypes = requiredList.ToArray();
 
         foreach (var reqType in requiredTypes)
         {
@@ -1164,6 +1256,31 @@ public static class MapGenerator
 
         if (bestCandidate != null)
             bestCandidate.nodeType = MapNodeType.Enchant;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // LAYER NODE KISITLAMALARI
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Layer config'e göre devre dışı node tiplerini Combat'a çevirir.
+    /// Örn: Layer 1'de enchantEnabled=false → Enchant node'ları Combat olur.
+    ///      Layer 2'de restEnabled=false → Rest node'ları Combat olur.
+    /// </summary>
+    private static void EnforceLayerNodeRestrictions(MapData map, MapLayerData config)
+    {
+        if (config == null) return;
+
+        foreach (var node in map.nodes)
+        {
+            if (node.nodeType == MapNodeType.Boss) continue;
+
+            if (!config.restEnabled && node.nodeType == MapNodeType.Rest)
+                node.nodeType = MapNodeType.Combat;
+
+            if (!config.enchantEnabled && node.nodeType == MapNodeType.Enchant)
+                node.nodeType = MapNodeType.Combat;
+        }
     }
 
 }

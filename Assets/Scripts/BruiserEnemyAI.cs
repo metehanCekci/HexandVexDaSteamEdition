@@ -264,10 +264,9 @@ public class BruiserEnemyAI : MonoBehaviour
 
             if (dodged)
             {
-                if (AudioManager.instance != null) AudioManager.instance.PlayShieldBreak();
-                if (TurnManager.instance != null && TurnManager.instance.dodgeEffectPrefab != null)
+                if (TurnManager.instance != null)
                 {
-                    Object.Instantiate(TurnManager.instance.dodgeEffectPrefab, player.transform.position, Quaternion.identity);
+                    TurnManager.instance.PlayShieldBreakFX(player.transform.position);
                 }
             }
             else if (RunManager.instance.hasBioBarrier)
