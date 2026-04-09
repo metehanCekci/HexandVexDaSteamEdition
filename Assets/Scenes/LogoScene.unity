@@ -515,7 +515,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &549672490
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -775,6 +775,7 @@ MonoBehaviour:
   musicSource: {fileID: 1459070404}
   goofyRunSound: {fileID: 8300000, guid: 3aaa3430294bf83b7b58ff8c8f27edd2, type: 3}
   explosionSound: {fileID: 8300000, guid: 13c200b2c44a438bbae884c9a05c40b4, type: 3}
+  bananaMode: 0
   rotationSpeed: 1500
   explosionScaleUpDuration: 0.5
   explosionScaleDownDuration: 0.3

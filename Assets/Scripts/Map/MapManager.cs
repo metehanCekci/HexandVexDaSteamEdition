@@ -599,6 +599,7 @@ public class MapManager : MonoBehaviour
                 break;
 
             case MapNodeType.Shop:
+            case MapNodeType.PerkSelection:
                 if (MergedShopManager.instance != null)
                     MergedShopManager.instance.OpenAsMapNode();
                 showHotbar = true;
@@ -843,8 +844,8 @@ public class MapManager : MonoBehaviour
             if (LevelGenerator.instance != null)
             {
                 LevelGenerator.instance.groundMap?.ClearAllTiles();
-                if (LevelGenerator.instance.backgroundMap != null)
-                    LevelGenerator.instance.backgroundMap.ClearAllTiles();
+                if (LevelGenerator.instance.columnMap != null)
+                    LevelGenerator.instance.columnMap.ClearAllTiles();
             }
 
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
@@ -962,12 +963,12 @@ public class MapManager : MonoBehaviour
         if (LevelGenerator.instance != null)
         {
             LevelGenerator.instance.groundMap?.ClearAllTiles();
-            if (LevelGenerator.instance.backgroundMap != null)
-                LevelGenerator.instance.backgroundMap.ClearAllTiles();
-            if (LevelGenerator.instance.hazardMap != null)
-                LevelGenerator.instance.hazardMap.ClearAllTiles();
-            if (LevelGenerator.instance.scaffoldMap != null)
-                LevelGenerator.instance.scaffoldMap.ClearAllTiles();
+            if (LevelGenerator.instance.columnMap != null)
+                LevelGenerator.instance.columnMap.ClearAllTiles();
+            if (LevelGenerator.instance.foreGroundA != null)
+                LevelGenerator.instance.foreGroundA.ClearAllTiles();
+            if (LevelGenerator.instance.foreGroundB != null)
+                LevelGenerator.instance.foreGroundB.ClearAllTiles();
             if (ScaffoldManager.instance != null)
                 ScaffoldManager.instance.ClearAll();
         }

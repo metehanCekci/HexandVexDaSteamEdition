@@ -115,6 +115,9 @@ public static class MapGenerator
         // ─── SON GÜVENLİK: Layer başına en az 1 Enchant garanti ───
         EnforceMinimumEnchant(map, totalRows);
 
+        // ─── SON GÜVENLİK: Arka arkaya ASLA aynı node tipi gelmesin ───
+        EnforceNoConsecutiveSameType(map, config);
+
         return map;
     }
 
@@ -138,6 +141,8 @@ public static class MapGenerator
             if (node.row == 0) { node.nodeType = MapNodeType.Combat; continue; }
             // Row 1: combat — ama çoklu row'daysa EnforceNoDuplicatesInRow farklılaştıracak
             if (node.row == 1) { node.nodeType = MapNodeType.Combat; continue; }
+            // Row 2: garantili Shop (perk seçimi) — 3. node her zaman shop olsun
+            if (node.row == 2) { node.nodeType = MapNodeType.Shop; continue; }
             if (node.row == totalRows - 1)
             {
                 // Tek node row'daysa elite koyma
@@ -201,7 +206,8 @@ public static class MapGenerator
             }
 
             // ─── Bu row'daki node'lara tip ata ───
-            if (r >= 2 && r < totalRows)
+            // Row 2 = garantili Shop, dokunma
+            if (r >= 3 && r < totalRows)
             {
                 AssignRowTypesPathAware(map, rowNodes, config, r, totalRows, incomingMaxStreak);
             }
@@ -553,6 +559,48 @@ public static class MapGenerator
                 if (child != null && rewardTypes.Contains(child.nodeType))
                 {
                     child.nodeType = MapNodeType.Combat;
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // ARDIŞIK AYNI TİP YASAĞI (Combat dahil her şey)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Parent → child bağlantısında aynı nodeType varsa child'ı farklı bir tipe çevirir.
+    /// Boss ve row 0 hariç. Combat arka arkaya gelirse birini EliteCombat veya reward yapar.
+    /// </summary>
+    private static void EnforceNoConsecutiveSameType(MapData map, MapLayerData config)
+    {
+        bool canRest = config != null && config.campfireEnabled;
+
+        foreach (var parent in map.nodes)
+        {
+            if (parent.nodeType == MapNodeType.Boss) continue;
+
+            foreach (int childId in parent.childIds)
+            {
+                MapNode child = map.GetNode(childId);
+                if (child == null || child.nodeType == MapNodeType.Boss) continue;
+                if (child.row <= 1) continue; // İlk 2 row'a dokunma
+
+                if (child.nodeType != parent.nodeType) continue;
+
+                // Aynı tip! Alternatif bul
+                if (riskTypes.Contains(child.nodeType))
+                {
+                    // Combat → EliteCombat veya tersi
+                    child.nodeType = (child.nodeType == MapNodeType.Combat)
+                        ? MapNodeType.EliteCombat
+                        : MapNodeType.Combat;
+                }
+                else
+                {
+                    // Reward tiplerinde: farklı bir reward seç
+                    List<MapNodeType> exclude = new List<MapNodeType> { parent.nodeType };
+                    child.nodeType = PickDiverseRewardType(config, canRest, exclude);
                 }
             }
         }

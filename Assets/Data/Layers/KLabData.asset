@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ccca2586bc193c24aadcee379b7ee148, type: 3}
-  m_Name: Layer2Data
+  m_Name: KLabData
   m_EditorClassIdentifier: Assembly-CSharp::MapLayerData
   layerName: Layer2Data
   totalRows: 8
@@ -21,5 +21,7 @@ MonoBehaviour:
   perkChance: 0.25
   restChance: 0.2
   eliteChance: 0.1
-  eventChance: 0
+  enchantChance: 0.1
+  restEnabled: 0
+  enchantEnabled: 1
   tileSet: {fileID: 11400000, guid: e6e5558eae4bd664093f54a048f204a6, type: 2}
