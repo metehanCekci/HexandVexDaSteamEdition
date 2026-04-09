@@ -4348,8 +4348,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
   layerConfigs:
-  - {fileID: 11400000, guid: 880e8ed46485d4f4f916a95ab6f0c727, type: 2}
   - {fileID: 11400000, guid: 164f60c6b908e094a96e00596a3a1204, type: 2}
+  - {fileID: 11400000, guid: 880e8ed46485d4f4f916a95ab6f0c727, type: 2}
   mapUI: {fileID: 0}
   mapBackgroundTexture: {fileID: 2800000, guid: 27155abbd4a84d5469cade6317f46e4d, type: 3}
   combatIcon: {fileID: 699891869090633689, guid: 5b6404a72e4f2bd478462f8a2cc7c245, type: 3}
@@ -4357,7 +4357,7 @@ MonoBehaviour:
   shopIcon: {fileID: -3215932315818173156, guid: d45656badfa8f674abdbfd16c7de5575, type: 3}
   perkIcon: {fileID: 5120115843549842449, guid: 04820ec0f47537d44b2f8acca7ed92af, type: 3}
   restIcon: {fileID: 8472719745605931497, guid: 3d507ef671e236e458eb01202b037205, type: 3}
-  eventIcon: {fileID: 0}
+  eventIcon: {fileID: -8871198759740952176, guid: 62e3a00ea2801244abc42e8f6aa08bd4, type: 3}
   bossIcon: {fileID: -4477880935745126366, guid: 52a6655860d540749b3eb51fd6adde88, type: 3}
   restCanvasPrefab: {fileID: 180707071757026693, guid: f46023b7f274a024cb5e23d4e61c46ff, type: 3}
   vignetteIntensity: 0.8
@@ -33213,6 +33213,7 @@ MonoBehaviour:
   continueButton: {fileID: 0}
   perkSection: {fileID: 0}
   perkSlots:
+<<<<<<< HEAD
   - root: {fileID: 0}
     background: {fileID: 0}
     button: {fileID: 0}
@@ -33243,12 +33244,46 @@ MonoBehaviour:
     priceText: {fileID: 0}
     iconImage: {fileID: 0}
     soldOutOverlay: {fileID: 0}
+=======
+  - root: {fileID: 9100000039}
+    background: {fileID: 9100100004}
+    button: {fileID: 9100100002}
+    nameText: {fileID: 9100100006}
+    rarityText: {fileID: 9100100007}
+    levelText: {fileID: 9100100005}
+    descriptionText: {fileID: 9100100003}
+    iconImage: {fileID: 9100100004}
+    soldOutOverlay: {fileID: 9100100009}
+  - root: {fileID: 9100100010}
+    background: {fileID: 9100100013}
+    button: {fileID: 9100100011}
+    nameText: {fileID: 9100100015}
+    rarityText: {fileID: 9100100016}
+    levelText: {fileID: 9100100014}
+    descriptionText: {fileID: 9100100012}
+    iconImage: {fileID: 9100100013}
+    soldOutOverlay: {fileID: 9100100018}
+  - root: {fileID: 9100100019}
+    background: {fileID: 9100100022}
+    button: {fileID: 9100100020}
+    nameText: {fileID: 9100100024}
+    rarityText: {fileID: 9100100025}
+    levelText: {fileID: 9100100023}
+    descriptionText: {fileID: 9100100021}
+    iconImage: {fileID: 9100100022}
+    soldOutOverlay: {fileID: 9100100027}
+>>>>>>> 6d4fe6556436d265ac2532b48f1b59999dbd9989
   commonPerks: []
   rarePerks: []
   epicPerks: []
   legendaryPerks: []
+<<<<<<< HEAD
   perkRerollButton: {fileID: 0}
   perkRerollPriceText: {fileID: 0}
+=======
+  perkRerollButton: {fileID: 9100100029}
+  perkRerollPriceText: {fileID: 9100100030}
+>>>>>>> 6d4fe6556436d265ac2532b48f1b59999dbd9989
   perkRerollBaseCost: 15
   perkRerollIncrement: 5
   itemSection: {fileID: 0}

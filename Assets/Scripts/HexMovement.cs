@@ -53,8 +53,8 @@ public class HexMovement : MonoBehaviour
 
     void Start()
     {
-        if (groundMap == null) groundMap = GameObject.Find("GroundMap").GetComponent<Tilemap>();
-        if (highlightMap == null) highlightMap = GameObject.Find("HighlightMap").GetComponent<Tilemap>();
+        if (groundMap == null) groundMap = GameObject.Find("Ground").GetComponent<Tilemap>();
+        if (highlightMap == null) highlightMap = GameObject.Find("Highlight").GetComponent<Tilemap>();
         if (health == null) health = GetComponent<HealthScript>();
 
         if (visualRenderer == null) visualRenderer = GetComponentInChildren<SpriteRenderer>();

@@ -50,7 +50,7 @@ public class SpawnerBossAI : MonoBehaviour
         groundMap = LevelGenerator.instance.groundMap;
         arenaRadius = LevelGenerator.instance.baseMapRadius + 1 + (RunManager.instance.currentLevel / 10);
 
-        GameObject warnObj = GameObject.Find("BossWarningMap");
+        GameObject warnObj = GameObject.Find("WarningB");
         if (warnObj != null) 
         {
             bossWarningMap = warnObj.GetComponent<Tilemap>();

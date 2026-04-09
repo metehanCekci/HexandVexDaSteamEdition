@@ -55,15 +55,18 @@ public class EnemyMovement : MonoBehaviour
     {
         if (groundMap == null)
         {
-            GameObject mapObj = GameObject.Find("GroundMap");
+            GameObject mapObj = GameObject.Find("Ground");
             if (mapObj != null) groundMap = mapObj.GetComponent<Tilemap>();
         }
 
         if (warningMap == null)
         {
-            GameObject warnObj = GameObject.Find("WarningMap");
+            GameObject warnObj = GameObject.Find("WarningA");
             if (warnObj != null) warningMap = warnObj.GetComponent<Tilemap>();
         }
+
+        if (warningTile == null && TurnManager.instance != null)
+            warningTile = TurnManager.instance.warningTile;
     }
 
     void Start()

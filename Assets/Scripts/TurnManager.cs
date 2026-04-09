@@ -125,7 +125,8 @@ public class TurnManager : MonoBehaviour
         perkProcessor.Initialize(diceUI);
 
         if (player == null) player = FindFirstObjectByType<HexMovement>();
-        if (groundMap == null) groundMap = GameObject.Find("GroundMap")?.GetComponent<Tilemap>();
+        if (groundMap == null) groundMap = GameObject.Find("Ground")?.GetComponent<Tilemap>();
+        if (warningMap == null) warningMap = GameObject.Find("WarningA")?.GetComponent<Tilemap>();
         if (totalDamageText == null) totalDamageText = GameObject.Find("TotalDamageText")?.GetComponent<TMP_Text>();
         if (coinText == null) coinText = GameObject.Find("CoinText")?.GetComponent<TMP_Text>();
     }
@@ -644,8 +645,10 @@ public class TurnManager : MonoBehaviour
     }
     public void ClearWarningMap()
     {
-        GameObject warningMapObj = GameObject.Find("WarningMap");
-        if (warningMapObj != null) warningMapObj.GetComponent<Tilemap>().ClearAllTiles();
+        GameObject warningAObj = GameObject.Find("WarningA");
+        if (warningAObj != null) warningAObj.GetComponent<Tilemap>().ClearAllTiles();
+        GameObject warningBObj = GameObject.Find("WarningB");
+        if (warningBObj != null) warningBObj.GetComponent<Tilemap>().ClearAllTiles();
 
         // Warlock uyarı haritasını da temizle
         GameObject warlockWarnObj = GameObject.Find("WarlockWarningMap");
