@@ -1328,10 +1328,8 @@ public class LevelGenerator : MonoBehaviour
 
             foreGroundB.SetTile(cellA, ts.teleportTileA);
             foreGroundB.SetTile(cellB, ts.teleportTileB);
-            teleportCells.Add(cellA);
-            teleportCells.Add(cellB);
-            teleportPairs[cellA] = cellB;
-            teleportPairs[cellB] = cellA;
+            teleportCells.Add(cellA);       // Sadece giriş tile'ı tetiklenir
+            teleportPairs[cellA] = cellB;   // Tek yönlü: A→B
         }
     }
 

@@ -1661,7 +1661,6 @@ public class TurnManager : MonoBehaviour
         if (!LevelGenerator.instance.teleportPairs.TryGetValue(fromCell, out Vector3Int destCell)) yield break;
 
         teleportFiredThisTurn.Add(fromCell);
-        teleportFiredThisTurn.Add(destCell);
 
         // Hedef dolu mu?
         EnemyMovement swapEnemy = GetEnemyAtCell(destCell);
@@ -1700,7 +1699,6 @@ public class TurnManager : MonoBehaviour
         if (!LevelGenerator.instance.teleportPairs.TryGetValue(fromCell, out Vector3Int destCell)) yield break;
 
         teleportFiredThisTurn.Add(fromCell);
-        teleportFiredThisTurn.Add(destCell);
 
         // Hedef dolu mu? Oyuncu varsa güvenli komşuya gönder
         bool destHasPlayer = player != null && player.GetCurrentCellPosition() == destCell;
