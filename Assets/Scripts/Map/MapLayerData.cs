@@ -18,6 +18,12 @@ public class MapLayerData : ScriptableObject
     [Range(0f, 1f)] public float enchantChance = 0.10f;
     // Combat fills the remainder
 
+    [Header("Layer-Specific Node Toggles")]
+    [Tooltip("Bu layer'da Rest/Campfire node'u çıkabilir mi?")]
+    public bool restEnabled = true;
+    [Tooltip("Bu layer'da Enchant (Tile Enhancement) node'u çıkabilir mi?")]
+    public bool enchantEnabled = true;
+
     [Header("Tile Set")]
     public LayerTileSet tileSet;
 }
