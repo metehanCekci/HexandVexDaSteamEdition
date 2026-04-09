@@ -4349,8 +4349,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
   layerConfigs:
-  - {fileID: 11400000, guid: 164f60c6b908e094a96e00596a3a1204, type: 2}
   - {fileID: 11400000, guid: 880e8ed46485d4f4f916a95ab6f0c727, type: 2}
+  - {fileID: 11400000, guid: 164f60c6b908e094a96e00596a3a1204, type: 2}
   mapUI: {fileID: 0}
   mapBackgroundTexture: {fileID: 2800000, guid: 27155abbd4a84d5469cade6317f46e4d, type: 3}
   combatIcon: {fileID: 699891869090633689, guid: 5b6404a72e4f2bd478462f8a2cc7c245, type: 3}

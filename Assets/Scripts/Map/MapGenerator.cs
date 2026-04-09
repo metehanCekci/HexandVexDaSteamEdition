@@ -6,7 +6,7 @@ public static class MapGenerator
     // Ödül node'ları — combat olmayan, oyuncuya fayda sağlayan
     private static readonly HashSet<MapNodeType> rewardTypes = new HashSet<MapNodeType>
     {
-        MapNodeType.Shop, MapNodeType.Rest, MapNodeType.Enchant, MapNodeType.Sacrifice
+        MapNodeType.Shop, MapNodeType.Rest, MapNodeType.Enchant
     };
 
     // Risk node'ları — düşmanlı
@@ -407,7 +407,6 @@ public static class MapGenerator
         if (!used.Contains(MapNodeType.Shop)) return false;
         if (canRest && !used.Contains(MapNodeType.Rest)) return false;
         if (!used.Contains(MapNodeType.Enchant)) return false;
-        if (!used.Contains(MapNodeType.Sacrifice)) return false;
         return true;
     }
 
@@ -437,12 +436,6 @@ public static class MapGenerator
             candidates.Add(MapNodeType.Enchant);
             weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
         }
-        if (!usedTypes.Contains(MapNodeType.Sacrifice))
-        {
-            candidates.Add(MapNodeType.Sacrifice);
-            weights.Add(0.10f);
-        }
-
         // Hepsi kullanılmışsa fallback — tekrar seçebilir
         if (candidates.Count == 0)
         {
@@ -1021,8 +1014,7 @@ public static class MapGenerator
         List<MapNodeType> requiredList = new List<MapNodeType>
         {
             MapNodeType.Shop,
-            MapNodeType.EliteCombat,
-            MapNodeType.Sacrifice
+            MapNodeType.EliteCombat
         };
         if (config == null || config.restEnabled)    requiredList.Add(MapNodeType.Rest);
         if (config == null || config.enchantEnabled)  requiredList.Add(MapNodeType.Enchant);
