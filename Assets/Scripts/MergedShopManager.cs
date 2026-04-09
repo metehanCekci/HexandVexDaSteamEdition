@@ -197,61 +197,63 @@ public class MergedShopManager : MonoBehaviour
             }
         }
 
-        // GoldText yanına CoinIcon ekle (yoksa oluştur)
-        EnsureGoldCoinIcon(panelT);
-
         Debug.Log($"[MergedShop] AutoWire done: panel={panel != null}, perkSlots={perkSlots.Count}, itemSlots={itemSlots.Count}");
     }
 
-    private void EnsureGoldCoinIcon(Transform panelT)
+    // ─── Coin Icon Helper (text child olarak, text ile birlikte kayar) ───
+
+    private RectTransform goldCoinRT;
+    private RectTransform rerollCoinRT;
+
+    private Sprite FindCoinSprite()
     {
-        Transform goldT = panelT.Find("GoldText");
-        if (goldT == null) return;
-
-        // Zaten varsa çık
-        Transform existing = panelT.Find("GoldCoinIcon");
-        if (existing != null) return;
-
-        // Coin sprite'ı mevcut kartlardan al
-        Sprite coinSprite = null;
-        if (perkSlots.Count > 0)
+        foreach (var s in perkSlots)
         {
-            Transform coinT = perkSlots[0].root?.transform.Find("CoinIcon");
-            if (coinT != null)
-            {
-                Image coinImg = coinT.GetComponent<Image>();
-                if (coinImg != null) coinSprite = coinImg.sprite;
-            }
+            if (s.root == null) continue;
+            var ci = s.root.transform.Find("CoinIcon");
+            if (ci != null) { var img = ci.GetComponent<Image>(); if (img != null && img.sprite != null) return img.sprite; }
         }
-        if (coinSprite == null && itemSlots.Count > 0)
+        foreach (var s in itemSlots)
         {
-            Transform coinT = itemSlots[0].root?.transform.Find("CoinIcon");
-            if (coinT != null)
-            {
-                Image coinImg = coinT.GetComponent<Image>();
-                if (coinImg != null) coinSprite = coinImg.sprite;
-            }
+            if (s.root == null) continue;
+            var ci = s.root.transform.Find("CoinIcon");
+            if (ci != null) { var img = ci.GetComponent<Image>(); if (img != null && img.sprite != null) return img.sprite; }
         }
+        return null;
+    }
 
-        // GoldText'in yanına coin icon oluştur
-        GameObject iconGO = new GameObject("GoldCoinIcon", typeof(RectTransform));
-        iconGO.transform.SetParent(panelT, false);
+    private RectTransform EnsureCoinChild(TMP_Text parent, string childName)
+    {
+        if (parent == null) return null;
+        Transform existing = parent.transform.Find(childName);
+        if (existing != null) return existing.GetComponent<RectTransform>();
 
-        RectTransform goldRT = goldT.GetComponent<RectTransform>();
-        RectTransform iconRT = iconGO.GetComponent<RectTransform>();
+        var go = new GameObject(childName, typeof(RectTransform));
+        go.transform.SetParent(parent.transform, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(20f, 20f);
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
 
-        // GoldText'in sağına yerleştir (kartlardaki gibi)
-        float iconSize = 0.02f;
-        iconRT.anchorMin = new Vector2(goldRT.anchorMax.x + 0.003f, goldRT.anchorMin.y);
-        iconRT.anchorMax = new Vector2(goldRT.anchorMax.x + 0.003f + iconSize, goldRT.anchorMax.y);
-        iconRT.offsetMin = Vector2.zero;
-        iconRT.offsetMax = Vector2.zero;
+        Sprite coinSprite = FindCoinSprite();
+        var icon = go.AddComponent<Image>();
+        if (coinSprite != null) { icon.sprite = coinSprite; icon.color = Color.white; }
+        else icon.color = new Color(1f, 0.85f, 0.2f);
+        icon.preserveAspect = true;
+        icon.raycastTarget = false;
+        return rt;
+    }
 
-        Image img = iconGO.AddComponent<Image>();
-        if (coinSprite != null) { img.sprite = coinSprite; img.color = Color.white; }
-        else img.color = new Color(1f, 0.85f, 0.2f); // fallback gold color
-        img.preserveAspect = true;
-        img.raycastTarget = false;
+    private void EnsureAllCoinIcons()
+    {
+        goldCoinRT = EnsureCoinChild(goldText, "GoldCoinIcon");
+        rerollCoinRT = EnsureCoinChild(perkRerollPriceText, "RerollCoinIcon");
+    }
+
+    private static void PositionCoinIcon(RectTransform coinRT, TMP_Text text)
+    {
+        if (coinRT == null || text == null) return;
+        float halfW = text.preferredWidth * 0.5f;
+        coinRT.anchoredPosition = new Vector2(halfW + 4f + coinRT.sizeDelta.x * 0.5f, 0f);
     }
 
     private void AutoPopulatePerkPools()
@@ -403,6 +405,7 @@ public class MergedShopManager : MonoBehaviour
         currentPerkRerollCost   = perkRerollBaseCost;
         shownItemNames.Clear();
 
+        EnsureAllCoinIcons();
         GeneratePerkChoices();
         GenerateItemChoices();
         RefreshGold();
@@ -666,6 +669,7 @@ public class MergedShopManager : MonoBehaviour
         int cost = Mathf.RoundToInt(currentPerkRerollCost);
         if (perkRerollPriceText != null)
             perkRerollPriceText.text = $"REROLL  <color=#FFD933>{cost}</color>";
+        PositionCoinIcon(rerollCoinRT, perkRerollPriceText);
         if (perkRerollButton != null)
             perkRerollButton.interactable = RunManager.instance.currentGold >= cost;
     }
@@ -813,6 +817,7 @@ public class MergedShopManager : MonoBehaviour
     {
         if (goldText != null && RunManager.instance != null)
             goldText.text = RunManager.instance.currentGold.ToString();
+        PositionCoinIcon(goldCoinRT, goldText);
         RefreshRerollButton();
         RefreshItemAffordability();
         RefreshPerkAffordability();
