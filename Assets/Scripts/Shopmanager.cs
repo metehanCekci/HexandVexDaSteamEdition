@@ -300,6 +300,12 @@ public class Shopmanager : MonoBehaviour
 
     public void TryReroll()
     {
+        // MergedShopManager aktifse eski Shopmanager reroll'u çalışmasın
+        if (MergedShopManager.instance != null)
+        {
+            Debug.Log("[Shopmanager] TryReroll BLOCKED — MergedShopManager active");
+            return;
+        }
         Debug.Log($"[Shopmanager] >>> TryReroll CALLED on OLD Shopmanager! gold={RunManager.instance?.currentGold}");
         if (RunManager.instance == null) return;
         if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive) return;
