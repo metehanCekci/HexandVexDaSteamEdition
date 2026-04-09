@@ -41,6 +41,12 @@ public class MergedShopManager : MonoBehaviour
     [Header("Perk Kartları (3 adet)")]
     public List<MergedShopPerkSlot> perkSlots = new List<MergedShopPerkSlot>();
 
+    [Header("Perk Havuzları")]
+    public List<GameObject> commonPerks;
+    public List<GameObject> rarePerks;
+    public List<GameObject> epicPerks;
+    public List<GameObject> legendaryPerks;
+
     [Header("Perk Reroll")]
     public Button perkRerollButton;
     public TMP_Text perkRerollPriceText;
@@ -86,6 +92,15 @@ public class MergedShopManager : MonoBehaviour
     {
         if (instance == null) instance = this;
         if (panel != null) panel.SetActive(false);
+
+        // Inspector'da perk listeleri boşsa LevelUpManager'dan otomatik al
+        if (commonPerks.Count == 0 && LevelUpManager.instance != null)
+        {
+            commonPerks    = new List<GameObject>(LevelUpManager.instance.commonPerks);
+            rarePerks      = new List<GameObject>(LevelUpManager.instance.rarePerks);
+            epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
+            legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
+        }
     }
 
     // ═══════════════════════════════════════════
@@ -94,6 +109,20 @@ public class MergedShopManager : MonoBehaviour
 
     public void OpenAsMapNode()
     {
+        Debug.Log($"[MergedShop] OpenAsMapNode called. panel={panel != null}, perkSection={perkSection != null}");
+        Debug.Log($"[MergedShop] Perk pools: common={commonPerks.Count}, rare={rarePerks.Count}, epic={epicPerks.Count}, legendary={legendaryPerks.Count}");
+        Debug.Log($"[MergedShop] PerkSlots count={perkSlots.Count}, LevelUpManager.instance={LevelUpManager.instance != null}");
+
+        // Awake'de LevelUpManager henüz hazır olmamış olabilir, burada tekrar dene
+        if (commonPerks.Count == 0 && LevelUpManager.instance != null)
+        {
+            commonPerks    = new List<GameObject>(LevelUpManager.instance.commonPerks);
+            rarePerks      = new List<GameObject>(LevelUpManager.instance.rarePerks);
+            epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
+            legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
+            Debug.Log($"[MergedShop] Copied from LevelUpManager: common={commonPerks.Count}, rare={rarePerks.Count}, epic={epicPerks.Count}, legendary={legendaryPerks.Count}");
+        }
+
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
         shownItemNames.Clear();
@@ -101,9 +130,16 @@ public class MergedShopManager : MonoBehaviour
         GeneratePerkChoices();
         GenerateItemChoices();
         RefreshGold();
-        RefreshPerkRerollButton();
+        RefreshRerollButton();
 
-        if (panel != null) panel.SetActive(true);
+        if (panel != null)
+        {
+            // Parent canvas kapalıysa onu da aç
+            Canvas parentCanvas = panel.GetComponentInParent<Canvas>(true);
+            if (parentCanvas != null && !parentCanvas.gameObject.activeSelf)
+                parentCanvas.gameObject.SetActive(true);
+            panel.SetActive(true);
+        }
 
         if (continueButton != null)
         {
@@ -113,11 +149,67 @@ public class MergedShopManager : MonoBehaviour
         if (perkRerollButton != null)
         {
             perkRerollButton.onClick.RemoveAllListeners();
-            perkRerollButton.onClick.AddListener(TryPerkReroll);
+            perkRerollButton.onClick.AddListener(TryReroll);
         }
 
         StopAllCoroutines();
-        StartCoroutine(FadeIn());
+        StartCoroutine(OpenSequence());
+    }
+
+    private IEnumerator OpenSequence()
+    {
+        // Panel fade in
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = 0f;
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.unscaledDeltaTime / 0.2f;
+                canvasGroup.alpha = Mathf.Clamp01(t);
+                yield return null;
+            }
+        }
+
+        // Kartları sıfırla (scale 0) — önce perkler (üst), sonra itemler (alt)
+        List<GameObject> allCards = new List<GameObject>();
+        foreach (var s in perkSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
+        foreach (var s in itemSlots) if (s.root != null && s.root.activeSelf) allCards.Add(s.root);
+
+        foreach (var card in allCards)
+            card.transform.localScale = Vector3.zero;
+
+        // Pop-in: soldan sağa, üstten alta
+        if (AudioManager.instance != null) AudioManager.instance.PlayCard();
+        float stagger = 0.18f;
+        for (int i = 0; i < allCards.Count; i++)
+        {
+            StartCoroutine(PopInCard(allCards[i].transform));
+            yield return new WaitForSecondsRealtime(stagger);
+        }
+    }
+
+    private IEnumerator PopInCard(Transform card)
+    {
+        // 0 → 1.08 (0.15s)
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.unscaledDeltaTime / 0.15f;
+            float s = Mathf.Lerp(0f, 1.08f, t);
+            card.localScale = new Vector3(s, s, 1f);
+            yield return null;
+        }
+        // 1.08 → 1.0 (0.08s)
+        t = 0f;
+        while (t < 1f)
+        {
+            t += Time.unscaledDeltaTime / 0.08f;
+            float s = Mathf.Lerp(1.08f, 1f, t);
+            card.localScale = new Vector3(s, s, 1f);
+            yield return null;
+        }
+        card.localScale = Vector3.one;
     }
 
     private void OnContinue()
@@ -138,21 +230,15 @@ public class MergedShopManager : MonoBehaviour
                 yield return null;
             }
         }
-        if (panel != null) panel.SetActive(false);
-        if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
-    }
-
-    private IEnumerator FadeIn()
-    {
-        if (canvasGroup == null) yield break;
-        canvasGroup.alpha = 0f;
-        float t = 0f;
-        while (t < 1f)
+        if (panel != null)
         {
-            t += Time.unscaledDeltaTime / 0.25f;
-            canvasGroup.alpha = Mathf.Clamp01(t);
-            yield return null;
+            panel.SetActive(false);
+            // Parent canvas'ı da kapat
+            Canvas parentCanvas = panel.GetComponentInParent<Canvas>(true);
+            if (parentCanvas != null && parentCanvas.gameObject != panel)
+                parentCanvas.gameObject.SetActive(false);
         }
+        if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
     }
 
     // ═══════════════════════════════════════════
@@ -163,11 +249,11 @@ public class MergedShopManager : MonoBehaviour
     {
         currentPerkChoices.Clear();
 
-        LevelUpManager lum = LevelUpManager.instance;
-        if (lum == null) { HidePerkSection(); return; }
+        if (commonPerks.Count == 0 && rarePerks.Count == 0 && epicPerks.Count == 0 && legendaryPerks.Count == 0)
+        { Debug.LogWarning("[MergedShop] All perk pools empty — hiding perk section"); HidePerkSection(); return; }
 
-        bool allMaxed = AreAllPerksMaxed(lum);
-        if (allMaxed) { HidePerkSection(); return; }
+        bool allMaxed = AreAllPerksMaxed();
+        if (allMaxed) { Debug.LogWarning("[MergedShop] All perks maxed — hiding perk section"); HidePerkSection(); return; }
 
         if (perkSection != null) perkSection.SetActive(true);
 
@@ -177,29 +263,37 @@ public class MergedShopManager : MonoBehaviour
         {
             GameObject pick = null;
             int safety = 0;
-            while (pick == null || currentPerkChoices.Contains(pick) || IsPerkMaxedOut(pick, lum))
+            while (pick == null || currentPerkChoices.Contains(pick) || IsPerkMaxedOut(pick))
             {
-                pick = GetRandomPerkByRarity(lum, isBossReward);
-                if (++safety > 50) { pick = GetAnyValidFallback(lum); break; }
+                pick = GetRandomPerkByRarity(isBossReward);
+                if (++safety > 50) { pick = GetAnyValidFallback(); break; }
             }
             if (pick != null) currentPerkChoices.Add(pick);
         }
+
+        Debug.Log($"[MergedShop] GeneratePerkChoices done. choices={currentPerkChoices.Count}");
+        for (int i = 0; i < currentPerkChoices.Count; i++)
+            Debug.Log($"[MergedShop]   choice[{i}] = {currentPerkChoices[i]?.name ?? "NULL"}");
 
         PopulatePerkSlots();
     }
 
     private void PopulatePerkSlots()
     {
+        Debug.Log($"[MergedShop] PopulatePerkSlots: perkSlots.Count={perkSlots.Count}, currentPerkChoices.Count={currentPerkChoices.Count}");
         for (int i = 0; i < perkSlots.Count; i++)
         {
+            Debug.Log($"[MergedShop]   slot[{i}]: root={perkSlots[i].root != null}, root.name={perkSlots[i].root?.name ?? "NULL"}, button={perkSlots[i].button != null}");
             if (i < currentPerkChoices.Count && currentPerkChoices[i] != null)
             {
                 perkSlots[i].Setup(currentPerkChoices[i], i, this);
                 if (perkSlots[i].root != null) perkSlots[i].root.SetActive(true);
+                Debug.Log($"[MergedShop]   slot[{i}] activated with {currentPerkChoices[i].name}");
             }
             else
             {
                 if (perkSlots[i].root != null) perkSlots[i].root.SetActive(false);
+                Debug.Log($"[MergedShop]   slot[{i}] hidden (no choice)");
             }
         }
     }
@@ -225,7 +319,7 @@ public class MergedShopManager : MonoBehaviour
         RefreshGold();
     }
 
-    private void TryPerkReroll()
+    private void TryReroll()
     {
         if (RunManager.instance == null) return;
         int cost = Mathf.RoundToInt(currentPerkRerollCost);
@@ -236,12 +330,13 @@ public class MergedShopManager : MonoBehaviour
         currentPerkRerollCost = perkRerollBaseCost * Mathf.Pow(perkRerollMultiplier, perkRerollCount);
 
         GeneratePerkChoices();
+        GenerateItemChoices();
         RefreshGold();
-        RefreshPerkRerollButton();
+        RefreshRerollButton();
         GameEvents.GoldChanged(RunManager.instance.currentGold);
     }
 
-    private void RefreshPerkRerollButton()
+    private void RefreshRerollButton()
     {
         if (RunManager.instance == null) return;
         int cost = Mathf.RoundToInt(currentPerkRerollCost);
@@ -394,7 +489,7 @@ public class MergedShopManager : MonoBehaviour
     {
         if (goldText != null && RunManager.instance != null)
             goldText.text = RunManager.instance.currentGold.ToString();
-        RefreshPerkRerollButton();
+        RefreshRerollButton();
         RefreshItemAffordability();
     }
 
@@ -402,23 +497,23 @@ public class MergedShopManager : MonoBehaviour
     // PERK HELPERS (LevelUpManager'dan kopyalandı)
     // ═══════════════════════════════════════════
 
-    private bool AreAllPerksMaxed(LevelUpManager lum)
+    private bool AreAllPerksMaxed()
     {
         List<GameObject> all = new List<GameObject>();
-        all.AddRange(lum.commonPerks);
-        all.AddRange(lum.rarePerks);
-        all.AddRange(lum.epicPerks);
-        all.AddRange(lum.legendaryPerks);
+        all.AddRange(commonPerks);
+        all.AddRange(rarePerks);
+        all.AddRange(epicPerks);
+        all.AddRange(legendaryPerks);
 
         foreach (var p in all)
         {
             if (p == null) continue;
-            if (!IsPerkMaxedOut(p, lum)) return false;
+            if (!IsPerkMaxedOut(p)) return false;
         }
         return true;
     }
 
-    private bool IsPerkMaxedOut(GameObject perkGO, LevelUpManager lum)
+    private bool IsPerkMaxedOut(GameObject perkGO)
     {
         if (perkGO == null) return true;
         BasePerk perkScript = perkGO.GetComponent<BasePerk>();
@@ -429,10 +524,10 @@ public class MergedShopManager : MonoBehaviour
         return existing != null && existing.currentLevel >= existing.maxLevel;
     }
 
-    private GameObject GetRandomPerkByRarity(LevelUpManager lum, bool forceLegendary)
+    private GameObject GetRandomPerkByRarity(bool forceLegendary)
     {
-        if (forceLegendary && lum.legendaryPerks.Count > 0)
-            return lum.legendaryPerks[Random.Range(0, lum.legendaryPerks.Count)];
+        if (forceLegendary && legendaryPerks.Count > 0)
+            return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
 
         // Lucky Clover kontrolü
         bool luckyClover = false;
@@ -465,24 +560,24 @@ public class MergedShopManager : MonoBehaviour
         float roll = Random.value;
         List<GameObject> pool;
 
-        if (roll < legendaryChance)           pool = lum.legendaryPerks;
-        else if (roll < legendaryChance + epicChance) pool = lum.epicPerks;
-        else if (roll < legendaryChance + epicChance + rareChance) pool = lum.rarePerks;
-        else                                  pool = lum.commonPerks;
+        if (roll < legendaryChance)           pool = legendaryPerks;
+        else if (roll < legendaryChance + epicChance) pool = epicPerks;
+        else if (roll < legendaryChance + epicChance + rareChance) pool = rarePerks;
+        else                                  pool = commonPerks;
 
-        if (pool == null || pool.Count == 0) pool = lum.commonPerks;
+        if (pool == null || pool.Count == 0) pool = commonPerks;
         if (pool == null || pool.Count == 0) return null;
         return pool[Random.Range(0, pool.Count)];
     }
 
-    private GameObject GetAnyValidFallback(LevelUpManager lum)
+    private GameObject GetAnyValidFallback()
     {
         List<GameObject> all = new List<GameObject>();
-        all.AddRange(lum.commonPerks);
-        all.AddRange(lum.rarePerks);
-        all.AddRange(lum.epicPerks);
-        all.AddRange(lum.legendaryPerks);
-        foreach (var p in all) if (!IsPerkMaxedOut(p, lum)) return p;
+        all.AddRange(commonPerks);
+        all.AddRange(rarePerks);
+        all.AddRange(epicPerks);
+        all.AddRange(legendaryPerks);
+        foreach (var p in all) if (!IsPerkMaxedOut(p)) return p;
         return null;
     }
 
@@ -539,6 +634,15 @@ public class MergedShopPerkSlot
         {
             if (perk.icon != null) { iconImage.sprite = perk.icon; iconImage.color = Color.white; }
             else { iconImage.sprite = null; iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); }
+        }
+
+        // Rarity visual efekt (PerkCardRarityEffect)
+        if (root != null)
+        {
+            PerkCardRarityEffect fx = root.GetComponent<PerkCardRarityEffect>();
+            if (fx == null) fx = root.AddComponent<PerkCardRarityEffect>();
+            RectTransform iconRT = iconImage != null ? iconImage.GetComponent<RectTransform>() : null;
+            fx.Setup(perk.rarity, iconRT);
         }
 
         if (soldOutOverlay != null) soldOutOverlay.SetActive(false);

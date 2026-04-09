@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d676ee2c16ff0f4baf8b7678ed102ed, type: 3}
   m_Name: ToxicWasteTileSet
   m_EditorClassIdentifier: Assembly-CSharp::LayerTileSet
-  groundTile: {fileID: 11400000, guid: 25c4e2f3083975546a162f5d78863fcd, type: 2}
-  columnTile: {fileID: 11400000, guid: d2b8750910e031b4bbace650254c0f1b, type: 2}
+  groundVariants:
+  - groundTile: {fileID: 11400000, guid: 25c4e2f3083975546a162f5d78863fcd, type: 2}
+    columnTile: {fileID: 11400000, guid: d2b8750910e031b4bbace650254c0f1b, type: 2}
+    weight: 1
   hazardTile: {fileID: 11400000, guid: ddc0f38700579ca4ab073a9853d63f97, type: 2}
   explosionTile: {fileID: 0}
   scaffoldTile: {fileID: 11400000, guid: 9f6bfb6c9d32fc445ac2556352063d36, type: 2}

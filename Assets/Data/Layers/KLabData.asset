@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ccca2586bc193c24aadcee379b7ee148, type: 3}
-  m_Name: Layer2Data
+  m_Name: KLabData
   m_EditorClassIdentifier: Assembly-CSharp::MapLayerData
   layerName: Layer2Data
   totalRows: 8

@@ -138,6 +138,8 @@ public static class MapGenerator
             if (node.row == 0) { node.nodeType = MapNodeType.Combat; continue; }
             // Row 1: combat — ama çoklu row'daysa EnforceNoDuplicatesInRow farklılaştıracak
             if (node.row == 1) { node.nodeType = MapNodeType.Combat; continue; }
+            // Row 2: garantili Shop (perk seçimi) — 3. node her zaman shop olsun
+            if (node.row == 2) { node.nodeType = MapNodeType.Shop; continue; }
             if (node.row == totalRows - 1)
             {
                 // Tek node row'daysa elite koyma
@@ -201,7 +203,8 @@ public static class MapGenerator
             }
 
             // ─── Bu row'daki node'lara tip ata ───
-            if (r >= 2 && r < totalRows)
+            // Row 2 = garantili Shop, dokunma
+            if (r >= 3 && r < totalRows)
             {
                 AssignRowTypesPathAware(map, rowNodes, config, r, totalRows, incomingMaxStreak);
             }
