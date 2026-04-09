@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 4fe165586ea3afb4fa582bece7f6bff3
+guid: fb72f2118ac1ceb4ea69d7b342ec943b
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: HEXANDVEXLOGO
+  - name: Collection
     originalName: 
-    pivot: {x: 0.5105263, y: -0.1939394}
+    pivot: {x: 0.5, y: -0.20588236}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 190
-      height: 165
-    spriteID: 3351c49b692ab5f44b255a4310c13e80
+      width: 96
+      height: 34
+    spriteID: 9550b635aa0e2004db1665730abc50e7
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3492389196
+      value0: 1098747038
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: HEXANDVEXLOGO
+    name: Collection
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: HEXANDVEXLOGO
+    - name: Collection
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 167
-        y: 32
-        width: 190
-        height: 165
-      spriteId: 3351c49b692ab5f44b255a4310c13e80
+        x: 48
+        y: 7
+        width: 96
+        height: 34
+      spriteId: 9550b635aa0e2004db1665730abc50e7
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 528, y: 240}
-  previousTextureSize: {x: 256, y: 256}
+  canvasSize: {x: 192, y: 48}
+  previousTextureSize: {x: 128, y: 64}
