@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: HEXANDVEXLOGO
     originalName: 
-    pivot: {x: 0.5105263, y: -0.1939394}
+    pivot: {x: 0.5105263, y: -0.4379562}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -138,7 +138,7 @@ ScriptedImporter:
       x: 4
       y: 4
       width: 190
-      height: 165
+      height: 137
     spriteID: 3351c49b692ab5f44b255a4310c13e80
     spriteBone: []
     spriteOutline: []
@@ -168,9 +168,9 @@ ScriptedImporter:
       additiveSortOrder: 0
       cellRect:
         x: 167
-        y: 32
+        y: 60
         width: 190
-        height: 165
+        height: 137
       spriteId: 3351c49b692ab5f44b255a4310c13e80
     linkedCells: []
     tileCells: []
