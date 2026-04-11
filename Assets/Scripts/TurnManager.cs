@@ -344,7 +344,6 @@ public class TurnManager : MonoBehaviour
             }
         }
 
-#if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.F2))
         {
             DebugSpawnWalkerAndBruiser();
@@ -379,10 +378,8 @@ public class TurnManager : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.F10)) DebugEquipAllPerks();
         if (Input.GetKeyDown(KeyCode.F12)) DebugUpgradeAllPerks();
-#endif
     }
 
-#if UNITY_EDITOR
     private void DebugSpawnWalkerAndBruiser()
     {
         if (LevelGenerator.instance == null || player == null) return;
@@ -502,7 +499,6 @@ public class TurnManager : MonoBehaviour
         }
         Debug.Log($"[DEBUG] {upgraded} upgrade yapıldı! Tüm perkler max seviyede.");
     }
-#endif
 
     public void StartPlayerTurn()
     {
