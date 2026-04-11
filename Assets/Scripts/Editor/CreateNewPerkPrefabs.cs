@@ -17,10 +17,10 @@ public class CreateNewPerkPrefabs
             "Killing an elite enemy drops a perk fragment. Collect 3 fragments for a random perk.");
 
         CreatePerk<PyrogenicGlandsPerk>("PyrogenicGlands", "Pyrogenic Glands",
-            "Your attacks set enemies on fire. Burns deal damage over 3 turns.");
+            "Attacks set enemies on fire for 5 turns. Burns deal 5%/10%/15% of max HP per turn.");
 
         CreatePerk<HydraulicImpactPerk>("HydraulicImpact", "Hydraulic Impact",
-            "Enemies knocked into walls take 50% of their max HP as damage.");
+            "Enemies knocked into walls take bonus damage. Lv1: 25%, Lv2: 40%, Lv3: 50% of max HP.");
 
         CreatePerk<SlipperySecretionPerk>("SlipperySecretion", "Slippery Secretion",
             "Leave a mucus trail on tiles you walk over. Enemies slide an extra hex in their movement direction.");
@@ -35,34 +35,34 @@ public class CreateNewPerkPrefabs
             "First Skip places an anchor. Second Skip teleports you to it.");
 
         CreatePerk<PressurePointPerk>("PressurePoint", "Pressure Point",
-            "Deal more damage to healthier enemies. Full HP: 3x, 75%+: 2x, 50%-: 1.5x.");
+            "Deal more damage to healthier enemies. 100% HP: 2x, 99-50%: 1.75x, below 50%: 1.5x.");
 
         CreatePerk<OverkillProtocolPerk>("OverkillProtocol", "Overkill Protocol",
             "Excess damage from a kill transfers to a random living enemy.");
 
         CreatePerk<CarrionFeederPerk>("CarrionFeeder", "Carrion Feeder",
-            "Killing an enemy heals 1 HP and grants +2 flat damage to your next attack. Stacks per kill.");
+            "Each consecutive kill doubles your total damage. Resets when an attack fails to kill. Max stacks per level.");
 
         CreatePerk<EchoStrikePerk>("EchoStrike", "Echo Strike",
-            "Your attacks have a chance to strike the same target again. Lv1: 25%, Lv2: 50%, Lv3: 75%.");
+            "Attacks have a chance to strike again. Lv1: 15%, Lv2: 30%, Lv3: 45%.");
 
         CreatePerk<CatalyticEnzymePerk>("CatalyticEnzyme", "Catalytic Enzyme",
             "Each skip grants +30% damage to your next attack. Stacks multiply, consumed on attack.");
 
         CreatePerk<GravitonCorePerk>("GravitonCore", "Graviton Core",
-            "When an enemy is knocked back, pull adjacent enemies 1 hex toward the knockback origin.");
+            "When you skip, pull enemies within 2-3 hex range 1 hex closer to you.");
 
         CreatePerk<NecroticTouchPerk>("NecroticTouch", "Necrotic Touch",
-            "Enemies below 25% HP take 2x damage from all sources.");
+            "Enemies at or below 50% HP take 2x damage.");
 
         CreatePerk<CondensedFuryPerk>("CondensedFury", "Condensed Fury",
-            "Roll 1 fewer die, but add +3 flat damage to each remaining die. +1 per level.");
+            "Roll 1 fewer die, but each remaining die deals double its rolled value.");
 
         CreatePerk<SymbioticArsenalPerk>("SymbioticArsenal", "Symbiotic Arsenal",
-            "Gain +0.5x damage multiplier per filled item slot. +0.25x per level.");
+            "Gain damage multiplier per filled item slot. Lv1: +0.5x, Lv2: +0.75x, Lv3: +1.0x per slot.");
 
         CreatePerk<IronWillPerk>("IronWill", "Iron Will",
-            "Complete a level without taking damage to gain +2x multiplier next combat. +1x per level.");
+            "Each combat level cleared without taking damage grants +1x damage multiplier. Resets on damage.");
 
         CreatePerk<NeuralHijackPerk>("NeuralHijack", "Neural Hijack",
             "Knocking an enemy into another enemy converts the hit enemy to your side. Allies attack adjacent enemies each turn.");
@@ -74,13 +74,13 @@ public class CreateNewPerkPrefabs
             "Each attack's dice total carries over to the next as bonus damage. Resets each room.");
 
         CreatePerk<DiceHoarderPerk>("DiceHoarder", "Dice Hoarder",
-            "Gain +1 permanent die for every perk selection and shop you visit.");
+            "Each campfire visited grants a permanent +1 die.");
 
         CreatePerk<PentUpStrikePerk>("PentUpStrike", "Pent-Up Strike",
             "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once.");
 
         CreatePerk<VoidHungerPerk>("VoidHunger", "Void Hunger",
-            "Gain +0.5x damage multiplier for every tile that collapses. Permanent.");
+            "Each collapsed tile grants permanent +0.25x damage multiplier.");
 
         CreatePerk<DeadweightPerk>("Deadweight", "Deadweight",
             "Stunned enemies take 2x damage. +1x per level.");
@@ -92,7 +92,7 @@ public class CreateNewPerkPrefabs
             "Cheat death. All perks lose 1 level. Lv1 perks are destroyed. No perks left = true death.");
 
         CreatePerk<InsurancePolicyPerk>("InsurancePolicy", "Insurance Policy",
-            "Gain gold when you take damage. +3 gold per HP lost at Lv1, +5 at Lv2, +7 at Lv3.");
+            "Gain gold when you take damage. +4 gold per missing HP at Lv1, +6 at Lv2, +8 at Lv3.");
 
         CreatePerk<PhantomAssaultPerk>("PhantomAssault", "Phantom Assault",
             "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each.");

@@ -18,6 +18,12 @@ public abstract class BaseItem : ScriptableObject
     public ItemType itemType = ItemType.Consumable;
 
     /// <summary>
+    /// Runtime flag: true ise bu item bu combat'ta zaten kullanıldı.
+    /// Combat bittiğinde InventoryManager tarafından resetlenir.
+    /// </summary>
+    [System.NonSerialized] public bool usedThisCombat;
+
+    /// <summary>
     /// Item kullanıldığında çağrılır. true dönerse item tüketilmiş demektir.
     /// </summary>
     public abstract bool Use();

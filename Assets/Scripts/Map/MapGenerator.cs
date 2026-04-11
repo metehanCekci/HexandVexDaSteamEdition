@@ -35,25 +35,28 @@ public static class MapGenerator
         map.nodes.Add(startNode);
 
         // ─── Rows 1 through totalRows-1: Middle rows ───
-        // Kural: Arka arkaya max 2 çoklu (2-3 node) row olabilir,
+        // Kural: Arka arkaya max N çoklu (2-3 node) row olabilir,
         // sonra zorunlu 1 node row gelir. Kısa-uzun ritmi.
         int multiRowStreak = 0; // Ardışık çoklu row sayacı
+        int maxStreak = config.maxMultiRowStreak; // Config'den (default 3)
+        float singleChance = config.singleNodeChance; // Config'den (default 0.30)
 
         for (int r = 1; r < totalRows; r++)
         {
             int nodeCount;
 
-            if (multiRowStreak >= 2)
+            if (multiRowStreak >= maxStreak)
             {
-                // 2 ardışık çoklu row'dan sonra → zorunlu tek node
+                // N ardışık çoklu row'dan sonra → zorunlu tek node
                 nodeCount = 1;
                 multiRowStreak = 0;
             }
             else
             {
-                // %40 tek node, %50 iki node, %10 üç node
+                // singleChance tek node, geri kalan 2 veya 3 node
                 float roll = Random.value;
-                nodeCount = roll < 0.40f ? 1 : roll < 0.90f ? 2 : 3;
+                float threeThreshold = 1f - config.threeNodeChance;
+                nodeCount = roll < singleChance ? 1 : roll < threeThreshold ? 2 : 3;
 
                 if (nodeCount == 1)
                     multiRowStreak = 0;
@@ -125,23 +128,32 @@ public static class MapGenerator
     }
 
     // ═══════════════════════════════════════════════════════
-    // ELITE + TREASURE ÇİFTİ
-    // Tek node (bottleneck) row bulur → Elite yapar
-    // Hemen sonraki row'a tek node Treasure ekler
-    // Treasure'a SADECE Elite'den bağlantı olur
+    // ELITE + TREASURE ÇİFTİ (OPSİYONEL BRANCH)
+    // Çoklu node row'da (2+) bir Combat node'u Elite yapar.
+    // Elite'den sonra Treasure node eklenir.
+    // Diğer node'lar normal kalır → oyuncu Elite'den geçmeden
+    // ilerleyebilir. Elite + Treasure her zaman opsiyonel yol.
     // ═══════════════════════════════════════════════════════
 
     private static void InjectEliteTreasurePairs(MapData map, int totalRows)
     {
-        // Uygun bottleneck row'ları bul (tek node, row 3+, boss'tan en az 2 row uzak)
+        // Uygun çoklu-node row'ları bul (2+ node, row 3+, boss'tan en az 2 row uzak, en az 1 Combat)
         List<int> candidates = new List<int>();
         for (int r = 3; r <= totalRows - 3; r++)
         {
             List<MapNode> row = map.GetRow(r);
-            if (row.Count != 1) continue;
-            MapNode node = row[0];
-            // Zaten özel bir tip ise (ödül vs.) atla
-            if (node.nodeType != MapNodeType.Combat) continue;
+            if (row.Count < 2) continue; // Tek node row'da Elite OLMAZ — zorunlu olur
+
+            // En az 1 Combat node olmalı (Elite'e dönüşecek)
+            bool hasCombat = false;
+            foreach (var n in row)
+            {
+                if (n.nodeType == MapNodeType.Combat) { hasCombat = true; break; }
+            }
+            if (!hasCombat) continue;
+
+            // Row'da Elite olmayan en az 1 alternatif yol kalmalı
+            // (2+ node zaten bunu garanti eder — biri Elite olunca diğeri kalır)
             candidates.Add(r);
         }
 
@@ -152,80 +164,43 @@ public static class MapGenerator
             Mathf.Abs(a - totalRows / 2).CompareTo(Mathf.Abs(b - totalRows / 2)));
         int eliteRow = candidates[0];
 
-        // Elite node'u ata
-        MapNode eliteNode = map.GetRow(eliteRow)[0];
+        // Row'daki Combat node'lardan birini Elite yap
+        List<MapNode> eliteRowNodes = map.GetRow(eliteRow);
+        MapNode eliteNode = null;
+        foreach (var n in eliteRowNodes)
+        {
+            if (n.nodeType == MapNodeType.Combat) { eliteNode = n; break; }
+        }
+        if (eliteNode == null) return; // Güvenlik
         eliteNode.nodeType = MapNodeType.EliteCombat;
 
-        // Sonraki row'u kontrol et
+        // ─── Treasure node oluştur ───
+        // Elite'nin mevcut child'larını Treasure'a aktar,
+        // Elite → sadece Treasure, Treasure → eski child'lar.
+        // Diğer node'ların bağlantıları değişmez (bypass yolu korunur).
+
+        List<int> eliteOldChildren = new List<int>(eliteNode.childIds);
+        eliteNode.childIds.Clear();
+
         int treasureRow = eliteRow + 1;
-        List<MapNode> nextRow = map.GetRow(treasureRow);
+        int newId = map.nodes.Count;
 
-        // Treasure'ın child'ları = treasure'dan sonraki row
-        List<MapNode> afterTreasureRow = map.GetRow(treasureRow + 1);
-        // Eğer afterTreasure boşsa bir sonrakine bak (güvenlik)
-        if (afterTreasureRow.Count == 0)
-            afterTreasureRow = map.GetRow(treasureRow + 2);
-
-        if (nextRow.Count == 1)
+        MapNode treasureNode = new MapNode
         {
-            // Zaten tek node — Treasure yap
-            MapNode treasureNode = nextRow[0];
-            treasureNode.nodeType = MapNodeType.Treasure;
+            id = newId,
+            row = treasureRow,
+            column = eliteNode.column, // Elite ile aynı sütunda görsel tutarlılık
+            nodeType = MapNodeType.Treasure,
+            visited = false
+        };
 
-            // Diğer parent'ların bu node'a olan bağlantılarını kaldır
-            // ve onları treasure'dan sonraki row'a bağla
-            foreach (var pNode in map.nodes)
-            {
-                if (pNode.id == eliteNode.id) continue;
-                if (pNode.childIds.Remove(treasureNode.id))
-                {
-                    // Bu parent child'sız kalabilir — treasure sonrası row'a bağla
-                    foreach (var afterNode in afterTreasureRow)
-                    {
-                        if (!pNode.childIds.Contains(afterNode.id))
-                            pNode.childIds.Add(afterNode.id);
-                    }
-                }
-            }
+        // Treasure → Elite'nin eski child'ları
+        treasureNode.childIds.AddRange(eliteOldChildren);
 
-            // Elite → sadece Treasure
-            if (!eliteNode.childIds.Contains(treasureNode.id))
-                eliteNode.childIds.Add(treasureNode.id);
-            eliteNode.childIds.RemoveAll(id => id != treasureNode.id);
+        // Elite → sadece Treasure
+        eliteNode.childIds.Add(treasureNode.id);
 
-            // Treasure → sonraki row (zaten bağlı olmalı, yoksa bağla)
-            if (treasureNode.childIds.Count == 0)
-            {
-                foreach (var n in afterTreasureRow)
-                    treasureNode.childIds.Add(n.id);
-            }
-        }
-        else
-        {
-            // Birden fazla node var — yeni tek node Treasure ekle
-            List<int> oldChildren = new List<int>(eliteNode.childIds);
-            eliteNode.childIds.Clear();
-
-            // Yeni Treasure node oluştur — id = index olmalı (GetNode id'yi index olarak kullanır)
-            int newId = map.nodes.Count;
-
-            MapNode treasureNode = new MapNode
-            {
-                id = newId,
-                row = treasureRow,
-                column = 0,
-                nodeType = MapNodeType.Treasure,
-                visited = false
-            };
-
-            // Treasure → Elite'nin eski child'ları
-            treasureNode.childIds.AddRange(oldChildren);
-
-            // Elite → sadece Treasure
-            eliteNode.childIds.Add(treasureNode.id);
-
-            map.nodes.Add(treasureNode);
-        }
+        map.nodes.Add(treasureNode);
     }
 
     // ═══════════════════════════════════════════════════════
