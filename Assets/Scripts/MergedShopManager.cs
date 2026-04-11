@@ -640,8 +640,9 @@ public class MergedShopManager : MonoBehaviour
         if (commonPerks.Count == 0 && rarePerks.Count == 0 && epicPerks.Count == 0 && legendaryPerks.Count == 0)
         { Debug.LogWarning("[MergedShop] All perk pools empty — hiding perk section"); HidePerkSection(); return; }
 
-        bool allMaxed = AreAllPerksMaxed();
-        if (allMaxed) { Debug.LogWarning("[MergedShop] All perks maxed — hiding perk section"); HidePerkSection(); return; }
+        // Shop'ta sadece sahip olunmayan perkler gösterilir — upgrade sadece kamp ateşinde yapılır
+        bool allOwned = AreAllPerksOwnedOrMaxed();
+        if (allOwned) { Debug.LogWarning("[MergedShop] All perks owned/maxed — hiding perk section"); HidePerkSection(); return; }
 
         if (perkSection != null) perkSection.SetActive(true);
 
@@ -651,10 +652,10 @@ public class MergedShopManager : MonoBehaviour
         {
             GameObject pick = null;
             int safety = 0;
-            while (pick == null || currentPerkChoices.Contains(pick) || IsPerkMaxedOut(pick))
+            while (pick == null || currentPerkChoices.Contains(pick) || IsPerkOwned(pick))
             {
                 pick = GetRandomPerkByRarity(isBossReward);
-                if (++safety > 50) { pick = GetAnyValidFallback(); break; }
+                if (++safety > 50) { pick = GetAnyUnownedFallback(); break; }
             }
             if (pick != null) currentPerkChoices.Add(pick);
         }
@@ -680,8 +681,17 @@ public class MergedShopManager : MonoBehaviour
             }
             else
             {
-                if (perkSlots[i].root != null) perkSlots[i].root.SetActive(false);
-                Debug.Log($"[MergedShop]   slot[{i}] hidden (no choice)");
+                // Yeterli sahip olunmayan perk yok — slotu "sold out" olarak göster
+                if (perkSlots[i].root != null) perkSlots[i].root.SetActive(true);
+                if (perkSlots[i].soldOutOverlay != null) perkSlots[i].soldOutOverlay.SetActive(true);
+                if (perkSlots[i].button != null) perkSlots[i].button.interactable = false;
+                if (perkSlots[i].nameText != null) perkSlots[i].nameText.text = "SOLD OUT";
+                if (perkSlots[i].descriptionText != null) perkSlots[i].descriptionText.text = "";
+                if (perkSlots[i].levelText != null) perkSlots[i].levelText.text = "";
+                if (perkSlots[i].rarityText != null) perkSlots[i].rarityText.text = "";
+                if (perkSlots[i].priceText != null) perkSlots[i].priceText.text = "";
+                if (perkSlots[i].iconImage != null) { perkSlots[i].iconImage.sprite = null; perkSlots[i].iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.3f); }
+                Debug.Log($"[MergedShop]   slot[{i}] sold out (not enough unowned perks)");
             }
         }
     }
@@ -957,6 +967,23 @@ public class MergedShopManager : MonoBehaviour
         return existing != null && existing.currentLevel >= existing.maxLevel;
     }
 
+    /// <summary>
+    /// Oyuncunun zaten sahip olduğu (herhangi bir seviyede) perk mi?
+    /// Shop'ta sahip olunan perkler gösterilmez — upgrade sadece kamp ateşinde yapılır.
+    /// </summary>
+    private bool IsPerkOwned(GameObject perkGO)
+    {
+        if (perkGO == null) return false;
+        if (RunManager.instance == null) return false;
+        BasePerk perkScript = perkGO.GetComponent<BasePerk>();
+        if (perkScript == null) return false;
+
+        System.Type perkType = perkScript.GetType();
+        if (RunManager.instance.activePerks.Exists(p => p != null && p.GetType() == perkType)) return true;
+        if (RunManager.instance.inventoryPerks.Exists(p => p != null && p.GetType() == perkType)) return true;
+        return false;
+    }
+
     private GameObject GetRandomPerkByRarity(bool forceLegendary)
     {
         if (forceLegendary && legendaryPerks.Count > 0)
@@ -1014,6 +1041,35 @@ public class MergedShopManager : MonoBehaviour
         return null;
     }
 
+    /// <summary>Havuzdaki tüm perkler zaten sahip mi veya maxed mi?</summary>
+    private bool AreAllPerksOwnedOrMaxed()
+    {
+        List<GameObject> all = new List<GameObject>();
+        all.AddRange(commonPerks);
+        all.AddRange(rarePerks);
+        all.AddRange(epicPerks);
+        all.AddRange(legendaryPerks);
+
+        foreach (var p in all)
+        {
+            if (p == null) continue;
+            if (!IsPerkOwned(p)) return false;
+        }
+        return true;
+    }
+
+    /// <summary>Sahip olunmayan herhangi bir perk döndürür (fallback).</summary>
+    private GameObject GetAnyUnownedFallback()
+    {
+        List<GameObject> all = new List<GameObject>();
+        all.AddRange(commonPerks);
+        all.AddRange(rarePerks);
+        all.AddRange(epicPerks);
+        all.AddRange(legendaryPerks);
+        foreach (var p in all) if (p != null && !IsPerkOwned(p)) return p;
+        return null;
+    }
+
     // ═══════════════════════════════════════════
     // UTIL
     // ═══════════════════════════════════════════
@@ -1049,6 +1105,18 @@ public class MergedShopPerkSlot
         BasePerk perk = perkGO.GetComponent<BasePerk>();
         if (perk == null) return;
 
+        // ── Önce tüm visual state'i temizle ──
+        if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
+        if (background != null) background.color = Color.white;
+        if (button != null)
+        {
+            button.interactable = true;
+            // Button ColorBlock'un disabled tint kalıntısını temizle
+            var cb = button.colors;
+            cb.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+            button.colors = cb;
+        }
+
         if (nameText        != null) nameText.text        = perk.perkName.ToUpperInvariant();
         if (descriptionText != null) descriptionText.text = perk.description;
 
@@ -1057,12 +1125,8 @@ public class MergedShopPerkSlot
         if (rarityText != null) { rarityText.text = perk.rarity.ToString().ToUpperInvariant(); rarityText.color = col; }
         if (nameText   != null) nameText.color = col;
 
-        // Level
-        BasePerk existing = RunManager.instance?.activePerks.Find(p => p != null && p.GetType() == perk.GetType());
-        if (existing == null) existing = RunManager.instance?.inventoryPerks.Find(p => p != null && p.GetType() == perk.GetType());
-        int fromLv = existing != null ? existing.currentLevel : 0;
-        int toLv   = fromLv + 1;
-        if (levelText != null) levelText.text = $"Lv {fromLv} <color=#00FF00>→ Lv {toLv}</color>";
+        // Level — shop'ta sadece sahip olunmayan perkler gösterilir, her zaman Lv 1
+        if (levelText != null) levelText.text = "Lv 1";
 
         // Icon
         if (iconImage != null)
@@ -1084,11 +1148,8 @@ public class MergedShopPerkSlot
         price = GetRarityPrice(perk.rarity);
         if (priceText != null) priceText.text = price.ToString();
 
-        if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
-
         if (button != null)
         {
-            button.interactable = true;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => manager.SelectPerk(index));
         }
@@ -1136,6 +1197,17 @@ public class MergedShopItemSlot
 
     public void Setup(BaseItem item, Action onBuy)
     {
+        // ── Önce tüm visual state'i temizle ──
+        if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
+        if (background != null) background.color = Color.white;
+        if (button != null)
+        {
+            button.interactable = true;
+            var cb = button.colors;
+            cb.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+            button.colors = cb;
+        }
+
         if (nameText        != null) nameText.text        = item.itemName.ToUpperInvariant();
         if (descriptionText != null) descriptionText.text = item.description;
         if (priceText       != null) priceText.text       = item.price.ToString();
@@ -1146,11 +1218,8 @@ public class MergedShopItemSlot
             else { iconImage.sprite = null; iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); }
         }
 
-        if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
-
         if (button != null)
         {
-            button.interactable = true;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => onBuy?.Invoke());
         }

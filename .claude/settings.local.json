@@ -75,7 +75,10 @@
       "Bash(ls -1 /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)",
       "Bash(xxd \"Assets/Scripts/Map/MapManager.cs\")",
       "Bash(python3 -c ':*)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(ls -1 \"/c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Prefabs/Perks\"/*.prefab)",
+      "Bash(ls -1 \"/c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks\"/*.cs)",
+      "Bash(xargs -I {} basename {} .cs)"
     ]
   }
 }

@@ -10,6 +10,12 @@ public class MapLayerData : ScriptableObject
     public int maxNodesPerRow = 3;
     [Range(0f, 1f)] public float threeNodeChance = 0.15f;
 
+    [Header("Branching")]
+    [Tooltip("Tek node (bottleneck) row gelme olasılığı. Düşük = daha fazla ayrılma.")]
+    [Range(0f, 1f)] public float singleNodeChance = 0.30f;
+    [Tooltip("Kaç ardışık çoklu row olabilir (sonra zorunlu bottleneck gelir).")]
+    [Range(2, 5)] public int maxMultiRowStreak = 3;
+
     [Header("Node Type Weights")]
     [Range(0f, 1f)] public float restChance = 0.10f;
     [Range(0f, 1f)] public float eliteChance = 0.10f;

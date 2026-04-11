@@ -593,6 +593,10 @@ public class PerkInventoryUI : MonoBehaviour
         dragIsActiveSlot = isActiveSlot;
         dragIndex = index;
 
+        // SellBox'ı aç
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.ShowForPerk(perk, isActiveSlot, index);
+
         dragGhost = new GameObject("DragGhost", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         dragGhost.transform.SetParent(canvasGO.transform, false);
         RectTransform ghostRT = dragGhost.GetComponent<RectTransform>();
@@ -693,6 +697,25 @@ public class PerkInventoryUI : MonoBehaviour
             }
         }
 
+        // Check for SellBox drop zone
+        if (!handled)
+        {
+            foreach (var result in results)
+            {
+                SellBoxDropZone sellZone = result.gameObject.GetComponent<SellBoxDropZone>();
+                if (sellZone == null) sellZone = result.gameObject.GetComponentInParent<SellBoxDropZone>();
+                if (sellZone != null && SellBoxController.instance != null)
+                {
+                    handled = SellBoxController.instance.TrySell();
+                    break;
+                }
+            }
+        }
+
+        // SellBox'ı kapat (satış olsun olmasın)
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.HideSellBox();
+
         if (!handled && dragIsActiveSlot && RunManager.instance != null)
         {
             if (dragIndex < RunManager.instance.activePerks.Count && RunManager.instance.activePerks.Count > 1)
@@ -790,6 +813,10 @@ public class PerkInventoryUI : MonoBehaviour
         if (dragGhost != null) Destroy(dragGhost);
         dragGhost = null;
         isDragging = false;
+
+        // SellBox'ı kapat
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.HideSellBox();
     }
 
     private void HighlightSourceSlot(bool dim)
@@ -958,7 +985,7 @@ public class PerkInventoryUI : MonoBehaviour
             if (stashSection != null)
             {
                 if (stashTitleText != null)
-                    stashTitleText.text = $"STASH ({stashCount})";
+                    stashTitleText.text = $"STASH ({stashCount}/{RunManager.MAX_INVENTORY_PERKS})";
 
                 if (shouldShowStash != stashIsShowing)
                 {
