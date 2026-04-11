@@ -115,6 +115,9 @@ public class MapManager : MonoBehaviour
             GameObject sacGO = new GameObject("SacrificeNodeManager");
             sacGO.AddComponent<SacrificeNodeManager>();
         }
+        // Cache perk lists while LevelUpManager is still alive
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.CachePerkLists();
 
         // Auto-spawn Inventory & Hotbar if not present
         EnsureInventoryAndHotbar();
@@ -458,6 +461,8 @@ public class MapManager : MonoBehaviour
             GameObject sacGO = new GameObject("SacrificeNodeManager");
             sacGO.AddComponent<SacrificeNodeManager>();
         }
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.CachePerkLists();
 
         // Inventory & Hotbar yok olmuş olabilir
         EnsureInventoryAndHotbar();

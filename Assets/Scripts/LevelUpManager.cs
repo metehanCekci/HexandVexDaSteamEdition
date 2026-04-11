@@ -62,6 +62,10 @@ public class LevelUpManager : MonoBehaviour
             skipButtonOriginalColor = skipButtonImage.color;
         if (skipButton != null)
             skipButtonOriginalColorBlock = skipButton.colors;
+
+        // SacrificeNodeManager'a perk listelerini cache'le
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.CachePerkLists();
     }
 
     void OnDestroy()
