@@ -2,90 +2,76 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Sacrifice ekranındaki tek bir reward slot'u.
-/// Inspector'da 7 adet oluşturup SacrificeNodeManager.rewardSlots listesine bağla.
-/// </summary>
 public class SacrificeRewardSlot : MonoBehaviour
 {
-    [Header("UI")]
     public Image background;
     public Image iconImage;
+    public Image glowBorder;
     public TMP_Text nameText;
-    public TMP_Text rarityText;
-    public TMP_Text costText;        // "5 perk"
-    public GameObject soldOutOverlay;
-    public Button button;
-    public Image selectedOutline;    // Seçiliyken parlayan çerçeve
+    public TMP_Text costText;
+    public TMP_Text rarityLabel;
 
-    private int slotIndex;
-    private SacrificeNodeManager manager;
+    private PerkRarity slotRarity;
+    private int cost;
 
-    public void Setup(SacrificeSlotData data, int index, SacrificeNodeManager mgr)
+    public void Setup(PerkRarity rarity, GameObject perkPrefab, int perkCost)
     {
-        slotIndex = index;
-        manager   = mgr;
+        slotRarity = rarity;
+        cost = perkCost;
 
-        // Perk bilgilerini göster
-        BasePerk perk = null;
-        if (data.perkPrefab != null)
-            perk = data.perkPrefab.GetComponent<BasePerk>();
-
-        if (nameText != null)
-            nameText.text = perk != null ? perk.perkName.ToUpperInvariant() : "???";
-
-        if (rarityText != null)
-            rarityText.text = data.rarity.ToString().ToUpperInvariant();
-
-        if (costText != null)
-            costText.text = SacrificeNodeManager.SacrificeCost[data.rarity] + " PERK";
-
-        // Rarity rengi
-        Color rarityColor = GetRarityColor(data.rarity);
-        if (rarityText != null) rarityText.color = rarityColor;
-        if (background != null) background.color = new Color(rarityColor.r * 0.2f, rarityColor.g * 0.2f, rarityColor.b * 0.2f, 0.9f);
-
-        // Icon
-        if (iconImage != null && perk != null)
+        if (perkPrefab != null)
         {
-            var spriteField = perk.GetType().GetField("icon");
-            if (spriteField != null) iconImage.sprite = spriteField.GetValue(perk) as Sprite;
+            BasePerk bp = perkPrefab.GetComponent<BasePerk>();
+            if (bp != null)
+            {
+                if (nameText != null) nameText.text = bp.perkName;
+                if (iconImage != null && bp.icon != null)
+                {
+                    iconImage.sprite = bp.icon;
+                    iconImage.color = Color.white;
+                }
+            }
+        }
+        else
+        {
+            if (nameText != null) nameText.text = "???";
+            if (iconImage != null) iconImage.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
         }
 
-        // Sold out
-        if (soldOutOverlay != null)
-            soldOutOverlay.SetActive(data.purchased);
-
-        if (button != null)
+        if (costText != null) costText.text = $"{cost} PERKS";
+        if (rarityLabel != null)
         {
-            button.interactable = !data.purchased;
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() => manager.OnRewardSlotClicked(slotIndex));
-        }
-
-        if (selectedOutline != null)
-            selectedOutline.enabled = false;
-    }
-
-    public void RefreshVisual(bool isSelected, int selectedCount, int required)
-    {
-        if (selectedOutline != null)
-            selectedOutline.enabled = isSelected;
-
-        // Confirm yakınsa slot'u parlat
-        if (isSelected && background != null)
-        {
-            float t = required > 0 ? (float)selectedCount / required : 0f;
-            Color baseColor = background.color;
-            background.color = Color.Lerp(baseColor, Color.white * 0.3f + baseColor, t * 0.3f);
+            rarityLabel.text = rarity.ToString().ToUpper();
+            rarityLabel.color = GetRarityColor(rarity);
         }
     }
 
-    private Color GetRarityColor(PerkRarity r)
+    public void SetHighlighted(bool active)
     {
-        switch (r)
+        Color rc = GetRarityColor(slotRarity);
+
+        if (active)
         {
-            case PerkRarity.Common:    return new Color(0.8f, 0.8f, 0.8f);
+            if (background != null) background.color = new Color(rc.r * 0.25f, rc.g * 0.25f, rc.b * 0.25f, 0.95f);
+            if (glowBorder != null) glowBorder.color = new Color(rc.r, rc.g, rc.b, 0.9f);
+            if (iconImage != null) iconImage.color = Color.white;
+            if (nameText != null) nameText.color = Color.white;
+            if (costText != null) costText.color = new Color(0.9f, 0.9f, 0.9f);
+        }
+        else
+        {
+            if (background != null) background.color = new Color(0.12f, 0.12f, 0.12f, 0.7f);
+            if (glowBorder != null) glowBorder.color = new Color(0.25f, 0.25f, 0.25f, 0.25f);
+            if (iconImage != null) iconImage.color = new Color(0.3f, 0.3f, 0.3f, 0.4f);
+            if (nameText != null) nameText.color = new Color(0.35f, 0.35f, 0.35f);
+            if (costText != null) costText.color = new Color(0.3f, 0.3f, 0.3f);
+        }
+    }
+
+    public static Color GetRarityColor(PerkRarity rarity)
+    {
+        switch (rarity)
+        {
             case PerkRarity.Rare:      return new Color(0.27f, 0.53f, 1f);
             case PerkRarity.Epic:      return new Color(0.67f, 0.27f, 1f);
             case PerkRarity.Legendary: return new Color(1f, 0.67f, 0f);
