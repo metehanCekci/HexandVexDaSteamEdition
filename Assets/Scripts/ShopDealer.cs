@@ -378,6 +378,7 @@ public class ShopDealer : MonoBehaviour
         var scaler = goldHudGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
         goldHudGO.AddComponent<GraphicRaycaster>();
 
         GameObject rowGO = new GameObject("GoldRow", typeof(RectTransform));

@@ -103,7 +103,7 @@ public class ShopSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         titleGO.layer = gameObject.layer;
         titleText = titleGO.AddComponent<TextMeshProUGUI>();
         if (customFont != null) titleText.font = customFont;
-        titleText.fontSize = 18; // BAŞLIK 18 PUNTO!
+        titleText.fontSize = 22; // BAŞLIK 22 PUNTO!
         titleText.alignment = TextAlignmentOptions.Left; // Windows menüsü gibi Sola Dayalı
         titleText.color = Color.white;
         titleText.fontStyle = FontStyles.Bold;
@@ -132,7 +132,7 @@ public class ShopSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         descGO.layer = gameObject.layer;
         descText = descGO.AddComponent<TextMeshProUGUI>();
         if (customFont != null) descText.font = customFont;
-        descText.fontSize = 14; // AÇIKLAMA 14 PUNTO!
+        descText.fontSize = 18; // AÇIKLAMA 18 PUNTO!
         descText.alignment = TextAlignmentOptions.Left; // Windows menüsü gibi Sola Dayalı
         descText.color = new Color(0.9f, 0.9f, 0.9f, 1f); // Hafif kırık beyaz
         descText.raycastTarget = false;
@@ -184,7 +184,7 @@ public class ShopSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         priceGO.layer = gameObject.layer;
         priceText = priceGO.AddComponent<TextMeshProUGUI>();
         if (customFont != null) priceText.font = customFont;
-        priceText.fontSize = 16;
+        priceText.fontSize = 20;
         priceText.alignment = TextAlignmentOptions.Left;
         priceText.color = new Color(1f, 0.85f, 0.2f, 1f);
         priceText.fontStyle = FontStyles.Bold;

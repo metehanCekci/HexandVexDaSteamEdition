@@ -56,8 +56,10 @@ public class SecretPerkCinematic : MonoBehaviour
         cinematicCanvas = gameObject.AddComponent<Canvas>();
         cinematicCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         cinematicCanvas.sortingOrder = 999;
-        gameObject.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
+        var cinScaler = gameObject.AddComponent<CanvasScaler>();
+        cinScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        cinScaler.referenceResolution = new Vector2(1920, 1080);
+        cinScaler.matchWidthOrHeight = 0.5f;
         gameObject.AddComponent<GraphicRaycaster>();
 
         // Root container

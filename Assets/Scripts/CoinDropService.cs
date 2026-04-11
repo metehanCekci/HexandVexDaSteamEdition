@@ -20,7 +20,7 @@ public class CoinDropService
         else
         {
             if (enemy.isElite)
-                coinDrop = Random.Range(20, 26) + rm.bonusGold;
+                coinDrop = Random.Range(10, 16) + rm.bonusGold;
             else
                 coinDrop = Random.Range(5, 11) + rm.bonusGold;
             if (rm.doubleGoldNextKill)

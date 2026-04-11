@@ -73,8 +73,10 @@ public class MapBootstrapper : MonoBehaviour
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 90; // Diğer UI'ların üstünde ama fader'ın altında
-        canvasGO.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasGO.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
+        var mapScaler = canvasGO.AddComponent<CanvasScaler>();
+        mapScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        mapScaler.referenceResolution = new Vector2(1920, 1080);
+        mapScaler.matchWidthOrHeight = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
         // ─── Map Panel (arka plan) ───
@@ -244,8 +246,10 @@ public class MapBootstrapper : MonoBehaviour
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 95;
-        canvasGO.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasGO.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
+        var restScaler = canvasGO.AddComponent<CanvasScaler>();
+        restScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        restScaler.referenceResolution = new Vector2(1920, 1080);
+        restScaler.matchWidthOrHeight = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
         // ─── Panel ───
