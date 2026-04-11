@@ -9,6 +9,7 @@ public class InsurancePolicyPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Rare;
+        description = "Gain gold when you take damage. +4 gold per missing HP at Lv1, +6 at Lv2, +8 at Lv3.";
     }
 
     public override void OnAcquire()
@@ -72,7 +73,7 @@ public class InsurancePolicyPerk : BasePerk
 
         int maxHP = TurnManager.instance.player.health.maxHP;
         int missingHP = maxHP - remainingHP;
-        int goldPerMissing = currentLevel + 1; // Lv1: 2, Lv2: 3, Lv3: 4
+        int goldPerMissing = (currentLevel + 1) * 2; // Lv1: 4, Lv2: 6, Lv3: 8
         int goldGain = goldPerMissing * missingHP;
 
         if (RunManager.instance != null)

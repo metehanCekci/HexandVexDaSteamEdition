@@ -11,10 +11,10 @@ public class SyncPerkDescriptions
         Dictionary<string, string> descMap = new Dictionary<string, string>
         {
             // === COMMON ===
-            { "LootGland",          "Gain +1 bonus gold per kill for each level." },
+            { "LootGland",          "Gain +2 bonus gold per kill for each level." },
             { "ChitinArmor",        "30% chance to dodge incoming attacks." },
             { "RegenTissue",        "Heal 1 HP per level at the start of each level." },
-            { "PassiveEnzyme",      "Earn gold when you skip your turn with more than 1 enemy. +2 gold per level." },
+            { "PassiveEnzyme",      "Earn gold when you skip your turn with more than 1 enemy. +4 gold per level." },
             { "DormantSpore",       "Each skipped turn stores +1 bonus die for your next attack." },
             { "ToxinEdge",          "Add +1 damage to each die. +1 per level." },
             { "NeuroAim",           "+25% critical hit chance per level." },
@@ -67,7 +67,7 @@ public class SyncPerkDescriptions
             { "FatalSightProtocol", "All attacks are critical hits. Crit chance converts to bonus crit damage." },
             { "TerminalFuryGland",  "Always deal double damage, get +1x mult per missing health." },
             { "HostSyndrome",       "Roll +1 extra die for every enemy adjacent to you." },
-            { "CapitalistPunch",    "Every 10 gold you carry adds +1 to all dice." },
+            { "CapitalistPunch",    "Every 5 gold you carry adds +1 to all dice." },
             { "GeneticCartel",      "Each shop reroll permanently adds +1 to all dice." },
 
             // === NEW ===
@@ -82,7 +82,7 @@ public class SyncPerkDescriptions
             { "VoidHunger",         "Gain +0.5x damage multiplier for every tile that collapses. Permanent." },
             { "Deadweight",         "Stunned enemies take 2x damage. +1x per level." },
             { "KillChain",          "Killing an enemy grants +1 extra move this turn. +1 per level." },
-            { "InsurancePolicy",    "Gain gold when you take damage. +3 gold per HP lost at Lv1, +5 at Lv2, +7 at Lv3." },
+            { "InsurancePolicy",    "Gain gold when you take damage. +4 gold per missing HP at Lv1, +6 at Lv2, +8 at Lv3." },
             { "PhantomAssault",     "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each." },
 
             // === SECRET ===

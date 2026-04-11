@@ -14,6 +14,18 @@ public class SynapticAnchorPerk : BasePerk
         rarity = PerkRarity.Rare;
     }
 
+    public override void OnEquip()
+    {
+        // Anchor state yeni level'da sıfırlanacak zaten, sadece tracking resetle
+    }
+
+    public override void OnUnequip()
+    {
+        hasAnchor = false;
+        teleportPending = false;
+        ClearAnchorVisual();
+    }
+
     public override void OnLevelStart()
     {
         hasAnchor = false;

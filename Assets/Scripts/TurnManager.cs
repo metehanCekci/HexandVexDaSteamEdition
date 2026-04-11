@@ -524,12 +524,7 @@ public class TurnManager : MonoBehaviour
                 MagicTileManager.instance.MarkBlueTileActive(player.GetCurrentCellPosition());
             }
 
-            // Orange Magic Tile: +1 extra move while standing on it (consumed on leave)
-            if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType orangeCheck) && orangeCheck == MagicTileType.Orange)
-            {
-                RunManager.instance.remainingMoves += 1;
-                MagicTileManager.instance.MarkOrangeTileActive(player.GetCurrentCellPosition());
-            }
+            // Orange Magic Tile: handled on arrival in HandlePlayerPhase (not at turn start)
         }
         TickThornLifetimes();
         if (CleanupDeadAndCheckLevelClear()) return;
@@ -1795,6 +1790,13 @@ public class TurnManager : MonoBehaviour
         // Orange Magic Tile: üstünden ayrılınca tüket
         if (MagicTileManager.instance != null)
             MagicTileManager.instance.CheckOrangeTileConsumption(playerCell);
+
+        // Orange Magic Tile: üstüne basınca +1 ekstra hareket hakkı (o an verilir)
+        if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType orangeStep) && orangeStep == MagicTileType.Orange)
+        {
+            RunManager.instance.remainingMoves += 1;
+            MagicTileManager.instance.MarkOrangeTileActive(playerCell);
+        }
 
         // Layer 2: Explosion tile kontrolü (hazardCells içinde, bu yüzden önce kontrol et)
         if (LevelGenerator.instance != null && LevelGenerator.instance.explosionCells.Contains(playerCell))

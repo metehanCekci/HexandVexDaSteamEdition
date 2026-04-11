@@ -23,6 +23,18 @@ public class VoidHungerPerk : BasePerk
         description = GetDescription();
     }
 
+    public override void OnEquip()
+    {
+        Subscribe();
+        description = GetDescription();
+    }
+
+    public override void OnUnequip()
+    {
+        Unsubscribe();
+        description = GetDescription();
+    }
+
     public override void OnLevelStart()
     {
         Subscribe();
@@ -36,10 +48,16 @@ public class VoidHungerPerk : BasePerk
         subscribed = true;
     }
 
-    void OnDestroy()
+    private void Unsubscribe()
     {
+        if (!subscribed) return;
         TrapTileEvents.OnTileDestroyed -= OnTileDestroyed;
         subscribed = false;
+    }
+
+    void OnDestroy()
+    {
+        Unsubscribe();
     }
 
     private void OnTileDestroyed(Vector3Int cell)

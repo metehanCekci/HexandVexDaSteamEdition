@@ -324,6 +324,7 @@ public class NodeMinimapUI : MonoBehaviour
             case MapNodeType.Rest:           return rest;
             case MapNodeType.Enchant:        return evt;
             case MapNodeType.Boss:           return boss;
+            case MapNodeType.Treasure:       return shop; // TODO: treasure icon
             default:                         return null;
         }
     }
@@ -339,6 +340,7 @@ public class NodeMinimapUI : MonoBehaviour
             case MapNodeType.Rest:           return "R";
             case MapNodeType.Enchant:        return "E";
             case MapNodeType.Boss:           return "B";
+            case MapNodeType.Treasure:       return "T";
             default:                         return "?";
         }
     }
@@ -355,6 +357,7 @@ public class NodeMinimapUI : MonoBehaviour
             case MapNodeType.Rest:           c = new Color(0.2f, 0.8f, 0.4f); break;
             case MapNodeType.Enchant:        c = new Color(0.3f, 0.8f, 1f); break;
             case MapNodeType.Boss:           c = new Color(1f, 0f, 0f); break;
+            case MapNodeType.Treasure:       c = new Color(1f, 0.85f, 0.2f); break;
             default:                         c = Color.white; break;
         }
         if (isCurrent) return c;

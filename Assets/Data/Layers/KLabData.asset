@@ -17,11 +17,7 @@ MonoBehaviour:
   minNodesPerRow: 1
   maxNodesPerRow: 3
   threeNodeChance: 0.15
-  shopChance: 0.2
-  perkChance: 0.25
-  restChance: 0.2
+  restChance: 0.3
   eliteChance: 0.1
-  enchantChance: 0.1
-  restEnabled: 0
-  enchantEnabled: 1
+  enchantChance: 0.3
   tileSet: {fileID: 11400000, guid: e6e5558eae4bd664093f54a048f204a6, type: 2}

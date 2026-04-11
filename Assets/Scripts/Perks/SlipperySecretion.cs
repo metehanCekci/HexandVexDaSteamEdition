@@ -9,6 +9,7 @@ public class SlipperySecretionPerk : BasePerk
     private Dictionary<Vector3Int, GameObject> mucusVisuals = new Dictionary<Vector3Int, GameObject>();
     private Vector3Int lastTrackedCell;
     private bool initialized = false;
+    private bool isEquipped = false;
 
     void OnEnable()
     {
@@ -18,12 +19,23 @@ public class SlipperySecretionPerk : BasePerk
 
     public override void OnAcquire()
     {
+        isEquipped = true;
         InitTracking();
     }
 
     public override void OnEquip()
     {
+        isEquipped = true;
         InitTracking();
+    }
+
+    public override void OnUnequip()
+    {
+        isEquipped = false;
+        ClearAllVisuals();
+        mucusCells.Clear();
+        trailHistory.Clear();
+        initialized = false;
     }
 
     public override void OnLevelStart()
@@ -47,6 +59,7 @@ public class SlipperySecretionPerk : BasePerk
 
     void Update()
     {
+        if (!isEquipped) return;
         if (TurnManager.instance == null || TurnManager.instance.player == null) return;
 
         // Lazy init: OnLevelStart'ta player henuz null olabilir

@@ -71,7 +71,8 @@
       "Bash(/c/Users/kutus/AppData/Local/Microsoft/WindowsApps/python.exe -c \"print\\(''ok''\\)\")",
       "Bash(powershell -Command \"Get-Command powershell | Select-Object -ExpandProperty Version\")",
       "Bash(\"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/Ana Sahne.unity\":*)",
-      "Bash(powershell -Command \":*)"
+      "Bash(powershell -Command \":*)",
+      "Bash(ls -1 /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)"
     ]
   }
 }

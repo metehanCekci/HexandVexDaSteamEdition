@@ -122,6 +122,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Enchant:       return "ENCHANT";
             case MapNodeType.Boss:          return "BOSS";
             case MapNodeType.Sacrifice:     return "SACRIFICE";
+            case MapNodeType.Treasure:      return "TREASURE";
             default:                        return "?";
         }
     }
@@ -209,6 +210,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Enchant:       icon = eventIcon; break;
             case MapNodeType.Boss:          icon = bossIcon; break;
             case MapNodeType.Sacrifice:     icon = sacrificeIcon != null ? sacrificeIcon : perkIcon; break;
+            case MapNodeType.Treasure:      icon = shopIcon; break; // TODO: treasure icon
         }
 
         if (icon != null)
@@ -237,6 +239,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             case MapNodeType.Enchant:       return new Color(0.3f, 0.8f, 1f);
             case MapNodeType.Boss:          return new Color(1f, 0f, 0f);
             case MapNodeType.Sacrifice:     return new Color(0.8f, 0.1f, 0.6f);
+            case MapNodeType.Treasure:      return new Color(1f, 0.85f, 0.2f); // gold/yellow
             default:                        return Color.white;
         }
     }

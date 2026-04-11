@@ -6,7 +6,7 @@ public static class MapGenerator
     // Ödül node'ları — combat olmayan, oyuncuya fayda sağlayan
     private static readonly HashSet<MapNodeType> rewardTypes = new HashSet<MapNodeType>
     {
-        MapNodeType.Shop, MapNodeType.Rest, MapNodeType.Enchant
+        MapNodeType.Rest, MapNodeType.Enchant
     };
 
     // Risk node'ları — düşmanlı
@@ -106,25 +106,126 @@ public static class MapGenerator
         // ─── SON GÜVENLİK: Ardışık ödül yasağı (tüm post-processing sonrası) ───
         EnforceNoConsecutiveRewards(map);
 
-        // ─── SON GÜVENLİK: Layer başına en az 1 Shop garanti ───
-        EnforceMinimumShop(map, totalRows);
-
         // ─── SON GÜVENLİK: Layer başına en az 1 Rest (Campfire) garanti ───
-        if (config.restEnabled) EnforceMinimumRest(map, totalRows);
+        EnforceMinimumRest(map, totalRows);
 
         // ─── SON GÜVENLİK: Layer başına en az 1 Enchant garanti ───
-        if (config.enchantEnabled) EnforceMinimumEnchant(map, totalRows);
-
-        // ─── Layer'a göre devre dışı node tiplerini kaldır ───
-        EnforceLayerNodeRestrictions(map, config);
+        EnforceMinimumEnchant(map, totalRows);
 
         // ─── SON GÜVENLİK: Arka arkaya ASLA aynı node tipi gelmesin ───
         EnforceNoConsecutiveSameType(map, config);
+
+        // ─── ELITE + TREASURE ÇİFTİ INJECT ───
+        InjectEliteTreasurePairs(map, totalRows);
 
         // ─── EN SON: Aynı derinlikteki aynı tipteki node'ları birleştir ───
         MergeSameTypeAtSameDepth(map, totalRows);
 
         return map;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // ELITE + TREASURE ÇİFTİ
+    // Tek node (bottleneck) row bulur → Elite yapar
+    // Hemen sonraki row'a tek node Treasure ekler
+    // Treasure'a SADECE Elite'den bağlantı olur
+    // ═══════════════════════════════════════════════════════
+
+    private static void InjectEliteTreasurePairs(MapData map, int totalRows)
+    {
+        // Uygun bottleneck row'ları bul (tek node, row 3+, boss'tan en az 2 row uzak)
+        List<int> candidates = new List<int>();
+        for (int r = 3; r <= totalRows - 3; r++)
+        {
+            List<MapNode> row = map.GetRow(r);
+            if (row.Count != 1) continue;
+            MapNode node = row[0];
+            // Zaten özel bir tip ise (ödül vs.) atla
+            if (node.nodeType != MapNodeType.Combat) continue;
+            candidates.Add(r);
+        }
+
+        if (candidates.Count == 0) return;
+
+        // Ortaya yakın olanı seç — daha iyi pacing
+        candidates.Sort((a, b) =>
+            Mathf.Abs(a - totalRows / 2).CompareTo(Mathf.Abs(b - totalRows / 2)));
+        int eliteRow = candidates[0];
+
+        // Elite node'u ata
+        MapNode eliteNode = map.GetRow(eliteRow)[0];
+        eliteNode.nodeType = MapNodeType.EliteCombat;
+
+        // Sonraki row'u kontrol et
+        int treasureRow = eliteRow + 1;
+        List<MapNode> nextRow = map.GetRow(treasureRow);
+
+        // Treasure'ın child'ları = treasure'dan sonraki row
+        List<MapNode> afterTreasureRow = map.GetRow(treasureRow + 1);
+        // Eğer afterTreasure boşsa bir sonrakine bak (güvenlik)
+        if (afterTreasureRow.Count == 0)
+            afterTreasureRow = map.GetRow(treasureRow + 2);
+
+        if (nextRow.Count == 1)
+        {
+            // Zaten tek node — Treasure yap
+            MapNode treasureNode = nextRow[0];
+            treasureNode.nodeType = MapNodeType.Treasure;
+
+            // Diğer parent'ların bu node'a olan bağlantılarını kaldır
+            // ve onları treasure'dan sonraki row'a bağla
+            foreach (var pNode in map.nodes)
+            {
+                if (pNode.id == eliteNode.id) continue;
+                if (pNode.childIds.Remove(treasureNode.id))
+                {
+                    // Bu parent child'sız kalabilir — treasure sonrası row'a bağla
+                    foreach (var afterNode in afterTreasureRow)
+                    {
+                        if (!pNode.childIds.Contains(afterNode.id))
+                            pNode.childIds.Add(afterNode.id);
+                    }
+                }
+            }
+
+            // Elite → sadece Treasure
+            if (!eliteNode.childIds.Contains(treasureNode.id))
+                eliteNode.childIds.Add(treasureNode.id);
+            eliteNode.childIds.RemoveAll(id => id != treasureNode.id);
+
+            // Treasure → sonraki row (zaten bağlı olmalı, yoksa bağla)
+            if (treasureNode.childIds.Count == 0)
+            {
+                foreach (var n in afterTreasureRow)
+                    treasureNode.childIds.Add(n.id);
+            }
+        }
+        else
+        {
+            // Birden fazla node var — yeni tek node Treasure ekle
+            List<int> oldChildren = new List<int>(eliteNode.childIds);
+            eliteNode.childIds.Clear();
+
+            // Yeni Treasure node oluştur — id = index olmalı (GetNode id'yi index olarak kullanır)
+            int newId = map.nodes.Count;
+
+            MapNode treasureNode = new MapNode
+            {
+                id = newId,
+                row = treasureRow,
+                column = 0,
+                nodeType = MapNodeType.Treasure,
+                visited = false
+            };
+
+            // Treasure → Elite'nin eski child'ları
+            treasureNode.childIds.AddRange(oldChildren);
+
+            // Elite → sadece Treasure
+            eliteNode.childIds.Add(treasureNode.id);
+
+            map.nodes.Add(treasureNode);
+        }
     }
 
     // ═══════════════════════════════════════════════════════
@@ -147,17 +248,11 @@ public static class MapGenerator
             if (node.row == 0) { node.nodeType = MapNodeType.Combat; continue; }
             // Row 1: combat — ama çoklu row'daysa EnforceNoDuplicatesInRow farklılaştıracak
             if (node.row == 1) { node.nodeType = MapNodeType.Combat; continue; }
-            // Row 2: garantili Shop (perk seçimi) — 3. node her zaman shop olsun
-            if (node.row == 2) { node.nodeType = MapNodeType.Shop; continue; }
+            // Row 2: artık shop yok, combat olsun
+            if (node.row == 2) { node.nodeType = MapNodeType.Combat; continue; }
             if (node.row == totalRows - 1)
             {
-                // Tek node row'daysa elite koyma
-                List<MapNode> rowNodes = map.GetRow(node.row);
-                if (rowNodes.Count <= 1)
-                    node.nodeType = MapNodeType.Combat;
-                else
-                    node.nodeType = Random.value < config.eliteChance * 2.5f
-                        ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                node.nodeType = MapNodeType.Combat;
                 continue;
             }
             // Geri kalanı şimdilik combat — aşağıda değiştirilecek
@@ -234,14 +329,8 @@ public static class MapGenerator
 
         // ─── Adım 3: Post-processing kuralları ───
 
-        // Elite arkasında ödül garanti
-        EnforceEliteReward(map, config);
-
         // Ardışık ödül yasağı (ödül → ödül olmasın)
         EnforceNoConsecutiveRewards(map);
-
-        // Ardışık shop yasağı
-        EnforceNoConsecutiveShops(map);
 
         // ─── SON GÜVENLİK: Çoklu row'da aynı tip ASLA olamaz ───
         // Post-processing kuralları tip değiştirebilir, bu yüzden en sonda tekrar kontrol
@@ -263,23 +352,13 @@ public static class MapGenerator
         Dictionary<int, int> incomingMaxStreak)
     {
         int count = rowNodes.Count;
-        bool canRest = row >= 3;
+        bool canRest = true;
 
-        // Boss öncesi → combat/elite ama yine farklı olsunlar
+        // Boss öncesi → hep combat (elite artık ayrı inject ediliyor)
         if (row == totalRows - 1)
         {
-            if (count == 1)
-            {
-                // Tek node — elite zorunlu olmamalı
-                rowNodes[0].nodeType = MapNodeType.Combat;
-            }
-            else
-            {
-                // En az biri elite, en az biri normal combat — seçim anlamlı
-                int eliteIdx = Random.Range(0, count);
-                for (int i = 0; i < count; i++)
-                    rowNodes[i].nodeType = (i == eliteIdx) ? MapNodeType.EliteCombat : MapNodeType.Combat;
-            }
+            for (int i = 0; i < count; i++)
+                rowNodes[i].nodeType = MapNodeType.Combat;
             return;
         }
 
@@ -358,15 +437,10 @@ public static class MapGenerator
 
             bool parentReward = HasRewardParent(map, node);
 
-            // Parent ödülse → kesinlikle savaş
+            // Parent ödülse → kesinlikle combat
             if (parentReward)
             {
-                if (assignedTypes.Contains(MapNodeType.Combat) && !assignedTypes.Contains(MapNodeType.EliteCombat))
-                    node.nodeType = MapNodeType.EliteCombat;
-                else if (assignedTypes.Contains(MapNodeType.EliteCombat) && !assignedTypes.Contains(MapNodeType.Combat))
-                    node.nodeType = MapNodeType.Combat;
-                else
-                    node.nodeType = Random.value < config.eliteChance * 2f ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                node.nodeType = MapNodeType.Combat;
                 assignedTypes.Add(node.nodeType);
             }
             // Ödül verilmemiş node'a ne verelim?
@@ -378,13 +452,7 @@ public static class MapGenerator
             }
             else
             {
-                // Risk node: combat veya elite — ama zaten atanmış tipten farklı
-                if (assignedTypes.Contains(MapNodeType.Combat) && !assignedTypes.Contains(MapNodeType.EliteCombat))
-                    node.nodeType = MapNodeType.EliteCombat;
-                else if (assignedTypes.Contains(MapNodeType.EliteCombat) && !assignedTypes.Contains(MapNodeType.Combat))
-                    node.nodeType = MapNodeType.Combat;
-                else
-                    node.nodeType = Random.value < config.eliteChance * 2f ? MapNodeType.EliteCombat : MapNodeType.Combat;
+                node.nodeType = MapNodeType.Combat;
                 assignedTypes.Add(node.nodeType);
             }
         }
@@ -404,7 +472,6 @@ public static class MapGenerator
     /// <summary>Tüm ödül tipleri kullanıldı mı?</summary>
     private static bool AllRewardsUsed(List<MapNodeType> used, bool canRest)
     {
-        if (!used.Contains(MapNodeType.Shop)) return false;
         if (canRest && !used.Contains(MapNodeType.Rest)) return false;
         if (!used.Contains(MapNodeType.Enchant)) return false;
         return true;
@@ -421,17 +488,12 @@ public static class MapGenerator
         List<MapNodeType> candidates = new List<MapNodeType>();
         List<float> weights = new List<float>();
 
-        if (!usedTypes.Contains(MapNodeType.Shop))
-        {
-            candidates.Add(MapNodeType.Shop);
-            weights.Add(config.shopChance + config.perkChance); // merged shop covers both
-        }
-        if (canRest && config.restEnabled && !usedTypes.Contains(MapNodeType.Rest))
+        if (canRest && !usedTypes.Contains(MapNodeType.Rest))
         {
             candidates.Add(MapNodeType.Rest);
             weights.Add(config.restChance);
         }
-        if (config.enchantEnabled && !usedTypes.Contains(MapNodeType.Enchant))
+        if (!usedTypes.Contains(MapNodeType.Enchant))
         {
             candidates.Add(MapNodeType.Enchant);
             weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
@@ -439,19 +501,19 @@ public static class MapGenerator
         // Hepsi kullanılmışsa fallback — tekrar seçebilir
         if (candidates.Count == 0)
         {
-            candidates.Add(MapNodeType.Shop);
-            weights.Add(config.shopChance + config.perkChance);
-            if (canRest && config.restEnabled)
+            if (canRest)
             {
                 candidates.Add(MapNodeType.Rest);
                 weights.Add(config.restChance);
             }
+            candidates.Add(MapNodeType.Enchant);
+            weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
         }
 
         // Ağırlıklı random
         float total = 0f;
         foreach (float w in weights) total += w;
-        if (total <= 0f) return MapNodeType.Shop;
+        if (total <= 0f) return MapNodeType.Rest;
 
         float roll = Random.value * total;
         float cum = 0f;
@@ -666,7 +728,7 @@ public static class MapGenerator
     /// </summary>
     private static void EnforceNoConsecutiveSameType(MapData map, MapLayerData config)
     {
-        bool canRest = config != null && config.restEnabled;
+        bool canRest = true;
 
         foreach (var parent in map.nodes)
         {
@@ -683,10 +745,8 @@ public static class MapGenerator
                 // Aynı tip! Alternatif bul
                 if (riskTypes.Contains(child.nodeType))
                 {
-                    // Combat → EliteCombat veya tersi
-                    child.nodeType = (child.nodeType == MapNodeType.Combat)
-                        ? MapNodeType.EliteCombat
-                        : MapNodeType.Combat;
+                    // Ardışık combat → reward'a çevir
+                    child.nodeType = PickDiverseRewardType(config, canRest, new List<MapNodeType> { parent.nodeType });
                 }
                 else
                 {
@@ -729,19 +789,12 @@ public static class MapGenerator
 
                     if (earlyRow || preBoss)
                     {
-                        // Erken row / boss öncesi: Combat ↔ Elite arası değiştir
-                        if (!seen.Contains(MapNodeType.EliteCombat))
-                            node.nodeType = MapNodeType.EliteCombat;
-                        else if (!seen.Contains(MapNodeType.Combat))
-                            node.nodeType = MapNodeType.Combat;
-                        // 3 node ve ikisi de kullanıldıysa — Combat fallback
-                        else
-                            node.nodeType = MapNodeType.Combat;
+                        // Erken row / boss öncesi: Combat fallback
+                        node.nodeType = MapNodeType.Combat;
                     }
                     else
                     {
-                        // Normal row: ödül veya risk — kullanılmamış olanı seç
-                        // Ama önce parent'lardan biri ödül mü kontrol et — ardışık ödül yasağını korumak için
+                        // Normal row: ödül veya combat — kullanılmamış olanı seç
                         bool parentIsReward = false;
                         foreach (var pNode in map.nodes)
                         {
@@ -751,27 +804,14 @@ public static class MapGenerator
 
                         if (parentIsReward)
                         {
-                            // Parent ödülse → sadece risk tipi seç
-                            if (!seen.Contains(MapNodeType.EliteCombat))
-                                node.nodeType = MapNodeType.EliteCombat;
-                            else if (!seen.Contains(MapNodeType.Combat))
-                                node.nodeType = MapNodeType.Combat;
-                            else
-                                node.nodeType = MapNodeType.Combat;
+                            node.nodeType = MapNodeType.Combat;
                         }
                         else
                         {
-                            // Parent risk → ödül tipleri de seçilebilir
-                            if (!seen.Contains(MapNodeType.Shop))
-                                node.nodeType = MapNodeType.Shop;
-                            else if (canRest && !seen.Contains(MapNodeType.Rest))
+                            if (canRest && !seen.Contains(MapNodeType.Rest))
                                 node.nodeType = MapNodeType.Rest;
                             else if (!seen.Contains(MapNodeType.Enchant))
                                 node.nodeType = MapNodeType.Enchant;
-                            else if (!seen.Contains(MapNodeType.EliteCombat))
-                                node.nodeType = MapNodeType.EliteCombat;
-                            else if (!seen.Contains(MapNodeType.Combat))
-                                node.nodeType = MapNodeType.Combat;
                             else
                                 node.nodeType = MapNodeType.Combat;
                         }
@@ -1011,13 +1051,9 @@ public static class MapGenerator
     {
         // Garanti edilecek tipler (row 0 ve boss hariç node'larda)
         // Layer config'e göre devre dışı tipler listeye eklenmez
-        List<MapNodeType> requiredList = new List<MapNodeType>
-        {
-            MapNodeType.Shop,
-            MapNodeType.EliteCombat
-        };
-        if (config == null || config.restEnabled)    requiredList.Add(MapNodeType.Rest);
-        if (config == null || config.enchantEnabled)  requiredList.Add(MapNodeType.Enchant);
+        List<MapNodeType> requiredList = new List<MapNodeType>();
+        requiredList.Add(MapNodeType.Rest);
+        requiredList.Add(MapNodeType.Enchant);
         MapNodeType[] requiredTypes = requiredList.ToArray();
 
         foreach (var reqType in requiredTypes)
@@ -1038,8 +1074,6 @@ public static class MapGenerator
             {
                 if (node.nodeType != MapNodeType.Combat) continue;
                 if (node.row <= 0 || node.row >= totalRows) continue;
-                // Elite tek node row'a konmamalı — oyuncunun alternatifi olmalı
-                if (reqType == MapNodeType.EliteCombat && map.GetRow(node.row).Count <= 1) continue;
                 // Ardışık ödül yasağı: ödül tipiyse parent veya child ödülse atla
                 if (isRewardType)
                 {
@@ -1207,13 +1241,6 @@ public static class MapGenerator
 
     private static void EnforceMinimumEnchant(MapData map, int totalRows)
     {
-        // Enchant sadece çift satırlarda olabilir — tek satırdaki enchant'ı combat'a çevir
-        foreach (var node in map.nodes)
-        {
-            if (node.nodeType == MapNodeType.Enchant && node.row % 2 != 0)
-                node.nodeType = MapNodeType.Combat;
-        }
-
         bool hasEnchant = false;
         foreach (var node in map.nodes)
         {
@@ -1226,7 +1253,6 @@ public static class MapGenerator
         {
             if (node.nodeType != MapNodeType.Combat) continue;
             if (node.row <= 1 || node.row >= totalRows) continue;
-            if (node.row % 2 != 0) continue; // sadece çift satırlar
 
             if (HasRewardParent(map, node)) continue;
             bool childReward = false;
@@ -1248,7 +1274,6 @@ public static class MapGenerator
             {
                 if (node.nodeType != MapNodeType.Combat) continue;
                 if (node.row <= 0 || node.row >= totalRows) continue;
-                if (node.row % 2 != 0) continue;
                 if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
                     bestCandidate = node;
             }
@@ -1256,31 +1281,6 @@ public static class MapGenerator
 
         if (bestCandidate != null)
             bestCandidate.nodeType = MapNodeType.Enchant;
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // LAYER NODE KISITLAMALARI
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Layer config'e göre devre dışı node tiplerini Combat'a çevirir.
-    /// Örn: Layer 1'de enchantEnabled=false → Enchant node'ları Combat olur.
-    ///      Layer 2'de restEnabled=false → Rest node'ları Combat olur.
-    /// </summary>
-    private static void EnforceLayerNodeRestrictions(MapData map, MapLayerData config)
-    {
-        if (config == null) return;
-
-        foreach (var node in map.nodes)
-        {
-            if (node.nodeType == MapNodeType.Boss) continue;
-
-            if (!config.restEnabled && node.nodeType == MapNodeType.Rest)
-                node.nodeType = MapNodeType.Combat;
-
-            if (!config.enchantEnabled && node.nodeType == MapNodeType.Enchant)
-                node.nodeType = MapNodeType.Combat;
-        }
     }
 
 }

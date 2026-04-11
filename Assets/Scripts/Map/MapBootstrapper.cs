@@ -54,8 +54,6 @@ public class MapBootstrapper : MonoBehaviour
             defaultConfig.totalRows = 8;
             defaultConfig.minNodesPerRow = 2;
             defaultConfig.maxNodesPerRow = 4;
-            defaultConfig.shopChance = 0.12f;
-            defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
             defaultConfig.eliteChance = 0.10f;
             defaultConfig.enchantChance = 0.08f;

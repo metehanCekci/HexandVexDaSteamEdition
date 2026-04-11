@@ -5,6 +5,7 @@ public class PassiveEnzymePerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        description = "Skipping a turn grants 4 gold per level. Does not work on bosses or the last enemy.";
     }
 
     // YENİ: Kart tekrar seçilirse sadece seviyeyi artır (Matematiği OnSkip içinde halledeceğiz)
@@ -28,7 +29,7 @@ public class PassiveEnzymePerk : BasePerk
             if (alive <= 1) return;
         }
 
-        RunManager.instance.currentGold += (2 * currentLevel);
+        RunManager.instance.currentGold += (4 * currentLevel);
         GameEvents.GoldChanged(RunManager.instance.currentGold);
         TriggerVisualPop();
     }

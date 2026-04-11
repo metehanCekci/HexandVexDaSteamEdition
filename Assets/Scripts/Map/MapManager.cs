@@ -70,8 +70,6 @@ public class MapManager : MonoBehaviour
             defaultConfig.minNodesPerRow = 2;
             defaultConfig.maxNodesPerRow = 3;
             defaultConfig.threeNodeChance = 0.15f;
-            defaultConfig.shopChance = 0.12f;
-            defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
             defaultConfig.eliteChance = 0.10f;
             defaultConfig.enchantChance = 0.08f;
@@ -626,6 +624,12 @@ public class MapManager : MonoBehaviour
                 LevelGenerator.instance.GenerateBossArena();
                 showHotbar = true;
                 break;
+
+            case MapNodeType.Treasure:
+                // TODO: Sandık açma UI'ı — içinden rastgele perk çıkacak
+                Debug.Log("[MapManager] Treasure node — placeholder, auto-completing");
+                OnNodeComplete();
+                break;
         }
 
         if (HotbarUI.instance != null)
@@ -752,9 +756,9 @@ public class MapManager : MonoBehaviour
         if (RunManager.instance != null)
             lastType = RunManager.instance.currentNodeType;
 
-        bool wasNonCombat = lastType == MapNodeType.Shop
-                         || lastType == MapNodeType.Rest
-                         || lastType == MapNodeType.Enchant;
+        bool wasNonCombat = lastType == MapNodeType.Rest
+                         || lastType == MapNodeType.Enchant
+                         || lastType == MapNodeType.Treasure;
 
         if (wasNonCombat)
         {
@@ -783,8 +787,40 @@ public class MapManager : MonoBehaviour
             yield return null;
             if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
 
-            yield return new WaitForSecondsRealtime(0.2f);
-            yield return StartCoroutine(FadeFromBlack());
+            // Combat sonrası shop: map arkaplanı + perk inventory görünür,
+            // ama node'lar yerine shop gösterilir
+            if (MergedShopManager.instance != null)
+            {
+                HideMapNodes();
+                // Map raycast'larını kapat — shop'un tıklanabilir olması için
+                if (mapUI != null && mapUI.canvasGroup != null)
+                {
+                    mapUI.canvasGroup.interactable = false;
+                    mapUI.canvasGroup.blocksRaycasts = false;
+                }
+
+                bool shopDone = false;
+                MergedShopManager.instance.OpenAfterCombat(() => shopDone = true);
+
+                yield return new WaitForSecondsRealtime(0.2f);
+                yield return StartCoroutine(FadeFromBlack());
+
+                while (!shopDone) yield return null;
+
+                // Shop kapandı — map raycast'larını geri aç, node'ları smooth göster
+                if (mapUI != null && mapUI.canvasGroup != null)
+                {
+                    mapUI.canvasGroup.interactable = true;
+                    mapUI.canvasGroup.blocksRaycasts = true;
+                }
+                ShowMapNodes();
+                yield return StartCoroutine(SmoothRevealMapNodes());
+            }
+            else
+            {
+                yield return new WaitForSecondsRealtime(0.2f);
+                yield return StartCoroutine(FadeFromBlack());
+            }
         }
         else
         {
@@ -843,6 +879,33 @@ public class MapManager : MonoBehaviour
         if (ScreenFader.instance != null)
         {
             yield return StartCoroutine(FadeToBlack());
+
+            // Boss sonrası shop: map arkaplanı göster, node'ları gizle, shop aç
+            if (MergedShopManager.instance != null)
+            {
+                // Mevcut map arkaplanını göster (node'lar gizli)
+                ShowMapInstant();
+                HideMapNodes();
+                if (mapUI != null && mapUI.canvasGroup != null)
+                {
+                    mapUI.canvasGroup.interactable = false;
+                    mapUI.canvasGroup.blocksRaycasts = false;
+                }
+
+                if (PerkInventoryUI.instance != null)
+                    PerkInventoryUI.instance.Show();
+
+                bool shopDone = false;
+                MergedShopManager.instance.OpenAfterCombat(() => shopDone = true);
+
+                yield return new WaitForSecondsRealtime(0.2f);
+                yield return StartCoroutine(FadeFromBlack());
+
+                while (!shopDone) yield return null;
+
+                // Shop kapandı — karart, yeni map oluştur, göster
+                yield return StartCoroutine(FadeToBlack());
+            }
 
             // Ekran karardıktan sonra tile'ları temizle
             if (LevelGenerator.instance != null)

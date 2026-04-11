@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using Random = UnityEngine.Random;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
@@ -84,6 +86,9 @@ public class MergedShopManager : MonoBehaviour
 
     public static bool hasBoughtSecretItem = false;
 
+    private Action onCloseCallback;
+    private bool openedAfterCombat;
+
     // ═══════════════════════════════════════════
     // LIFECYCLE
     // ═══════════════════════════════════════════
@@ -137,8 +142,8 @@ public class MergedShopManager : MonoBehaviour
         perkSection = FindChild(panelT, "PerkSection");
         itemSection = FindChild(panelT, "ItemSection");
 
-        // Shop canvas sorting: PerkInventoryUI'den düşük olmalı (100)
-        shopCanvas.sortingOrder = 90;
+        // Shop canvas: MapUI (90) üstünde, PerkInventoryUI (100) altında
+        shopCanvas.sortingOrder = 95;
 
         // Butonlar
         Transform rerollT = panelT.Find("RerollButton");
@@ -443,6 +448,72 @@ public class MergedShopManager : MonoBehaviour
             Debug.Log($"[MergedShop] Reroll button wired. Listeners after bind: {perkRerollButton.onClick.GetPersistentEventCount()} persistent. hasPerkReroll={RunManager.instance?.hasPerkReroll}");
         }
 
+        openedAfterCombat = false;
+        onCloseCallback = null;
+
+        StopAllCoroutines();
+        StartCoroutine(OpenSequence());
+    }
+
+    /// <summary>
+    /// Combat (normal/elite/boss) bittikten sonra otomatik açılır.
+    /// Ekran zaten siyah durumda. Shop kapandığında onClose callback çağrılır.
+    /// </summary>
+    public void OpenAfterCombat(Action onClose)
+    {
+        Debug.Log("[MergedShop] OpenAfterCombat called");
+        openedAfterCombat = true;
+        onCloseCallback = onClose;
+
+        if (commonPerks.Count == 0 && LevelUpManager.instance != null)
+        {
+            commonPerks    = new List<GameObject>(LevelUpManager.instance.commonPerks);
+            rarePerks      = new List<GameObject>(LevelUpManager.instance.rarePerks);
+            epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
+            legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
+        }
+
+        perkRerollCount         = 0;
+        currentPerkRerollCost   = perkRerollBaseCost;
+        shownItemNames.Clear();
+
+        EnsureAllCoinIcons();
+        GeneratePerkChoices();
+        GenerateItemChoices();
+        RefreshGold();
+        RefreshRerollButton();
+
+        if (panel != null)
+        {
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 0f;
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+            }
+            Canvas parentCanvas = panel.GetComponentInParent<Canvas>(true);
+            if (parentCanvas != null && !parentCanvas.gameObject.activeSelf)
+                parentCanvas.gameObject.SetActive(true);
+            panel.SetActive(true);
+        }
+
+        // Combat sonrası hotbar (quick item menü) göster
+        if (HotbarUI.instance != null)
+            HotbarUI.instance.SetVisible(true);
+
+        if (continueButton != null)
+        {
+            continueButton.onClick.RemoveAllListeners();
+            continueButton.onClick.AddListener(OnContinue);
+            AddRuntimeHoverScale(continueButton.gameObject);
+        }
+        if (perkRerollButton != null)
+        {
+            perkRerollButton.onClick.RemoveAllListeners();
+            perkRerollButton.onClick.AddListener(TryReroll);
+            AddRuntimeHoverScale(perkRerollButton.gameObject);
+        }
+
         StopAllCoroutines();
         StartCoroutine(OpenSequence());
     }
@@ -463,6 +534,10 @@ public class MergedShopManager : MonoBehaviour
             if (hover != null) hover.scaleOverridden = true;
         }
 
+        // Combat sonrası açılıyorsa ekranın fade-in'ini bekle
+        if (openedAfterCombat)
+            yield return new WaitForSecondsRealtime(0.1f);
+
         // Panel fade in
         if (canvasGroup != null)
         {
@@ -476,11 +551,11 @@ public class MergedShopManager : MonoBehaviour
             }
         }
 
-        // Pop-in: soldan sağa, üstten alta
-        if (AudioManager.instance != null) AudioManager.instance.PlayCard();
+        // Pop-in: soldan sağa, üstten alta — her kart için ses efekti
         float stagger = 0.18f;
         for (int i = 0; i < allCards.Count; i++)
         {
+            if (AudioManager.instance != null) AudioManager.instance.PlayCard();
             StartCoroutine(PopInCard(allCards[i].transform));
             yield return new WaitForSecondsRealtime(stagger);
         }
@@ -539,7 +614,19 @@ public class MergedShopManager : MonoBehaviour
             if (parentCanvas != null && parentCanvas.gameObject != panel)
                 parentCanvas.gameObject.SetActive(false);
         }
-        if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
+
+        if (openedAfterCombat && onCloseCallback != null)
+        {
+            // Combat sonrası açıldıysa callback ile devam et
+            var cb = onCloseCallback;
+            onCloseCallback = null;
+            openedAfterCombat = false;
+            cb.Invoke();
+        }
+        else if (MapManager.instance != null)
+        {
+            MapManager.instance.OnNodeComplete();
+        }
     }
 
     // ═══════════════════════════════════════════
@@ -1047,7 +1134,7 @@ public class MergedShopItemSlot
     public Image       iconImage;
     public GameObject  soldOutOverlay;
 
-    public void Setup(BaseItem item, System.Action onBuy)
+    public void Setup(BaseItem item, Action onBuy)
     {
         if (nameText        != null) nameText.text        = item.itemName.ToUpperInvariant();
         if (descriptionText != null) descriptionText.text = item.description;

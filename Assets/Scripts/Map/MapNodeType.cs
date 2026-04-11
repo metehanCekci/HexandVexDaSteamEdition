@@ -7,5 +7,6 @@ public enum MapNodeType
     Rest,
     Enchant,
     Boss,
-    Sacrifice
+    Sacrifice,
+    Treasure
 }
