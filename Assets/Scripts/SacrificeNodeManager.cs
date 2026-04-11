@@ -8,18 +8,15 @@ public class SacrificeNodeManager : MonoBehaviour
 {
     public static SacrificeNodeManager instance;
 
-    // ─── UI References ───
     [Header("UI References")]
     public GameObject panel;
     public CanvasGroup canvasGroup;
     public TMP_Text titleText;
     public TMP_Text statusText;
-    public TMP_Text tubeCountText;
 
     [Header("Tube")]
     public RectTransform tubeArea;
     public Transform perkGridParent;
-    public GameObject addButton;
     public Image tubeImage;
 
     [Header("Lever")]
@@ -39,46 +36,47 @@ public class SacrificeNodeManager : MonoBehaviour
     [Header("Leave")]
     public Button leaveButton;
 
-    // ─── Runtime State ───
+    // Runtime
     private List<BasePerk> tubePerks = new List<BasePerk>();
     private List<GameObject> tubePerkIcons = new List<GameObject>();
     private bool isAnimating;
 
-    // ─── Persistent Rewards (run-wide) ───
+    // Persistent rewards (run-wide)
     private GameObject persistentRarePerk;
     private GameObject persistentEpicPerk;
     private GameObject persistentLegendaryPerk;
     private GameObject persistentSecretPerk;
     private bool poolGenerated;
 
-    // ─── Popup ───
-    private GameObject popupPanel;
-    private Transform popupGrid;
+    // Cached perk lists (because LevelUpManager doesn't persist across scenes)
+    private List<GameObject> cachedRarePerks;
+    private List<GameObject> cachedEpicPerks;
+    private List<GameObject> cachedLegendaryPerks;
+    private List<GameObject> cachedSecretPerks;
 
-    // ─── Font cache ───
+    // Font
     private TMP_FontAsset cachedFont;
 
     // ═══════════════════════════════════════════
-    // SINGLETON & LIFECYCLE
+    // SINGLETON
     // ═══════════════════════════════════════════
 
     void Awake()
     {
-        if (instance == null)
-        {
-            instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        if (instance == null) { instance = this; DontDestroyOnLoad(gameObject); }
+        else { Destroy(gameObject); return; }
+        // Try to cache perk lists immediately
+        CachePerkLists();
     }
 
-    void OnDestroy()
+    void Start()
     {
-        if (instance == this) instance = null;
+        // Retry caching in Start (all Awakes have run by now)
+        if (cachedRarePerks == null || cachedRarePerks.Count == 0)
+            CachePerkLists();
     }
+
+    void OnDestroy() { if (instance == this) instance = null; }
 
     // ═══════════════════════════════════════════
     // SHOW / HIDE
@@ -87,18 +85,27 @@ public class SacrificeNodeManager : MonoBehaviour
     public void Show()
     {
         if (panel == null) BuildFromCode();
-        if (!poolGenerated) GeneratePool();
 
-        // Return any leftover tube perks from previous visit
         ReturnAllTubePerks();
 
         panel.SetActive(true);
         Canvas parentCanvas = panel.GetComponentInParent<Canvas>(true);
         if (parentCanvas != null) parentCanvas.gameObject.SetActive(true);
 
-        if (PerkInventoryUI.instance != null)
-            PerkInventoryUI.instance.Show();
+        // Re-wire buttons every Show
+        if (leverButton != null) { leverButton.onClick.RemoveAllListeners(); leverButton.onClick.AddListener(OnLeverClicked); }
+        if (leaveButton != null) { leaveButton.onClick.RemoveAllListeners(); leaveButton.onClick.AddListener(OnLeaveClicked); }
 
+        if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.Show();
+
+        // Generate pool — retry every Show in case it failed before
+        if (!poolGenerated || persistentRarePerk == null)
+        {
+            poolGenerated = false;
+            GeneratePool();
+        }
+
+        isAnimating = false;
         RefreshUI();
         StartCoroutine(FadeIn());
     }
@@ -106,7 +113,6 @@ public class SacrificeNodeManager : MonoBehaviour
     public void Hide()
     {
         ReturnAllTubePerks();
-        if (popupPanel != null) popupPanel.SetActive(false);
         if (panel != null)
         {
             panel.SetActive(false);
@@ -130,38 +136,91 @@ public class SacrificeNodeManager : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // POOL GENERATION
+    // POOL
     // ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Cache perk lists from LevelUpManager. Call this early (e.g. MapManager.Start)
+    /// while LevelUpManager is still alive. LevelUpManager doesn't use DontDestroyOnLoad
+    /// so it gets destroyed on scene transitions.
+    /// </summary>
+    public void CachePerkLists()
+    {
+        // Already cached successfully?
+        if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
+
+        Debug.Log("[SACRIFICE] CachePerkLists called...");
+
+        var lum = LevelUpManager.instance;
+        if (lum == null)
+        {
+            // Try every way possible to find it
+            lum = FindObjectOfType<LevelUpManager>();
+            if (lum == null)
+            {
+                // Search including inactive objects
+                var allLums = Resources.FindObjectsOfTypeAll<LevelUpManager>();
+                if (allLums.Length > 0) lum = allLums[0];
+            }
+        }
+
+        if (lum == null)
+        {
+            Debug.LogWarning("[SACRIFICE] CachePerkLists: LevelUpManager not found yet — will retry later");
+            return;
+        }
+
+        Debug.Log($"[SACRIFICE] Found LevelUpManager: {lum.name}, rare={lum.rarePerks?.Count ?? -1}, epic={lum.epicPerks?.Count ?? -1}, legendary={lum.legendaryPerks?.Count ?? -1}");
+
+        cachedRarePerks = new List<GameObject>(lum.rarePerks ?? new List<GameObject>());
+        cachedEpicPerks = new List<GameObject>(lum.epicPerks ?? new List<GameObject>());
+        cachedLegendaryPerks = new List<GameObject>(lum.legendaryPerks ?? new List<GameObject>());
+
+        // Secret perks
+        cachedSecretPerks = new List<GameObject>();
+        var orbs = Resources.FindObjectsOfTypeAll<SecretPerkOrb>();
+        if (orbs.Length > 0 && orbs[0].secretPerkPool != null)
+            cachedSecretPerks = new List<GameObject>(orbs[0].secretPerkPool);
+        if (cachedSecretPerks.Count == 0 && cachedLegendaryPerks.Count > 0)
+            cachedSecretPerks = new List<GameObject>(cachedLegendaryPerks);
+
+        Debug.Log($"[SACRIFICE] Perk lists cached OK! rare={cachedRarePerks.Count}, epic={cachedEpicPerks.Count}, legendary={cachedLegendaryPerks.Count}, secret={cachedSecretPerks.Count}");
+    }
+
+    private void EnsureCachedLists()
+    {
+        // Try to cache if not done yet
+        if (cachedRarePerks == null || cachedRarePerks.Count == 0)
+        {
+            CachePerkLists();
+        }
+    }
 
     private void GeneratePool()
     {
-        var lum = LevelUpManager.instance;
-        if (lum == null) return;
-        persistentRarePerk = PickRandom(lum.rarePerks);
-        persistentEpicPerk = PickRandom(lum.epicPerks);
-        persistentLegendaryPerk = PickRandom(lum.legendaryPerks);
-        persistentSecretPerk = FindSecretPerk();
+        EnsureCachedLists();
+
+        if (cachedRarePerks == null || cachedRarePerks.Count == 0)
+        {
+            Debug.LogError("[SACRIFICE] No cached perk lists! Pool cannot be generated.");
+            return;
+        }
+
+        persistentRarePerk = PickRandom(cachedRarePerks);
+        persistentEpicPerk = PickRandom(cachedEpicPerks);
+        persistentLegendaryPerk = PickRandom(cachedLegendaryPerks);
+        persistentSecretPerk = PickRandom(cachedSecretPerks);
         poolGenerated = true;
+        Debug.Log($"[SACRIFICE] Pool generated: rare={persistentRarePerk?.name}, epic={persistentEpicPerk?.name}, legendary={persistentLegendaryPerk?.name}, secret={persistentSecretPerk?.name}");
     }
 
     private void RerollRewards()
     {
-        var lum = LevelUpManager.instance;
-        if (lum == null) return;
-        persistentRarePerk = PickRandom(lum.rarePerks);
-        persistentEpicPerk = PickRandom(lum.epicPerks);
-        persistentLegendaryPerk = PickRandom(lum.legendaryPerks);
-        persistentSecretPerk = FindSecretPerk();
-    }
-
-    private GameObject FindSecretPerk()
-    {
-        var orbs = Resources.FindObjectsOfTypeAll<SecretPerkOrb>();
-        if (orbs.Length > 0 && orbs[0].secretPerkPool != null && orbs[0].secretPerkPool.Count > 0)
-            return PickRandom(orbs[0].secretPerkPool);
-        if (LevelUpManager.instance != null)
-            return PickRandom(LevelUpManager.instance.legendaryPerks);
-        return null;
+        EnsureCachedLists();
+        persistentRarePerk = PickRandom(cachedRarePerks);
+        persistentEpicPerk = PickRandom(cachedEpicPerks);
+        persistentLegendaryPerk = PickRandom(cachedLegendaryPerks);
+        persistentSecretPerk = PickRandom(cachedSecretPerks);
     }
 
     private GameObject PickRandom(List<GameObject> pool)
@@ -181,7 +240,7 @@ public class SacrificeNodeManager : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // TUBE MANAGEMENT
+    // TUBE
     // ═══════════════════════════════════════════
 
     public void AddPerkToTube(BasePerk perk)
@@ -191,15 +250,8 @@ public class SacrificeNodeManager : MonoBehaviour
         if (tubePerks.Count >= 10) return;
 
         var rm = RunManager.instance;
-        if (rm.activePerks.Contains(perk))
-        {
-            perk.OnUnequip();
-            rm.activePerks.Remove(perk);
-        }
-        else
-        {
-            rm.inventoryPerks.Remove(perk);
-        }
+        if (rm.activePerks.Contains(perk)) { perk.OnUnequip(); rm.activePerks.Remove(perk); }
+        else { rm.inventoryPerks.Remove(perk); }
 
         tubePerks.Add(perk);
         CreateTubeIcon(perk);
@@ -219,11 +271,7 @@ public class SacrificeNodeManager : MonoBehaviour
         if (RunManager.instance.inventoryPerks.Count < RunManager.MAX_INVENTORY_PERKS)
             RunManager.instance.inventoryPerks.Add(perk);
 
-        if (index < tubePerkIcons.Count)
-        {
-            Destroy(tubePerkIcons[index]);
-            tubePerkIcons.RemoveAt(index);
-        }
+        if (index < tubePerkIcons.Count) { Destroy(tubePerkIcons[index]); tubePerkIcons.RemoveAt(index); }
 
         RunManager.instance.RefreshPerkUI();
         if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
@@ -234,13 +282,9 @@ public class SacrificeNodeManager : MonoBehaviour
     {
         if (RunManager.instance == null) return;
         for (int i = tubePerks.Count - 1; i >= 0; i--)
-        {
-            if (tubePerks[i] != null)
-                RunManager.instance.inventoryPerks.Add(tubePerks[i]);
-        }
+            if (tubePerks[i] != null) RunManager.instance.inventoryPerks.Add(tubePerks[i]);
         tubePerks.Clear();
         ClearTubeIcons();
-
         RunManager.instance.RefreshPerkUI();
         if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
     }
@@ -249,42 +293,69 @@ public class SacrificeNodeManager : MonoBehaviour
     {
         if (perkGridParent == null) return;
 
-        GameObject iconGO = new GameObject("TubePerk", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        iconGO.transform.SetParent(perkGridParent, false);
-        iconGO.transform.SetSiblingIndex(tubePerkIcons.Count);
-        iconGO.layer = 5;
+        Debug.Log($"[SACRIFICE] CreateTubeIcon: {perk.perkName}, icon={perk.icon?.name ?? "NULL"}");
 
-        Image img = iconGO.GetComponent<Image>();
-        if (perk.icon != null) img.sprite = perk.icon;
+        // Single GO with Image — simplest possible approach
+        // GridLayoutGroup on parent controls size (60x65)
+        GameObject slotGO = MakeUI("TubePerk_" + perk.perkName, perkGridParent);
+
+        // Background/border — this is the slot itself, sized by GridLayoutGroup
+        Image slotBG = slotGO.AddComponent<Image>();
+        slotBG.color = SacrificeRewardSlot.GetRarityColor(perk.rarity) * 0.5f;
+        slotBG.color = new Color(slotBG.color.r, slotBG.color.g, slotBG.color.b, 0.6f);
+
+        // Icon — stretched to fill most of slot
+        GameObject iconGO = MakeUI("Icon", slotGO.transform);
+        RectTransform iconRT = iconGO.GetComponent<RectTransform>();
+        iconRT.anchorMin = new Vector2(0.1f, 0.25f);
+        iconRT.anchorMax = new Vector2(0.9f, 0.95f);
+        iconRT.offsetMin = Vector2.zero;
+        iconRT.offsetMax = Vector2.zero;
+        Image img = iconGO.AddComponent<Image>();
+        img.raycastTarget = false;
         img.preserveAspect = true;
+        img.type = Image.Type.Simple;
+        if (perk.icon != null)
+        {
+            img.sprite = perk.icon;
+            img.color = Color.white;
+        }
+        else
+        {
+            img.sprite = null;
+            img.color = SacrificeRewardSlot.GetRarityColor(perk.rarity);
+        }
 
-        // Rarity border (behind icon via SetAsFirstSibling)
-        GameObject borderGO = new GameObject("Border", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        borderGO.transform.SetParent(iconGO.transform, false);
-        borderGO.layer = 5;
-        RectTransform brt = borderGO.GetComponent<RectTransform>();
-        brt.anchorMin = Vector2.zero;
-        brt.anchorMax = Vector2.one;
-        brt.offsetMin = new Vector2(-3, -3);
-        brt.offsetMax = new Vector2(3, 3);
-        brt.SetAsFirstSibling();
-        Image borderImg = borderGO.GetComponent<Image>();
-        borderImg.color = SacrificeRewardSlot.GetRarityColor(perk.rarity);
-        borderImg.raycastTarget = false;
+        // Name label at bottom
+        GameObject nameGO = MakeUI("Name", slotGO.transform);
+        RectTransform nameRT = nameGO.GetComponent<RectTransform>();
+        nameRT.anchorMin = new Vector2(0, 0);
+        nameRT.anchorMax = new Vector2(1, 0.25f);
+        nameRT.offsetMin = Vector2.zero;
+        nameRT.offsetMax = Vector2.zero;
+        TMP_Text nameTxt = nameGO.AddComponent<TextMeshProUGUI>();
+        nameTxt.text = perk.perkName;
+        nameTxt.fontSize = 8;
+        nameTxt.color = Color.white;
+        nameTxt.alignment = TextAlignmentOptions.Center;
+        nameTxt.raycastTarget = false;
+        nameTxt.enableWordWrapping = false;
+        nameTxt.overflowMode = TextOverflowModes.Ellipsis;
+        if (cachedFont != null) nameTxt.font = cachedFont;
 
-        // Click to remove from tube
-        Button btn = iconGO.AddComponent<Button>();
+        // Click to remove
+        Button btn = slotGO.AddComponent<Button>();
+        btn.targetGraphic = slotBG;
         BasePerk captured = perk;
         btn.onClick.AddListener(() => RemovePerkFromTube(captured));
 
-        tubePerkIcons.Add(iconGO);
-        StartCoroutine(DropAnimation(iconGO));
+        tubePerkIcons.Add(slotGO);
+        StartCoroutine(DropAnimation(slotGO));
     }
 
     private void ClearTubeIcons()
     {
-        foreach (var go in tubePerkIcons)
-            if (go != null) Destroy(go);
+        foreach (var go in tubePerkIcons) if (go != null) Destroy(go);
         tubePerkIcons.Clear();
     }
 
@@ -307,7 +378,7 @@ public class SacrificeNodeManager : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // LEVER LOGIC
+    // LEVER
     // ═══════════════════════════════════════════
 
     private bool CanPullLever()
@@ -318,7 +389,10 @@ public class SacrificeNodeManager : MonoBehaviour
 
     private void OnLeverClicked()
     {
+        Debug.Log($"[SACRIFICE] Lever clicked! tubePerks={tubePerks.Count}, canPull={CanPullLever()}, isAnimating={isAnimating}");
         if (!CanPullLever()) return;
+        // Ensure pool is generated before pulling
+        if (!poolGenerated) GeneratePool();
         StartCoroutine(LeverSequence());
     }
 
@@ -327,49 +401,203 @@ public class SacrificeNodeManager : MonoBehaviour
         isAnimating = true;
         int count = tubePerks.Count;
 
+        // Determine reward BEFORE consuming
+        GameObject rewardPrefab = null;
+        if (count == 2) rewardPrefab = persistentRarePerk;
+        else if (count == 4) rewardPrefab = persistentEpicPerk;
+        else if (count == 6) rewardPrefab = persistentLegendaryPerk;
+        else if (count == 10) rewardPrefab = persistentSecretPerk;
+
+        // FALLBACK: if pool failed, try generating now from cached lists
+        if (rewardPrefab == null && count > 1)
+        {
+            Debug.LogWarning($"[SACRIFICE] rewardPrefab is null for count={count}! Regenerating pool...");
+            poolGenerated = false;
+            GeneratePool();
+            if (count == 2) rewardPrefab = persistentRarePerk;
+            else if (count == 4) rewardPrefab = persistentEpicPerk;
+            else if (count == 6) rewardPrefab = persistentLegendaryPerk;
+            else if (count == 10) rewardPrefab = persistentSecretPerk;
+
+            // LAST RESORT: pick directly from cached lists
+            if (rewardPrefab == null)
+            {
+                EnsureCachedLists();
+                if (count == 2) rewardPrefab = PickRandom(cachedRarePerks);
+                else if (count == 4) rewardPrefab = PickRandom(cachedEpicPerks);
+                else if (count >= 6) rewardPrefab = PickRandom(cachedLegendaryPerks);
+                Debug.Log($"[SACRIFICE] LAST RESORT picked: {rewardPrefab?.name ?? "STILL NULL"}");
+            }
+        }
+
+        Debug.Log($"[SACRIFICE] LeverSequence: count={count}, rewardPrefab={rewardPrefab?.name ?? "NULL!"}");
+
+        // Lever pull animation
         yield return StartCoroutine(AnimateLeverPull());
+
+        // Acid dissolve — perks melt
         yield return StartCoroutine(AcidDissolveAnimation());
+
+        // Destroy tube perks
+        ConsumeTubePerks();
 
         if (count == 1)
         {
-            // ─── Reroll ───
-            ConsumeTubePerks();
+            // ─── REROLL ───
             RerollRewards();
             RefreshUI();
             if (statusText != null) statusText.text = "REWARDS REROLLED!";
             isAnimating = false;
-            yield return new WaitForSecondsRealtime(1.2f);
+            yield return new WaitForSecondsRealtime(1f);
             if (statusText != null) statusText.text = "DRAG PERKS INTO THE TUBE";
         }
         else
         {
-            // ─── Grant reward ───
-            GameObject rewardPrefab = count switch
-            {
-                2 => persistentRarePerk,
-                4 => persistentEpicPerk,
-                6 => persistentLegendaryPerk,
-                10 => persistentSecretPerk,
-                _ => null
-            };
-
-            ConsumeTubePerks();
-
+            // ─── GRANT REWARD ───
             if (rewardPrefab != null)
             {
                 BasePerk bp = rewardPrefab.GetComponent<BasePerk>();
-                if (statusText != null)
-                    statusText.text = $"ACQUIRED: {(bp != null ? bp.perkName.ToUpper() : "???")}";
-                RunManager.instance.AddPerk(rewardPrefab);
+                string perkName = bp != null ? bp.perkName : "???";
+                Debug.Log($"[SACRIFICE] Granting: {perkName}");
+
+                // Show reward perk appearing in tube
+                yield return StartCoroutine(ShowRewardInTube(rewardPrefab));
+
+                // Actually grant the perk
+                if (RunManager.instance != null)
+                {
+                    RunManager.instance.AddPerk(rewardPrefab);
+                    RunManager.instance.RefreshPerkUI();
+                    Debug.Log($"[SACRIFICE] AddPerk SUCCESS: {perkName}");
+                }
+
+                if (statusText != null) statusText.text = $"ACQUIRED: {perkName.ToUpper()}!";
+
+                yield return new WaitForSecondsRealtime(1.5f);
+            }
+            else
+            {
+                Debug.LogWarning("[SACRIFICE] rewardPrefab is NULL!");
+                if (statusText != null) statusText.text = "NO REWARD AVAILABLE";
+                yield return new WaitForSecondsRealtime(1f);
             }
 
-            yield return new WaitForSecondsRealtime(1.5f);
             isAnimating = false;
-
             Hide();
             if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.Hide();
             if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
         }
+    }
+
+    /// <summary>
+    /// Reward perk tübün içinde belirir, sonra sağ üste (perk bar'a) uçar.
+    /// </summary>
+    private IEnumerator ShowRewardInTube(GameObject perkPrefab)
+    {
+        BasePerk bp = perkPrefab.GetComponent<BasePerk>();
+        if (bp == null) yield break;
+
+        // Create reward icon in tube center
+        GameObject rewardGO = new GameObject("RewardPerk", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        rewardGO.transform.SetParent(tubeArea != null ? tubeArea : panel.transform, false);
+        rewardGO.layer = 5;
+
+        RectTransform rrt = rewardGO.GetComponent<RectTransform>();
+        rrt.anchorMin = new Vector2(0.5f, 0.5f);
+        rrt.anchorMax = new Vector2(0.5f, 0.5f);
+        rrt.sizeDelta = new Vector2(70, 70);
+        rrt.anchoredPosition = Vector2.zero;
+
+        Image rImg = rewardGO.GetComponent<Image>();
+        if (bp.icon != null)
+        {
+            rImg.sprite = bp.icon;
+            rImg.color = Color.white;
+        }
+        else
+        {
+            rImg.color = SacrificeRewardSlot.GetRarityColor(bp.rarity);
+        }
+        rImg.preserveAspect = true;
+
+        // Glow border
+        GameObject glowGO = new GameObject("Glow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        glowGO.transform.SetParent(rewardGO.transform, false);
+        glowGO.layer = 5;
+        RectTransform grt = glowGO.GetComponent<RectTransform>();
+        grt.anchorMin = Vector2.zero;
+        grt.anchorMax = Vector2.one;
+        grt.offsetMin = new Vector2(-6, -6);
+        grt.offsetMax = new Vector2(6, 6);
+        grt.SetAsFirstSibling();
+        Image glowImg = glowGO.GetComponent<Image>();
+        Color rc = SacrificeRewardSlot.GetRarityColor(bp.rarity);
+        glowImg.color = rc;
+        glowImg.raycastTarget = false;
+
+        // Name below
+        GameObject nameGO = new GameObject("Name", typeof(RectTransform));
+        nameGO.transform.SetParent(rewardGO.transform, false);
+        nameGO.layer = 5;
+        RectTransform nrt = nameGO.GetComponent<RectTransform>();
+        nrt.anchorMin = new Vector2(0.5f, 0);
+        nrt.anchorMax = new Vector2(0.5f, 0);
+        nrt.pivot = new Vector2(0.5f, 1);
+        nrt.anchoredPosition = new Vector2(0, -5);
+        nrt.sizeDelta = new Vector2(200, 25);
+        TMP_Text nameTxt = nameGO.AddComponent<TextMeshProUGUI>();
+        nameTxt.text = bp.perkName.ToUpper();
+        nameTxt.fontSize = 16;
+        nameTxt.color = rc;
+        nameTxt.alignment = TextAlignmentOptions.Center;
+        nameTxt.raycastTarget = false;
+        if (cachedFont != null) nameTxt.font = cachedFont;
+
+        // Scale-up animation (appear from nothing)
+        float t = 0f;
+        CanvasGroup rcg = rewardGO.AddComponent<CanvasGroup>();
+        rcg.alpha = 0f;
+        rewardGO.transform.localScale = Vector3.one * 0.1f;
+
+        while (t < 0.5f)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / 0.5f);
+            float ease = 1f - (1f - p) * (1f - p); // EaseOutQuad
+            rewardGO.transform.localScale = Vector3.Lerp(Vector3.one * 0.1f, Vector3.one * 1.1f, ease);
+            rcg.alpha = ease;
+            // Glow pulse
+            glowImg.color = new Color(rc.r, rc.g, rc.b, 0.5f + Mathf.PingPong(t * 4f, 0.5f));
+            yield return null;
+        }
+
+        // Settle
+        t = 0f;
+        while (t < 0.15f)
+        {
+            t += Time.unscaledDeltaTime;
+            rewardGO.transform.localScale = Vector3.Lerp(Vector3.one * 1.1f, Vector3.one, Mathf.Clamp01(t / 0.15f));
+            yield return null;
+        }
+
+        yield return new WaitForSecondsRealtime(0.8f);
+
+        // Fly to top-right (perk bar area)
+        Vector2 startPos = rrt.anchoredPosition;
+        Vector2 endPos = new Vector2(600, 300);
+        t = 0f;
+        while (t < 0.4f)
+        {
+            if (rrt == null) yield break;
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / 0.4f);
+            rrt.anchoredPosition = Vector2.Lerp(startPos, endPos, p * p);
+            rewardGO.transform.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 0.3f, p);
+            rcg.alpha = 1f - p;
+            yield return null;
+        }
+
+        Destroy(rewardGO);
     }
 
     private void ConsumeTubePerks()
@@ -390,7 +618,6 @@ public class SacrificeNodeManager : MonoBehaviour
         Vector2 startPos = leverHandle.anchoredPosition;
         Vector2 endPos = startPos + new Vector2(0, -120);
 
-        // Pull down
         float t = 0f;
         while (t < 0.3f)
         {
@@ -399,10 +626,8 @@ public class SacrificeNodeManager : MonoBehaviour
             yield return null;
         }
         leverHandle.anchoredPosition = endPos;
-
         yield return new WaitForSecondsRealtime(0.15f);
 
-        // Return up
         t = 0f;
         while (t < 0.2f)
         {
@@ -415,7 +640,6 @@ public class SacrificeNodeManager : MonoBehaviour
 
     private IEnumerator AcidDissolveAnimation()
     {
-        // Gather tube icon transforms
         List<RectTransform> rts = new List<RectTransform>();
         List<CanvasGroup> cgs = new List<CanvasGroup>();
         foreach (var go in tubePerkIcons)
@@ -427,132 +651,27 @@ public class SacrificeNodeManager : MonoBehaviour
             cgs.Add(cg);
         }
 
-        Color acidOriginal = acidPoolImage != null ? acidPoolImage.color : Color.green;
+        Color acidOrig = acidPoolImage != null ? acidPoolImage.color : Color.green;
         Color acidBright = new Color(0.2f, 1f, 0.2f, 0.85f);
 
-        float duration = 0.8f;
-        float t = 0f;
-        while (t < duration)
+        float dur = 0.8f, t = 0f;
+        while (t < dur)
         {
             t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / duration);
-
-            // Slide icons down
+            float p = Mathf.Clamp01(t / dur);
             foreach (var rt in rts)
-                if (rt != null)
-                    rt.anchoredPosition += new Vector2(0, -200f * Time.unscaledDeltaTime);
-
-            // Fade + shrink
+                if (rt != null) rt.anchoredPosition += new Vector2(0, -200f * Time.unscaledDeltaTime);
             foreach (var cg in cgs)
             {
                 if (cg == null) continue;
                 cg.alpha = 1f - p;
                 cg.transform.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 0.2f, p);
             }
-
-            // Acid glow pulse
             if (acidPoolImage != null)
-                acidPoolImage.color = Color.Lerp(acidOriginal, acidBright, Mathf.PingPong(t * 3f, 1f));
-
+                acidPoolImage.color = Color.Lerp(acidOrig, acidBright, Mathf.PingPong(t * 3f, 1f));
             yield return null;
         }
-
-        if (acidPoolImage != null) acidPoolImage.color = acidOriginal;
-    }
-
-    // ═══════════════════════════════════════════
-    // PERK SELECTION POPUP (for "+" button)
-    // ═══════════════════════════════════════════
-
-    private void ShowPerkPopup()
-    {
-        if (isAnimating) return;
-        if (tubePerks.Count >= 6) return;
-
-        if (popupPanel == null) BuildPopup();
-
-        // Clear old entries
-        foreach (Transform child in popupGrid)
-            Destroy(child.gameObject);
-
-        // Gather available perks (not already in tube)
-        var rm = RunManager.instance;
-        List<BasePerk> available = new List<BasePerk>();
-        available.AddRange(rm.activePerks);
-        available.AddRange(rm.inventoryPerks);
-        available.RemoveAll(p => tubePerks.Contains(p));
-
-        if (available.Count == 0)
-        {
-            HidePerkPopup();
-            return;
-        }
-
-        foreach (var perk in available)
-            CreatePopupEntry(perk);
-
-        popupPanel.SetActive(true);
-    }
-
-    private void HidePerkPopup()
-    {
-        if (popupPanel != null) popupPanel.SetActive(false);
-    }
-
-    private void CreatePopupEntry(BasePerk perk)
-    {
-        GameObject go = new GameObject("PopupPerk", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        go.transform.SetParent(popupGrid, false);
-        go.layer = 5;
-        Image bg = go.GetComponent<Image>();
-        bg.color = new Color(0.12f, 0.12f, 0.18f, 0.95f);
-
-        LayoutElement le = go.AddComponent<LayoutElement>();
-        le.preferredHeight = 50f;
-        le.minHeight = 50f;
-
-        // Icon
-        GameObject iconGO = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        iconGO.transform.SetParent(go.transform, false);
-        iconGO.layer = 5;
-        RectTransform irt = iconGO.GetComponent<RectTransform>();
-        irt.anchorMin = new Vector2(0, 0.1f);
-        irt.anchorMax = new Vector2(0, 0.9f);
-        irt.anchoredPosition = new Vector2(28, 0);
-        irt.sizeDelta = new Vector2(38, 0);
-        Image iconImg = iconGO.GetComponent<Image>();
-        if (perk.icon != null) iconImg.sprite = perk.icon;
-        iconImg.preserveAspect = true;
-        iconImg.raycastTarget = false;
-
-        // Name text
-        GameObject nameGO = new GameObject("Name", typeof(RectTransform));
-        nameGO.transform.SetParent(go.transform, false);
-        nameGO.layer = 5;
-        TMP_Text nameTxt = nameGO.AddComponent<TextMeshProUGUI>();
-        nameTxt.text = perk.perkName;
-        nameTxt.fontSize = 16;
-        nameTxt.color = SacrificeRewardSlot.GetRarityColor(perk.rarity);
-        nameTxt.alignment = TextAlignmentOptions.Left;
-        nameTxt.raycastTarget = false;
-        if (cachedFont != null) nameTxt.font = cachedFont;
-        RectTransform nrt = nameGO.GetComponent<RectTransform>();
-        nrt.anchorMin = Vector2.zero;
-        nrt.anchorMax = Vector2.one;
-        nrt.offsetMin = new Vector2(55, 5);
-        nrt.offsetMax = new Vector2(-10, -5);
-
-        // Button
-        Button btn = go.AddComponent<Button>();
-        ColorBlock cb = btn.colors;
-        cb.highlightedColor = new Color(0.22f, 0.22f, 0.35f, 1f);
-        btn.colors = cb;
-        BasePerk captured = perk;
-        btn.onClick.AddListener(() =>
-        {
-            AddPerkToTube(captured);
-            HidePerkPopup();
-        });
+        if (acidPoolImage != null) acidPoolImage.color = acidOrig;
     }
 
     // ═══════════════════════════════════════════
@@ -576,18 +695,7 @@ public class SacrificeNodeManager : MonoBehaviour
     {
         int count = tubePerks.Count;
 
-        // Tube count
-        if (tubeCountText != null)
-            tubeCountText.text = $"{count}/10";
-
-        // "+" button (hide at 6+)
-        if (addButton != null)
-        {
-            addButton.SetActive(count < 6);
-            addButton.transform.SetAsLastSibling();
-        }
-
-        // Lever state
+        // Lever
         bool canPull = CanPullLever();
         if (leverButton != null) leverButton.interactable = canPull;
         if (leverHandleImage != null)
@@ -598,24 +706,12 @@ public class SacrificeNodeManager : MonoBehaviour
             leverText.color = canPull ? Color.white : new Color(0.35f, 0.35f, 0.35f);
         }
 
-        // Reward slots
-        if (rareSlot != null)
-        {
-            rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2);
-            rareSlot.SetHighlighted(count == 2);
-        }
-        if (epicSlot != null)
-        {
-            epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4);
-            epicSlot.SetHighlighted(count == 4);
-        }
-        if (legendarySlot != null)
-        {
-            legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6);
-            legendarySlot.SetHighlighted(count == 6);
-        }
+        // Reward slots — always show info
+        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count == 2); }
+        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count == 4); }
+        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count == 6); }
 
-        // Status text
+        // Status
         if (statusText != null)
         {
             if (count == 0) statusText.text = "DRAG PERKS INTO THE TUBE";
@@ -631,14 +727,13 @@ public class SacrificeNodeManager : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // BUILD UI FROM CODE (runtime fallback)
+    // BUILD UI FROM CODE
     // ═══════════════════════════════════════════
 
     private void BuildFromCode()
     {
         cachedFont = Resources.Load<TMP_FontAsset>("alagard SDF");
 
-        // ─── Canvas ───
         GameObject canvasGO = new GameObject("SacrificeCanvas");
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -650,46 +745,35 @@ public class SacrificeNodeManager : MonoBehaviour
         canvasGO.AddComponent<GraphicRaycaster>();
         DontDestroyOnLoad(canvasGO);
 
-        // ─── Panel (full screen dark bg) ───
         panel = MakeUI("SacrificePanel", canvasGO.transform);
         Stretch(panel);
-        Image panelBG = panel.AddComponent<Image>();
-        panelBG.color = new Color(0.04f, 0.04f, 0.07f, 0.97f);
+        panel.AddComponent<Image>().color = new Color(0.04f, 0.04f, 0.07f, 0.97f);
         canvasGroup = panel.AddComponent<CanvasGroup>();
 
-        // ─── Title ───
+        // Title
         titleText = MakeText("Title", panel.transform,
-            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1),
             new Vector2(-50, -15), new Vector2(500, 55),
             "SACRIFICE MACHINE", 36, new Color(0.8f, 0.2f, 0.6f), TextAlignmentOptions.Center);
 
-        // ─── Machine Body ───
+        // Machine
         GameObject machineGO = MakeUI("MachineBody", panel.transform);
-        RectTransform machineRT = machineGO.GetComponent<RectTransform>();
-        SetAnchored(machineRT, new Vector2(0.5f, 0.5f), new Vector2(-50, 20), new Vector2(420, 520));
-        Image machineBG = machineGO.AddComponent<Image>();
-        machineBG.color = new Color(0.12f, 0.12f, 0.15f, 1f);
+        SetAnchored(machineGO.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(-50, 20), new Vector2(420, 520));
+        machineGO.AddComponent<Image>().color = new Color(0.12f, 0.12f, 0.15f, 1f);
 
-        // Machine header stripe
+        // Header
         GameObject headerGO = MakeUI("Header", machineGO.transform);
-        RectTransform headerRT = headerGO.GetComponent<RectTransform>();
-        headerRT.anchorMin = new Vector2(0, 1);
-        headerRT.anchorMax = new Vector2(1, 1);
-        headerRT.pivot = new Vector2(0.5f, 1);
-        headerRT.anchoredPosition = Vector2.zero;
-        headerRT.sizeDelta = new Vector2(0, 35);
-        Image headerBG = headerGO.AddComponent<Image>();
-        headerBG.color = new Color(0.08f, 0.08f, 0.1f, 1f);
+        RectTransform hrt = headerGO.GetComponent<RectTransform>();
+        hrt.anchorMin = new Vector2(0, 1); hrt.anchorMax = new Vector2(1, 1);
+        hrt.pivot = new Vector2(0.5f, 1); hrt.anchoredPosition = Vector2.zero; hrt.sizeDelta = new Vector2(0, 35);
+        headerGO.AddComponent<Image>().color = new Color(0.08f, 0.08f, 0.1f, 1f);
 
-        // ─── Tube (glass area) ───
+        // Tube
         GameObject tubeOuterGO = MakeUI("TubeOuter", machineGO.transform);
-        RectTransform tubeOuterRT = tubeOuterGO.GetComponent<RectTransform>();
-        tubeOuterRT.anchorMin = new Vector2(0.06f, 0.22f);
-        tubeOuterRT.anchorMax = new Vector2(0.94f, 0.93f);
-        tubeOuterRT.offsetMin = Vector2.zero;
-        tubeOuterRT.offsetMax = Vector2.zero;
-        Image tubeBorder = tubeOuterGO.AddComponent<Image>();
-        tubeBorder.color = new Color(0.2f, 0.55f, 0.3f, 0.45f);
+        RectTransform toRT = tubeOuterGO.GetComponent<RectTransform>();
+        toRT.anchorMin = new Vector2(0.06f, 0.15f); toRT.anchorMax = new Vector2(0.94f, 0.93f);
+        toRT.offsetMin = Vector2.zero; toRT.offsetMax = Vector2.zero;
+        tubeOuterGO.AddComponent<Image>().color = new Color(0.2f, 0.55f, 0.3f, 0.45f);
 
         GameObject tubeInnerGO = MakeUI("TubeInner", tubeOuterGO.transform);
         Stretch(tubeInnerGO);
@@ -699,128 +783,85 @@ public class SacrificeNodeManager : MonoBehaviour
         tubeImage.color = new Color(0.12f, 0.35f, 0.18f, 0.1f);
         tubeArea = tubeInnerGO.GetComponent<RectTransform>();
 
-        // Drop zone component
         SacrificeTubeDropZone dropZone = tubeInnerGO.AddComponent<SacrificeTubeDropZone>();
         dropZone.highlightImage = tubeImage;
 
-        // Perk grid inside tube
+        // Grid
         GameObject gridGO = MakeUI("PerkGrid", tubeInnerGO.transform);
         Stretch(gridGO);
-        gridGO.GetComponent<RectTransform>().offsetMin = new Vector2(10, 10);
-        gridGO.GetComponent<RectTransform>().offsetMax = new Vector2(-10, -30);
+        gridGO.GetComponent<RectTransform>().offsetMin = new Vector2(8, 8);
+        gridGO.GetComponent<RectTransform>().offsetMax = new Vector2(-8, -8);
         GridLayoutGroup grid = gridGO.AddComponent<GridLayoutGroup>();
-        grid.cellSize = new Vector2(55, 55);
-        grid.spacing = new Vector2(10, 10);
+        grid.cellSize = new Vector2(60, 65);
+        grid.spacing = new Vector2(8, 6);
         grid.childAlignment = TextAnchor.UpperCenter;
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = 3;
         perkGridParent = gridGO.transform;
 
-        // "+" button (child of grid — participates in layout)
-        addButton = MakeUI("AddButton", gridGO.transform);
-        Image addBG = addButton.AddComponent<Image>();
-        addBG.color = new Color(0.18f, 0.55f, 0.25f, 0.6f);
-        Button addBtn = addButton.AddComponent<Button>();
-        ColorBlock addCB = addBtn.colors;
-        addCB.highlightedColor = new Color(0.25f, 0.75f, 0.35f, 0.85f);
-        addBtn.colors = addCB;
-        addBtn.onClick.AddListener(ShowPerkPopup);
-
-        TMP_Text plusTxt = MakeTextChild("PlusText", addButton.transform, "+", 30, Color.white, TextAlignmentOptions.Center);
-
-        // Tube count text (below tube)
-        tubeCountText = MakeText("CountText", tubeOuterGO.transform,
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 1),
-            new Vector2(0, -4), new Vector2(0, 22),
-            "0/10", 13, new Color(0.5f, 0.8f, 0.5f, 0.6f), TextAlignmentOptions.Center);
-
-        // ─── Acid Pool ───
+        // Acid pool
         GameObject acidGO = MakeUI("AcidPool", machineGO.transform);
         RectTransform acidRT = acidGO.GetComponent<RectTransform>();
-        acidRT.anchorMin = new Vector2(0.06f, 0.08f);
-        acidRT.anchorMax = new Vector2(0.94f, 0.22f);
-        acidRT.offsetMin = Vector2.zero;
-        acidRT.offsetMax = Vector2.zero;
+        acidRT.anchorMin = new Vector2(0.06f, 0.04f); acidRT.anchorMax = new Vector2(0.94f, 0.15f);
+        acidRT.offsetMin = Vector2.zero; acidRT.offsetMax = Vector2.zero;
         acidPoolImage = acidGO.AddComponent<Image>();
         acidPoolImage.color = new Color(0.08f, 0.5f, 0.08f, 0.55f);
 
-        MakeTextChild("AcidLabel", acidGO.transform, "~ ACID ~", 13,
-            new Color(0.3f, 1f, 0.3f, 0.35f), TextAlignmentOptions.Center);
-
-        // ─── Lever ───
+        // Lever
         BuildLever(panel.transform);
 
-        // ─── Reward Slots ───
+        // Reward slots
         BuildRewardSlots(panel.transform);
 
-        // ─── Status Text ───
+        // Status
         statusText = MakeText("StatusText", panel.transform,
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0),
             new Vector2(-50, 55), new Vector2(550, 35),
             "", 18, new Color(0.8f, 0.8f, 0.8f), TextAlignmentOptions.Center);
 
-        // ─── Leave Button ───
+        // Leave
         BuildLeaveButton(panel.transform);
 
         panel.SetActive(false);
     }
 
-    // ─── Lever build ───
     private void BuildLever(Transform parent)
     {
         GameObject leverGO = MakeUI("Lever", parent);
-        RectTransform leverRT = leverGO.GetComponent<RectTransform>();
-        SetAnchored(leverRT, new Vector2(0.5f, 0.5f), new Vector2(-330, 20), new Vector2(80, 280));
-
-        // Base background
+        SetAnchored(leverGO.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(-330, 20), new Vector2(80, 280));
         Image baseBG = leverGO.AddComponent<Image>();
         baseBG.color = new Color(0.09f, 0.09f, 0.11f, 0.85f);
 
-        // Shaft
         GameObject shaftGO = MakeUI("Shaft", leverGO.transform);
-        RectTransform shaftRT = shaftGO.GetComponent<RectTransform>();
-        shaftRT.anchorMin = new Vector2(0.5f, 0.15f);
-        shaftRT.anchorMax = new Vector2(0.5f, 0.8f);
-        shaftRT.sizeDelta = new Vector2(8, 0);
-        Image shaftImg = shaftGO.AddComponent<Image>();
-        shaftImg.color = new Color(0.45f, 0.45f, 0.5f);
-        shaftImg.raycastTarget = false;
+        RectTransform srt = shaftGO.GetComponent<RectTransform>();
+        srt.anchorMin = new Vector2(0.5f, 0.15f); srt.anchorMax = new Vector2(0.5f, 0.8f); srt.sizeDelta = new Vector2(8, 0);
+        shaftGO.AddComponent<Image>().color = new Color(0.45f, 0.45f, 0.5f);
 
-        // Handle (top of shaft)
         GameObject handleGO = MakeUI("Handle", leverGO.transform);
         leverHandle = handleGO.GetComponent<RectTransform>();
-        leverHandle.anchorMin = new Vector2(0.5f, 0.8f);
-        leverHandle.anchorMax = new Vector2(0.5f, 0.8f);
+        leverHandle.anchorMin = new Vector2(0.5f, 0.8f); leverHandle.anchorMax = new Vector2(0.5f, 0.8f);
         leverHandle.sizeDelta = new Vector2(36, 36);
         leverHandleImage = handleGO.AddComponent<Image>();
         leverHandleImage.color = Color.white;
 
-        // Lever button (whole area clickable)
         leverButton = leverGO.AddComponent<Button>();
         leverButton.targetGraphic = baseBG;
         leverButton.onClick.AddListener(OnLeverClicked);
 
-        // "PULL" text
         leverText = MakeText("PullText", leverGO.transform,
             new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 1),
-            new Vector2(0, -5), new Vector2(0, 28),
-            "PULL", 15, Color.white, TextAlignmentOptions.Center);
+            new Vector2(0, -5), new Vector2(0, 28), "PULL", 15, Color.white, TextAlignmentOptions.Center);
     }
 
-    // ─── Reward slots build ───
     private void BuildRewardSlots(Transform parent)
     {
         GameObject rowGO = MakeUI("RewardRow", parent);
-        RectTransform rowRT = rowGO.GetComponent<RectTransform>();
-        SetAnchored(rowRT, new Vector2(0.5f, 0.5f), new Vector2(-50, -290), new Vector2(480, 160));
-
+        SetAnchored(rowGO.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(-50, -290), new Vector2(520, 180));
         HorizontalLayoutGroup hlg = rowGO.AddComponent<HorizontalLayoutGroup>();
         hlg.spacing = 12;
         hlg.childAlignment = TextAnchor.MiddleCenter;
-        hlg.childControlWidth = true;
-        hlg.childControlHeight = true;
-        hlg.childForceExpandWidth = true;
-        hlg.childForceExpandHeight = true;
+        hlg.childControlWidth = true; hlg.childControlHeight = true;
+        hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
 
         rareSlot = CreateRewardSlotUI("RareSlot", rowGO.transform, PerkRarity.Rare, 2);
         epicSlot = CreateRewardSlotUI("EpicSlot", rowGO.transform, PerkRarity.Epic, 4);
@@ -830,12 +871,11 @@ public class SacrificeNodeManager : MonoBehaviour
     private SacrificeRewardSlot CreateRewardSlotUI(string name, Transform parent, PerkRarity rarity, int cost)
     {
         Color rc = SacrificeRewardSlot.GetRarityColor(rarity);
-
         GameObject slotGO = MakeUI(name, parent);
         Image bg = slotGO.AddComponent<Image>();
         bg.color = new Color(0.12f, 0.12f, 0.12f, 0.8f);
 
-        // Glow border
+        // Glow
         GameObject glowGO = MakeUI("Glow", slotGO.transform);
         Stretch(glowGO);
         glowGO.GetComponent<RectTransform>().offsetMin = new Vector2(-3, -3);
@@ -846,146 +886,55 @@ public class SacrificeNodeManager : MonoBehaviour
         glowImg.raycastTarget = false;
 
         // Rarity label (top)
-        GameObject rarGO = MakeUI("Rarity", slotGO.transform);
-        RectTransform rarRT = rarGO.GetComponent<RectTransform>();
-        rarRT.anchorMin = new Vector2(0, 0.85f);
-        rarRT.anchorMax = new Vector2(1, 1f);
-        rarRT.offsetMin = new Vector2(4, 0);
-        rarRT.offsetMax = new Vector2(-4, 0);
-        TMP_Text rarTxt = rarGO.AddComponent<TextMeshProUGUI>();
-        rarTxt.text = rarity.ToString().ToUpper();
-        rarTxt.fontSize = 12;
-        rarTxt.alignment = TextAlignmentOptions.Center;
-        rarTxt.color = rc;
-        rarTxt.raycastTarget = false;
-        if (cachedFont != null) rarTxt.font = cachedFont;
+        TMP_Text rarTxt = MakeAnchText("Rarity", slotGO.transform,
+            new Vector2(0, 0.88f), new Vector2(1, 1), rarity.ToString().ToUpper(), 12, rc);
 
-        // Icon
+        // Icon (center)
         GameObject iconGO = MakeUI("Icon", slotGO.transform);
-        RectTransform iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin = new Vector2(0.5f, 0.48f);
-        iconRT.anchorMax = new Vector2(0.5f, 0.48f);
-        iconRT.sizeDelta = new Vector2(50, 50);
+        RectTransform irt = iconGO.GetComponent<RectTransform>();
+        irt.anchorMin = new Vector2(0.5f, 0.55f); irt.anchorMax = new Vector2(0.5f, 0.55f);
+        irt.sizeDelta = new Vector2(48, 48);
         Image iconImg = iconGO.AddComponent<Image>();
         iconImg.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
         iconImg.preserveAspect = true;
         iconImg.raycastTarget = false;
 
         // Name
-        GameObject nameGO = MakeUI("Name", slotGO.transform);
-        RectTransform nameRT = nameGO.GetComponent<RectTransform>();
-        nameRT.anchorMin = new Vector2(0, 0.2f);
-        nameRT.anchorMax = new Vector2(1, 0.4f);
-        nameRT.offsetMin = new Vector2(4, 0);
-        nameRT.offsetMax = new Vector2(-4, 0);
-        TMP_Text nameTxt = nameGO.AddComponent<TextMeshProUGUI>();
-        nameTxt.text = "???";
-        nameTxt.fontSize = 13;
-        nameTxt.alignment = TextAlignmentOptions.Center;
-        nameTxt.color = Color.white;
-        nameTxt.raycastTarget = false;
-        if (cachedFont != null) nameTxt.font = cachedFont;
+        TMP_Text nameTxt = MakeAnchText("Name", slotGO.transform,
+            new Vector2(0, 0.30f), new Vector2(1, 0.44f), "???", 12, Color.white);
 
-        // Cost
-        GameObject costGO = MakeUI("Cost", slotGO.transform);
-        RectTransform costRT = costGO.GetComponent<RectTransform>();
-        costRT.anchorMin = new Vector2(0, 0.02f);
-        costRT.anchorMax = new Vector2(1, 0.18f);
-        costRT.offsetMin = new Vector2(4, 0);
-        costRT.offsetMax = new Vector2(-4, 0);
-        TMP_Text costTxt = costGO.AddComponent<TextMeshProUGUI>();
-        costTxt.text = $"{cost} PERKS";
-        costTxt.fontSize = 11;
-        costTxt.alignment = TextAlignmentOptions.Center;
-        costTxt.color = new Color(0.6f, 0.6f, 0.6f);
-        costTxt.raycastTarget = false;
-        if (cachedFont != null) costTxt.font = cachedFont;
+        // Description
+        TMP_Text descTxt = MakeAnchText("Desc", slotGO.transform,
+            new Vector2(0, 0.12f), new Vector2(1, 0.30f), "", 9, new Color(0.65f, 0.65f, 0.65f));
+        descTxt.enableWordWrapping = true;
+        descTxt.overflowMode = TextOverflowModes.Truncate;
 
-        // Attach component
+        // Cost (bottom)
+        TMP_Text costTxt = MakeAnchText("Cost", slotGO.transform,
+            new Vector2(0, 0f), new Vector2(1, 0.12f), $"{cost} PERKS", 10, new Color(0.6f, 0.6f, 0.6f));
+
         SacrificeRewardSlot slot = slotGO.AddComponent<SacrificeRewardSlot>();
         slot.background = bg;
         slot.iconImage = iconImg;
         slot.glowBorder = glowImg;
         slot.nameText = nameTxt;
+        slot.descText = descTxt;
         slot.costText = costTxt;
         slot.rarityLabel = rarTxt;
-
         return slot;
     }
 
-    // ─── Leave button build ───
     private void BuildLeaveButton(Transform parent)
     {
         GameObject btnGO = MakeUI("LeaveButton", parent);
-        RectTransform btnRT = btnGO.GetComponent<RectTransform>();
-        SetAnchored(btnRT, new Vector2(0.5f, 0f), new Vector2(-50, 15), new Vector2(170, 42));
-        btnRT.pivot = new Vector2(0.5f, 0);
-
-        Image btnBG = btnGO.AddComponent<Image>();
-        btnBG.color = new Color(0.18f, 0.18f, 0.22f, 0.9f);
-
+        RectTransform brt = btnGO.GetComponent<RectTransform>();
+        brt.anchorMin = new Vector2(0.5f, 0); brt.anchorMax = new Vector2(0.5f, 0);
+        brt.pivot = new Vector2(0.5f, 0);
+        brt.anchoredPosition = new Vector2(-50, 15); brt.sizeDelta = new Vector2(170, 42);
+        btnGO.AddComponent<Image>().color = new Color(0.18f, 0.18f, 0.22f, 0.9f);
         leaveButton = btnGO.AddComponent<Button>();
-        ColorBlock lcb = leaveButton.colors;
-        lcb.highlightedColor = new Color(0.3f, 0.3f, 0.4f, 1f);
-        leaveButton.colors = lcb;
         leaveButton.onClick.AddListener(OnLeaveClicked);
-
         MakeTextChild("Text", btnGO.transform, "LEAVE", 20, Color.white, TextAlignmentOptions.Center);
-    }
-
-    // ─── Popup build ───
-    private void BuildPopup()
-    {
-        popupPanel = MakeUI("PerkPopup", panel.transform);
-        Stretch(popupPanel);
-        Image popBG = popupPanel.AddComponent<Image>();
-        popBG.color = new Color(0, 0, 0, 0.75f);
-
-        Button closeBgBtn = popupPanel.AddComponent<Button>();
-        closeBgBtn.onClick.AddListener(HidePerkPopup);
-
-        // Content box
-        GameObject contentGO = MakeUI("Content", popupPanel.transform);
-        RectTransform contentRT = contentGO.GetComponent<RectTransform>();
-        contentRT.anchorMin = new Vector2(0.28f, 0.12f);
-        contentRT.anchorMax = new Vector2(0.72f, 0.88f);
-        contentRT.offsetMin = Vector2.zero;
-        contentRT.offsetMax = Vector2.zero;
-        Image contentBG = contentGO.AddComponent<Image>();
-        contentBG.color = new Color(0.07f, 0.07f, 0.1f, 0.97f);
-
-        // Stop click-through to close button
-        contentGO.AddComponent<Button>(); // Catches clicks so they don't propagate
-
-        // Popup title
-        MakeText("PopupTitle", contentGO.transform,
-            new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1),
-            Vector2.zero, new Vector2(0, 50),
-            "SELECT A PERK", 24, new Color(0.8f, 0.2f, 0.6f), TextAlignmentOptions.Center);
-
-        // Scroll viewport
-        GameObject scrollGO = MakeUI("Scroll", contentGO.transform);
-        RectTransform scrollRT = scrollGO.GetComponent<RectTransform>();
-        scrollRT.anchorMin = Vector2.zero;
-        scrollRT.anchorMax = Vector2.one;
-        scrollRT.offsetMin = new Vector2(10, 10);
-        scrollRT.offsetMax = new Vector2(-10, -55);
-
-        // Grid (vertical list)
-        GameObject gridGO = MakeUI("Grid", scrollGO.transform);
-        Stretch(gridGO);
-        VerticalLayoutGroup vlg = gridGO.AddComponent<VerticalLayoutGroup>();
-        vlg.spacing = 5;
-        vlg.childAlignment = TextAnchor.UpperCenter;
-        vlg.childControlWidth = true;
-        vlg.childControlHeight = false;
-        vlg.childForceExpandWidth = true;
-        vlg.childForceExpandHeight = false;
-        ContentSizeFitter csf = gridGO.AddComponent<ContentSizeFitter>();
-        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        popupGrid = gridGO.transform;
-
-        popupPanel.SetActive(false);
     }
 
     // ═══════════════════════════════════════════
@@ -1003,18 +952,14 @@ public class SacrificeNodeManager : MonoBehaviour
     private static void Stretch(GameObject go)
     {
         RectTransform rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
+        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
     }
 
     private static void SetAnchored(RectTransform rt, Vector2 anchor, Vector2 pos, Vector2 size)
     {
-        rt.anchorMin = anchor;
-        rt.anchorMax = anchor;
-        rt.anchoredPosition = pos;
-        rt.sizeDelta = size;
+        rt.anchorMin = anchor; rt.anchorMax = anchor;
+        rt.anchoredPosition = pos; rt.sizeDelta = size;
     }
 
     private TMP_Text MakeText(string name, Transform parent,
@@ -1024,17 +969,29 @@ public class SacrificeNodeManager : MonoBehaviour
     {
         GameObject go = MakeUI(name, parent);
         RectTransform rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = anchorMin;
-        rt.anchorMax = anchorMax;
-        rt.pivot = pivot;
-        rt.anchoredPosition = pos;
-        rt.sizeDelta = size;
+        rt.anchorMin = anchorMin; rt.anchorMax = anchorMax; rt.pivot = pivot;
+        rt.anchoredPosition = pos; rt.sizeDelta = size;
         TMP_Text txt = go.AddComponent<TextMeshProUGUI>();
-        txt.text = text;
-        txt.fontSize = fontSize;
-        txt.color = color;
-        txt.alignment = align;
+        txt.text = text; txt.fontSize = fontSize; txt.color = color;
+        txt.alignment = align; txt.raycastTarget = false;
+        if (cachedFont != null) txt.font = cachedFont;
+        return txt;
+    }
+
+    /// <summary>Anchor-stretched text inside a slot (anchorMin/Max define area, offset=padding).</summary>
+    private TMP_Text MakeAnchText(string name, Transform parent,
+        Vector2 anchorMin, Vector2 anchorMax, string text, float fontSize, Color color)
+    {
+        GameObject go = MakeUI(name, parent);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = anchorMin; rt.anchorMax = anchorMax;
+        rt.offsetMin = new Vector2(4, 0); rt.offsetMax = new Vector2(-4, 0);
+        TMP_Text txt = go.AddComponent<TextMeshProUGUI>();
+        txt.text = text; txt.fontSize = fontSize; txt.color = color;
+        txt.alignment = TextAlignmentOptions.Center;
         txt.raycastTarget = false;
+        txt.enableWordWrapping = false;
+        txt.overflowMode = TextOverflowModes.Ellipsis;
         if (cachedFont != null) txt.font = cachedFont;
         return txt;
     }
@@ -1045,11 +1002,8 @@ public class SacrificeNodeManager : MonoBehaviour
         GameObject go = MakeUI(name, parent);
         Stretch(go);
         TMP_Text txt = go.AddComponent<TextMeshProUGUI>();
-        txt.text = text;
-        txt.fontSize = fontSize;
-        txt.color = color;
-        txt.alignment = align;
-        txt.raycastTarget = false;
+        txt.text = text; txt.fontSize = fontSize; txt.color = color;
+        txt.alignment = align; txt.raycastTarget = false;
         if (cachedFont != null) txt.font = cachedFont;
         return txt;
     }

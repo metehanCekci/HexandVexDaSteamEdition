@@ -562,20 +562,21 @@ public class PerkInventoryUI : MonoBehaviour
         float dur = STASH_EXPAND_DURATION * 0.8f;
         while (elapsed < dur)
         {
+            if (cg == null || stashSection == null) yield break;
             float t = elapsed / dur;
             float ease = t * t; // EaseInQuad
             sle.preferredHeight = Mathf.Lerp(startH, 0f, ease);
             cg.alpha = 1f - t;
-            LayoutRebuilder.MarkLayoutForRebuild(panelRoot.GetComponent<RectTransform>());
+            if (panelRoot != null) LayoutRebuilder.MarkLayoutForRebuild(panelRoot.GetComponent<RectTransform>());
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
         // Animasyon bitti — temizle
         ClearSlots(spawnedStashSlots);
-        sle.preferredHeight = -1f;
-        stashSection.SetActive(false);
-        cg.alpha = 1f;
+        if (sle != null) sle.preferredHeight = -1f;
+        if (stashSection != null) stashSection.SetActive(false);
+        if (cg != null) cg.alpha = 1f;
         LayoutRebuilder.ForceRebuildLayoutImmediate(panelRoot.GetComponent<RectTransform>());
     }
 

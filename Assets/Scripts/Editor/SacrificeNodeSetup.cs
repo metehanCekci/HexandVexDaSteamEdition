@@ -66,7 +66,7 @@ public static class SacrificeNodeSetup
         // ─── Tube ───
         GameObject tubeOuterGO = MakeUI("TubeOuter", machineGO.transform);
         RectTransform toRT = tubeOuterGO.GetComponent<RectTransform>();
-        toRT.anchorMin = new Vector2(0.06f, 0.22f);
+        toRT.anchorMin = new Vector2(0.06f, 0.15f);
         toRT.anchorMax = new Vector2(0.94f, 0.93f);
         toRT.offsetMin = Vector2.zero;
         toRT.offsetMax = Vector2.zero;
@@ -87,41 +87,25 @@ public static class SacrificeNodeSetup
         // Perk Grid
         GameObject gridGO = MakeUI("PerkGrid", tubeInnerGO.transform);
         Stretch(gridGO);
-        gridGO.GetComponent<RectTransform>().offsetMin = new Vector2(10, 10);
-        gridGO.GetComponent<RectTransform>().offsetMax = new Vector2(-10, -30);
+        gridGO.GetComponent<RectTransform>().offsetMin = new Vector2(8, 8);
+        gridGO.GetComponent<RectTransform>().offsetMax = new Vector2(-8, -8);
         GridLayoutGroup grid = gridGO.AddComponent<GridLayoutGroup>();
-        grid.cellSize = new Vector2(55, 55);
-        grid.spacing = new Vector2(10, 10);
+        grid.cellSize = new Vector2(60, 65);
+        grid.spacing = new Vector2(8, 6);
         grid.childAlignment = TextAnchor.UpperCenter;
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = 3;
         manager.perkGridParent = gridGO.transform;
 
-        // "+" button
-        GameObject addBtnGO = MakeUI("AddButton", gridGO.transform);
-        Image addBG = addBtnGO.AddComponent<Image>();
-        addBG.color = new Color(0.18f, 0.55f, 0.25f, 0.6f);
-        addBtnGO.AddComponent<Button>();
-        MakeTextObj("Plus", addBtnGO.transform, font, "+", 30, Color.white, true);
-        manager.addButton = addBtnGO;
-
-        // Tube count text
-        manager.tubeCountText = MakeTextObj("CountText", tubeOuterGO.transform, font,
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 1),
-            new Vector2(0, -4), new Vector2(0, 22),
-            "0/10", 13, new Color(0.5f, 0.8f, 0.5f, 0.6f));
-
         // ─── Acid Pool ───
         GameObject acidGO = MakeUI("AcidPool", machineGO.transform);
         RectTransform acidRT = acidGO.GetComponent<RectTransform>();
-        acidRT.anchorMin = new Vector2(0.06f, 0.08f);
-        acidRT.anchorMax = new Vector2(0.94f, 0.22f);
+        acidRT.anchorMin = new Vector2(0.06f, 0.04f);
+        acidRT.anchorMax = new Vector2(0.94f, 0.15f);
         acidRT.offsetMin = Vector2.zero;
         acidRT.offsetMax = Vector2.zero;
         manager.acidPoolImage = acidGO.AddComponent<Image>();
         manager.acidPoolImage.color = new Color(0.08f, 0.5f, 0.08f, 0.55f);
-        MakeTextObj("AcidLabel", acidGO.transform, font, "~ ACID ~", 13,
-            new Color(0.3f, 1f, 0.3f, 0.35f), true);
 
         // ─── Lever ───
         BuildLever(panel.transform, manager, font);
@@ -189,7 +173,7 @@ public static class SacrificeNodeSetup
     static void BuildRewardSlots(Transform parent, SacrificeNodeManager mgr, TMP_FontAsset font)
     {
         GameObject rowGO = MakeUI("RewardRow", parent);
-        SetAnchored(rowGO, new Vector2(-50, -290), new Vector2(480, 160));
+        SetAnchored(rowGO, new Vector2(-50, -290), new Vector2(520, 180));
         HorizontalLayoutGroup hlg = rowGO.AddComponent<HorizontalLayoutGroup>();
         hlg.spacing = 12;
         hlg.childAlignment = TextAnchor.MiddleCenter;
@@ -221,40 +205,45 @@ public static class SacrificeNodeSetup
         glowImg.color = new Color(0.25f, 0.25f, 0.25f, 0.25f);
         glowImg.raycastTarget = false;
 
-        // Rarity label
-        TMP_Text rarTxt = MakeTextObj("Rarity", slotGO.transform, font,
-            new Vector2(0, 0.85f), new Vector2(1, 1), new Vector2(0.5f, 0.5f),
-            Vector2.zero, Vector2.zero,
+        // Rarity label (top)
+        TMP_Text rarTxt = MakeAnchText("Rarity", slotGO.transform, font,
+            new Vector2(0, 0.88f), new Vector2(1, 1),
             rarity.ToString().ToUpper(), 12, rc);
 
-        // Icon
+        // Icon (center)
         GameObject iconGO = MakeUI("Icon", slotGO.transform);
         RectTransform iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin = new Vector2(0.5f, 0.48f);
-        iconRT.anchorMax = new Vector2(0.5f, 0.48f);
-        iconRT.sizeDelta = new Vector2(50, 50);
+        iconRT.anchorMin = new Vector2(0.5f, 0.55f);
+        iconRT.anchorMax = new Vector2(0.5f, 0.55f);
+        iconRT.sizeDelta = new Vector2(48, 48);
         Image iconImg = iconGO.AddComponent<Image>();
         iconImg.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
         iconImg.preserveAspect = true;
         iconImg.raycastTarget = false;
 
         // Name
-        TMP_Text nameTxt = MakeTextObj("Name", slotGO.transform, font,
-            new Vector2(0, 0.2f), new Vector2(1, 0.4f), new Vector2(0.5f, 0.5f),
-            Vector2.zero, Vector2.zero,
-            "???", 13, Color.white);
+        TMP_Text nameTxt = MakeAnchText("Name", slotGO.transform, font,
+            new Vector2(0, 0.30f), new Vector2(1, 0.44f),
+            "???", 12, Color.white);
 
-        // Cost
-        TMP_Text costTxt = MakeTextObj("Cost", slotGO.transform, font,
-            new Vector2(0, 0.02f), new Vector2(1, 0.18f), new Vector2(0.5f, 0.5f),
-            Vector2.zero, Vector2.zero,
-            $"{cost} PERKS", 11, new Color(0.6f, 0.6f, 0.6f));
+        // Description
+        TMP_Text descTxt = MakeAnchText("Desc", slotGO.transform, font,
+            new Vector2(0, 0.12f), new Vector2(1, 0.30f),
+            "", 9, new Color(0.65f, 0.65f, 0.65f));
+        descTxt.enableWordWrapping = true;
+        descTxt.overflowMode = TextOverflowModes.Truncate;
+
+        // Cost (bottom)
+        TMP_Text costTxt = MakeAnchText("Cost", slotGO.transform, font,
+            new Vector2(0, 0f), new Vector2(1, 0.12f),
+            $"{cost} PERKS", 10, new Color(0.6f, 0.6f, 0.6f));
 
         SacrificeRewardSlot slot = slotGO.AddComponent<SacrificeRewardSlot>();
         slot.background = bg;
         slot.iconImage = iconImg;
         slot.glowBorder = glowImg;
         slot.nameText = nameTxt;
+        slot.descText = descTxt;
         slot.costText = costTxt;
         slot.rarityLabel = rarTxt;
         return slot;
@@ -344,6 +333,29 @@ public static class SacrificeNodeSetup
         txt.color = color;
         txt.alignment = TextAlignmentOptions.Center;
         txt.raycastTarget = false;
+        if (font != null) txt.font = font;
+        return txt;
+    }
+
+    // Anchor-stretched text for reward slot sections
+    static TMP_Text MakeAnchText(string name, Transform parent, TMP_FontAsset font,
+        Vector2 anchorMin, Vector2 anchorMax,
+        string text, float fontSize, Color color)
+    {
+        GameObject go = MakeUI(name, parent);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = anchorMin;
+        rt.anchorMax = anchorMax;
+        rt.offsetMin = new Vector2(4, 0);
+        rt.offsetMax = new Vector2(-4, 0);
+        TMP_Text txt = go.AddComponent<TextMeshProUGUI>();
+        txt.text = text;
+        txt.fontSize = fontSize;
+        txt.color = color;
+        txt.alignment = TextAlignmentOptions.Center;
+        txt.raycastTarget = false;
+        txt.enableWordWrapping = false;
+        txt.overflowMode = TextOverflowModes.Ellipsis;
         if (font != null) txt.font = font;
         return txt;
     }
