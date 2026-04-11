@@ -6,7 +6,7 @@ public static class MapGenerator
     // Ödül node'ları — combat olmayan, oyuncuya fayda sağlayan
     private static readonly HashSet<MapNodeType> rewardTypes = new HashSet<MapNodeType>
     {
-        MapNodeType.Rest, MapNodeType.Enchant
+        MapNodeType.Rest, MapNodeType.Enchant, MapNodeType.Sacrifice
     };
 
     // Risk node'ları — düşmanlı
@@ -498,6 +498,11 @@ public static class MapGenerator
             candidates.Add(MapNodeType.Enchant);
             weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
         }
+        if (!usedTypes.Contains(MapNodeType.Sacrifice))
+        {
+            candidates.Add(MapNodeType.Sacrifice);
+            weights.Add(config.sacrificeChance > 0f ? config.sacrificeChance : 0.08f);
+        }
         // Hepsi kullanılmışsa fallback — tekrar seçebilir
         if (candidates.Count == 0)
         {
@@ -508,6 +513,8 @@ public static class MapGenerator
             }
             candidates.Add(MapNodeType.Enchant);
             weights.Add(config.enchantChance > 0f ? config.enchantChance : 0.10f);
+            candidates.Add(MapNodeType.Sacrifice);
+            weights.Add(config.sacrificeChance > 0f ? config.sacrificeChance : 0.08f);
         }
 
         // Ağırlıklı random

@@ -20,4 +20,5 @@ MonoBehaviour:
   restChance: 0.3
   eliteChance: 0.1
   enchantChance: 0.3
+  sacrificeChance: 0.1
   tileSet: {fileID: 11400000, guid: e6e5558eae4bd664093f54a048f204a6, type: 2}
