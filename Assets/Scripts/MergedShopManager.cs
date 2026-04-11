@@ -277,6 +277,11 @@ public class MergedShopManager : MonoBehaviour
             epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
             legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
             Debug.Log($"[MergedShop] Perk pools from LevelUpManager: C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
+
+            // Also feed SacrificeNodeManager while we have valid perk lists
+            if (SacrificeNodeManager.instance != null)
+                SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
+
             return;
         }
 
@@ -296,6 +301,10 @@ public class MergedShopManager : MonoBehaviour
             }
         }
         Debug.Log($"[MergedShop] AutoPopulate perk pools (FindObjectsOfTypeAll): C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
+
+        // Feed SacrificeNodeManager from fallback-populated lists too
+        if (SacrificeNodeManager.instance != null && rarePerks.Count > 0)
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
     }
 
     private void AutoPopulateItemPool()
@@ -412,6 +421,9 @@ public class MergedShopManager : MonoBehaviour
             Debug.Log($"[MergedShop] Copied from LevelUpManager: common={commonPerks.Count}, rare={rarePerks.Count}, epic={epicPerks.Count}, legendary={legendaryPerks.Count}");
         }
 
+        if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
+
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
         shownItemNames.Clear();
@@ -472,6 +484,10 @@ public class MergedShopManager : MonoBehaviour
             epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
             legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
         }
+
+        // Always try to inject — perks may have been cached earlier via fallback
+        if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
@@ -555,6 +571,7 @@ public class MergedShopManager : MonoBehaviour
         float stagger = 0.18f;
         for (int i = 0; i < allCards.Count; i++)
         {
+            if (allCards[i] == null) continue;
             if (AudioManager.instance != null) AudioManager.instance.PlayCard();
             StartCoroutine(PopInCard(allCards[i].transform));
             yield return new WaitForSecondsRealtime(stagger);
@@ -1107,7 +1124,7 @@ public class MergedShopPerkSlot
 
         // ── Önce tüm visual state'i temizle ──
         if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
-        if (background != null) background.color = Color.white;
+        if (background != null) background.color = new Color(0f, 0.02f, 0.047f, 1f);
         if (button != null)
         {
             button.interactable = true;
@@ -1199,7 +1216,7 @@ public class MergedShopItemSlot
     {
         // ── Önce tüm visual state'i temizle ──
         if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
-        if (background != null) background.color = Color.white;
+        if (background != null) background.color = new Color(0f, 0.02f, 0.047f, 1f);
         if (button != null)
         {
             button.interactable = true;

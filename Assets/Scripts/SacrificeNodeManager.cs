@@ -98,6 +98,9 @@ public class SacrificeNodeManager : MonoBehaviour
 
         if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.Show();
 
+        // Last-chance cache attempt right before we need the lists
+        CachePerkLists();
+
         // Generate pool — retry every Show in case it failed before
         if (!poolGenerated || persistentRarePerk == null)
         {
@@ -151,32 +154,104 @@ public class SacrificeNodeManager : MonoBehaviour
 
         Debug.Log("[SACRIFICE] CachePerkLists called...");
 
-        var lum = LevelUpManager.instance;
-        if (lum == null)
+        try
         {
-            // Try every way possible to find it
-            lum = FindObjectOfType<LevelUpManager>();
+            Debug.Log("[SACRIFICE] CachePerkLists: entering try block...");
+            LevelUpManager lum = null;
+
+            // Method 1: static instance
+            try
+            {
+                var inst = LevelUpManager.instance;
+                Debug.Log("[SACRIFICE] LevelUpManager.instance ref = " + (inst == null ? "NULL" : "EXISTS"));
+                if (inst != null)
+                {
+                    var go = inst.gameObject;
+                    lum = inst;
+                    Debug.Log("[SACRIFICE] Found LevelUpManager via instance: " + go.name);
+                }
+            }
+            catch (System.Exception e1)
+            {
+                Debug.Log("[SACRIFICE] instance is destroyed (fake null): " + e1.Message);
+                lum = null;
+            }
+
+            // Method 2: FindObjectOfType
             if (lum == null)
             {
-                // Search including inactive objects
-                var allLums = Resources.FindObjectsOfTypeAll<LevelUpManager>();
-                if (allLums.Length > 0) lum = allLums[0];
+                lum = FindObjectOfType<LevelUpManager>();
+                Debug.Log("[SACRIFICE] FindObjectOfType result = " + (lum == null ? "NULL" : lum.name));
             }
-        }
 
-        if (lum == null)
+            // Method 3: Resources.FindObjectsOfTypeAll (includes inactive)
+            if (lum == null)
+            {
+                var allLums = Resources.FindObjectsOfTypeAll<LevelUpManager>();
+                Debug.Log("[SACRIFICE] Resources.FindObjectsOfTypeAll found " + allLums.Length + " LevelUpManagers");
+                foreach (var candidate in allLums)
+                {
+                    try
+                    {
+                        var go = candidate.gameObject;
+                        if (go.scene.isLoaded || string.IsNullOrEmpty(go.scene.name))
+                        {
+                            lum = candidate;
+                            Debug.Log("[SACRIFICE] Found LevelUpManager via Resources: " + go.name);
+                            break;
+                        }
+                    }
+                    catch { /* destroyed candidate, skip */ }
+                }
+            }
+
+            if (lum == null)
+            {
+                Debug.Log("[SACRIFICE] CachePerkLists: LevelUpManager not found anywhere. Will retry later.");
+                return;
+            }
+
+            // Safely read the lists
+            var rare = lum.rarePerks;
+            var epic = lum.epicPerks;
+            var legendary = lum.legendaryPerks;
+
+            Debug.Log("[SACRIFICE] LevelUpManager lists: rare=" + (rare != null ? rare.Count.ToString() : "null")
+                + ", epic=" + (epic != null ? epic.Count.ToString() : "null")
+                + ", legendary=" + (legendary != null ? legendary.Count.ToString() : "null"));
+
+            cachedRarePerks = new List<GameObject>(rare != null ? rare : new List<GameObject>());
+            cachedEpicPerks = new List<GameObject>(epic != null ? epic : new List<GameObject>());
+            cachedLegendaryPerks = new List<GameObject>(legendary != null ? legendary : new List<GameObject>());
+
+            // Secret perks
+            cachedSecretPerks = new List<GameObject>();
+            var orbs = Resources.FindObjectsOfTypeAll<SecretPerkOrb>();
+            if (orbs.Length > 0 && orbs[0].secretPerkPool != null)
+                cachedSecretPerks = new List<GameObject>(orbs[0].secretPerkPool);
+            if (cachedSecretPerks.Count == 0 && cachedLegendaryPerks.Count > 0)
+                cachedSecretPerks = new List<GameObject>(cachedLegendaryPerks);
+
+            Debug.Log("[SACRIFICE] Perk lists cached OK! rare=" + cachedRarePerks.Count + ", epic=" + cachedEpicPerks.Count + ", legendary=" + cachedLegendaryPerks.Count + ", secret=" + cachedSecretPerks.Count);
+        }
+        catch (System.Exception ex)
         {
-            Debug.LogWarning("[SACRIFICE] CachePerkLists: LevelUpManager not found yet — will retry later");
-            return;
+            Debug.Log("[SACRIFICE] CachePerkLists EXCEPTION: " + ex.GetType().Name + ": " + ex.Message + "\n" + ex.StackTrace);
         }
+    }
 
-        Debug.Log($"[SACRIFICE] Found LevelUpManager: {lum.name}, rare={lum.rarePerks?.Count ?? -1}, epic={lum.epicPerks?.Count ?? -1}, legendary={lum.legendaryPerks?.Count ?? -1}");
+    /// <summary>
+    /// Directly inject perk lists from another manager that already has them.
+    /// </summary>
+    public void InjectPerkLists(List<GameObject> rare, List<GameObject> epic, List<GameObject> legendary)
+    {
+        if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
+        if (rare == null || rare.Count == 0) return;
 
-        cachedRarePerks = new List<GameObject>(lum.rarePerks ?? new List<GameObject>());
-        cachedEpicPerks = new List<GameObject>(lum.epicPerks ?? new List<GameObject>());
-        cachedLegendaryPerks = new List<GameObject>(lum.legendaryPerks ?? new List<GameObject>());
+        cachedRarePerks = new List<GameObject>(rare);
+        cachedEpicPerks = new List<GameObject>(epic ?? new List<GameObject>());
+        cachedLegendaryPerks = new List<GameObject>(legendary ?? new List<GameObject>());
 
-        // Secret perks
         cachedSecretPerks = new List<GameObject>();
         var orbs = Resources.FindObjectsOfTypeAll<SecretPerkOrb>();
         if (orbs.Length > 0 && orbs[0].secretPerkPool != null)
@@ -184,15 +259,36 @@ public class SacrificeNodeManager : MonoBehaviour
         if (cachedSecretPerks.Count == 0 && cachedLegendaryPerks.Count > 0)
             cachedSecretPerks = new List<GameObject>(cachedLegendaryPerks);
 
-        Debug.Log($"[SACRIFICE] Perk lists cached OK! rare={cachedRarePerks.Count}, epic={cachedEpicPerks.Count}, legendary={cachedLegendaryPerks.Count}, secret={cachedSecretPerks.Count}");
+        Debug.Log($"[SACRIFICE] Perk lists INJECTED! rare={cachedRarePerks.Count}, epic={cachedEpicPerks.Count}, legendary={cachedLegendaryPerks.Count}, secret={cachedSecretPerks.Count}");
     }
 
     private void EnsureCachedLists()
     {
-        // Try to cache if not done yet
-        if (cachedRarePerks == null || cachedRarePerks.Count == 0)
+        if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
+
+        // Method 1: Try via LevelUpManager
+        CachePerkLists();
+
+        if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
+
+        // Method 2: Steal from MergedShopManager which caches its own copies
+        try
         {
-            CachePerkLists();
+            var shop = FindObjectOfType<MergedShopManager>();
+            if (shop == null)
+            {
+                var allShops = Resources.FindObjectsOfTypeAll<MergedShopManager>();
+                if (allShops.Length > 0) shop = allShops[0];
+            }
+            if (shop != null && shop.rarePerks != null && shop.rarePerks.Count > 0)
+            {
+                Debug.Log("[SACRIFICE] Stealing perk lists from MergedShopManager!");
+                InjectPerkLists(shop.rarePerks, shop.epicPerks, shop.legendaryPerks);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[SACRIFICE] MergedShopManager fallback failed: {ex.Message}");
         }
     }
 
@@ -268,14 +364,28 @@ public class SacrificeNodeManager : MonoBehaviour
         if (index < 0) return;
 
         tubePerks.RemoveAt(index);
-        if (RunManager.instance.inventoryPerks.Count < RunManager.MAX_INVENTORY_PERKS)
-            RunManager.instance.inventoryPerks.Add(perk);
+        var rm = RunManager.instance;
+        if (rm.activePerks.Count < RunManager.MAX_ACTIVE_PERKS)
+            rm.activePerks.Add(perk);
+        else if (rm.inventoryPerks.Count < RunManager.MAX_INVENTORY_PERKS)
+            rm.inventoryPerks.Add(perk);
 
         if (index < tubePerkIcons.Count) { Destroy(tubePerkIcons[index]); tubePerkIcons.RemoveAt(index); }
+
+        // Son perkin ikonunu göster (varsa)
+        ClearTubeIcons();
+        if (tubePerks.Count > 0)
+            CreateTubeIcon(tubePerks[tubePerks.Count - 1]);
 
         RunManager.instance.RefreshPerkUI();
         if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
         RefreshUI();
+    }
+
+    public void RemoveLastPerkFromTube()
+    {
+        if (isAnimating || tubePerks.Count == 0) return;
+        RemovePerkFromTube(tubePerks[tubePerks.Count - 1]);
     }
 
     private void ReturnAllTubePerks()
@@ -291,30 +401,22 @@ public class SacrificeNodeManager : MonoBehaviour
 
     private void CreateTubeIcon(BasePerk perk)
     {
-        if (perkGridParent == null) return;
+        if (tubeArea == null) return;
 
-        Debug.Log($"[SACRIFICE] CreateTubeIcon: {perk.perkName}, icon={perk.icon?.name ?? "NULL"}");
+        // Önceki tüm ikonları kaldır — sadece son eklenen görünecek
+        ClearTubeIcons();
 
-        // Single GO with Image — simplest possible approach
-        // GridLayoutGroup on parent controls size (60x65)
-        GameObject slotGO = MakeUI("TubePerk_" + perk.perkName, perkGridParent);
+        GameObject slotGO = MakeUI("TubePerk", tubeArea);
+        RectTransform rt = slotGO.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = new Vector2(80, 80);
 
-        // Background/border — this is the slot itself, sized by GridLayoutGroup
-        Image slotBG = slotGO.AddComponent<Image>();
-        slotBG.color = SacrificeRewardSlot.GetRarityColor(perk.rarity) * 0.5f;
-        slotBG.color = new Color(slotBG.color.r, slotBG.color.g, slotBG.color.b, 0.6f);
-
-        // Icon — stretched to fill most of slot
-        GameObject iconGO = MakeUI("Icon", slotGO.transform);
-        RectTransform iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin = new Vector2(0.1f, 0.25f);
-        iconRT.anchorMax = new Vector2(0.9f, 0.95f);
-        iconRT.offsetMin = Vector2.zero;
-        iconRT.offsetMax = Vector2.zero;
-        Image img = iconGO.AddComponent<Image>();
-        img.raycastTarget = false;
+        Image img = slotGO.AddComponent<Image>();
         img.preserveAspect = true;
-        img.type = Image.Type.Simple;
+        img.raycastTarget = false;
         if (perk.icon != null)
         {
             img.sprite = perk.icon;
@@ -322,32 +424,8 @@ public class SacrificeNodeManager : MonoBehaviour
         }
         else
         {
-            img.sprite = null;
-            img.color = SacrificeRewardSlot.GetRarityColor(perk.rarity);
+            img.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
         }
-
-        // Name label at bottom
-        GameObject nameGO = MakeUI("Name", slotGO.transform);
-        RectTransform nameRT = nameGO.GetComponent<RectTransform>();
-        nameRT.anchorMin = new Vector2(0, 0);
-        nameRT.anchorMax = new Vector2(1, 0.25f);
-        nameRT.offsetMin = Vector2.zero;
-        nameRT.offsetMax = Vector2.zero;
-        TMP_Text nameTxt = nameGO.AddComponent<TextMeshProUGUI>();
-        nameTxt.text = perk.perkName;
-        nameTxt.fontSize = 8;
-        nameTxt.color = Color.white;
-        nameTxt.alignment = TextAlignmentOptions.Center;
-        nameTxt.raycastTarget = false;
-        nameTxt.enableWordWrapping = false;
-        nameTxt.overflowMode = TextOverflowModes.Ellipsis;
-        if (cachedFont != null) nameTxt.font = cachedFont;
-
-        // Click to remove
-        Button btn = slotGO.AddComponent<Button>();
-        btn.targetGraphic = slotBG;
-        BasePerk captured = perk;
-        btn.onClick.AddListener(() => RemovePerkFromTube(captured));
 
         tubePerkIcons.Add(slotGO);
         StartCoroutine(DropAnimation(slotGO));
@@ -383,8 +461,14 @@ public class SacrificeNodeManager : MonoBehaviour
 
     private bool CanPullLever()
     {
+        if (isAnimating) return false;
         int c = tubePerks.Count;
-        return !isAnimating && (c == 1 || c == 2 || c == 4 || c == 6 || c == 10);
+        if (c == 1) return true; // reroll her zaman
+        if (c == 2) return persistentRarePerk != null;
+        if (c == 4) return persistentEpicPerk != null;
+        if (c == 6) return persistentLegendaryPerk != null;
+        if (c == 10) return persistentSecretPerk != null;
+        return false;
     }
 
     private void OnLeverClicked()
@@ -425,7 +509,8 @@ public class SacrificeNodeManager : MonoBehaviour
                 EnsureCachedLists();
                 if (count == 2) rewardPrefab = PickRandom(cachedRarePerks);
                 else if (count == 4) rewardPrefab = PickRandom(cachedEpicPerks);
-                else if (count >= 6) rewardPrefab = PickRandom(cachedLegendaryPerks);
+                else if (count == 6) rewardPrefab = PickRandom(cachedLegendaryPerks);
+                else if (count == 10) rewardPrefab = PickRandom(cachedSecretPerks);
                 Debug.Log($"[SACRIFICE] LAST RESORT picked: {rewardPrefab?.name ?? "STILL NULL"}");
             }
         }
@@ -470,6 +555,12 @@ public class SacrificeNodeManager : MonoBehaviour
                     RunManager.instance.RefreshPerkUI();
                     Debug.Log($"[SACRIFICE] AddPerk SUCCESS: {perkName}");
                 }
+
+                // Bu slotu tüket — aynı perk tekrar alınamasın
+                if (count == 2) persistentRarePerk = null;
+                else if (count == 4) persistentEpicPerk = null;
+                else if (count == 6) persistentLegendaryPerk = null;
+                else if (count == 10) persistentSecretPerk = null;
 
                 if (statusText != null) statusText.text = $"ACQUIRED: {perkName.ToUpper()}!";
 
@@ -520,39 +611,6 @@ public class SacrificeNodeManager : MonoBehaviour
         }
         rImg.preserveAspect = true;
 
-        // Glow border
-        GameObject glowGO = new GameObject("Glow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        glowGO.transform.SetParent(rewardGO.transform, false);
-        glowGO.layer = 5;
-        RectTransform grt = glowGO.GetComponent<RectTransform>();
-        grt.anchorMin = Vector2.zero;
-        grt.anchorMax = Vector2.one;
-        grt.offsetMin = new Vector2(-6, -6);
-        grt.offsetMax = new Vector2(6, 6);
-        grt.SetAsFirstSibling();
-        Image glowImg = glowGO.GetComponent<Image>();
-        Color rc = SacrificeRewardSlot.GetRarityColor(bp.rarity);
-        glowImg.color = rc;
-        glowImg.raycastTarget = false;
-
-        // Name below
-        GameObject nameGO = new GameObject("Name", typeof(RectTransform));
-        nameGO.transform.SetParent(rewardGO.transform, false);
-        nameGO.layer = 5;
-        RectTransform nrt = nameGO.GetComponent<RectTransform>();
-        nrt.anchorMin = new Vector2(0.5f, 0);
-        nrt.anchorMax = new Vector2(0.5f, 0);
-        nrt.pivot = new Vector2(0.5f, 1);
-        nrt.anchoredPosition = new Vector2(0, -5);
-        nrt.sizeDelta = new Vector2(200, 25);
-        TMP_Text nameTxt = nameGO.AddComponent<TextMeshProUGUI>();
-        nameTxt.text = bp.perkName.ToUpper();
-        nameTxt.fontSize = 16;
-        nameTxt.color = rc;
-        nameTxt.alignment = TextAlignmentOptions.Center;
-        nameTxt.raycastTarget = false;
-        if (cachedFont != null) nameTxt.font = cachedFont;
-
         // Scale-up animation (appear from nothing)
         float t = 0f;
         CanvasGroup rcg = rewardGO.AddComponent<CanvasGroup>();
@@ -566,8 +624,6 @@ public class SacrificeNodeManager : MonoBehaviour
             float ease = 1f - (1f - p) * (1f - p); // EaseOutQuad
             rewardGO.transform.localScale = Vector3.Lerp(Vector3.one * 0.1f, Vector3.one * 1.1f, ease);
             rcg.alpha = ease;
-            // Glow pulse
-            glowImg.color = new Color(rc.r, rc.g, rc.b, 0.5f + Mathf.PingPong(t * 4f, 0.5f));
             yield return null;
         }
 
@@ -707,9 +763,9 @@ public class SacrificeNodeManager : MonoBehaviour
         }
 
         // Reward slots — always show info
-        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count == 2); }
-        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count == 4); }
-        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count == 6); }
+        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count >= 2); }
+        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count >= 4); }
+        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count >= 6); }
 
         // Status
         if (statusText != null)
@@ -785,19 +841,6 @@ public class SacrificeNodeManager : MonoBehaviour
 
         SacrificeTubeDropZone dropZone = tubeInnerGO.AddComponent<SacrificeTubeDropZone>();
         dropZone.highlightImage = tubeImage;
-
-        // Grid
-        GameObject gridGO = MakeUI("PerkGrid", tubeInnerGO.transform);
-        Stretch(gridGO);
-        gridGO.GetComponent<RectTransform>().offsetMin = new Vector2(8, 8);
-        gridGO.GetComponent<RectTransform>().offsetMax = new Vector2(-8, -8);
-        GridLayoutGroup grid = gridGO.AddComponent<GridLayoutGroup>();
-        grid.cellSize = new Vector2(60, 65);
-        grid.spacing = new Vector2(8, 6);
-        grid.childAlignment = TextAnchor.UpperCenter;
-        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = 3;
-        perkGridParent = gridGO.transform;
 
         // Acid pool
         GameObject acidGO = MakeUI("AcidPool", machineGO.transform);
@@ -875,16 +918,6 @@ public class SacrificeNodeManager : MonoBehaviour
         Image bg = slotGO.AddComponent<Image>();
         bg.color = new Color(0.12f, 0.12f, 0.12f, 0.8f);
 
-        // Glow
-        GameObject glowGO = MakeUI("Glow", slotGO.transform);
-        Stretch(glowGO);
-        glowGO.GetComponent<RectTransform>().offsetMin = new Vector2(-3, -3);
-        glowGO.GetComponent<RectTransform>().offsetMax = new Vector2(3, 3);
-        glowGO.transform.SetAsFirstSibling();
-        Image glowImg = glowGO.AddComponent<Image>();
-        glowImg.color = new Color(0.25f, 0.25f, 0.25f, 0.25f);
-        glowImg.raycastTarget = false;
-
         // Rarity label (top)
         TMP_Text rarTxt = MakeAnchText("Rarity", slotGO.transform,
             new Vector2(0, 0.88f), new Vector2(1, 1), rarity.ToString().ToUpper(), 12, rc);
@@ -916,7 +949,7 @@ public class SacrificeNodeManager : MonoBehaviour
         SacrificeRewardSlot slot = slotGO.AddComponent<SacrificeRewardSlot>();
         slot.background = bg;
         slot.iconImage = iconImg;
-        slot.glowBorder = glowImg;
+        slot.glowBorder = null;
         slot.nameText = nameTxt;
         slot.descText = descTxt;
         slot.costText = costTxt;

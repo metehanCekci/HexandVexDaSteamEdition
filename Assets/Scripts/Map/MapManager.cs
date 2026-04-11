@@ -15,6 +15,7 @@ public class MapManager : MonoBehaviour
 
     [Header("Parallax Background")]
     public Texture mapBackgroundTexture; // Inspector'dan kendi arkaplan dokunuzu atayın
+    public Sprite mapBackgroundSprite;   // Alternatif: sprite olarak arka plan resmi
 
     [Header("Node Icons")]
     public Sprite combatIcon;
@@ -24,6 +25,8 @@ public class MapManager : MonoBehaviour
     public Sprite restIcon;
     public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite sacrificeIcon;
+    public Sprite enchantIcon;
 
     [Header("Rest UI")]
     public GameObject restCanvasPrefab; // Inspector'dan RestCanvas prefab'ını sürükle
@@ -154,11 +157,11 @@ public class MapManager : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // Panel (saydam — arkaplan parallax'tan gelecek)
+        // Panel — koyu arkaplan (parallax'ın arkasında güvenlik ağı)
         GameObject panelGO = MakeUIObj("MapPanel", canvasGO.transform);
         StretchFull(panelGO.GetComponent<RectTransform>());
         Image panelBG = panelGO.AddComponent<Image>();
-        panelBG.color = new Color(0f, 0f, 0f, 0f);
+        panelBG.color = new Color(0.03f, 0.03f, 0.05f, 1f); // Koyu lacivert — parallax yüklenmezse bu görünür
         CanvasGroup cg = panelGO.AddComponent<CanvasGroup>();
 
         // ─── ScrollRect tabanlı scroll sistemi ───
@@ -170,23 +173,34 @@ public class MapManager : MonoBehaviour
         scrollRT.offsetMin = Vector2.zero;
         scrollRT.offsetMax = Vector2.zero;
         scrollGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // Raycast almak için
-        scrollGO.AddComponent<Mask>().showMaskGraphic = true;
+        scrollGO.AddComponent<Mask>().showMaskGraphic = false;
 
-        // ─── Parallax arkaplan (inspector'dan sprite atanacak) ───
+        // ─── Parallax arkaplan (scroll'un içinde, ilk child) ───
         GameObject parallaxGO = MakeUIObj("ParallaxBG", scrollGO.transform);
         RectTransform parallaxRT = parallaxGO.GetComponent<RectTransform>();
         StretchFull(parallaxRT);
+
         RawImage parallaxImg = parallaxGO.AddComponent<RawImage>();
         parallaxImg.raycastTarget = false;
-        if (mapBackgroundTexture != null)
+
+        Debug.Log($"[MAP BG] mapBackgroundSprite={mapBackgroundSprite != null}, mapBackgroundTexture={mapBackgroundTexture != null}");
+
+        if (mapBackgroundSprite != null)
+        {
+            parallaxImg.texture = mapBackgroundSprite.texture;
+            parallaxImg.color = Color.white;
+            parallaxImg.uvRect = new Rect(0f, 0f, 1f, 1f);
+            Debug.Log($"[MAP BG] Sprite mode: texture={mapBackgroundSprite.texture.name}");
+        }
+        else if (mapBackgroundTexture != null)
         {
             parallaxImg.texture = mapBackgroundTexture;
             parallaxImg.color = new Color(0.07f, 0.07f, 0.07f, 1f);
-            parallaxImg.uvRect = new Rect(0f, 0f, 16f, 9f); // 16:9 oran, 2x tile
+            parallaxImg.uvRect = new Rect(0f, 0f, 16f, 9f);
         }
         else
         {
-            // Texture atanmamışsa tamamen gizle
+            Debug.LogWarning("[MAP BG] No background assigned! Set mapBackgroundSprite or mapBackgroundTexture on MapManager in Inspector.");
             parallaxImg.color = new Color(0f, 0f, 0f, 0f);
         }
 
@@ -251,8 +265,9 @@ public class MapManager : MonoBehaviour
         ui.shopIcon = shopIcon;
         ui.perkIcon = perkIcon;
         ui.restIcon = restIcon;
-        ui.eventIcon = eventIcon;
+        ui.eventIcon = enchantIcon != null ? enchantIcon : eventIcon;
         ui.bossIcon = bossIcon;
+        ui.sacrificeIcon = sacrificeIcon;
 
         mapUI = ui;
         canvasGO.SetActive(false); // Başlangıçta tüm canvas'ı kapat
@@ -272,33 +287,39 @@ public class MapManager : MonoBehaviour
         rt.pivot = new Vector2(0.5f, 0.5f);
 
         Image bg = go.AddComponent<Image>();
-        bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+        bg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta şeffaf — SetState renklendirecek
 
         Button btn = go.AddComponent<Button>();
         btn.transition = Selectable.Transition.None;
         btn.targetGraphic = bg;
 
-        // Outline — icon'dan sadece 2px büyük ince beyaz çerçeve
-        GameObject outlineGO = MakeUIObj("Outline", go.transform);
-        var outlineRT = outlineGO.GetComponent<RectTransform>();
-        outlineRT.anchorMin = new Vector2(0.15f, 0.15f);
-        outlineRT.anchorMax = new Vector2(0.85f, 0.85f);
-        outlineRT.offsetMin = new Vector2(-2f, -2f);
-        outlineRT.offsetMax = new Vector2(2f, 2f);
-        Image outlineImg = outlineGO.AddComponent<Image>();
-        outlineImg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta tamamen gizli
-        outlineImg.raycastTarget = false;
-        outlineGO.transform.SetAsFirstSibling(); // BG'nin arkasında
-
-        // Icon
+        // Icon — ana görsel
         GameObject iconGO = MakeUIObj("Icon", go.transform);
         var iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin = new Vector2(0.15f, 0.15f);
-        iconRT.anchorMax = new Vector2(0.85f, 0.85f);
+        iconRT.anchorMin = new Vector2(0.1f, 0.1f);
+        iconRT.anchorMax = new Vector2(0.9f, 0.9f);
         iconRT.offsetMin = Vector2.zero;
         iconRT.offsetMax = Vector2.zero;
         Image iconImg = iconGO.AddComponent<Image>();
         iconImg.preserveAspect = true;
+        iconImg.raycastTarget = false;
+        iconImg.enabled = false; // Başlangıçta gizli — UpdateIcon açacak
+
+        // Outline — icon'un arkasında, icon'dan 3px büyük, sadece kenarlık görevi görür
+        // Bu bir çerçeve DEĞİL, icondan 3px büyük aynı sprite ama beyaz tint ile
+        // (dolu beyaz kare sorunu olmasın diye sprite olmadan gizli kalır)
+        GameObject outlineGO = MakeUIObj("Outline", go.transform);
+        var outlineRT = outlineGO.GetComponent<RectTransform>();
+        outlineRT.anchorMin = new Vector2(0.1f, 0.1f);
+        outlineRT.anchorMax = new Vector2(0.9f, 0.9f);
+        outlineRT.offsetMin = new Vector2(-3f, -3f);
+        outlineRT.offsetMax = new Vector2(3f, 3f);
+        Image outlineImg = outlineGO.AddComponent<Image>();
+        outlineImg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta gizli
+        outlineImg.raycastTarget = false;
+        outlineImg.preserveAspect = true;
+        outlineImg.enabled = false; // sprite atanana kadar render etme
+        outlineGO.transform.SetAsFirstSibling(); // Icon'un arkasında
 
         // Label
         GameObject labelGO = MakeUIObj("Label", go.transform);

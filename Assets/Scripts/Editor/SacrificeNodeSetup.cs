@@ -84,17 +84,22 @@ public static class SacrificeNodeSetup
         var dropZone = tubeInnerGO.AddComponent<SacrificeTubeDropZone>();
         dropZone.highlightImage = tubeImg;
 
-        // Perk Grid
+        // Perk Grid — ortaya hizalı, boyutu içeriğe göre
         GameObject gridGO = MakeUI("PerkGrid", tubeInnerGO.transform);
-        Stretch(gridGO);
-        gridGO.GetComponent<RectTransform>().offsetMin = new Vector2(8, 8);
-        gridGO.GetComponent<RectTransform>().offsetMax = new Vector2(-8, -8);
+        RectTransform gridRT = gridGO.GetComponent<RectTransform>();
+        gridRT.anchorMin = new Vector2(0.5f, 0.5f);
+        gridRT.anchorMax = new Vector2(0.5f, 0.5f);
+        gridRT.pivot = new Vector2(0.5f, 0.5f);
+        gridRT.anchoredPosition = Vector2.zero;
         GridLayoutGroup grid = gridGO.AddComponent<GridLayoutGroup>();
         grid.cellSize = new Vector2(60, 65);
         grid.spacing = new Vector2(8, 6);
-        grid.childAlignment = TextAnchor.UpperCenter;
+        grid.childAlignment = TextAnchor.MiddleCenter;
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = 3;
+        ContentSizeFitter csf = gridGO.AddComponent<ContentSizeFitter>();
+        csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         manager.perkGridParent = gridGO.transform;
 
         // ─── Acid Pool ───
@@ -195,16 +200,6 @@ public static class SacrificeNodeSetup
         Image bg = slotGO.AddComponent<Image>();
         bg.color = new Color(0.12f, 0.12f, 0.12f, 0.8f);
 
-        // Glow
-        GameObject glowGO = MakeUI("Glow", slotGO.transform);
-        Stretch(glowGO);
-        glowGO.GetComponent<RectTransform>().offsetMin = new Vector2(-3, -3);
-        glowGO.GetComponent<RectTransform>().offsetMax = new Vector2(3, 3);
-        glowGO.transform.SetAsFirstSibling();
-        Image glowImg = glowGO.AddComponent<Image>();
-        glowImg.color = new Color(0.25f, 0.25f, 0.25f, 0.25f);
-        glowImg.raycastTarget = false;
-
         // Rarity label (top)
         TMP_Text rarTxt = MakeAnchText("Rarity", slotGO.transform, font,
             new Vector2(0, 0.88f), new Vector2(1, 1),
@@ -241,7 +236,7 @@ public static class SacrificeNodeSetup
         SacrificeRewardSlot slot = slotGO.AddComponent<SacrificeRewardSlot>();
         slot.background = bg;
         slot.iconImage = iconImg;
-        slot.glowBorder = glowImg;
+        slot.glowBorder = null;
         slot.nameText = nameTxt;
         slot.descText = descTxt;
         slot.costText = costTxt;

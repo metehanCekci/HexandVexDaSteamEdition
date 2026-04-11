@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 62e3a00ea2801244abc42e8f6aa08bd4
+guid: c00c2b8df29d7d441be73e74ac2da3ed
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,7 +127,7 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: Frame_1
+  - name: SacrificeNode
     originalName: 
     pivot: {x: 0.5, y: -0.19565217}
     alignment: 9
@@ -139,7 +139,7 @@ ScriptedImporter:
       y: 4
       width: 46
       height: 46
-    spriteID: d96781ed333463b4c9ac917c8d8feaac
+    spriteID: 59c99c6bb71037346ae8248c64d9b8f7
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,17 +153,17 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 496721864
+      value0: 443421623
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: TileEnhancement
+    name: SacrificeNode
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: TileEnhancement
+    - name: SacrificeNode
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
@@ -171,7 +171,7 @@ ScriptedImporter:
         y: 9
         width: 46
         height: 46
-      spriteId: d96781ed333463b4c9ac917c8d8feaac
+      spriteId: 59c99c6bb71037346ae8248c64d9b8f7
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
