@@ -72,7 +72,10 @@
       "Bash(powershell -Command \"Get-Command powershell | Select-Object -ExpandProperty Version\")",
       "Bash(\"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/Ana Sahne.unity\":*)",
       "Bash(powershell -Command \":*)",
-      "Bash(ls -1 /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)"
+      "Bash(ls -1 /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks/*.cs)",
+      "Bash(xxd \"Assets/Scripts/Map/MapManager.cs\")",
+      "Bash(python3 -c ':*)",
+      "Bash(python -c ':*)"
     ]
   }
 }

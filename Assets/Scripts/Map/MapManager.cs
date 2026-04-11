@@ -109,6 +109,13 @@ public class MapManager : MonoBehaviour
             mtGO.AddComponent<MagicTileManager>();
         }
 
+        // SacrificeNodeManager yoksa otomatik oluştur
+        if (SacrificeNodeManager.instance == null)
+        {
+            GameObject sacGO = new GameObject("SacrificeNodeManager");
+            sacGO.AddComponent<SacrificeNodeManager>();
+        }
+
         // Auto-spawn Inventory & Hotbar if not present
         EnsureInventoryAndHotbar();
 
@@ -445,6 +452,13 @@ public class MapManager : MonoBehaviour
             mtGO.AddComponent<MagicTileManager>();
         }
 
+        // SacrificeNodeManager yok olmuş olabilir
+        if (SacrificeNodeManager.instance == null)
+        {
+            GameObject sacGO = new GameObject("SacrificeNodeManager");
+            sacGO.AddComponent<SacrificeNodeManager>();
+        }
+
         // Inventory & Hotbar yok olmuş olabilir
         EnsureInventoryAndHotbar();
     }
@@ -462,6 +476,10 @@ public class MapManager : MonoBehaviour
         // Reset inventory for new run
         if (InventoryManager.instance != null)
             InventoryManager.instance.ResetForNewRun();
+
+        // Reset sacrifice node rewards for new run
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.ResetForNewRun();
 
         GenerateNewMap(0);
 
@@ -758,6 +776,7 @@ public class MapManager : MonoBehaviour
 
         bool wasNonCombat = lastType == MapNodeType.Rest
                          || lastType == MapNodeType.Enchant
+                         || lastType == MapNodeType.Sacrifice
                          || lastType == MapNodeType.Treasure;
 
         if (wasNonCombat)

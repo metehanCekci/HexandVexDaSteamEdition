@@ -669,6 +669,29 @@ public class PerkInventoryUI : MonoBehaviour
             }
         }
 
+        // Check for Sacrifice Tube drop zone
+        if (!handled)
+        {
+            foreach (var result in results)
+            {
+                SacrificeTubeDropZone tubeZone = result.gameObject.GetComponent<SacrificeTubeDropZone>();
+                if (tubeZone == null) tubeZone = result.gameObject.GetComponentInParent<SacrificeTubeDropZone>();
+                if (tubeZone != null && SacrificeNodeManager.instance != null)
+                {
+                    var rm = RunManager.instance;
+                    BasePerk perk = dragIsActiveSlot
+                        ? (dragIndex < rm.activePerks.Count ? rm.activePerks[dragIndex] : null)
+                        : (dragIndex < rm.inventoryPerks.Count ? rm.inventoryPerks[dragIndex] : null);
+                    if (perk != null)
+                    {
+                        SacrificeNodeManager.instance.AddPerkToTube(perk);
+                        handled = true;
+                    }
+                    break;
+                }
+            }
+        }
+
         if (!handled && dragIsActiveSlot && RunManager.instance != null)
         {
             if (dragIndex < RunManager.instance.activePerks.Count && RunManager.instance.activePerks.Count > 1)
