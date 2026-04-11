@@ -60,6 +60,9 @@ public class PauseManager : MonoBehaviour
         EnsureCanvasSortingOrder(pauseMenuUI, 500);
         EnsurePauseCanvasGroup();
 
+        // Shop açıkken pause menüsüne tıklanabilmesi için shop etkileşimini kapat
+        SetShopInteraction(false);
+
         if (statsPanelUI != null) statsPanelUI.Refresh();
         else if (pauseStatsText != null) pauseStatsText.text = RunManager.instance.GetStatsSummary();
         if (NodeMinimapUI.instance != null) NodeMinimapUI.instance.Refresh();
@@ -143,6 +146,9 @@ public class PauseManager : MonoBehaviour
         Time.timeScale = 1f;
         isPaused = false;
         animCoroutine = null;
+
+        // Shop etkileşimini geri aç
+        SetShopInteraction(true);
     }
 
     /// <summary>
@@ -244,6 +250,26 @@ public class PauseManager : MonoBehaviour
         else
         {
             SceneManager.LoadScene(sceneIndex);
+        }
+    }
+
+    /// <summary>
+    /// Shop açıkken pause menüsünün altında kalıp tıklamayı engellemesini önler.
+    /// enabled=false → shop CanvasGroup'larının blocksRaycasts ve interactable'ını kapatır.
+    /// enabled=true  → geri açar.
+    /// </summary>
+    private void SetShopInteraction(bool enabled)
+    {
+        if (MergedShopManager.instance != null && MergedShopManager.instance.canvasGroup != null)
+        {
+            MergedShopManager.instance.canvasGroup.interactable = enabled;
+            MergedShopManager.instance.canvasGroup.blocksRaycasts = enabled;
+        }
+
+        if (Shopmanager.instance != null && Shopmanager.instance.shopCanvasGroupRef != null)
+        {
+            Shopmanager.instance.shopCanvasGroupRef.interactable = enabled;
+            Shopmanager.instance.shopCanvasGroupRef.blocksRaycasts = enabled;
         }
     }
 

@@ -216,7 +216,8 @@ public class SacrificeNodeManager : MonoBehaviour
         if (index < 0) return;
 
         tubePerks.RemoveAt(index);
-        RunManager.instance.inventoryPerks.Add(perk);
+        if (RunManager.instance.inventoryPerks.Count < RunManager.MAX_INVENTORY_PERKS)
+            RunManager.instance.inventoryPerks.Add(perk);
 
         if (index < tubePerkIcons.Count)
         {

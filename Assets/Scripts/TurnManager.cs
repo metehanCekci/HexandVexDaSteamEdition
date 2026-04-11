@@ -745,6 +745,10 @@ public class TurnManager : MonoBehaviour
         PlayerPrefs.SetInt("lifetime_levels_cleared", lifetimeLevels);
         GameEvents.LevelCleared(lifetimeLevels);
 
+        // Combat bitti — tüm item cooldown'larını resetle
+        if (InventoryManager.instance != null)
+            InventoryManager.instance.ResetAllItemCooldowns();
+
         // Level temizlendiğinde perklerin OnLevelClear callback'ini çağır
         if (RunManager.instance != null)
         {
@@ -807,10 +811,11 @@ public class TurnManager : MonoBehaviour
     {
         if (!IsAnyTargetingActive) return;
 
-        // Restore item to hotbar
-        if (pendingTargetingItem != null && pendingTargetingSlot >= 0 && InventoryManager.instance != null)
+        // Restore item cooldown (item stays in slot, just clear the per-combat flag)
+        if (pendingTargetingItem != null && pendingTargetingSlot >= 0)
         {
-            InventoryManager.instance.RestoreItem(pendingTargetingSlot, pendingTargetingItem);
+            pendingTargetingItem.usedThisCombat = false;
+            GameEvents.InventoryChanged();
         }
         pendingTargetingItem = null;
         pendingTargetingSlot = -1;

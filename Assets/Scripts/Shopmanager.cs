@@ -410,6 +410,9 @@ public class Shopmanager : MonoBehaviour
 
     private void PopulateCard(ShopCardSlot card, BaseItem item)
     {
+        // Tüm visual state'i temizle (sold-out gri kalıntısını önle)
+        if (card.background != null) card.background.color = Color.white;
+
         if (card.nameText != null) card.nameText.text = item.itemName.ToUpperInvariant();
         if (card.iconImage != null)
         {

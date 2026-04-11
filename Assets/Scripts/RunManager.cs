@@ -46,6 +46,7 @@ public class RunManager : MonoBehaviour
     public List<BasePerk> activePerks = new List<BasePerk>();
 
     [Header("Inventory Perks (Stash)")]
+    public const int MAX_INVENTORY_PERKS = 9;
     public List<BasePerk> inventoryPerks = new List<BasePerk>();
 
     [Header("Item Buff'lari (Tek Kullanimlik)")]
@@ -187,10 +188,17 @@ public class RunManager : MonoBehaviour
             newPerk.OnAcquire();
             newPerk.OnEquip();
         }
-        else
+        else if (inventoryPerks.Count < MAX_INVENTORY_PERKS)
         {
             inventoryPerks.Add(newPerk);
             newPerk.OnAcquire();
+        }
+        else
+        {
+            // Stash dolu — perki yok et
+            Debug.LogWarning($"Stash full! Cannot add perk: {newPerk.perkName}");
+            Destroy(newPerkObj);
+            return;
         }
 
         RefreshPerkUI();
@@ -236,6 +244,7 @@ public class RunManager : MonoBehaviour
     public void MoveToInventory(int activeIndex)
     {
         if (activeIndex < 0 || activeIndex >= activePerks.Count) return;
+        if (inventoryPerks.Count >= MAX_INVENTORY_PERKS) return;
 
         BasePerk perk = activePerks[activeIndex];
         if (!perk.CanUnequip()) return;
@@ -279,7 +288,7 @@ public class RunManager : MonoBehaviour
 
         if (inventoryPerks.Count > 0)
         {
-            sb.AppendLine($"-- Stash ({inventoryPerks.Count}) --");
+            sb.AppendLine($"-- Stash ({inventoryPerks.Count}/{MAX_INVENTORY_PERKS}) --");
             foreach (var p in inventoryPerks)
                 sb.AppendLine($"{p.perkName}  Lv {p.currentLevel}");
         }

@@ -61,6 +61,9 @@ public class InventoryManager : MonoBehaviour
     /// </summary>
     public void ResetForNewRun()
     {
+        // Clear cooldowns before wiping slots
+        for (int i = 0; i < slots.Length; i++)
+            if (slots[i] != null) slots[i].usedThisCombat = false;
         slots = new BaseItem[maxSlots];
         GameEvents.InventoryChanged();
     }
@@ -105,7 +108,8 @@ public class InventoryManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Use the item in the given slot. Returns true if item was consumed.
+    /// Use the item in the given slot. Returns true if item was used.
+    /// Item stays in the slot but is marked as used for this combat (per-combat cooldown).
     /// </summary>
     public bool UseItem(int slotIndex)
     {
@@ -113,6 +117,9 @@ public class InventoryManager : MonoBehaviour
 
         BaseItem item = slots[slotIndex];
         if (item == null) return false;
+
+        // Already used this combat — block
+        if (item.usedThisCombat) return false;
 
         bool used = item.Use();
         if (used)
@@ -122,13 +129,28 @@ public class InventoryManager : MonoBehaviour
                 TurnManager.instance.SetTargetingItemCache(item, slotIndex);
 
             GameEvents.ItemUsed(item, slotIndex);
-            slots[slotIndex] = null;
+
+            // Per-combat cooldown: mark as used, do NOT remove from slot
+            item.usedThisCombat = true;
             GameEvents.InventoryChanged();
 
             if (AudioManager.instance != null)
-                AudioManager.instance.PlayPurchase(); // Reuse the purchase SFX for item use
+                AudioManager.instance.PlayPurchase();
         }
         return used;
+    }
+
+    /// <summary>
+    /// Reset all item cooldowns. Called when combat/level ends.
+    /// </summary>
+    public void ResetAllItemCooldowns()
+    {
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] != null)
+                slots[i].usedThisCombat = false;
+        }
+        GameEvents.InventoryChanged();
     }
 
     /// <summary>
