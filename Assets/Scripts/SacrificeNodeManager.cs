@@ -322,7 +322,30 @@ public class SacrificeNodeManager : MonoBehaviour
     private GameObject PickRandom(List<GameObject> pool)
     {
         if (pool == null || pool.Count == 0) return null;
-        return pool[Random.Range(0, pool.Count)];
+
+        // Oyuncunun sahip olduğu perk tiplerini topla
+        HashSet<System.Type> ownedTypes = new HashSet<System.Type>();
+        if (RunManager.instance != null)
+        {
+            foreach (var p in RunManager.instance.activePerks)
+                if (p != null) ownedTypes.Add(p.GetType());
+            foreach (var p in RunManager.instance.inventoryPerks)
+                if (p != null) ownedTypes.Add(p.GetType());
+        }
+
+        // Sahip olunmayan perkleri filtrele
+        List<GameObject> available = new List<GameObject>();
+        foreach (var go in pool)
+        {
+            if (go == null) continue;
+            BasePerk bp = go.GetComponent<BasePerk>();
+            if (bp != null && !ownedTypes.Contains(bp.GetType()))
+                available.Add(go);
+        }
+
+        // Hepsi alınmışsa tüm havuzdan seç (fallback)
+        if (available.Count == 0) return pool[Random.Range(0, pool.Count)];
+        return available[Random.Range(0, available.Count)];
     }
 
     public void ResetForNewRun()
@@ -575,7 +598,7 @@ public class SacrificeNodeManager : MonoBehaviour
 
             isAnimating = false;
             Hide();
-            if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.Hide();
+            if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
             if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
         }
     }
@@ -739,7 +762,8 @@ public class SacrificeNodeManager : MonoBehaviour
         if (isAnimating) return;
         ReturnAllTubePerks();
         Hide();
-        if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.Hide();
+        // Envanter açık kalsın — haritada da erişilebilir olmalı
+        if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
         if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
     }
 
@@ -763,9 +787,9 @@ public class SacrificeNodeManager : MonoBehaviour
         }
 
         // Reward slots — always show info
-        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count >= 2); }
-        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count >= 4); }
-        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count >= 6); }
+        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count == 2); }
+        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count == 4); }
+        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count == 6); }
 
         // Status
         if (statusText != null)
