@@ -963,6 +963,17 @@ public class MapManager : MonoBehaviour
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             Debug.Log($"[MAP] BossDefeatedSequence — GenerateNewMap(layerIndex={newLayerIndex})");
             GenerateNewMap(newLayerIndex);
+
+            // Node container'ı geri aç — HideMapNodes() kapatmıştı
+            ShowMapNodes();
+
+            // Map raycast'larını geri aç
+            if (mapUI != null && mapUI.canvasGroup != null)
+            {
+                mapUI.canvasGroup.interactable = true;
+                mapUI.canvasGroup.blocksRaycasts = true;
+            }
+
             ShowMapInstant();
 
             yield return null;
@@ -976,6 +987,7 @@ public class MapManager : MonoBehaviour
         {
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             GenerateNewMap(newLayerIndex);
+            ShowMapNodes();
             ShowMapInstant();
             Debug.Log("[MAP] BossDefeatedSequence completed (no fader)");
         }
@@ -1010,6 +1022,10 @@ public class MapManager : MonoBehaviour
 
         if (mapUI != null)
         {
+            // Node container'ı aktif olduğundan emin ol (HideMapNodes kapatmış olabilir)
+            if (mapUI.nodeContainer != null && !mapUI.nodeContainer.gameObject.activeSelf)
+                mapUI.nodeContainer.gameObject.SetActive(true);
+
             mapUI.RefreshNodeStates(currentMap);
             mapUI.Show();
             mapUI.CenterOnCurrentNode(currentMap);

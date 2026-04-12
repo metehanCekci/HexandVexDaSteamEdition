@@ -10,8 +10,13 @@ public class MapData
 
     public MapNode GetNode(int id)
     {
-        if (id < 0 || id >= nodes.Count) return null;
-        return nodes[id];
+        if (id < 0) return null;
+        // ID ile eşleşen node'u bul — prune/merge sonrası index != id olabilir
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i].id == id) return nodes[i];
+        }
+        return null;
     }
 
     public List<MapNode> GetRow(int row)
