@@ -150,25 +150,6 @@ public class Shopmanager : MonoBehaviour
     // SHOP OPEN / CLOSE
     // ═══════════════════════════════════════════
 
-    public void OpenAsMapNode()
-    {
-        rerollCount = 0;
-        currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
-        shownItemNames.Clear();
-        GenerateShopItems();
-        RefreshCoinDisplay();
-
-        if (shopCanvasObject != null)
-            shopCanvasObject.SetActive(true);
-
-        isShopOpen = true;
-        hoveredCardIndex = -1;
-
-        StopAllCoroutines();
-        StartCoroutine(ShopOpenAnimation());
-        GameEvents.ShopOpened();
-    }
-
     private void CloseMapNodeShop()
     {
         StopAllCoroutines();

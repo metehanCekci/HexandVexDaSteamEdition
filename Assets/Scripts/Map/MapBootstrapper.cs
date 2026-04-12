@@ -12,8 +12,6 @@ public class MapBootstrapper : MonoBehaviour
     [Header("Opsiyonel: Node İkonları (boş bırakabilirsin)")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite shopIcon;
-    public Sprite perkIcon;
     public Sprite restIcon;
     public Sprite eventIcon;
     public Sprite bossIcon;
@@ -146,8 +144,6 @@ public class MapBootstrapper : MonoBehaviour
         // İkonları ata
         mapUI.combatIcon = combatIcon;
         mapUI.eliteIcon = eliteIcon;
-        mapUI.shopIcon = shopIcon;
-        mapUI.perkIcon = perkIcon;
         mapUI.restIcon = restIcon;
         mapUI.eventIcon = enchantIcon != null ? enchantIcon : eventIcon;
         mapUI.bossIcon = bossIcon;

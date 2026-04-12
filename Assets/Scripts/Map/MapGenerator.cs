@@ -282,7 +282,6 @@ public static class MapGenerator
             }
 
             // ─── Bu row'daki node'lara tip ata ───
-            // Row 2 = garantili Shop, dokunma
             if (r >= 3 && r < totalRows)
             {
                 AssignRowTypesPathAware(map, rowNodes, config, r, totalRows, incomingMaxStreak);
@@ -454,7 +453,7 @@ public static class MapGenerator
 
     /// <summary>
     /// Daha önce bu row'da kullanılmamış bir ödül tipi seç.
-    /// Mümkünse Shop/Perk/Rest arasında çeşitlilik sağla.
+    /// Mümkünse Rest/Enchant/Sacrifice arasında çeşitlilik sağla.
     /// </summary>
     private static MapNodeType PickDiverseRewardType(
         MapLayerData config, bool canRest, List<MapNodeType> usedTypes)
@@ -513,7 +512,7 @@ public static class MapGenerator
 
     /// <summary>
     /// Bir parent'ın birden fazla child'ı ödülse → farklı ödül tipleri olsun.
-    /// Sola Shop, sağa Perk gibi — oyuncuya gerçek bir seçim sun.
+    /// Farklı ödül tipleri sunarak oyuncuya gerçek bir seçim sun.
     /// </summary>
     private static void EnforceDiverseRewards(MapData map, MapLayerData config, int totalRows)
     {
@@ -1008,22 +1007,7 @@ public static class MapGenerator
         }
     }
 
-    private static void EnforceNoConsecutiveShops(MapData map)
-    {
-        foreach (var node in map.nodes)
-        {
-            if (node.nodeType != MapNodeType.Shop) continue;
 
-            foreach (int childId in node.childIds)
-            {
-                MapNode child = map.GetNode(childId);
-                if (child != null && child.nodeType == MapNodeType.Shop)
-                {
-                    child.nodeType = MapNodeType.Combat;
-                }
-            }
-        }
-    }
 
     /// <summary>
     /// Haritada her kritik oda tipinden en az 1 tane olmasını garanti eder.
@@ -1078,95 +1062,7 @@ public static class MapGenerator
         }
     }
 
-    /// <summary>
-    /// Tüm post-processing sonrası Shop silinmiş olabilir.
-    /// En az 1 Shop garanti eder — ardışık ödül yasağını koruyarak.
-    /// </summary>
-    private static void EnforceMinimumShop(MapData map, int totalRows)
-    {
-        // Mevcut shop var mi kontrol et — ama sadece bottleneck (tek node'lu row)
-        // veya her path'te shop varsa yeterli say
-        bool hasGuaranteedShop = false;
-        foreach (var node in map.nodes)
-        {
-            if (node.nodeType != MapNodeType.Shop) continue;
-            // Tek node'lu row'daki shop her path'e garanti
-            if (map.GetRow(node.row).Count == 1) { hasGuaranteedShop = true; break; }
-        }
-        if (hasGuaranteedShop) return;
 
-        // Garanti shop yok — bottleneck row'a (tek node'lu) shop koy
-        // Oncelik: tek node'lu Combat row, ortaya yakin
-        MapNode bestCandidate = null;
-        foreach (var node in map.nodes)
-        {
-            if (node.nodeType != MapNodeType.Combat) continue;
-            if (node.row <= 1 || node.row >= totalRows) continue;
-            if (map.GetRow(node.row).Count != 1) continue; // sadece bottleneck
-
-            if (HasRewardParent(map, node)) continue;
-            bool childReward = false;
-            foreach (int cid in node.childIds)
-            {
-                MapNode c = map.GetNode(cid);
-                if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
-            }
-            if (childReward) continue;
-
-            if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
-                bestCandidate = node;
-        }
-
-        // Bottleneck'te uygun combat yoksa, bottleneck'te ardisik odul yasagini gevset
-        if (bestCandidate == null)
-        {
-            foreach (var node in map.nodes)
-            {
-                if (node.nodeType != MapNodeType.Combat) continue;
-                if (node.row <= 1 || node.row >= totalRows) continue;
-                if (map.GetRow(node.row).Count != 1) continue;
-                if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
-                    bestCandidate = node;
-            }
-        }
-
-        // Hic bottleneck yoksa, herhangi bir Combat node'u sec (eski davranis)
-        if (bestCandidate == null)
-        {
-            foreach (var node in map.nodes)
-            {
-                if (node.nodeType != MapNodeType.Combat) continue;
-                if (node.row <= 0 || node.row >= totalRows) continue;
-
-                if (HasRewardParent(map, node)) continue;
-                bool childReward = false;
-                foreach (int cid in node.childIds)
-                {
-                    MapNode c = map.GetNode(cid);
-                    if (c != null && rewardTypes.Contains(c.nodeType)) { childReward = true; break; }
-                }
-                if (childReward) continue;
-
-                if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
-                    bestCandidate = node;
-            }
-        }
-
-        // Son fallback — yasagi tamamen gevset
-        if (bestCandidate == null)
-        {
-            foreach (var node in map.nodes)
-            {
-                if (node.nodeType != MapNodeType.Combat) continue;
-                if (node.row <= 0 || node.row >= totalRows) continue;
-                if (bestCandidate == null || Mathf.Abs(node.row - totalRows / 2) < Mathf.Abs(bestCandidate.row - totalRows / 2))
-                    bestCandidate = node;
-            }
-        }
-
-        if (bestCandidate != null)
-            bestCandidate.nodeType = MapNodeType.Shop;
-    }
 
     // ═══════════════════════════════════════════════════════
     // LAYER BAŞINA EN AZ 1 REST (CAMPFİRE) GARANTİSİ
