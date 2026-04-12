@@ -100,6 +100,31 @@ public class LevelGenerator : MonoBehaviour
     {
         yield return null;
 
+        // ─── Starting Perk Selection (play'e basınca ilk göreceği şey) ───
+        if (StartingPerkSelectionUI.instance != null)
+        {
+            // ScreenFader'ı kapat — perk seçim ekranının üstünü kapatmasın
+            if (ScreenFader.instance != null)
+            {
+                ScreenFader.instance.StopAllCoroutines();
+                if (ScreenFader.instance.faderGroup != null)
+                {
+                    ScreenFader.instance.faderGroup.alpha = 0f;
+                    ScreenFader.instance.faderGroup.blocksRaycasts = false;
+                }
+            }
+
+            Debug.Log("[LEVEL-DEBUG] Starting perk selection screen showing...");
+            bool selectionDone = false;
+            StartingPerkSelectionUI.instance.Show(() => { selectionDone = true; });
+
+            // Wait until player confirms their 3 picks
+            while (!selectionDone)
+                yield return null;
+
+            Debug.Log("[LEVEL-DEBUG] Starting perk selection completed!");
+        }
+
         // Map sistemi aktifse: ilk level'i üretme, haritayı göster
         Debug.Log($"[LEVEL-DEBUG] LevelBaslatmaSırası: MapManager.instance={MapManager.instance}, null={MapManager.instance == null}");
         if (MapManager.instance != null)
