@@ -285,7 +285,7 @@ public class MergedShopManager : MonoBehaviour
 
             // Also feed SacrificeNodeManager while we have valid perk lists
             if (SacrificeNodeManager.instance != null)
-                SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
+                SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks, GetSecretPerkPool());
 
             return;
         }
@@ -309,7 +309,14 @@ public class MergedShopManager : MonoBehaviour
 
         // Feed SacrificeNodeManager from fallback-populated lists too
         if (SacrificeNodeManager.instance != null && rarePerks.Count > 0)
-            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks, GetSecretPerkPool());
+    }
+
+    private List<GameObject> GetSecretPerkPool()
+    {
+        if (secretItem is SecretPerkOrb orb && orb.secretPerkPool != null && orb.secretPerkPool.Count > 0)
+            return orb.secretPerkPool;
+        return null;
     }
 
     private void AutoPopulateItemPool()
@@ -326,6 +333,14 @@ public class MergedShopManager : MonoBehaviour
             if (item is LuckyClover) continue; // Lucky Clover pooldan çıkarıldı
             itemPool.Add(item);
         }
+
+        // SecretPerkOrb FindObjectsOfTypeAll ile bulunamazsa Resources.Load dene
+        if (secretItem == null)
+        {
+            var loaded = Resources.Load<SecretPerkOrb>("SecretPerkOrb");
+            if (loaded != null) secretItem = loaded;
+        }
+
         Debug.Log($"[MergedShop] AutoPopulate itemPool: {itemPool.Count} items, secretItem={secretItem != null}");
     }
 
@@ -430,7 +445,7 @@ public class MergedShopManager : MonoBehaviour
         }
 
         if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
-            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks, GetSecretPerkPool());
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
@@ -500,7 +515,7 @@ public class MergedShopManager : MonoBehaviour
 
         // Always try to inject — perks may have been cached earlier via fallback
         if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
-            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks, GetSecretPerkPool());
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;

@@ -813,6 +813,10 @@ public class MapManager : MonoBehaviour
             yield return null;
             if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
             yield return StartCoroutine(SmoothRevealMapNodes());
+
+            // Envanter her zaman açık kalsın
+            if (PerkInventoryUI.instance != null)
+                PerkInventoryUI.instance.Show();
         }
         else if (ScreenFader.instance != null)
         {
