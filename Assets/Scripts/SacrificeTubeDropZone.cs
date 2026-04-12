@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public class SacrificeTubeDropZone : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class SacrificeTubeDropZone : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     public Image highlightImage;
     private Color normalColor;
@@ -24,5 +24,11 @@ public class SacrificeTubeDropZone : MonoBehaviour, IPointerEnterHandler, IPoint
     {
         if (highlightImage != null)
             highlightImage.color = normalColor;
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.RemoveLastPerkFromTube();
     }
 }

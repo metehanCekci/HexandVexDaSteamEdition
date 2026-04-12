@@ -129,6 +129,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     private Color baseColor;
     private bool showOutline; // Outline sadece seçilebilir node'larda
+    private bool hasIcon; // Icon sprite atanmış mı
 
     public void SetState(bool isReachable, bool isVisited, bool isCurrent, bool isFutureReachable = true)
     {
@@ -137,14 +138,17 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
         if (backgroundImage != null)
         {
-            if (isReachable && !isVisited)
+            if (hasIcon)
             {
-                // Seçilebilir node — belirgin arkaplan
+                // Icon varsa background her zaman gizli
+                backgroundImage.color = new Color(0f, 0f, 0f, 0f);
+            }
+            else if (isReachable && !isVisited)
+            {
                 backgroundImage.color = new Color(0.15f, 0.15f, 0.18f, 0.9f);
             }
             else
             {
-                // Diğerleri — arkaplan gizli
                 backgroundImage.color = new Color(0f, 0f, 0f, 0f);
             }
         }
@@ -159,7 +163,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
                 labelText.color = Color.white;
         }
 
-        if (iconImage != null)
+        if (iconImage != null && hasIcon)
         {
             if (isVisited || isCurrent)
                 iconImage.color = new Color(1f, 1f, 1f, 0.3f);
@@ -215,15 +219,26 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
         if (icon != null)
         {
+            hasIcon = true;
+            iconImage.enabled = true;
             iconImage.sprite = icon;
             iconImage.color = Color.white;
-            // Icon varsa label'ı gizle
             if (labelText != null) labelText.gameObject.SetActive(false);
+            if (backgroundImage != null) backgroundImage.color = new Color(0f, 0f, 0f, 0f);
+
+            // Outline'a da aynı sprite'ı ata — böylece sprite şeklinde glow olur, beyaz kare olmaz
+            if (outlineImage != null)
+            {
+                outlineImage.enabled = true;
+                outlineImage.sprite = icon;
+            }
         }
         else
         {
+            hasIcon = false;
+            iconImage.enabled = false;
             iconImage.sprite = null;
-            iconImage.color = GetFallbackColor(type);
+            if (outlineImage != null) outlineImage.enabled = false;
         }
     }
 

@@ -46,7 +46,8 @@ public class SellBoxController : MonoBehaviour
         // Sprite'sız Image'lar render edilmez — built-in beyaz pixel ata
         if (sellBoxPanel != null)
         {
-            Sprite whiteTex = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+            Texture2D tex = Texture2D.whiteTexture;
+            Sprite whiteTex = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
             foreach (var img in sellBoxPanel.GetComponentsInChildren<Image>(true))
             {
                 if (img.sprite == null)

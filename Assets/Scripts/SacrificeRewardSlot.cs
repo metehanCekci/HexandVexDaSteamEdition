@@ -6,7 +6,7 @@ public class SacrificeRewardSlot : MonoBehaviour
 {
     public Image background;
     public Image iconImage;
-    public Image glowBorder;
+    [HideInInspector] public Image glowBorder; // unused, kept for compatibility
     public TMP_Text nameText;
     public TMP_Text descText;
     public TMP_Text costText;
@@ -51,12 +51,11 @@ public class SacrificeRewardSlot : MonoBehaviour
 
     public void SetHighlighted(bool active)
     {
-        Color rc = GetRarityColor(slotRarity);
-
         if (active)
         {
-            if (background != null) background.color = new Color(rc.r * 0.25f, rc.g * 0.25f, rc.b * 0.25f, 0.95f);
-            if (glowBorder != null) glowBorder.color = new Color(rc.r, rc.g, rc.b, 0.9f);
+            // Aktif — karartma yok, her şey net görünür
+            if (background != null) background.color = new Color(0.1f, 0.1f, 0.12f, 0.9f);
+            if (glowBorder != null) glowBorder.gameObject.SetActive(false);
             if (iconImage != null) iconImage.color = Color.white;
             if (nameText != null) nameText.color = Color.white;
             if (descText != null) descText.color = new Color(0.85f, 0.85f, 0.85f);
@@ -64,12 +63,13 @@ public class SacrificeRewardSlot : MonoBehaviour
         }
         else
         {
-            if (background != null) background.color = new Color(0.12f, 0.12f, 0.12f, 0.7f);
-            if (glowBorder != null) glowBorder.color = new Color(0.25f, 0.25f, 0.25f, 0.25f);
-            if (iconImage != null) iconImage.color = new Color(0.45f, 0.45f, 0.45f, 0.6f);
-            if (nameText != null) nameText.color = new Color(0.5f, 0.5f, 0.5f);
-            if (descText != null) descText.color = new Color(0.35f, 0.35f, 0.35f);
-            if (costText != null) costText.color = new Color(0.4f, 0.4f, 0.4f);
+            // Pasif — hafif karartma
+            if (background != null) background.color = new Color(0.06f, 0.06f, 0.08f, 0.7f);
+            if (glowBorder != null) glowBorder.gameObject.SetActive(false);
+            if (iconImage != null) iconImage.color = new Color(0.4f, 0.4f, 0.4f, 0.5f);
+            if (nameText != null) nameText.color = new Color(0.4f, 0.4f, 0.4f);
+            if (descText != null) descText.color = new Color(0.3f, 0.3f, 0.3f);
+            if (costText != null) costText.color = new Color(0.35f, 0.35f, 0.35f);
         }
     }
 

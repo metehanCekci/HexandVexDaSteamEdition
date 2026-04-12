@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 62e3a00ea2801244abc42e8f6aa08bd4
+guid: 3d7aa83f23e24f34998a076ae079c46c
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: Frame_1
+  - name: NodeMapBG
     originalName: 
-    pivot: {x: 0.5, y: -0.19565217}
+    pivot: {x: 0.5, y: 0}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 46
-      height: 46
-    spriteID: d96781ed333463b4c9ac917c8d8feaac
+      width: 640
+      height: 360
+    spriteID: 31da06c9bb21d2d4495ad43d3240882e
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 496721864
+      value0: 4292260433
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: TileEnhancement
+    name: NodeMapBG
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: TileEnhancement
+    - name: NodeMapBG
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 9
-        y: 9
-        width: 46
-        height: 46
-      spriteId: d96781ed333463b4c9ac917c8d8feaac
+        x: 0
+        y: 0
+        width: 640
+        height: 360
+      spriteId: 31da06c9bb21d2d4495ad43d3240882e
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 64, y: 64}
-  previousTextureSize: {x: 64, y: 64}
+  canvasSize: {x: 640, y: 360}
+  previousTextureSize: {x: 1024, y: 512}

@@ -17,6 +17,8 @@ public class MapBootstrapper : MonoBehaviour
     public Sprite restIcon;
     public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite sacrificeIcon;
+    public Sprite enchantIcon;
 
     [Header("Layer Config (opsiyonel)")]
     public MapLayerData[] layerConfigs;
@@ -147,8 +149,9 @@ public class MapBootstrapper : MonoBehaviour
         mapUI.shopIcon = shopIcon;
         mapUI.perkIcon = perkIcon;
         mapUI.restIcon = restIcon;
-        mapUI.eventIcon = eventIcon;
+        mapUI.eventIcon = enchantIcon != null ? enchantIcon : eventIcon;
         mapUI.bossIcon = bossIcon;
+        mapUI.sacrificeIcon = sacrificeIcon;
 
         // MapManager'a bağla
         if (MapManager.instance != null)

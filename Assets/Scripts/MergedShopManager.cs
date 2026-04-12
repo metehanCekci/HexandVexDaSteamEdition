@@ -277,6 +277,11 @@ public class MergedShopManager : MonoBehaviour
             epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
             legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
             Debug.Log($"[MergedShop] Perk pools from LevelUpManager: C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
+
+            // Also feed SacrificeNodeManager while we have valid perk lists
+            if (SacrificeNodeManager.instance != null)
+                SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
+
             return;
         }
 
@@ -296,6 +301,10 @@ public class MergedShopManager : MonoBehaviour
             }
         }
         Debug.Log($"[MergedShop] AutoPopulate perk pools (FindObjectsOfTypeAll): C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
+
+        // Feed SacrificeNodeManager from fallback-populated lists too
+        if (SacrificeNodeManager.instance != null && rarePerks.Count > 0)
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
     }
 
     private void AutoPopulateItemPool()
@@ -402,6 +411,9 @@ public class MergedShopManager : MonoBehaviour
         Debug.Log($"[MergedShop] Perk pools: common={commonPerks.Count}, rare={rarePerks.Count}, epic={epicPerks.Count}, legendary={legendaryPerks.Count}");
         Debug.Log($"[MergedShop] PerkSlots count={perkSlots.Count}, LevelUpManager.instance={LevelUpManager.instance != null}");
 
+        // PerkInventoryUI'ı shop'un üstünde tut — tıklanabilir olsun
+        EnsurePerkPanelAboveShop();
+
         // Awake'de LevelUpManager henüz hazır olmamış olabilir, burada tekrar dene
         if (commonPerks.Count == 0 && LevelUpManager.instance != null)
         {
@@ -411,6 +423,9 @@ public class MergedShopManager : MonoBehaviour
             legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
             Debug.Log($"[MergedShop] Copied from LevelUpManager: common={commonPerks.Count}, rare={rarePerks.Count}, epic={epicPerks.Count}, legendary={legendaryPerks.Count}");
         }
+
+        if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
@@ -465,6 +480,9 @@ public class MergedShopManager : MonoBehaviour
         openedAfterCombat = true;
         onCloseCallback = onClose;
 
+        // PerkInventoryUI'ı shop'un üstünde tut — tıklanabilir olsun
+        EnsurePerkPanelAboveShop();
+
         if (commonPerks.Count == 0 && LevelUpManager.instance != null)
         {
             commonPerks    = new List<GameObject>(LevelUpManager.instance.commonPerks);
@@ -472,6 +490,10 @@ public class MergedShopManager : MonoBehaviour
             epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
             legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
         }
+
+        // Always try to inject — perks may have been cached earlier via fallback
+        if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
+            SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks);
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
@@ -555,6 +577,7 @@ public class MergedShopManager : MonoBehaviour
         float stagger = 0.18f;
         for (int i = 0; i < allCards.Count; i++)
         {
+            if (allCards[i] == null) continue;
             if (AudioManager.instance != null) AudioManager.instance.PlayCard();
             StartCoroutine(PopInCard(allCards[i].transform));
             yield return new WaitForSecondsRealtime(stagger);
@@ -646,7 +669,8 @@ public class MergedShopManager : MonoBehaviour
 
         if (perkSection != null) perkSection.SetActive(true);
 
-        bool isBossReward = RunManager.instance != null && RunManager.instance.currentNodeType == MapNodeType.Boss;
+        // openedAfterCombat: savaş sonrası açılan shop normal rarity kullanır (boss dahil)
+        bool isBossReward = false;
 
         for (int i = 0; i < 3; i++)
         {
@@ -703,6 +727,27 @@ public class MergedShopManager : MonoBehaviour
         GameObject perkGO = currentPerkChoices[index];
         if (perkGO == null) return;
 
+        // Kapasite kontrolü — aktif + stash doluysa ve bu perk upgrade değilse alma
+        if (RunManager.instance != null)
+        {
+            BasePerk prefabScript = perkGO.GetComponent<BasePerk>();
+            bool isUpgrade = false;
+            if (prefabScript != null)
+            {
+                System.Type perkType = prefabScript.GetType();
+                isUpgrade = RunManager.instance.activePerks.Exists(p => p != null && p.GetType() == perkType)
+                         || RunManager.instance.inventoryPerks.Exists(p => p != null && p.GetType() == perkType);
+            }
+            if (!isUpgrade
+                && RunManager.instance.activePerks.Count >= RunManager.MAX_ACTIVE_PERKS
+                && RunManager.instance.inventoryPerks.Count >= RunManager.MAX_INVENTORY_PERKS)
+            {
+                Debug.LogWarning("[MergedShop] Perk slots full (active + stash)! Cannot buy.");
+                StartCoroutine(FlashText(goldText));
+                return;
+            }
+        }
+
         // Gold kontrolü
         int cost = perkSlots[index].price;
         if (RunManager.instance != null && RunManager.instance.currentGold < cost)
@@ -731,10 +776,28 @@ public class MergedShopManager : MonoBehaviour
     private void RefreshPerkAffordability()
     {
         if (RunManager.instance == null) return;
+
+        bool slotsFull = RunManager.instance.activePerks.Count >= RunManager.MAX_ACTIVE_PERKS
+                      && RunManager.instance.inventoryPerks.Count >= RunManager.MAX_INVENTORY_PERKS;
+
         for (int i = 0; i < perkSlots.Count; i++)
         {
             if (perkSlots[i].button == null || !perkSlots[i].button.interactable) continue;
             bool canAfford = RunManager.instance.currentGold >= perkSlots[i].price;
+
+            // Slotlar doluysa ve bu perk upgrade değilse satın alınamaz
+            if (canAfford && slotsFull && i < currentPerkChoices.Count && currentPerkChoices[i] != null)
+            {
+                BasePerk prefab = currentPerkChoices[i].GetComponent<BasePerk>();
+                if (prefab != null)
+                {
+                    System.Type pt = prefab.GetType();
+                    bool isUpgrade = RunManager.instance.activePerks.Exists(p => p != null && p.GetType() == pt)
+                                  || RunManager.instance.inventoryPerks.Exists(p => p != null && p.GetType() == pt);
+                    if (!isUpgrade) canAfford = false;
+                }
+            }
+
             if (perkSlots[i].priceText != null)
                 perkSlots[i].priceText.color = canAfford ? new Color(1f, 0.85f, 0.2f) : new Color(1f, 0.3f, 0.3f);
         }
@@ -814,7 +877,8 @@ public class MergedShopManager : MonoBehaviour
 
         // Havuz tükenirse shownItemNames sıfırla
         int available = 0;
-        foreach (var item in itemPool) if (!shownItemNames.Contains(item.itemName)) available++;
+        foreach (var item in itemPool)
+            if (!shownItemNames.Contains(item.itemName) && !IsItemInInventory(item)) available++;
         if (available < 3) shownItemNames.Clear();
 
         List<int> used = new List<int>();
@@ -833,7 +897,8 @@ public class MergedShopManager : MonoBehaviour
             while (used.Contains(itemPool.IndexOf(picked))
                 || shownItemNames.Contains(picked.itemName)
                 || (secretItem != null && picked.itemName == secretItem.itemName)
-                || (RunManager.instance != null && RunManager.instance.hasPerkReroll && picked is MutationCatalyst)); // Zaten reroll hakkı varsa Catalyst gösterme
+                || (RunManager.instance != null && RunManager.instance.hasPerkReroll && picked is MutationCatalyst) // Zaten reroll hakkı varsa Catalyst gösterme
+                || IsItemInInventory(picked)); // Zaten envanterde olan itemleri gösterme
 
             if (picked != null) { used.Add(itemPool.IndexOf(picked)); shownItemNames.Add(picked.itemName); }
             currentItems.Add(picked);
@@ -915,6 +980,20 @@ public class MergedShopManager : MonoBehaviour
                 can = false;
             itemSlots[i].button.interactable = can;
         }
+    }
+
+    /// <summary>Oyuncunun envanterinde (hotbar) zaten bu item var mı?</summary>
+    private bool IsItemInInventory(BaseItem item)
+    {
+        if (item == null || InventoryManager.instance == null) return false;
+        // Sadece consumable itemleri filtrele — instant itemler envanterde tutulmaz
+        if (item.itemType != ItemType.Consumable) return false;
+        for (int i = 0; i < InventoryManager.instance.SlotCount; i++)
+        {
+            BaseItem slot = InventoryManager.instance.GetItem(i);
+            if (slot != null && slot.itemName == item.itemName) return true;
+        }
+        return false;
     }
 
     private void HideItemSection()
@@ -1071,6 +1150,45 @@ public class MergedShopManager : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
+    // PERK PANEL ERIŞIMI
+    // ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Shop açıkken PerkInventoryUI'ın tıklanabilir olmasını garanti eder.
+    /// Canvas sorting order'ını shop'un üstüne çeker ve interaction'ı açar.
+    /// </summary>
+    private void EnsurePerkPanelAboveShop()
+    {
+        if (PerkInventoryUI.instance == null) return;
+        if (!PerkInventoryUI.instance.IsOpen)
+            PerkInventoryUI.instance.Show();
+
+        // Shop canvas'ının sorting order'ını bul
+        int shopOrder = 95;
+        if (panel != null)
+        {
+            Canvas shopCanvas = panel.GetComponentInParent<Canvas>(true);
+            if (shopCanvas != null) shopOrder = shopCanvas.sortingOrder;
+        }
+
+        // PerkInventoryUI canvas'ını shop'un üstüne çek
+        Canvas perkCanvas = PerkInventoryUI.instance.canvasGO != null
+            ? PerkInventoryUI.instance.canvasGO.GetComponent<Canvas>()
+            : null;
+        if (perkCanvas != null)
+        {
+            int targetOrder = Mathf.Max(shopOrder + 10, 100);
+            if (perkCanvas.sortingOrder <= shopOrder)
+                perkCanvas.sortingOrder = targetOrder;
+        }
+
+        // GraphicRaycaster olduğundan emin ol
+        if (PerkInventoryUI.instance.canvasGO != null
+            && PerkInventoryUI.instance.canvasGO.GetComponent<GraphicRaycaster>() == null)
+            PerkInventoryUI.instance.canvasGO.AddComponent<GraphicRaycaster>();
+    }
+
+    // ═══════════════════════════════════════════
     // UTIL
     // ═══════════════════════════════════════════
 
@@ -1107,7 +1225,7 @@ public class MergedShopPerkSlot
 
         // ── Önce tüm visual state'i temizle ──
         if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
-        if (background != null) background.color = Color.white;
+        if (background != null) background.color = new Color(0f, 0.02f, 0.047f, 1f);
         if (button != null)
         {
             button.interactable = true;
@@ -1199,7 +1317,7 @@ public class MergedShopItemSlot
     {
         // ── Önce tüm visual state'i temizle ──
         if (soldOutOverlay != null) soldOutOverlay.SetActive(false);
-        if (background != null) background.color = Color.white;
+        if (background != null) background.color = new Color(0f, 0.02f, 0.047f, 1f);
         if (button != null)
         {
             button.interactable = true;
