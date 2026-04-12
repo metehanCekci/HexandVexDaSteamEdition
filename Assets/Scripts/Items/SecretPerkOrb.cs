@@ -36,34 +36,48 @@ public class SecretPerkOrb : BaseItem
 
     public override bool Use()
     {
-        if (RunManager.instance == null || secretPerkPool.Count == 0) return false;
+        Debug.Log($"[SecretPerkOrb] Use() called. RunManager={RunManager.instance != null}, poolCount={secretPerkPool?.Count ?? -1}");
+
+        if (RunManager.instance == null || secretPerkPool == null || secretPerkPool.Count == 0)
+        {
+            Debug.LogWarning($"[SecretPerkOrb] Early exit: RunManager={RunManager.instance != null}, pool={secretPerkPool?.Count ?? -1}");
+            return false;
+        }
 
         List<GameObject> available = new List<GameObject>();
         foreach (var perkPrefab in secretPerkPool)
         {
-            if (perkPrefab == null) continue;
+            if (perkPrefab == null) { Debug.Log("[SecretPerkOrb] pool entry is NULL, skipping"); continue; }
             BasePerk prefabScript = perkPrefab.GetComponent<BasePerk>();
-            if (prefabScript == null) continue;
+            if (prefabScript == null) { Debug.Log($"[SecretPerkOrb] {perkPrefab.name} has no BasePerk, skipping"); continue; }
 
             BasePerk existing = RunManager.instance.activePerks.Find(p => p.GetType() == prefabScript.GetType());
-            if (existing != null && existing.currentLevel >= existing.maxLevel) continue;
+            if (existing != null && existing.currentLevel >= existing.maxLevel)
+            {
+                Debug.Log($"[SecretPerkOrb] {prefabScript.perkName} already maxed, skipping");
+                continue;
+            }
 
             available.Add(perkPrefab);
         }
+
+        Debug.Log($"[SecretPerkOrb] available={available.Count}");
 
         if (available.Count == 0) return false;
 
         // Rastgele bir secret perk seç
         GameObject chosen = available[Random.Range(0, available.Count)];
+        BasePerk chosenPerk = chosen.GetComponent<BasePerk>();
+        Debug.Log($"[SecretPerkOrb] Chosen: {chosenPerk?.perkName ?? chosen.name}");
 
         // Sinematik animasyon varsa: önce animasyonu göster, sonra perk'i ver
         if (SecretPerkCinematic.instance != null)
         {
-            BasePerk chosenPerkInfo = chosen.GetComponent<BasePerk>();
-            SecretPerkCinematic.instance.Play(chosenPerkInfo);
+            SecretPerkCinematic.instance.Play(chosenPerk);
         }
 
         RunManager.instance.AddPerk(chosen);
+        Debug.Log($"[SecretPerkOrb] AddPerk done for {chosenPerk?.perkName ?? chosen.name}");
         return true;
     }
 }
