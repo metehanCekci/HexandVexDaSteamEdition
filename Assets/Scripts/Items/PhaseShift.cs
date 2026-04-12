@@ -7,7 +7,7 @@ public class PhaseShift : BaseItem
     {
         itemName = "Phase-Shift";
         description = "Select an enemy and swap positions with it";
-        price = 6;
+        price = 18;
     }
 
     public override bool Use()

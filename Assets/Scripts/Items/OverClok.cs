@@ -7,7 +7,7 @@ public class OverClok : BaseItem
     {
         itemName = "Over-Clock";
         description = "Deal 2x damage on your next dice roll";
-        price = 7;
+        price = 21;
     }
 
     public override bool Use()

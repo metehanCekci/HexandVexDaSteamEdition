@@ -7,7 +7,7 @@ public class CleaveAxe : BaseItem
     {
         itemName = "Cleave-Axe";
         description = "Next attack deals full damage to all adjacent enemies without splitting";
-        price = 7;
+        price = 21;
     }
 
     public override bool Use()

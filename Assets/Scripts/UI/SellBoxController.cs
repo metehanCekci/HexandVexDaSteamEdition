@@ -287,11 +287,14 @@ public class SellBoxController : MonoBehaviour
     {
         if (!isVisible || panelRect == null) return false;
 
-        Vector2 localPoint;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            panelRect, Input.mousePosition, null, out localPoint);
+        // ScreenSpaceOverlay canvas'lar arası çalışması için
+        // doğrudan screen-space bounds kontrolü yap
+        Canvas rootCanvas = panelRect.GetComponentInParent<Canvas>();
+        Camera cam = null;
+        if (rootCanvas != null && rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            cam = rootCanvas.worldCamera;
 
-        return panelRect.rect.Contains(localPoint);
+        return RectTransformUtility.RectangleContainsScreenPoint(panelRect, Input.mousePosition, cam);
     }
 
     /// <summary>Şu anda görünür ve aktif mi?</summary>

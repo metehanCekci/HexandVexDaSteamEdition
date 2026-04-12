@@ -840,7 +840,7 @@ public class PerkInventoryUI : MonoBehaviour
         canvasGO.transform.SetParent(transform, false);
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 91;
+        canvas.sortingOrder = 100;
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);

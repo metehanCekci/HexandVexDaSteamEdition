@@ -7,7 +7,7 @@ public class NecroShot : BaseItem
     {
         itemName = "Necro-Shot";
         description = "Instantly kill any non-boss enemy on the map";
-        price = 10;
+        price = 30;
     }
 
     public override bool Use()

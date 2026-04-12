@@ -600,6 +600,7 @@ public class TurnManager : MonoBehaviour
             rm.surgeBootActive = false;
             rm.hasPerkReroll = false;
             rm.hasLuckyClover = false;
+            rm.hasMutationCatalyst = false;
             // selectedWeapon sıfırlanMAZ — silah seçimi MainMenu'de yapılır, ResetGame silahı ezmesin
 
             // Perkleri temizle (Sahnedeki objeleri yok et)

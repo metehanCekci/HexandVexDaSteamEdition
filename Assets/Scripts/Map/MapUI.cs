@@ -24,8 +24,6 @@ public class MapUI : MonoBehaviour
     [Header("Node Icons (opsiyonel)")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite shopIcon;
-    public Sprite perkIcon;
     public Sprite restIcon;
     public Sprite eventIcon;
     public Sprite bossIcon;
@@ -46,7 +44,7 @@ public class MapUI : MonoBehaviour
 
     void Start()
     {
-        MapNodeUI.SetIcons(combatIcon, eliteIcon, shopIcon, perkIcon, restIcon, eventIcon, bossIcon, sacrificeIcon);
+        MapNodeUI.SetIcons(combatIcon, eliteIcon, restIcon, eventIcon, bossIcon, sacrificeIcon);
     }
 
     public void BuildMap(MapData map)
@@ -55,7 +53,7 @@ public class MapUI : MonoBehaviour
 
         if (map == null || mapNodePrefab == null || nodeContainer == null) return;
 
-        MapNodeUI.SetIcons(combatIcon, eliteIcon, shopIcon, perkIcon, restIcon, eventIcon, bossIcon, sacrificeIcon);
+        MapNodeUI.SetIcons(combatIcon, eliteIcon, restIcon, eventIcon, bossIcon, sacrificeIcon);
 
         // ─── Max row bul ───
         int maxRow = 0;

@@ -7,7 +7,7 @@ public class GoldLeech : BaseItem
     {
         itemName = "Gold-Leech";
         description = "Next enemy drops 2x gold";
-        price = 4;
+        price = 12;
     }
 
     public override bool Use()

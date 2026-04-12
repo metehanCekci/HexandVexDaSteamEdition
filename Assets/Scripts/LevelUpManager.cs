@@ -263,17 +263,6 @@ public class LevelUpManager : MonoBehaviour
         ShowLevelUpScreen();
     }
 
-    /// <summary>
-    /// Lucky Clover item perk ekranında kullanıldığında çağrılır.
-    /// Eşit rarity şanslarıyla yeniden roll atar.
-    /// </summary>
-    public void LuckyCloverReroll()
-    {
-        currentChoices.Clear();
-        StopAllCoroutines();
-        ShowLevelUpScreen();
-    }
-
     private bool IsPerkMaxedOut(GameObject perkPrefab)
     {
         if (perkPrefab == null || RunManager.instance == null) return true;
@@ -304,41 +293,18 @@ public class LevelUpManager : MonoBehaviour
         if (isBossReward && legendaryPerks.Count > 0)
             return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
 
-        // Lucky Clover item aktifse: tüm rarityler eşit şans (%25)
-        if (RunManager.instance != null && RunManager.instance.hasLuckyClover)
-        {
-            float eqRoll = Random.Range(0f, 100f);
-            if (eqRoll < 25f && legendaryPerks.Count > 0)
-                return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
-            if (eqRoll < 50f && epicPerks.Count > 0)
-                return epicPerks[Random.Range(0, epicPerks.Count)];
-            if (eqRoll < 75f && rarePerks.Count > 0)
-                return rarePerks[Random.Range(0, rarePerks.Count)];
-            if (commonPerks.Count > 0)
-                return commonPerks[Random.Range(0, commonPerks.Count)];
-            return null;
-        }
-
         // Yüzdelik sistem: Legendary dahil
         // Level ilerledikçe legendary şansı artar
         int level = RunManager.instance != null ? RunManager.instance.currentLevel : 1;
-        int cloverLv = RunManager.instance != null ? RunManager.instance.luckyCloverLevel : 0;
 
         // Legendary: her bölümde çıkabilir, level ilerledikçe şans artar
         //   Base: %4 (lv1-7), %6 (lv8-15), %8 (lv16+)
-        //   Clover bonus: +2% per level
         float legendaryChance = 4f;
         if (level >= 16) legendaryChance = 8f;
         else if (level >= 8) legendaryChance = 6f;
-        legendaryChance += cloverLv * 2f;
 
-        // Epic / Rare / Common (legendary yüzdesi düşüldükten sonra kalan)
-        //   Clover Lv0: Epic %10 / Rare %30 / Common %kalan
-        //   Clover Lv1: Epic %17 / Rare %33 / Common %kalan
-        //   Clover Lv2: Epic %25 / Rare %33 / Common %kalan
-        //   Clover Lv3: Epic %33 / Rare %33 / Common %kalan
-        float epicBase = cloverLv == 0 ? 10f : cloverLv == 1 ? 17f : cloverLv == 2 ? 25f : 33f;
-        float rareBase = cloverLv == 0 ? 30f : cloverLv == 1 ? 33f : cloverLv == 2 ? 33f : 33f;
+        float epicBase = 10f;
+        float rareBase = 30f;
 
         float roll = Random.Range(0f, 100f);
         float cursor = 0f;
@@ -423,10 +389,6 @@ public class LevelUpManager : MonoBehaviour
             ? choiceIcons[index].gameObject : null;
 
         RunManager.instance.AddPerk(chosenPerk);
-
-        // Lucky Clover etkisini tüket (bir perk seçimi boyunca geçerli)
-        if (RunManager.instance.hasLuckyClover)
-            RunManager.instance.hasLuckyClover = false;
 
         // Map sistemi aktif değilse eski davranış (level++)
         if (MapManager.instance == null)

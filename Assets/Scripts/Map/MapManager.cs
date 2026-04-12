@@ -20,8 +20,6 @@ public class MapManager : MonoBehaviour
     [Header("Node Icons")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite shopIcon;
-    public Sprite perkIcon;
     public Sprite restIcon;
     public Sprite eventIcon;
     public Sprite bossIcon;
@@ -262,8 +260,6 @@ public class MapManager : MonoBehaviour
         // Node icon'larını ata
         ui.combatIcon = combatIcon;
         ui.eliteIcon = eliteIcon;
-        ui.shopIcon = shopIcon;
-        ui.perkIcon = perkIcon;
         ui.restIcon = restIcon;
         ui.eventIcon = enchantIcon != null ? enchantIcon : eventIcon;
         ui.bossIcon = bossIcon;
@@ -619,7 +615,7 @@ public class MapManager : MonoBehaviour
         }
         else
         {
-            // Non-combat (Shop, Perk, Rest): node'ları smooth küçültüp kaybet
+            // Non-combat (Rest, Enchant, etc.): node'ları smooth küçültüp kaybet
             yield return StartCoroutine(SmoothDismissMapNodes());
             HideGameplayElements();
         }
@@ -639,16 +635,6 @@ public class MapManager : MonoBehaviour
             case MapNodeType.Enchant:
                 if (EnchantNodeUI.instance != null)
                     EnchantNodeUI.instance.Show();
-                break;
-
-            case MapNodeType.Shop:
-            case MapNodeType.PerkSelection:
-                Debug.Log($"[MapManager] Shop/PerkSelection node. MergedShopManager.instance={MergedShopManager.instance != null}");
-                if (MergedShopManager.instance != null)
-                    MergedShopManager.instance.OpenAsMapNode();
-                else
-                    Debug.LogError("[MapManager] MergedShopManager.instance is NULL! Check if MergedShopManager exists in scene and is active.");
-                showHotbar = true;
                 break;
 
             case MapNodeType.Rest:
@@ -772,7 +758,7 @@ public class MapManager : MonoBehaviour
         fader.blocksRaycasts = false;
     }
 
-    // ─── Combat/Shop/Perk/Rest bittikten sonra haritaya dön ───
+    // ─── Combat/Rest bittikten sonra haritaya dön ───
     public void OnNodeComplete()
     {
         Debug.Log($"[MAP] OnNodeComplete called. currentNodeId={currentMap?.currentNodeId}");
@@ -813,6 +799,10 @@ public class MapManager : MonoBehaviour
             yield return null;
             if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
             yield return StartCoroutine(SmoothRevealMapNodes());
+
+            // Envanter her zaman açık kalsın
+            if (PerkInventoryUI.instance != null)
+                PerkInventoryUI.instance.Show();
         }
         else if (ScreenFader.instance != null)
         {

@@ -150,25 +150,6 @@ public class Shopmanager : MonoBehaviour
     // SHOP OPEN / CLOSE
     // ═══════════════════════════════════════════
 
-    public void OpenAsMapNode()
-    {
-        rerollCount = 0;
-        currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
-        shownItemNames.Clear();
-        GenerateShopItems();
-        RefreshCoinDisplay();
-
-        if (shopCanvasObject != null)
-            shopCanvasObject.SetActive(true);
-
-        isShopOpen = true;
-        hoveredCardIndex = -1;
-
-        StopAllCoroutines();
-        StartCoroutine(ShopOpenAnimation());
-        GameEvents.ShopOpened();
-    }
-
     private void CloseMapNodeShop()
     {
         StopAllCoroutines();
@@ -383,7 +364,8 @@ public class Shopmanager : MonoBehaviour
                 while (usedIndices.Contains(poolIdx) ||
                        (selectedItem != null && shownItemNames.Contains(selectedItem.itemName)) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
-                       (RunManager.instance != null && RunManager.instance.hasPerkReroll && selectedItem is MutationCatalyst));
+                       (RunManager.instance != null && RunManager.instance.hasMutationCatalyst && selectedItem is MutationCatalyst) ||
+                       selectedItem is LuckyClover);
                 usedIndices.Add(poolIdx);
             }
             if (selectedItem == null) continue;

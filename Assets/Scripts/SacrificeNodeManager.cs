@@ -226,11 +226,19 @@ public class SacrificeNodeManager : MonoBehaviour
 
             // Secret perks
             cachedSecretPerks = new List<GameObject>();
-            var orbs = Resources.FindObjectsOfTypeAll<SecretPerkOrb>();
-            if (orbs.Length > 0 && orbs[0].secretPerkPool != null)
-                cachedSecretPerks = new List<GameObject>(orbs[0].secretPerkPool);
-            if (cachedSecretPerks.Count == 0 && cachedLegendaryPerks.Count > 0)
-                cachedSecretPerks = new List<GameObject>(cachedLegendaryPerks);
+            var secretOrb = Resources.Load<SecretPerkOrb>("SecretPerkOrb");
+            Debug.Log("[SACRIFICE] SecretPerkOrb Resources.Load: " + (secretOrb != null ? "FOUND" : "NULL"));
+            if (secretOrb != null && secretOrb.secretPerkPool != null)
+            {
+                cachedSecretPerks = new List<GameObject>(secretOrb.secretPerkPool);
+                Debug.Log("[SACRIFICE] Secret pool from orb: " + cachedSecretPerks.Count + " perks");
+            }
+            if (cachedSecretPerks.Count == 0)
+            {
+                Debug.Log("[SACRIFICE] No secret perks found! Using legendary as fallback.");
+                if (cachedLegendaryPerks.Count > 0)
+                    cachedSecretPerks = new List<GameObject>(cachedLegendaryPerks);
+            }
 
             Debug.Log("[SACRIFICE] Perk lists cached OK! rare=" + cachedRarePerks.Count + ", epic=" + cachedEpicPerks.Count + ", legendary=" + cachedLegendaryPerks.Count + ", secret=" + cachedSecretPerks.Count);
         }
@@ -243,7 +251,7 @@ public class SacrificeNodeManager : MonoBehaviour
     /// <summary>
     /// Directly inject perk lists from another manager that already has them.
     /// </summary>
-    public void InjectPerkLists(List<GameObject> rare, List<GameObject> epic, List<GameObject> legendary)
+    public void InjectPerkLists(List<GameObject> rare, List<GameObject> epic, List<GameObject> legendary, List<GameObject> secret = null)
     {
         if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
         if (rare == null || rare.Count == 0) return;
@@ -252,10 +260,15 @@ public class SacrificeNodeManager : MonoBehaviour
         cachedEpicPerks = new List<GameObject>(epic ?? new List<GameObject>());
         cachedLegendaryPerks = new List<GameObject>(legendary ?? new List<GameObject>());
 
-        cachedSecretPerks = new List<GameObject>();
-        var orbs = Resources.FindObjectsOfTypeAll<SecretPerkOrb>();
-        if (orbs.Length > 0 && orbs[0].secretPerkPool != null)
-            cachedSecretPerks = new List<GameObject>(orbs[0].secretPerkPool);
+        if (secret != null && secret.Count > 0)
+            cachedSecretPerks = new List<GameObject>(secret);
+        else
+        {
+            cachedSecretPerks = new List<GameObject>();
+            var loaded = Resources.Load<SecretPerkOrb>("SecretPerkOrb");
+            if (loaded != null && loaded.secretPerkPool != null)
+                cachedSecretPerks = new List<GameObject>(loaded.secretPerkPool);
+        }
         if (cachedSecretPerks.Count == 0 && cachedLegendaryPerks.Count > 0)
             cachedSecretPerks = new List<GameObject>(cachedLegendaryPerks);
 
@@ -283,7 +296,10 @@ public class SacrificeNodeManager : MonoBehaviour
             if (shop != null && shop.rarePerks != null && shop.rarePerks.Count > 0)
             {
                 Debug.Log("[SACRIFICE] Stealing perk lists from MergedShopManager!");
-                InjectPerkLists(shop.rarePerks, shop.epicPerks, shop.legendaryPerks);
+                List<GameObject> secretPool = null;
+                if (shop.secretItem is SecretPerkOrb orb && orb.secretPerkPool != null && orb.secretPerkPool.Count > 0)
+                    secretPool = orb.secretPerkPool;
+                InjectPerkLists(shop.rarePerks, shop.epicPerks, shop.legendaryPerks, secretPool);
             }
         }
         catch (System.Exception ex)
@@ -322,7 +338,30 @@ public class SacrificeNodeManager : MonoBehaviour
     private GameObject PickRandom(List<GameObject> pool)
     {
         if (pool == null || pool.Count == 0) return null;
-        return pool[Random.Range(0, pool.Count)];
+
+        // Oyuncunun sahip olduğu perk tiplerini topla
+        HashSet<System.Type> ownedTypes = new HashSet<System.Type>();
+        if (RunManager.instance != null)
+        {
+            foreach (var p in RunManager.instance.activePerks)
+                if (p != null) ownedTypes.Add(p.GetType());
+            foreach (var p in RunManager.instance.inventoryPerks)
+                if (p != null) ownedTypes.Add(p.GetType());
+        }
+
+        // Sahip olunmayan perkleri filtrele
+        List<GameObject> available = new List<GameObject>();
+        foreach (var go in pool)
+        {
+            if (go == null) continue;
+            BasePerk bp = go.GetComponent<BasePerk>();
+            if (bp != null && !ownedTypes.Contains(bp.GetType()))
+                available.Add(go);
+        }
+
+        // Hepsi alınmışsa tüm havuzdan seç (fallback)
+        if (available.Count == 0) return pool[Random.Range(0, pool.Count)];
+        return available[Random.Range(0, available.Count)];
     }
 
     public void ResetForNewRun()
@@ -467,7 +506,7 @@ public class SacrificeNodeManager : MonoBehaviour
         if (c == 2) return persistentRarePerk != null;
         if (c == 4) return persistentEpicPerk != null;
         if (c == 6) return persistentLegendaryPerk != null;
-        if (c == 10) return persistentSecretPerk != null;
+        if (c == 10) return true; // secret uses SecretPerkOrb directly
         return false;
     }
 
@@ -484,38 +523,6 @@ public class SacrificeNodeManager : MonoBehaviour
     {
         isAnimating = true;
         int count = tubePerks.Count;
-
-        // Determine reward BEFORE consuming
-        GameObject rewardPrefab = null;
-        if (count == 2) rewardPrefab = persistentRarePerk;
-        else if (count == 4) rewardPrefab = persistentEpicPerk;
-        else if (count == 6) rewardPrefab = persistentLegendaryPerk;
-        else if (count == 10) rewardPrefab = persistentSecretPerk;
-
-        // FALLBACK: if pool failed, try generating now from cached lists
-        if (rewardPrefab == null && count > 1)
-        {
-            Debug.LogWarning($"[SACRIFICE] rewardPrefab is null for count={count}! Regenerating pool...");
-            poolGenerated = false;
-            GeneratePool();
-            if (count == 2) rewardPrefab = persistentRarePerk;
-            else if (count == 4) rewardPrefab = persistentEpicPerk;
-            else if (count == 6) rewardPrefab = persistentLegendaryPerk;
-            else if (count == 10) rewardPrefab = persistentSecretPerk;
-
-            // LAST RESORT: pick directly from cached lists
-            if (rewardPrefab == null)
-            {
-                EnsureCachedLists();
-                if (count == 2) rewardPrefab = PickRandom(cachedRarePerks);
-                else if (count == 4) rewardPrefab = PickRandom(cachedEpicPerks);
-                else if (count == 6) rewardPrefab = PickRandom(cachedLegendaryPerks);
-                else if (count == 10) rewardPrefab = PickRandom(cachedSecretPerks);
-                Debug.Log($"[SACRIFICE] LAST RESORT picked: {rewardPrefab?.name ?? "STILL NULL"}");
-            }
-        }
-
-        Debug.Log($"[SACRIFICE] LeverSequence: count={count}, rewardPrefab={rewardPrefab?.name ?? "NULL!"}");
 
         // Lever pull animation
         yield return StartCoroutine(AnimateLeverPull());
@@ -536,9 +543,85 @@ public class SacrificeNodeManager : MonoBehaviour
             yield return new WaitForSecondsRealtime(1f);
             if (statusText != null) statusText.text = "DRAG PERKS INTO THE TUBE";
         }
+        else if (count == 10)
+        {
+            // ─── SECRET PERK — use SecretPerkOrb directly ───
+            Debug.Log("[SACRIFICE] count=10, triggering SecretPerkOrb.Use()");
+
+            // Ensure SecretPerkCinematic exists for the animation
+            if (SecretPerkCinematic.instance == null)
+            {
+                GameObject cinGO = new GameObject("SecretPerkCinematic");
+                cinGO.AddComponent<SecretPerkCinematic>();
+                Debug.Log("[SACRIFICE] Created SecretPerkCinematic at runtime");
+            }
+
+            SecretPerkOrb orb = FindSecretPerkOrb();
+            Debug.Log($"[SACRIFICE] SecretPerkOrb found={orb != null}, pool={orb?.secretPerkPool?.Count ?? -1}");
+            bool orbResult = orb != null && orb.Use();
+            Debug.Log($"[SACRIFICE] SecretPerkOrb.Use() returned {orbResult}");
+            if (orbResult)
+            {
+                Debug.Log("[SACRIFICE] SecretPerkOrb.Use() SUCCESS");
+                // SecretPerkOrb.Use() already calls SecretPerkCinematic.Play() and RunManager.AddPerk()
+                // Wait for cinematic to finish
+                if (SecretPerkCinematic.instance != null)
+                {
+                    while (SecretPerkCinematic.instance.IsPlaying)
+                        yield return null;
+                }
+                else
+                {
+                    yield return new WaitForSecondsRealtime(1.5f);
+                }
+
+                if (statusText != null) statusText.text = "SECRET MUTATION ACQUIRED!";
+                if (RunManager.instance != null) RunManager.instance.RefreshPerkUI();
+                yield return new WaitForSecondsRealtime(0.5f);
+            }
+            else
+            {
+                Debug.LogWarning("[SACRIFICE] SecretPerkOrb not found or Use() failed!");
+                if (statusText != null) statusText.text = "NO SECRET AVAILABLE";
+                yield return new WaitForSecondsRealtime(1f);
+            }
+
+            isAnimating = false;
+            Hide();
+            if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
+            if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
+        }
         else
         {
-            // ─── GRANT REWARD ───
+            // ─── GRANT REWARD (rare/epic/legendary) ───
+            GameObject rewardPrefab = null;
+            if (count == 2) rewardPrefab = persistentRarePerk;
+            else if (count == 4) rewardPrefab = persistentEpicPerk;
+            else if (count == 6) rewardPrefab = persistentLegendaryPerk;
+
+            // FALLBACK: if pool failed, try generating now from cached lists
+            if (rewardPrefab == null)
+            {
+                Debug.LogWarning($"[SACRIFICE] rewardPrefab is null for count={count}! Regenerating pool...");
+                poolGenerated = false;
+                GeneratePool();
+                if (count == 2) rewardPrefab = persistentRarePerk;
+                else if (count == 4) rewardPrefab = persistentEpicPerk;
+                else if (count == 6) rewardPrefab = persistentLegendaryPerk;
+
+                // LAST RESORT: pick directly from cached lists
+                if (rewardPrefab == null)
+                {
+                    EnsureCachedLists();
+                    if (count == 2) rewardPrefab = PickRandom(cachedRarePerks);
+                    else if (count == 4) rewardPrefab = PickRandom(cachedEpicPerks);
+                    else if (count == 6) rewardPrefab = PickRandom(cachedLegendaryPerks);
+                    Debug.Log($"[SACRIFICE] LAST RESORT picked: {rewardPrefab?.name ?? "STILL NULL"}");
+                }
+            }
+
+            Debug.Log($"[SACRIFICE] LeverSequence: count={count}, rewardPrefab={rewardPrefab?.name ?? "NULL!"}");
+
             if (rewardPrefab != null)
             {
                 BasePerk bp = rewardPrefab.GetComponent<BasePerk>();
@@ -560,7 +643,6 @@ public class SacrificeNodeManager : MonoBehaviour
                 if (count == 2) persistentRarePerk = null;
                 else if (count == 4) persistentEpicPerk = null;
                 else if (count == 6) persistentLegendaryPerk = null;
-                else if (count == 10) persistentSecretPerk = null;
 
                 if (statusText != null) statusText.text = $"ACQUIRED: {perkName.ToUpper()}!";
 
@@ -575,9 +657,38 @@ public class SacrificeNodeManager : MonoBehaviour
 
             isAnimating = false;
             Hide();
-            if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.Hide();
+            if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
             if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
         }
+    }
+
+    private SecretPerkOrb FindSecretPerkOrb()
+    {
+        // Method 1: Resources.Load (asset is in Assets/Resources/SecretPerkOrb.asset)
+        var loaded = Resources.Load<SecretPerkOrb>("SecretPerkOrb");
+        if (loaded != null && loaded.secretPerkPool != null && loaded.secretPerkPool.Count > 0)
+        {
+            Debug.Log($"[SACRIFICE] Found SecretPerkOrb via Resources.Load, pool={loaded.secretPerkPool.Count}");
+            return loaded;
+        }
+
+        // Method 2: MergedShopManager.instance.secretItem
+        if (MergedShopManager.instance != null && MergedShopManager.instance.secretItem is SecretPerkOrb orb)
+        {
+            Debug.Log($"[SACRIFICE] Found SecretPerkOrb from MergedShopManager, pool={orb.secretPerkPool?.Count ?? 0}");
+            return orb;
+        }
+
+        // Method 3: search all loaded assets
+        var orbs = Resources.FindObjectsOfTypeAll<SecretPerkOrb>();
+        if (orbs.Length > 0)
+        {
+            Debug.Log($"[SACRIFICE] Found SecretPerkOrb via FindObjectsOfTypeAll, pool={orbs[0].secretPerkPool?.Count ?? 0}");
+            return orbs[0];
+        }
+
+        Debug.LogWarning("[SACRIFICE] SecretPerkOrb NOT FOUND anywhere!");
+        return null;
     }
 
     /// <summary>
@@ -739,7 +850,8 @@ public class SacrificeNodeManager : MonoBehaviour
         if (isAnimating) return;
         ReturnAllTubePerks();
         Hide();
-        if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.Hide();
+        // Envanter açık kalsın — haritada da erişilebilir olmalı
+        if (PerkInventoryUI.instance != null) PerkInventoryUI.instance.RefreshUI();
         if (MapManager.instance != null) MapManager.instance.OnNodeComplete();
     }
 
@@ -763,9 +875,9 @@ public class SacrificeNodeManager : MonoBehaviour
         }
 
         // Reward slots — always show info
-        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count >= 2); }
-        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count >= 4); }
-        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count >= 6); }
+        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count == 2); }
+        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count == 4); }
+        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count == 6); }
 
         // Status
         if (statusText != null)

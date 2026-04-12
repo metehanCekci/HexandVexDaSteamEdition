@@ -157,7 +157,8 @@ public class ShopDealer : MonoBehaviour
                 }
                 while (usedIndices.Contains(poolIdx) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
-                       (RunManager.instance != null && RunManager.instance.hasPerkReroll && selectedItem is MutationCatalyst));
+                       (RunManager.instance != null && RunManager.instance.hasMutationCatalyst && selectedItem is MutationCatalyst) ||
+                       selectedItem is LuckyClover);
                 usedIndices.Add(poolIdx);
             }
             if (selectedItem == null) continue;
