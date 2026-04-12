@@ -70,6 +70,10 @@ public class MergedShopManager : MonoBehaviour
     public BaseItem secretItem;
     [Range(0f, 1f)] public float secretItemChance = 0.0005f;
 
+    [Header("Item Reroll (Mutation Catalyst)")]
+    public Button itemRerollButton;
+    public TMP_Text itemRerollText;
+
     // ═══════════════════════════════════════════
     // İÇ STATE
     // ═══════════════════════════════════════════
@@ -83,6 +87,7 @@ public class MergedShopManager : MonoBehaviour
     private float currentPerkRerollCost;
     private int   hoveredPerkIndex = -1;
     private int   hoveredItemIndex = -1;
+    private bool  itemRerollUsed;
 
     public static bool hasBoughtSecretItem = false;
 
@@ -313,12 +318,12 @@ public class MergedShopManager : MonoBehaviour
         foreach (var item in allItems)
         {
             if (item == null) continue;
-            // MutationCatalyst artık normal item — secret item değil
             if (item is SecretPerkOrb)
             {
                 if (secretItem == null) secretItem = item;
                 continue;
             }
+            if (item is LuckyClover) continue; // Lucky Clover pooldan çıkarıldı
             itemPool.Add(item);
         }
         Debug.Log($"[MergedShop] AutoPopulate itemPool: {itemPool.Count} items, secretItem={secretItem != null}");
@@ -429,6 +434,7 @@ public class MergedShopManager : MonoBehaviour
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
+        itemRerollUsed          = false;
         shownItemNames.Clear();
 
         EnsureAllCoinIcons();
@@ -436,6 +442,7 @@ public class MergedShopManager : MonoBehaviour
         GenerateItemChoices();
         RefreshGold();
         RefreshRerollButton();
+        RefreshItemRerollButton();
 
         if (panel != null)
         {
@@ -497,6 +504,7 @@ public class MergedShopManager : MonoBehaviour
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
+        itemRerollUsed          = false;
         shownItemNames.Clear();
 
         EnsureAllCoinIcons();
@@ -504,6 +512,7 @@ public class MergedShopManager : MonoBehaviour
         GenerateItemChoices();
         RefreshGold();
         RefreshRerollButton();
+        RefreshItemRerollButton();
 
         if (panel != null)
         {
@@ -897,8 +906,9 @@ public class MergedShopManager : MonoBehaviour
             while (used.Contains(itemPool.IndexOf(picked))
                 || shownItemNames.Contains(picked.itemName)
                 || (secretItem != null && picked.itemName == secretItem.itemName)
-                || (RunManager.instance != null && RunManager.instance.hasPerkReroll && picked is MutationCatalyst) // Zaten reroll hakkı varsa Catalyst gösterme
-                || IsItemInInventory(picked)); // Zaten envanterde olan itemleri gösterme
+                || (RunManager.instance != null && RunManager.instance.hasMutationCatalyst && picked is MutationCatalyst)
+                || picked is LuckyClover
+                || IsItemInInventory(picked));
 
             if (picked != null) { used.Add(itemPool.IndexOf(picked)); shownItemNames.Add(picked.itemName); }
             currentItems.Add(picked);
@@ -996,6 +1006,90 @@ public class MergedShopManager : MonoBehaviour
         return false;
     }
 
+    // ═══════════════════════════════════════════
+    // ITEM REROLL (Mutation Catalyst)
+    // ═══════════════════════════════════════════
+
+    private void RefreshItemRerollButton()
+    {
+        bool show = RunManager.instance != null && RunManager.instance.hasMutationCatalyst && !itemRerollUsed;
+
+        if (show && itemRerollButton == null)
+            CreateItemRerollButton();
+
+        if (itemRerollButton != null)
+        {
+            itemRerollButton.gameObject.SetActive(show);
+            itemRerollButton.interactable = !itemRerollUsed;
+        }
+    }
+
+    private void CreateItemRerollButton()
+    {
+        if (itemSection == null) return;
+
+        TMP_FontAsset font = Resources.Load<TMP_FontAsset>("alagard SDF");
+
+        var btnGO = new GameObject("ItemRerollButton", typeof(RectTransform));
+        btnGO.transform.SetParent(itemSection.transform, false);
+        btnGO.layer = LayerMask.NameToLayer("UI");
+
+        RectTransform btnRT = btnGO.GetComponent<RectTransform>();
+        btnRT.anchorMin = new Vector2(0.5f, 0f);
+        btnRT.anchorMax = new Vector2(0.5f, 0f);
+        btnRT.pivot = new Vector2(0.5f, 0f);
+        btnRT.anchoredPosition = new Vector2(0f, -45f);
+        btnRT.sizeDelta = new Vector2(200f, 40f);
+
+        Image btnImg = btnGO.AddComponent<Image>();
+        btnImg.color = new Color(0.1f, 0.15f, 0.2f, 0.95f);
+
+        itemRerollButton = btnGO.AddComponent<Button>();
+        var colors = itemRerollButton.colors;
+        colors.highlightedColor = new Color(0.15f, 0.25f, 0.35f, 1f);
+        colors.pressedColor = new Color(0.05f, 0.1f, 0.15f, 1f);
+        colors.disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+        itemRerollButton.colors = colors;
+
+        var textGO = new GameObject("Text", typeof(RectTransform));
+        textGO.transform.SetParent(btnGO.transform, false);
+        textGO.layer = LayerMask.NameToLayer("UI");
+        RectTransform textRT = textGO.GetComponent<RectTransform>();
+        textRT.anchorMin = Vector2.zero;
+        textRT.anchorMax = Vector2.one;
+        textRT.offsetMin = Vector2.zero;
+        textRT.offsetMax = Vector2.zero;
+
+        itemRerollText = textGO.AddComponent<TextMeshProUGUI>();
+        itemRerollText.text = "REROLL ITEMS";
+        if (font != null) itemRerollText.font = font;
+        itemRerollText.fontSize = 18;
+        itemRerollText.alignment = TextAlignmentOptions.Center;
+        itemRerollText.color = new Color(0.4f, 0.9f, 0.6f, 1f);
+        itemRerollText.fontStyle = FontStyles.Bold;
+        itemRerollText.raycastTarget = false;
+
+        // Outline
+        var outline = btnGO.AddComponent<Outline>();
+        outline.effectColor = new Color(0.4f, 0.9f, 0.6f, 0.6f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+        itemRerollButton.onClick.AddListener(TryItemReroll);
+        AddRuntimeHoverScale(btnGO);
+    }
+
+    private void TryItemReroll()
+    {
+        if (RunManager.instance == null || !RunManager.instance.hasMutationCatalyst) return;
+        if (itemRerollUsed) return;
+
+        itemRerollUsed = true;
+        GenerateItemChoices();
+        RefreshItemRerollButton();
+
+        if (AudioManager.instance != null) AudioManager.instance.PlayCard();
+    }
+
     private void HideItemSection()
     {
         if (itemSection != null) itemSection.SetActive(false);
@@ -1068,33 +1162,15 @@ public class MergedShopManager : MonoBehaviour
         if (forceLegendary && legendaryPerks.Count > 0)
             return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
 
-        // Lucky Clover kontrolü
-        bool luckyClover = false;
-        int cloverLevel = 0;
-        if (RunManager.instance != null)
-        {
-            foreach (var p in RunManager.instance.activePerks)
-            {
-                if (p is LuckyCloverPerk lcp) { luckyClover = true; cloverLevel = lcp.currentLevel; break; }
-            }
-        }
-
         int level = RunManager.instance?.currentLevel ?? 0;
 
         float legendaryChance;
-        if (luckyClover && cloverLevel >= 3) legendaryChance = 0.25f;
-        else if (level >= 16) legendaryChance = 0.08f + (luckyClover ? cloverLevel * 0.02f : 0f);
-        else if (level >= 8)  legendaryChance = 0.06f + (luckyClover ? cloverLevel * 0.02f : 0f);
-        else                  legendaryChance = 0.04f + (luckyClover ? cloverLevel * 0.02f : 0f);
+        if (level >= 16) legendaryChance = 0.08f;
+        else if (level >= 8)  legendaryChance = 0.06f;
+        else                  legendaryChance = 0.04f;
 
-        float epicChance;
-        float rareChance;
-        if (luckyClover)
-        {
-            epicChance = cloverLevel >= 3 ? 0.25f : cloverLevel == 2 ? 0.25f : cloverLevel == 1 ? 0.17f : 0.10f;
-            rareChance = 0.33f;
-        }
-        else { epicChance = 0.10f; rareChance = 0.30f; }
+        float epicChance = 0.10f;
+        float rareChance = 0.30f;
 
         float roll = Random.value;
         List<GameObject> pool;

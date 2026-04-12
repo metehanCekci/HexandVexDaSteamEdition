@@ -6,15 +6,16 @@ public class MutationCatalyst : BaseItem
     void OnEnable()
     {
         itemName = "Mutation Catalyst";
-        description = "Once acquired, you gain the right to reroll perks on the next perk selection screen.";
-        price = 6;
+        description = "Unlocks a free item reroll in every shop for the rest of the run.";
+        price = 18;
         itemType = ItemType.Instant;
     }
 
     public override bool Use()
     {
         if (RunManager.instance == null) return false;
-        RunManager.instance.hasPerkReroll = true;
+        if (RunManager.instance.hasMutationCatalyst) return false; // Zaten sahip
+        RunManager.instance.hasMutationCatalyst = true;
         return true;
     }
 }

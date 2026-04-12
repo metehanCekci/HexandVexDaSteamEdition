@@ -7,7 +7,7 @@ public class SynthStim : BaseItem
     {
         itemName = "Synth-Stim";
         description = "Roll +1 extra die in the next combat";
-        price = 6;
+        price = 18;
     }
 
     public override bool Use()

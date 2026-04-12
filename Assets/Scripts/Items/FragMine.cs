@@ -7,7 +7,7 @@ public class FragMine : BaseItem
     {
         itemName = "Frag-Mine";
         description = "Place a bomb on any hex. Rolls dice and deals damage to all enemies within 1 hex radius";
-        price = 8;
+        price = 24;
     }
 
     public override bool Use()

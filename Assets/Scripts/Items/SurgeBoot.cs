@@ -7,7 +7,7 @@ public class SurgeBoot : BaseItem
     {
         itemName = "Surge-Boot";
         description = "Next turn you can move up to 2 hexes instead of 1";
-        price = 4;
+        price = 12;
     }
 
     public override bool Use()

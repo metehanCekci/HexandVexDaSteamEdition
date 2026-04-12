@@ -56,8 +56,9 @@ public class RunManager : MonoBehaviour
     public bool cleaveNextCombat = false;
     public bool surgeBootNextTurn = false;
     [HideInInspector] public bool surgeBootActive = false;
-    public bool hasPerkReroll = false; // Bu tur 2 hex hareket edebilir mi?
+    public bool hasPerkReroll = false; // Perk reroll hakki (LevelUpManager)
     public bool hasLuckyClover = false; // Lucky Clover item -- sonraki perk seciminde esit rarity
+    public bool hasMutationCatalyst = false; // Mutation Catalyst -- her shopta 1 bedava item reroll
 
     [Header("Silah Seçimi")]
     public WeaponType selectedWeapon = WeaponType.Greatsword;

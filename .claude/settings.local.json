@@ -78,7 +78,10 @@
       "Bash(python -c ':*)",
       "Bash(ls -1 \"/c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Prefabs/Perks\"/*.prefab)",
       "Bash(ls -1 \"/c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks\"/*.cs)",
-      "Bash(xargs -I {} basename {} .cs)"
+      "Bash(xargs -I {} basename {} .cs)",
+      "Bash(grep -v \"//\")",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts -type f \\\\\\( -name \"*.cs\" \\\\\\) -exec grep -l \"SceneManager.LoadScene\\\\|StartRun\\\\|NewGame\\\\|MainMenu\\\\|InitGame\" {} \\\\;)",
+      "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts -type f -name \"*.cs\" -exec grep -l \"LogoScene\\\\|scene 0\\\\|scene 1\\\\|MainMenu\\\\|gameplay\" {} \\\\;)"
     ]
   }
 }

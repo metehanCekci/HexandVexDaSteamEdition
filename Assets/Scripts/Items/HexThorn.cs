@@ -7,7 +7,7 @@ public class HexThorn : BaseItem
     {
         itemName = "Hex-Thorn";
         description = "Place a spike trap on any empty hex tile. Breaks after 3 turns (blinks on turn 2).";
-        price = 5;
+        price = 15;
     }
 
     public override bool Use()

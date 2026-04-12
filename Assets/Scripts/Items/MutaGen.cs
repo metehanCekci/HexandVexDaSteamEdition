@@ -7,7 +7,7 @@ public class MutaGen : BaseItem
     {
         itemName = "Muta-Gen";
         description = "Restore 2 HP";
-        price = 5;
+        price = 15;
     }
 
     public override bool Use()
