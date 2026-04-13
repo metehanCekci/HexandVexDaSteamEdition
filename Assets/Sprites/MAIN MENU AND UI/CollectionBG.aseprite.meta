@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: CollectionBG
     originalName: 
-    pivot: {x: 0.50245094, y: -0.021341464}
+    pivot: {x: 0.50245094, y: -0.023728812}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -138,7 +138,7 @@ ScriptedImporter:
       x: 4
       y: 4
       width: 408
-      height: 328
+      height: 295
     spriteID: 8ed3f2db8cfdc264f973c696617d7e85
     spriteBone: []
     spriteOutline: []
@@ -170,7 +170,7 @@ ScriptedImporter:
         x: 17
         y: 7
         width: 408
-        height: 328
+        height: 295
       spriteId: 8ed3f2db8cfdc264f973c696617d7e85
     linkedCells: []
     tileCells: []
