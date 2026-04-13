@@ -20472,6 +20472,7 @@ GameObject:
   - component: {fileID: 1093635552}
   - component: {fileID: 1093635551}
   - component: {fileID: 1093635550}
+  - component: {fileID: 1093635554}
   m_Layer: 5
   m_Name: PerkCard_5
   m_TagString: Untagged
@@ -20605,6 +20606,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1093635548}
   m_CullTransparentMesh: 1
+--- !u!114 &1093635554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1093635548}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e9651b99e93d8240bec7744245d72a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardTilt3D
+  maxTiltAngle: 15
+  tiltSpeed: 12
+  returnSpeed: 10
+  shineOverlay: {fileID: 0}
+  shineRange: 120
 --- !u!1 &1096920977
 GameObject:
   m_ObjectHideFlags: 0
@@ -27309,6 +27327,7 @@ GameObject:
   - component: {fileID: 1339426793}
   - component: {fileID: 1339426792}
   - component: {fileID: 1339426791}
+  - component: {fileID: 1339426795}
   m_Layer: 5
   m_Name: PerkCard_1
   m_TagString: Untagged
@@ -27442,6 +27461,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1339426789}
   m_CullTransparentMesh: 1
+--- !u!114 &1339426795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1339426789}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e9651b99e93d8240bec7744245d72a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardTilt3D
+  maxTiltAngle: 15
+  tiltSpeed: 12
+  returnSpeed: 10
+  shineOverlay: {fileID: 0}
+  shineRange: 120
 --- !u!1 &1346277340
 GameObject:
   m_ObjectHideFlags: 0
@@ -32102,6 +32138,7 @@ GameObject:
   - component: {fileID: 1623991204}
   - component: {fileID: 1623991203}
   - component: {fileID: 1623991202}
+  - component: {fileID: 1623991206}
   m_Layer: 5
   m_Name: PerkCard_3
   m_TagString: Untagged
@@ -32235,6 +32272,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1623991200}
   m_CullTransparentMesh: 1
+--- !u!114 &1623991206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1623991200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e9651b99e93d8240bec7744245d72a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardTilt3D
+  maxTiltAngle: 15
+  tiltSpeed: 12
+  returnSpeed: 10
+  shineOverlay: {fileID: 0}
+  shineRange: 120
 --- !u!1 &1625182248
 GameObject:
   m_ObjectHideFlags: 0
@@ -34870,6 +34924,7 @@ GameObject:
   - component: {fileID: 1748853335}
   - component: {fileID: 1748853334}
   - component: {fileID: 1748853333}
+  - component: {fileID: 1748853337}
   m_Layer: 5
   m_Name: PerkCard_4
   m_TagString: Untagged
@@ -35003,6 +35058,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1748853331}
   m_CullTransparentMesh: 1
+--- !u!114 &1748853337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1748853331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e9651b99e93d8240bec7744245d72a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardTilt3D
+  maxTiltAngle: 15
+  tiltSpeed: 12
+  returnSpeed: 10
+  shineOverlay: {fileID: 0}
+  shineRange: 120
 --- !u!1 &1752680924
 GameObject:
   m_ObjectHideFlags: 0
@@ -35228,6 +35300,7 @@ GameObject:
   - component: {fileID: 1761691502}
   - component: {fileID: 1761691501}
   - component: {fileID: 1761691500}
+  - component: {fileID: 1761691504}
   m_Layer: 5
   m_Name: PerkCard_2
   m_TagString: Untagged
@@ -35361,6 +35434,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1761691498}
   m_CullTransparentMesh: 1
+--- !u!114 &1761691504
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1761691498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e9651b99e93d8240bec7744245d72a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardTilt3D
+  maxTiltAngle: 15
+  tiltSpeed: 12
+  returnSpeed: 10
+  shineOverlay: {fileID: 0}
+  shineRange: 120
 --- !u!1 &1764569011
 GameObject:
   m_ObjectHideFlags: 0
@@ -35860,6 +35950,7 @@ GameObject:
   - component: {fileID: 1767897562}
   - component: {fileID: 1767897561}
   - component: {fileID: 1767897560}
+  - component: {fileID: 1767897564}
   m_Layer: 5
   m_Name: PerkCard_0
   m_TagString: Untagged
@@ -35993,6 +36084,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1767897558}
   m_CullTransparentMesh: 1
+--- !u!114 &1767897564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767897558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e9651b99e93d8240bec7744245d72a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardTilt3D
+  maxTiltAngle: 15
+  tiltSpeed: 12
+  returnSpeed: 10
+  shineOverlay: {fileID: 0}
+  shineRange: 120
 --- !u!1 &1769264370
 GameObject:
   m_ObjectHideFlags: 0
