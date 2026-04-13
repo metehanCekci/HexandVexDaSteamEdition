@@ -366,6 +366,7 @@ public class TurnManager : MonoBehaviour
         {
             RunManager.instance.currentGold += 10000;
             UpdateCoinUI();
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
         }
         if (Input.GetKeyDown(KeyCode.F8)) { if (player != null) player.health.TakeDamage(player.health.currentHP + 999); }
         if (Input.GetKeyDown(KeyCode.F9))

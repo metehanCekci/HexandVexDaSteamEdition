@@ -114,6 +114,9 @@ public class MergedShopManager : MonoBehaviour
         Debug.Log($"[MergedShop] Awake: panel={panel != null}, perkSlots={perkSlots.Count}, itemSlots={itemSlots.Count}, canvasGroup={canvasGroup != null}, continueButton={continueButton != null}, rerollButton={perkRerollButton != null}");
         if (panel != null) panel.SetActive(false);
 
+        // Gold event'ine abone ol — satış, F7 vb. gold değişince shop coin text güncellensin
+        GameEvents.OnGoldChanged += OnGoldChangedHandler;
+
         // Kartlara ShopCardHover ekle (editor'den bake edilen eski EventTrigger'lari guncelle)
         UpgradeCardHovers();
 
@@ -1055,6 +1058,16 @@ public class MergedShopManager : MonoBehaviour
         RefreshRerollButton();
         RefreshItemAffordability();
         RefreshPerkAffordability();
+    }
+
+    private void OnGoldChangedHandler(int newGold)
+    {
+        RefreshGold();
+    }
+
+    void OnDestroy()
+    {
+        GameEvents.OnGoldChanged -= OnGoldChangedHandler;
     }
 
     // ═══════════════════════════════════════════
