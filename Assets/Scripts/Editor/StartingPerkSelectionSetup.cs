@@ -42,7 +42,19 @@ public static class StartingPerkSelectionSetup
         GameObject panel = MakeUI("Panel", canvasGO.transform);
         Stretch(panel);
         Image panelBG = panel.AddComponent<Image>();
-        panelBG.color = new Color(0.02f, 0.02f, 0.04f, 0.98f);
+        // NodeMapBG sprite'ı varsa arka plan olarak kullan
+        Sprite bgSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/MapIcons/NodeMapBG.aseprite");
+        if (bgSprite != null)
+        {
+            panelBG.sprite = bgSprite;
+            panelBG.type = Image.Type.Simple;
+            panelBG.preserveAspect = false;
+            panelBG.color = Color.white;
+        }
+        else
+        {
+            panelBG.color = new Color(0.02f, 0.02f, 0.04f, 0.98f);
+        }
         CanvasGroup cg = panel.AddComponent<CanvasGroup>();
         manager.panel = panel;
         manager.canvasGroup = cg;

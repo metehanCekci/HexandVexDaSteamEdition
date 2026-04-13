@@ -745,19 +745,6 @@ public class MergedShopManager : MonoBehaviour
             if (perkSlots[i].button == null || !perkSlots[i].button.interactable) continue;
             bool canAfford = RunManager.instance.currentGold >= perkSlots[i].price;
 
-            // Slotlar doluysa ve bu perk upgrade değilse satın alınamaz
-            if (canAfford && slotsFull && i < currentPerkChoices.Count && currentPerkChoices[i] != null)
-            {
-                BasePerk prefab = currentPerkChoices[i].GetComponent<BasePerk>();
-                if (prefab != null)
-                {
-                    System.Type pt = prefab.GetType();
-                    bool isUpgrade = RunManager.instance.activePerks.Exists(p => p != null && p.GetType() == pt)
-                                  || RunManager.instance.inventoryPerks.Exists(p => p != null && p.GetType() == pt);
-                    if (!isUpgrade) canAfford = false;
-                }
-            }
-
             if (perkSlots[i].priceText != null)
                 perkSlots[i].priceText.color = canAfford ? new Color(1f, 0.85f, 0.2f) : new Color(1f, 0.3f, 0.3f);
         }

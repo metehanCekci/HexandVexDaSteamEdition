@@ -129,16 +129,16 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: YellowMagicTile
     originalName: 
-    pivot: {x: 0.5, y: 0.5}
-    alignment: 0
+    pivot: {x: 0.5, y: 0}
+    alignment: 7
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
     rect:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 38
-      height: 17
+      width: 50
+      height: 41
     spriteID: 201ef6a9c263cec40bd2e1819fa1c6fe
     spriteBone: []
     spriteOutline: []
@@ -167,10 +167,10 @@ ScriptedImporter:
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 6
-        y: 3
-        width: 38
-        height: 17
+        x: 0
+        y: 0
+        width: 50
+        height: 41
       spriteId: 201ef6a9c263cec40bd2e1819fa1c6fe
     linkedCells: []
     tileCells: []
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 50, y: 25}
-  previousTextureSize: {x: 64, y: 32}
+  canvasSize: {x: 50, y: 41}
+  previousTextureSize: {x: 64, y: 64}

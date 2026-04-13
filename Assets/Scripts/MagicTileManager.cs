@@ -319,6 +319,8 @@ public class MagicTileManager : MonoBehaviour
             if (magicTileMap != null)
             {
                 magicTileMap.tileAnchor = Vector3.zero;
+                var existingTR = existing.GetComponent<TilemapRenderer>();
+                if (existingTR != null) existingTR.sortingOrder = 2;
                 return;
             }
         }
@@ -332,7 +334,7 @@ public class MagicTileManager : MonoBehaviour
         magicTileMap = go.AddComponent<Tilemap>();
         magicTileMap.tileAnchor = Vector3.zero; // Match ground tilemap anchor
         TilemapRenderer tr = go.AddComponent<TilemapRenderer>();
-        tr.sortingOrder = 1; // Above ground, below characters
+        tr.sortingOrder = 2; // Above ground AND column, below characters
     }
 
     private TileBase GetTileAsset(MagicTileType type)
