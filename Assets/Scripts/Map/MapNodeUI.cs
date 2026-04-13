@@ -28,19 +28,23 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     // ─── Node tipine göre icon sprite'ları (MapUI'dan atanacak) ───
     private static Sprite combatIcon;
     private static Sprite eliteIcon;
-    private static Sprite restIcon;
-    private static Sprite eventIcon;
     private static Sprite bossIcon;
+    private static Sprite restIcon;
+    private static Sprite shopIcon;
     private static Sprite sacrificeIcon;
+    private static Sprite enchantIcon;
+    private static Sprite treasureIcon;
 
-    public static void SetIcons(Sprite combat, Sprite elite, Sprite rest, Sprite evt, Sprite boss, Sprite sacrifice = null)
+    public static void SetIcons(Sprite combat, Sprite elite, Sprite boss, Sprite rest, Sprite shop, Sprite sacrifice, Sprite enchant, Sprite treasure)
     {
         combatIcon = combat;
         eliteIcon = elite;
-        restIcon = rest;
-        eventIcon = evt;
         bossIcon = boss;
+        restIcon = rest;
+        shopIcon = shop;
         sacrificeIcon = sacrifice;
+        enchantIcon = enchant;
+        treasureIcon = treasure;
     }
 
     public void Setup(MapNode node)
@@ -212,11 +216,11 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         {
             case MapNodeType.Combat:        icon = combatIcon; break;
             case MapNodeType.EliteCombat:   icon = eliteIcon; break;
-            case MapNodeType.Rest:          icon = restIcon; break;
-            case MapNodeType.Enchant:       icon = eventIcon; break;
             case MapNodeType.Boss:          icon = bossIcon; break;
+            case MapNodeType.Rest:          icon = restIcon; break;
             case MapNodeType.Sacrifice:     icon = sacrificeIcon; break;
-            case MapNodeType.Treasure:      icon = eventIcon; break; // TODO: treasure icon
+            case MapNodeType.Enchant:       icon = enchantIcon; break;
+            case MapNodeType.Treasure:      icon = treasureIcon; break;
         }
 
         if (icon != null)

@@ -220,6 +220,13 @@ public class TurnManager : MonoBehaviour
                     LevelUpManager.instance.ForceClose();
                 }
 
+                // Enchant seçim panelini zorla kapat
+                if (EnchantNodeUI.instance != null)
+                {
+                    EnchantNodeUI.instance.StopAllCoroutines();
+                    EnchantNodeUI.instance.ForceClose();
+                }
+
                 int sceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
                 if (ScreenFader.instance != null)
                 {

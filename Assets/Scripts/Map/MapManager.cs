@@ -20,11 +20,12 @@ public class MapManager : MonoBehaviour
     [Header("Node Icons")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite restIcon;
-    public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite restIcon;
+    public Sprite shopIcon;
     public Sprite sacrificeIcon;
     public Sprite enchantIcon;
+    public Sprite treasureIcon;
 
     [Header("Rest UI")]
     public GameObject restCanvasPrefab; // Inspector'dan RestCanvas prefab'ını sürükle
@@ -267,10 +268,12 @@ public class MapManager : MonoBehaviour
         // Node icon'larını ata
         ui.combatIcon = combatIcon;
         ui.eliteIcon = eliteIcon;
-        ui.restIcon = restIcon;
-        ui.eventIcon = enchantIcon != null ? enchantIcon : eventIcon;
         ui.bossIcon = bossIcon;
+        ui.restIcon = restIcon;
+        ui.shopIcon = shopIcon;
         ui.sacrificeIcon = sacrificeIcon;
+        ui.enchantIcon = enchantIcon;
+        ui.treasureIcon = treasureIcon;
 
         mapUI = ui;
         canvasGO.SetActive(false); // Başlangıçta tüm canvas'ı kapat
