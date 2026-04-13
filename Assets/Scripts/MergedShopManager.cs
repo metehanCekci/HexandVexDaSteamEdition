@@ -703,7 +703,7 @@ public class MergedShopManager : MonoBehaviour
                 && RunManager.instance.inventoryPerks.Count >= RunManager.MAX_INVENTORY_PERKS)
             {
                 Debug.LogWarning("[MergedShop] Perk slots full (active + stash)! Cannot buy.");
-                StartCoroutine(FlashText(goldText));
+                FlashStashFull();
                 return;
             }
         }
@@ -1235,6 +1235,42 @@ public class MergedShopManager : MonoBehaviour
         Color orig = t.color;
         t.color = Color.red;
         yield return new WaitForSecondsRealtime(0.3f);
+        t.color = orig;
+    }
+
+    private void FlashStashFull()
+    {
+        if (PerkInventoryUI.instance != null && PerkInventoryUI.instance.stashTitleText != null)
+            StartCoroutine(ShakeAndFlashText(PerkInventoryUI.instance.stashTitleText));
+    }
+
+    private IEnumerator ShakeAndFlashText(TMP_Text t)
+    {
+        if (t == null) yield break;
+        Color orig = t.color;
+        RectTransform rt = t.GetComponent<RectTransform>();
+        Vector2 origPos = rt != null ? rt.anchoredPosition : Vector2.zero;
+
+        // Kırmızı flash + titreşim
+        t.color = Color.red;
+        float duration = 0.4f;
+        float elapsed = 0f;
+        float shakeIntensity = 6f;
+
+        while (elapsed < duration)
+        {
+            if (rt != null)
+            {
+                float x = Random.Range(-shakeIntensity, shakeIntensity);
+                float y = Random.Range(-shakeIntensity * 0.3f, shakeIntensity * 0.3f);
+                rt.anchoredPosition = origPos + new Vector2(x, y);
+            }
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        // Geri yükle
+        if (rt != null) rt.anchoredPosition = origPos;
         t.color = orig;
     }
 }
