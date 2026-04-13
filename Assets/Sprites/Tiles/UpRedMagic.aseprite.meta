@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ad9a62823c5ad95409897be6550b1f58
+guid: c65b8f0a961184f4eb9eb1f5333478e8
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: UpRedMagic
     originalName: 
-    pivot: {x: 0.49019608, y: 0}
+    pivot: {x: 0.49999997, y: 0}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 51
+      width: 50
       height: 25
-    spriteID: daf6bba49719ccd449a4ce50b0dbc1ce
+    spriteID: 1359ecdf5658ba449a233440798f971c
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -169,9 +169,9 @@ ScriptedImporter:
       cellRect:
         x: 4
         y: 0
-        width: 51
+        width: 50
         height: 25
-      spriteId: daf6bba49719ccd449a4ce50b0dbc1ce
+      spriteId: 1359ecdf5658ba449a233440798f971c
     linkedCells: []
     tileCells: []
     tileSetIndex: 0

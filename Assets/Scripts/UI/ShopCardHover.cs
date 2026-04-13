@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
@@ -24,8 +23,7 @@ public class ShopCardHover : MonoBehaviour
     private Vector3 baseScale;
     private Coroutine scaleCo;
     private bool isHovered;
-    private Canvas sortCanvas;
-    private GraphicRaycaster sortRaycaster;
+    private int homeSiblingIndex = -1;
 
     /// <summary>True iken hover scale'a dokunmaz (pop-in animasyonu sırasında).</summary>
     [System.NonSerialized] public bool scaleOverridden;
@@ -36,9 +34,17 @@ public class ShopCardHover : MonoBehaviour
         if (baseScale == Vector3.zero) baseScale = Vector3.one;
     }
 
+    void Start()
+    {
+        homeSiblingIndex = transform.GetSiblingIndex();
+    }
+
     void OnEnable()
     {
         isHovered = false;
+        // homeSiblingIndex henüz atanmadıysa güncelle
+        if (homeSiblingIndex < 0)
+            homeSiblingIndex = transform.GetSiblingIndex();
     }
 
     void OnDisable()
@@ -54,21 +60,7 @@ public class ShopCardHover : MonoBehaviour
     {
         if (scaleOverridden) return;
         isHovered = true;
-
-        // Canvas overrideSorting ile karti one cikar (sibling index karismasin)
-        if (sortCanvas == null)
-        {
-            sortCanvas = gameObject.GetComponent<Canvas>();
-            if (sortCanvas == null) sortCanvas = gameObject.AddComponent<Canvas>();
-        }
-        sortCanvas.overrideSorting = true;
-        sortCanvas.sortingOrder = 100;
-
-        if (sortRaycaster == null)
-        {
-            sortRaycaster = gameObject.GetComponent<GraphicRaycaster>();
-            if (sortRaycaster == null) sortRaycaster = gameObject.AddComponent<GraphicRaycaster>();
-        }
+        transform.SetAsLastSibling();
 
         Vector3 target = baseScale * hoverScale;
         if (scaleCo != null) StopCoroutine(scaleCo);
@@ -83,10 +75,8 @@ public class ShopCardHover : MonoBehaviour
     {
         if (scaleOverridden) return;
         isHovered = false;
-
-        // Sorting'i kapat — kart normal sirasina doner
-        if (sortCanvas != null)
-            sortCanvas.overrideSorting = false;
+        if (homeSiblingIndex >= 0)
+            transform.SetSiblingIndex(homeSiblingIndex);
 
         if (scaleCo != null) StopCoroutine(scaleCo);
         if (gameObject.activeInHierarchy)
@@ -99,6 +89,12 @@ public class ShopCardHover : MonoBehaviour
         baseScale = transform.localScale;
         if (baseScale == Vector3.zero) baseScale = Vector3.one;
         scaleOverridden = false;
+    }
+
+    /// <summary>Sibling index değiştiğinde (reroll vb.) güncelle.</summary>
+    public void UpdateHomeIndex()
+    {
+        homeSiblingIndex = transform.GetSiblingIndex();
     }
 
     /// <summary>
