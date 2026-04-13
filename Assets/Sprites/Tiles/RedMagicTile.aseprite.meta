@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: RedMagicTile
     originalName: 
-    pivot: {x: 0.49999997, y: -0.17073172}
+    pivot: {x: 0.49019608, y: -0.17073172}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,7 +137,7 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 50
+      width: 51
       height: 41
     spriteID: 750a697a1f9ed874cb3fef53437b6f0b
     spriteBone: []
@@ -169,7 +169,7 @@ ScriptedImporter:
       cellRect:
         x: 4
         y: 7
-        width: 50
+        width: 51
         height: 41
       spriteId: 750a697a1f9ed874cb3fef53437b6f0b
     linkedCells: []

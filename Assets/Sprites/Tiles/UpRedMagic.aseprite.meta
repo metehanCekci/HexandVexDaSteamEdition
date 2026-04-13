@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 854f42547fd45034e92718f157a014f5
+guid: ad9a62823c5ad95409897be6550b1f58
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: YellowMagicUpper
+  - name: UpRedMagic
     originalName: 
-    pivot: {x: 0.5, y: -0.3235294}
+    pivot: {x: 0.49019608, y: 0}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 52
-      height: 34
-    spriteID: c591525d92dfbcd44992cc331bbdb22a
+      width: 51
+      height: 25
+    spriteID: daf6bba49719ccd449a4ce50b0dbc1ce
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 2096689591
+      value0: 383371627
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: YellowMagicUpper
+    name: UpRedMagic
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: YellowMagicUpper
+    - name: UpRedMagic
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
         x: 4
-        y: 11
-        width: 52
-        height: 34
-      spriteId: c591525d92dfbcd44992cc331bbdb22a
+        y: 0
+        width: 51
+        height: 25
+      spriteId: daf6bba49719ccd449a4ce50b0dbc1ce
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 60, y: 49}
+  canvasSize: {x: 58, y: 26}
   previousTextureSize: {x: 64, y: 64}

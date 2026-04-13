@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 854f42547fd45034e92718f157a014f5
+guid: 14cf31c05ee98f04f9c6493ab7005092
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: YellowMagicUpper
+  - name: KatmanYellowTile
     originalName: 
-    pivot: {x: 0.5, y: -0.3235294}
+    pivot: {x: 0.5, y: -0.33333334}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 52
-      height: 34
-    spriteID: c591525d92dfbcd44992cc331bbdb22a
+      width: 28
+      height: 15
+    spriteID: 1b81c6a37caea914bb84e4d21c32aacd
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 2096689591
+      value0: 1554849474
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: YellowMagicUpper
+    name: KatmanYellowTile
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: YellowMagicUpper
+    - name: KatmanYellowTile
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 4
-        y: 11
-        width: 52
-        height: 34
-      spriteId: c591525d92dfbcd44992cc331bbdb22a
+        x: 0
+        y: 5
+        width: 28
+        height: 15
+      spriteId: 1b81c6a37caea914bb84e4d21c32aacd
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 60, y: 49}
-  previousTextureSize: {x: 64, y: 64}
+  canvasSize: {x: 28, y: 20}
+  previousTextureSize: {x: 64, y: 32}
