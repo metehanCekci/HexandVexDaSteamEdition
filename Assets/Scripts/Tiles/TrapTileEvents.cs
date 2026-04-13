@@ -1,6 +1,14 @@
 using System;
 using UnityEngine;
 
+public enum TrapTileState
+{
+    Idle,
+    Triggered,
+    Collapsing,
+    Destroyed
+}
+
 /// <summary>
 /// Tüm trap tile'ların yayınladığı event'ler.
 /// Ses, animasyon, VFX gibi sistemler bu event'leri dinleyerek tile lojiğine girmeden çalışır.
