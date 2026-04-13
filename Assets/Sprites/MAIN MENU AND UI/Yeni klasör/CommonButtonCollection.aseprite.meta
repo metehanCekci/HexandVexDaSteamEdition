@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: CommonButtonCollection
     originalName: 
-    pivot: {x: 1.1089109, y: -0.51587296}
+    pivot: {x: 1.1340207, y: -0.47470817}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,8 +137,8 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 101
-      height: 252
+      width: 97
+      height: 257
     spriteID: f65aadca232a6074ba202ab2fc539ac4
     spriteBone: []
     spriteOutline: []
@@ -167,10 +167,10 @@ ScriptedImporter:
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 138
-        y: 130
-        width: 101
-        height: 252
+        x: 140
+        y: 122
+        width: 97
+        height: 257
       spriteId: f65aadca232a6074ba202ab2fc539ac4
     linkedCells: []
     tileCells: []
@@ -182,4 +182,4 @@ ScriptedImporter:
   secondarySpriteTextures: []
   spritePackingTag: 
   canvasSize: {x: 500, y: 500}
-  previousTextureSize: {x: 256, y: 512}
+  previousTextureSize: {x: 128, y: 512}
