@@ -7,15 +7,23 @@ public class MagicTileManager : MonoBehaviour
 {
     public static MagicTileManager instance;
 
-    [Header("Magic Tile Assets")]
+    [Header("Magic Tile Assets (Upper — ground katmanı)")]
+    public TileBase redUpperTile;
+    public TileBase blueUpperTile;
+    public TileBase greenUpperTile;
+    public TileBase yellowUpperTile;
+    public TileBase orangeUpperTile;
+
+    [Header("Magic Tile Assets (Lower — column katmanı)")]
     public TileBase redTile;
     public TileBase blueTile;
     public TileBase greenTile;
     public TileBase yellowTile;
     public TileBase orangeTile;
 
-    [Header("Tilemap")]
-    public Tilemap magicTileMap;
+    [Header("Tilemaps")]
+    public Tilemap magicTileMap;       // upper (ground üstü)
+    public Tilemap magicColumnMap;     // lower (column üstü)
 
     // Runtime: hangi cell'de hangi magic tile var
     private Dictionary<Vector3Int, MagicTileType> activeTiles = new Dictionary<Vector3Int, MagicTileType>();
@@ -62,12 +70,21 @@ public class MagicTileManager : MonoBehaviour
             Vector3Int cell = PickSmartCell(tileType, validCells);
             if (cell.y == -999) continue;
 
-            TileBase tile = GetTileAsset(tileType);
-            if (tile == null) continue;
+            // Upper tile (ground katmanı üstünde)
+            TileBase upperTile = GetUpperTileAsset(tileType);
+            if (upperTile != null)
+                magicTileMap.SetTile(cell, upperTile);
 
-            magicTileMap.SetTile(cell, tile);
-            activeTiles[cell] = tileType;
-            spawnedCells.Add(cell);
+            // Lower tile (column katmanı üstünde)
+            TileBase lowerTile = GetTileAsset(tileType);
+            if (lowerTile != null && magicColumnMap != null)
+                magicColumnMap.SetTile(cell, lowerTile);
+
+            if (upperTile != null || lowerTile != null)
+            {
+                activeTiles[cell] = tileType;
+                spawnedCells.Add(cell);
+            }
             validCells.Remove(cell);
         }
 
@@ -109,6 +126,8 @@ public class MagicTileManager : MonoBehaviour
         activeTiles.Remove(cell);
         if (magicTileMap != null)
             magicTileMap.SetTile(cell, null);
+        if (magicColumnMap != null)
+            magicColumnMap.SetTile(cell, null);
     }
 
     /// <summary>
@@ -155,6 +174,8 @@ public class MagicTileManager : MonoBehaviour
     {
         if (magicTileMap != null)
             magicTileMap.ClearAllTiles();
+        if (magicColumnMap != null)
+            magicColumnMap.ClearAllTiles();
         activeTiles.Clear();
         blueTileActiveCell = new Vector3Int(0, -999, 0);
         orangeTileActiveCell = new Vector3Int(0, -999, 0);
@@ -310,31 +331,53 @@ public class MagicTileManager : MonoBehaviour
 
     private void EnsureTilemap()
     {
-        if (magicTileMap != null) return;
+        Grid grid = FindAnyObjectByType<Grid>();
 
-        GameObject existing = GameObject.Find("MagicTileMap");
-        if (existing != null)
+        // ── Upper tilemap (ground katmanı üstünde) ──
+        if (magicTileMap == null)
         {
-            magicTileMap = existing.GetComponent<Tilemap>();
-            if (magicTileMap != null)
+            GameObject existing = GameObject.Find("MagicTileMap");
+            if (existing != null)
             {
+                magicTileMap = existing.GetComponent<Tilemap>();
+                if (magicTileMap != null)
+                {
+                    magicTileMap.tileAnchor = Vector3.zero;
+                    var existingTR = existing.GetComponent<TilemapRenderer>();
+                    if (existingTR != null) existingTR.sortingOrder = 2;
+                }
+            }
+            else if (grid != null)
+            {
+                GameObject go = new GameObject("MagicTileMap");
+                go.transform.SetParent(grid.transform, false);
+                magicTileMap = go.AddComponent<Tilemap>();
                 magicTileMap.tileAnchor = Vector3.zero;
-                var existingTR = existing.GetComponent<TilemapRenderer>();
-                if (existingTR != null) existingTR.sortingOrder = 2;
-                return;
+                TilemapRenderer tr = go.AddComponent<TilemapRenderer>();
+                tr.sortingOrder = 2; // Above ground, below characters
             }
         }
 
-        // Find the Grid parent (same as other tilemaps)
-        Grid grid = FindAnyObjectByType<Grid>();
-        if (grid == null) return;
-
-        GameObject go = new GameObject("MagicTileMap");
-        go.transform.SetParent(grid.transform, false);
-        magicTileMap = go.AddComponent<Tilemap>();
-        magicTileMap.tileAnchor = Vector3.zero; // Match ground tilemap anchor
-        TilemapRenderer tr = go.AddComponent<TilemapRenderer>();
-        tr.sortingOrder = 2; // Above ground AND column, below characters
+        // ── Lower tilemap (column katmanı üstünde) ──
+        if (magicColumnMap == null)
+        {
+            GameObject existing = GameObject.Find("MagicColumnMap");
+            if (existing != null)
+            {
+                magicColumnMap = existing.GetComponent<Tilemap>();
+                if (magicColumnMap != null)
+                    magicColumnMap.tileAnchor = Vector3.zero;
+            }
+            else if (grid != null)
+            {
+                GameObject go = new GameObject("MagicColumnMap");
+                go.transform.SetParent(grid.transform, false);
+                magicColumnMap = go.AddComponent<Tilemap>();
+                magicColumnMap.tileAnchor = Vector3.zero;
+                TilemapRenderer tr = go.AddComponent<TilemapRenderer>();
+                tr.sortingOrder = 1; // Above column, below ground overlay
+            }
+        }
     }
 
     private TileBase GetTileAsset(MagicTileType type)
@@ -373,6 +416,25 @@ public class MagicTileManager : MonoBehaviour
             Debug.LogWarning($"[MagicTileManager] No tile asset found for {type}, using fallback. Assign in Inspector or run Tools > Hex and Vex > Setup Magic Tiles.");
             tile = CreateFallbackTile(type);
         }
+
+        return tile;
+    }
+
+    private TileBase GetUpperTileAsset(MagicTileType type)
+    {
+        TileBase tile = null;
+        switch (type)
+        {
+            case MagicTileType.Red: tile = redUpperTile; break;
+            case MagicTileType.Blue: tile = blueUpperTile; break;
+            case MagicTileType.Green: tile = greenUpperTile; break;
+            case MagicTileType.Yellow: tile = yellowUpperTile; break;
+            case MagicTileType.Orange: tile = orangeUpperTile; break;
+        }
+
+        // Upper tile yoksa lower tile'ı fallback olarak üstte de kullan
+        if (tile == null)
+            tile = GetTileAsset(type);
 
         return tile;
     }
@@ -434,6 +496,13 @@ public class MagicTileManager : MonoBehaviour
             magicTileMap.SetTileFlags(cell, TileFlags.None);
             magicTileMap.SetTransformMatrix(cell, Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.zero));
             magicTileMap.SetColor(cell, new Color(1f, 1f, 1f, 0f));
+
+            if (magicColumnMap != null && magicColumnMap.HasTile(cell))
+            {
+                magicColumnMap.SetTileFlags(cell, TileFlags.None);
+                magicColumnMap.SetTransformMatrix(cell, Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.zero));
+                magicColumnMap.SetColor(cell, new Color(1f, 1f, 1f, 0f));
+            }
         }
 
         yield return new WaitForSeconds(0.3f);
@@ -492,7 +561,9 @@ public class MagicTileManager : MonoBehaviour
 
     private IEnumerator AnimateSingleTileSpawn(Vector3Int cell, float duration)
     {
-        if (magicTileMap == null || !magicTileMap.HasTile(cell)) yield break;
+        bool hasUpper = magicTileMap != null && magicTileMap.HasTile(cell);
+        bool hasLower = magicColumnMap != null && magicColumnMap.HasTile(cell);
+        if (!hasUpper && !hasLower) yield break;
 
         if (AudioManager.instance != null) AudioManager.instance.PlayHit();
 
@@ -516,13 +587,31 @@ public class MagicTileManager : MonoBehaviour
             }
 
             float alpha = Mathf.Clamp01(t * 3f); // fade in fast in first third
+            Matrix4x4 mat = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale);
+            Color col = new Color(1f, 1f, 1f, alpha);
 
-            magicTileMap.SetTransformMatrix(cell, Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale));
-            magicTileMap.SetColor(cell, new Color(1f, 1f, 1f, alpha));
+            if (hasUpper)
+            {
+                magicTileMap.SetTransformMatrix(cell, mat);
+                magicTileMap.SetColor(cell, col);
+            }
+            if (hasLower)
+            {
+                magicColumnMap.SetTransformMatrix(cell, mat);
+                magicColumnMap.SetColor(cell, col);
+            }
             yield return null;
         }
 
-        magicTileMap.SetTransformMatrix(cell, Matrix4x4.identity);
-        magicTileMap.SetColor(cell, Color.white);
+        if (hasUpper)
+        {
+            magicTileMap.SetTransformMatrix(cell, Matrix4x4.identity);
+            magicTileMap.SetColor(cell, Color.white);
+        }
+        if (hasLower)
+        {
+            magicColumnMap.SetTransformMatrix(cell, Matrix4x4.identity);
+            magicColumnMap.SetColor(cell, Color.white);
+        }
     }
 }

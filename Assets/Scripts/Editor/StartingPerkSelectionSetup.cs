@@ -41,18 +41,21 @@ public static class StartingPerkSelectionSetup
         // ═══════════════════════════════════════════
         GameObject panel = MakeUI("Panel", canvasGO.transform);
         Stretch(panel);
-        Image panelBG = panel.AddComponent<Image>();
-        // NodeMapBG sprite'ı varsa arka plan olarak kullan
-        Sprite bgSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/MapIcons/NodeMapBG.aseprite");
-        if (bgSprite != null)
+
+        // NodeMapBG — önce texture olarak dene (Texture Type = Default + Repeat), sonra sprite
+        Texture2D bgTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Sprites/MapIcons/NodeMapBG.aseprite");
+        if (bgTex != null)
         {
-            panelBG.sprite = bgSprite;
-            panelBG.type = Image.Type.Simple;
-            panelBG.preserveAspect = false;
-            panelBG.color = Color.white;
+            RawImage panelRaw = panel.AddComponent<RawImage>();
+            panelRaw.texture = bgTex;
+            panelRaw.color = Color.white;
+            float tilesX = 1920f / bgTex.width;
+            float tilesY = 1080f / bgTex.height;
+            panelRaw.uvRect = new Rect(0f, 0f, tilesX, tilesY);
         }
         else
         {
+            Image panelBG = panel.AddComponent<Image>();
             panelBG.color = new Color(0.02f, 0.02f, 0.04f, 0.98f);
         }
         CanvasGroup cg = panel.AddComponent<CanvasGroup>();

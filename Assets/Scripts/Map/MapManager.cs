@@ -187,14 +187,21 @@ public class MapManager : MonoBehaviour
         {
             parallaxImg.texture = mapBackgroundSprite.texture;
             parallaxImg.color = Color.white;
-            parallaxImg.uvRect = new Rect(0f, 0f, 1f, 1f);
-            Debug.Log($"[MAP BG] Sprite mode: texture={mapBackgroundSprite.texture.name}");
+            // Tiling: ekranı kaplayacak kadar tekrar et
+            // 1920x1080 referans çözünürlük üzerinden tile sayısı hesapla
+            float tilesX = 1920f / mapBackgroundSprite.texture.width;
+            float tilesY = 1080f / mapBackgroundSprite.texture.height;
+            parallaxImg.uvRect = new Rect(0f, 0f, tilesX, tilesY);
+            Debug.Log($"[MAP BG] Tiling mode: texture={mapBackgroundSprite.texture.name}, tiles={tilesX:F1}x{tilesY:F1}");
         }
         else if (mapBackgroundTexture != null)
         {
             parallaxImg.texture = mapBackgroundTexture;
-            parallaxImg.color = new Color(0.07f, 0.07f, 0.07f, 1f);
-            parallaxImg.uvRect = new Rect(0f, 0f, 16f, 9f);
+            parallaxImg.color = Color.white;
+            float tilesX = 1920f / mapBackgroundTexture.width;
+            float tilesY = 1080f / mapBackgroundTexture.height;
+            parallaxImg.uvRect = new Rect(0f, 0f, tilesX, tilesY);
+            Debug.Log($"[MAP BG] Texture tiling: {mapBackgroundTexture.name}, tiles={tilesX:F1}x{tilesY:F1}");
         }
         else
         {

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 3d7aa83f23e24f34998a076ae079c46c
+guid: c65b8f0a961184f4eb9eb1f5333478e8
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: NodeMapBG
+  - name: UpRedMagic
     originalName: 
-    pivot: {x: 0.5, y: 0}
+    pivot: {x: 0.49999997, y: 0}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 42
-      height: 30
-    spriteID: 31da06c9bb21d2d4495ad43d3240882e
+      width: 50
+      height: 25
+    spriteID: 1359ecdf5658ba449a233440798f971c
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 4292260433
+      value0: 383371627
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: NodeMapBG
+    name: UpRedMagic
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: NodeMapBG
+    - name: UpRedMagic
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 0
+        x: 4
         y: 0
-        width: 42
-        height: 30
-      spriteId: 31da06c9bb21d2d4495ad43d3240882e
+        width: 50
+        height: 25
+      spriteId: 1359ecdf5658ba449a233440798f971c
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 42, y: 30}
+  canvasSize: {x: 58, y: 26}
   previousTextureSize: {x: 64, y: 64}
