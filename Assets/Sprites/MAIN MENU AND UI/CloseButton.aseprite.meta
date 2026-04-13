@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 82dc9e803ed988f458ba52eeeace8cb7
+guid: 1800779d97a9dcd45baad938eda5da1a
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: CollectionBG
+  - name: CloseButton
     originalName: 
-    pivot: {x: 0.50245094, y: -0.021341464}
+    pivot: {x: 0.5192307, y: -0.09615385}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 408
-      height: 328
-    spriteID: 8ed3f2db8cfdc264f973c696617d7e85
+      width: 52
+      height: 52
+    spriteID: cc1bbcf3455529d48afe99a5bd22c401
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3747322767
+      value0: 347293458
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: CollectionBG
+    name: CloseButton
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: CollectionBG
+    - name: CloseButton
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 17
-        y: 7
-        width: 408
-        height: 328
-      spriteId: 8ed3f2db8cfdc264f973c696617d7e85
+        x: 3
+        y: 5
+        width: 52
+        height: 52
+      spriteId: cc1bbcf3455529d48afe99a5bd22c401
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 444, y: 339}
-  previousTextureSize: {x: 512, y: 512}
+  canvasSize: {x: 60, y: 60}
+  previousTextureSize: {x: 64, y: 64}
