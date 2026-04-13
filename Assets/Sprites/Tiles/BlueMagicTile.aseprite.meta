@@ -129,15 +129,15 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: BlueMagicTile
     originalName: 
-    pivot: {x: 0.5, y: -0.17647058}
-    alignment: 9
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
     rect:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 32
+      width: 38
       height: 17
     spriteID: 5b20432f7febc2642b92373ee9f55b9a
     spriteBone: []
@@ -167,9 +167,9 @@ ScriptedImporter:
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 9
+        x: 6
         y: 3
-        width: 32
+        width: 38
         height: 17
       spriteId: 5b20432f7febc2642b92373ee9f55b9a
     linkedCells: []

@@ -64,8 +64,10 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
                 if (halfW > 0 && halfH > 0)
                 {
-                    float nx = Mathf.Clamp(localPoint.x / halfW, -1f, 1f);
-                    float ny = Mathf.Clamp(localPoint.y / halfH, -1f, 1f);
+                    // Pivot merkez değilse localPoint kayar — rect.center ile düzelt
+                    Vector2 center = rectTransform.rect.center;
+                    float nx = Mathf.Clamp((localPoint.x - center.x) / halfW, -1f, 1f);
+                    float ny = Mathf.Clamp((localPoint.y - center.y) / halfH, -1f, 1f);
 
                     // Smooth normalized values
                     float lerpT = Time.unscaledDeltaTime * tiltSpeed;
@@ -74,7 +76,7 @@ public class CardTilt3D : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
                     // 3D rotation
                     float rotX = -currentNy * maxTiltAngle;
-                    float rotY = currentNx * maxTiltAngle;
+                    float rotY = -currentNx * maxTiltAngle;
                     targetRotation = Quaternion.Euler(rotX, rotY, 0f);
 
                     // Shine overlay
