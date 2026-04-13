@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: GreenMagicTile
     originalName: 
-    pivot: {x: 0.5, y: 0.6922}
+    pivot: {x: 0.47368422, y: 0.70026314}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -138,7 +138,7 @@ ScriptedImporter:
       x: 4
       y: 4
       width: 38
-      height: 17
+      height: 19
     spriteID: dd3b1bbb2f12d1d42adb0fb4c306f09e
     spriteBone: []
     spriteOutline: []
@@ -170,7 +170,7 @@ ScriptedImporter:
         x: 7
         y: 4
         width: 38
-        height: 17
+        height: 19
       spriteId: dd3b1bbb2f12d1d42adb0fb4c306f09e
     linkedCells: []
     tileCells: []

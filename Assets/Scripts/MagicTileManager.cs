@@ -11,10 +11,12 @@ public class MagicTileManager : MonoBehaviour
     public class MagicTileEntry
     {
         public MagicTileType type;
-        [Tooltip("Ground layer tile (50x25, pivot 0.5/0.5)")]
+        [Tooltip("Ground layer — arka kisim, karakter bunun onunde (groundMap, sorting 0)")]
         public TileBase groundTile;
-        [Tooltip("Column layer tile (50x41, pivot ~0.5/0.69)")]
+        [Tooltip("Column layer — hex sutunu (columnMap, sorting -1)")]
         public TileBase columnTile;
+        [Tooltip("On katman — karakter bunun arkasinda kalir (MagicOverlay, sorting 200)")]
+        public TileBase foregroundTile;
     }
 
     [Header("Magic Tile Data")]
@@ -23,17 +25,31 @@ public class MagicTileManager : MonoBehaviour
     // Runtime lookup — built from tileEntries
     private Dictionary<MagicTileType, MagicTileEntry> entryMap;
 
-    // Active magic tiles on the map: cell → type
+    // Active magic tiles on the map: cell -> type
     private Dictionary<Vector3Int, MagicTileType> activeTiles = new Dictionary<Vector3Int, MagicTileType>();
 
     // Saved originals for restore on consume/clear
     private Dictionary<Vector3Int, TileBase> savedGround = new Dictionary<Vector3Int, TileBase>();
     private Dictionary<Vector3Int, TileBase> savedColumn = new Dictionary<Vector3Int, TileBase>();
 
+    // Cells where ground sprite is missing — stores target tint color
+    private Dictionary<Vector3Int, Color> tintedCells = new Dictionary<Vector3Int, Color>();
+
+    // Foreground overlay tilemap — created at runtime, sorting order 200 (above characters)
+    private Tilemap overlayMap;
+
     // Blue tile: consume after 2-hex move away
     private Vector3Int blueTileCell = new Vector3Int(0, -999, 0);
     // Orange tile: consume when player leaves the cell
     private Vector3Int orangeTileCell = new Vector3Int(0, -999, 0);
+
+    // Deferred spawn data — tiles are replaced during animation, not immediately
+    private struct PendingSpawn
+    {
+        public Vector3Int cell;
+        public MagicTileType type;
+        public MagicTileEntry entry;
+    }
 
     // ─────────────────────────────────────────
     //  LIFECYCLE
@@ -68,6 +84,37 @@ public class MagicTileManager : MonoBehaviour
     }
 
     // ─────────────────────────────────────────
+    //  OVERLAY TILEMAP (auto-created)
+    // ─────────────────────────────────────────
+
+    private Tilemap GetOrCreateOverlayMap()
+    {
+        if (overlayMap != null) return overlayMap;
+        if (LevelGenerator.instance == null || LevelGenerator.instance.groundMap == null) return null;
+
+        Grid grid = LevelGenerator.instance.groundMap.layoutGrid;
+        if (grid == null) return null;
+
+        // Check if already exists in the scene
+        Transform existing = grid.transform.Find("MagicOverlay");
+        if (existing != null)
+        {
+            overlayMap = existing.GetComponent<Tilemap>();
+            return overlayMap;
+        }
+
+        // Create a new tilemap child under the Grid
+        GameObject go = new GameObject("MagicOverlay");
+        go.transform.SetParent(grid.transform, false);
+        overlayMap = go.AddComponent<Tilemap>();
+        TilemapRenderer renderer = go.AddComponent<TilemapRenderer>();
+        renderer.sortingOrder = 200; // Above character sprites (~100)
+        renderer.mode = TilemapRenderer.Mode.Individual;
+
+        return overlayMap;
+    }
+
+    // ─────────────────────────────────────────
     //  SPAWN
     // ─────────────────────────────────────────
 
@@ -89,7 +136,22 @@ public class MagicTileManager : MonoBehaviour
         List<Vector3Int> candidates = GetOccupiedCells(groundMap);
         if (candidates.Count == 0) return;
 
-        List<Vector3Int> spawned = new List<Vector3Int>();
+        // Check if any entry has a foreground tile — only create overlay if needed
+        bool needsOverlay = false;
+        foreach (var type in tiles)
+        {
+            var entry = GetEntry(type);
+            if (entry != null && entry.foregroundTile != null)
+            {
+                needsOverlay = true;
+                break;
+            }
+        }
+        if (needsOverlay) GetOrCreateOverlayMap();
+
+        List<PendingSpawn> pending = new List<PendingSpawn>();
+
+        Debug.Log($"[MagicTile] SpawnMagicTiles: {tiles.Count} tile, {candidates.Count} aday hucre, validCells={LevelGenerator.instance.validCells.Count}");
 
         foreach (var type in tiles)
         {
@@ -98,40 +160,24 @@ public class MagicTileManager : MonoBehaviour
             Vector3Int cell = PickSmartCell(type, candidates);
             if (cell.y == -999) continue;
 
-            // Save originals before replacing
-            savedGround[cell] = groundMap.GetTile(cell);
+            // Save originals before any replacement
+            TileBase origGround = groundMap.GetTile(cell);
+            savedGround[cell] = origGround;
             if (columnMap != null && columnMap.HasTile(cell))
                 savedColumn[cell] = columnMap.GetTile(cell);
 
             MagicTileEntry entry = GetEntry(type);
 
-            // Replace ground tile (if magic ground sprite exists)
-            if (entry != null && entry.groundTile != null)
-            {
-                groundMap.SetTile(cell, entry.groundTile);
-            }
-            else
-            {
-                Debug.LogWarning($"[MagicTile] {type} ground tile eksik — ground degistirilmedi. Editor'da Tools > Hex and Vex > Setup Magic Tile Assets calistir.");
-            }
+            Debug.Log($"[MagicTile] {type} -> cell {cell} | origGround={origGround?.name ?? "NULL"} | entry ground={entry?.groundTile?.name ?? "NULL"} column={entry?.columnTile?.name ?? "NULL"} fg={entry?.foregroundTile?.name ?? "NULL"}");
 
-            // Replace column tile (only if original cell had a column)
-            if (entry != null && entry.columnTile != null && columnMap != null && savedColumn.ContainsKey(cell))
-            {
-                columnMap.SetTile(cell, entry.columnTile);
-            }
-            else if (entry == null || entry.columnTile == null)
-            {
-                Debug.LogWarning($"[MagicTile] {type} column tile eksik — column degistirilmedi.");
-            }
-
+            // Register as active — but DON'T replace tiles yet (deferred to animation)
             activeTiles[cell] = type;
-            spawned.Add(cell);
+            pending.Add(new PendingSpawn { cell = cell, type = type, entry = entry });
             candidates.Remove(cell);
         }
 
-        if (spawned.Count > 0)
-            StartCoroutine(FadeInAnimation(spawned));
+        if (pending.Count > 0)
+            StartCoroutine(FadeInAnimation(pending));
     }
 
     // ─────────────────────────────────────────
@@ -204,6 +250,12 @@ public class MagicTileManager : MonoBehaviour
         activeTiles.Clear();
         savedGround.Clear();
         savedColumn.Clear();
+        tintedCells.Clear();
+
+        // Clear the overlay tilemap completely
+        if (overlayMap != null)
+            overlayMap.ClearAllTiles();
+
         blueTileCell = new Vector3Int(0, -999, 0);
         orangeTileCell = new Vector3Int(0, -999, 0);
     }
@@ -232,6 +284,12 @@ public class MagicTileManager : MonoBehaviour
             cm.SetColor(cell, Color.white);
             savedColumn.Remove(cell);
         }
+
+        // Remove foreground overlay tile
+        if (overlayMap != null && overlayMap.HasTile(cell))
+            overlayMap.SetTile(cell, null);
+
+        tintedCells.Remove(cell);
     }
 
     // ─────────────────────────────────────────
@@ -256,20 +314,18 @@ public class MagicTileManager : MonoBehaviour
         HashSet<Vector3Int> scaffolds = LevelGenerator.instance.scaffoldCells;
         HashSet<Vector3Int> teleports = LevelGenerator.instance.teleportCells;
 
-        BoundsInt bounds = groundMap.cellBounds;
-        for (int x = bounds.xMin; x < bounds.xMax; x++)
+        Tilemap gm = LevelGenerator.instance.groundMap;
+
+        // Use validCells AND verify the cell actually has a ground tile
+        foreach (var cell in LevelGenerator.instance.validCells)
         {
-            for (int y = bounds.yMin; y < bounds.yMax; y++)
-            {
-                var cell = new Vector3Int(x, y, 0);
-                if (!groundMap.HasTile(cell)) continue;   // Only occupied cells
-                if (cell == playerCell) continue;
-                if (enemyCells.Contains(cell)) continue;
-                if (hazards.Contains(cell)) continue;
-                if (scaffolds.Contains(cell)) continue;
-                if (teleports.Contains(cell)) continue;
-                result.Add(cell);
-            }
+            if (!gm.HasTile(cell)) continue;              // Double-check: must have ground tile
+            if (cell == playerCell) continue;
+            if (enemyCells.Contains(cell)) continue;
+            if (hazards.Contains(cell)) continue;
+            if (scaffolds.Contains(cell)) continue;
+            if (teleports.Contains(cell)) continue;
+            result.Add(cell);
         }
 
         return result;
@@ -373,10 +429,11 @@ public class MagicTileManager : MonoBehaviour
         // Resources fallback — try to load at runtime
         TileBase gt = Resources.Load<TileBase>(type.ToString() + "MagicUpperTile");
         TileBase ct = Resources.Load<TileBase>(type.ToString() + "MagicTile");
+        TileBase fg = Resources.Load<TileBase>("Katman" + type.ToString() + "Tile");
 
-        if (gt != null || ct != null)
+        if (gt != null || ct != null || fg != null)
         {
-            var e = new MagicTileEntry { type = type, groundTile = gt, columnTile = ct };
+            var e = new MagicTileEntry { type = type, groundTile = gt, columnTile = ct, foregroundTile = fg };
             if (entryMap == null) entryMap = new Dictionary<MagicTileType, MagicTileEntry>();
             entryMap[type] = e;
             return e;
@@ -386,35 +443,44 @@ public class MagicTileManager : MonoBehaviour
     }
 
     // ─────────────────────────────────────────
-    //  ANIMATION (fade-in + glow)
+    //  COLOR TINT (fallback when ground sprite is missing)
     // ─────────────────────────────────────────
 
-    private IEnumerator FadeInAnimation(List<Vector3Int> cells)
+    private Color GetMagicTint(MagicTileType type)
+    {
+        switch (type)
+        {
+            case MagicTileType.Red:    return new Color(1.0f, 0.55f, 0.55f);
+            case MagicTileType.Blue:   return new Color(0.55f, 0.65f, 1.0f);
+            case MagicTileType.Green:  return new Color(0.55f, 1.0f, 0.6f);
+            case MagicTileType.Yellow: return new Color(1.0f, 0.95f, 0.5f);
+            case MagicTileType.Orange: return new Color(1.0f, 0.7f, 0.4f);
+            default:                   return Color.white;
+        }
+    }
+
+    // ─────────────────────────────────────────
+    //  ANIMATION (fade-in + glow)
+    //  Tile replacement is DEFERRED to here so
+    //  original tiles stay visible during camera pan.
+    // ─────────────────────────────────────────
+
+    private IEnumerator FadeInAnimation(List<PendingSpawn> pending)
     {
         Tilemap gm = LevelGenerator.instance != null ? LevelGenerator.instance.groundMap : null;
         Tilemap cm = LevelGenerator.instance != null ? LevelGenerator.instance.columnMap : null;
+        Tilemap fm = overlayMap;
         if (gm == null) yield break;
 
-        // Start tiles invisible
-        foreach (var cell in cells)
-        {
-            gm.SetTileFlags(cell, TileFlags.None);
-            gm.SetColor(cell, new Color(1, 1, 1, 0));
-            if (cm != null && cm.HasTile(cell))
-            {
-                cm.SetTileFlags(cell, TileFlags.None);
-                cm.SetColor(cell, new Color(1, 1, 1, 0));
-            }
-        }
-
+        // Brief pause — original tiles are still fully visible
         yield return new WaitForSeconds(0.3f);
 
         // Camera pan to tile center
         CameraController cam = Object.FindFirstObjectByType<CameraController>();
         Vector3 center = Vector3.zero;
-        foreach (var c in cells)
-            center += gm.CellToWorld(c);
-        center /= cells.Count;
+        foreach (var p in pending)
+            center += gm.CellToWorld(p.cell);
+        center /= pending.Count;
 
         Vector3 camStart = cam != null ? cam.GetTargetPosition() : Vector3.zero;
         Vector3 camTarget = new Vector3(center.x, center.y, camStart.z + 3f);
@@ -429,11 +495,11 @@ public class MagicTileManager : MonoBehaviour
             yield return null;
         }
 
-        // Staggered fade-in per tile
-        for (int i = 0; i < cells.Count; i++)
+        // Staggered tile replacement + fade-in (original tiles visible until each one transforms)
+        for (int i = 0; i < pending.Count; i++)
         {
-            StartCoroutine(FadeSingleTile(cells[i], 0.35f, gm, cm));
-            if (i < cells.Count - 1)
+            StartCoroutine(FadeSingleTile(pending[i], gm, cm, fm));
+            if (i < pending.Count - 1)
                 yield return new WaitForSeconds(0.15f);
         }
 
@@ -451,33 +517,99 @@ public class MagicTileManager : MonoBehaviour
         if (cam != null) cam.SetTargetPosition(camStart);
     }
 
-    private IEnumerator FadeSingleTile(Vector3Int cell, float dur, Tilemap gm, Tilemap cm)
+    private IEnumerator FadeSingleTile(PendingSpawn spawn, Tilemap gm, Tilemap cm, Tilemap fm)
     {
-        bool hasG = gm != null && gm.HasTile(cell);
-        bool hasC = cm != null && cm.HasTile(cell);
-        if (!hasG && !hasC) yield break;
+        Vector3Int cell = spawn.cell;
+        MagicTileEntry entry = spawn.entry;
+        MagicTileType type = spawn.type;
+
+        bool groundIsTinted = (entry == null || entry.groundTile == null);
+        Color tintColor = Color.white;
+
+        // ── Apply tile replacement right now (original was visible until this moment) ──
+
+        if (!groundIsTinted)
+        {
+            // Replace ground with magic sprite — start invisible, will fade in
+            gm.SetTile(cell, entry.groundTile);
+            gm.SetTileFlags(cell, TileFlags.None);
+            gm.SetColor(cell, new Color(1, 1, 1, 0));
+        }
+        else
+        {
+            // No magic ground sprite — keep original tile, blend to tint color
+            tintColor = GetMagicTint(type);
+            tintedCells[cell] = tintColor;
+            gm.SetTileFlags(cell, TileFlags.None);
+            // Ground stays visible at white — will blend to tint during animation
+        }
+
+        // Replace column tile
+        bool hasColumn = false;
+        if (entry != null && entry.columnTile != null && cm != null && savedColumn.ContainsKey(cell))
+        {
+            cm.SetTile(cell, entry.columnTile);
+            cm.SetTileFlags(cell, TileFlags.None);
+            cm.SetColor(cell, new Color(1, 1, 1, 0));
+            hasColumn = true;
+        }
+
+        // Place foreground overlay tile
+        bool hasFg = false;
+        if (entry != null && entry.foregroundTile != null && fm != null)
+        {
+            fm.SetTile(cell, entry.foregroundTile);
+            fm.SetTileFlags(cell, TileFlags.None);
+            fm.SetColor(cell, new Color(1, 1, 1, 0));
+            hasFg = true;
+        }
 
         if (AudioManager.instance != null) AudioManager.instance.PlayHit();
 
+        // ── Fade in with glow ──
+
+        float dur = 0.35f;
         float elapsed = 0f;
         while (elapsed < dur)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / dur);
 
-            // Fade in fast, then brief glow that settles to white
             float alpha = Mathf.Clamp01(t * 2.5f);
             float glow = t < 0.4f
                 ? Mathf.Lerp(1f, 1.5f, t / 0.4f)
                 : Mathf.Lerp(1.5f, 1f, (t - 0.4f) / 0.6f);
-            Color col = new Color(glow, glow, glow, alpha);
 
-            if (hasG) gm.SetColor(cell, col);
-            if (hasC) cm.SetColor(cell, col);
+            if (!groundIsTinted)
+            {
+                // Normal fade-in for magic ground sprite
+                gm.SetColor(cell, new Color(glow, glow, glow, alpha));
+            }
+            else
+            {
+                // Blend from white to tint color with glow effect
+                Color blended = Color.Lerp(Color.white, tintColor, t);
+                blended.r *= glow;
+                blended.g *= glow;
+                blended.b *= glow;
+                gm.SetColor(cell, blended);
+            }
+
+            Color fadeCol = new Color(glow, glow, glow, alpha);
+            if (hasColumn) cm.SetColor(cell, fadeCol);
+            if (hasFg) fm.SetColor(cell, fadeCol);
+
             yield return null;
         }
 
-        if (hasG) gm.SetColor(cell, Color.white);
-        if (hasC) cm.SetColor(cell, Color.white);
+        // ── Final settled color ──
+
+        if (!groundIsTinted)
+            gm.SetColor(cell, Color.white);
+        else
+            gm.SetColor(cell, tintColor);
+
+        if (hasColumn) cm.SetColor(cell, Color.white);
+        if (hasFg) fm.SetColor(cell, Color.white);
     }
 }

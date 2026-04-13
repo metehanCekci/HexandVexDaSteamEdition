@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("UI References")]
     public Image iconImage;
@@ -81,6 +81,16 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public void OnPointerExit(PointerEventData eventData)
     {
         isHovered = false;
+    }
+
+    // Dev cheat: Ctrl+Click any node to force-select it
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        {
+            if (MapManager.instance != null)
+                MapManager.instance.SelectNode(nodeId, force: true);
+        }
     }
 
     void Update()

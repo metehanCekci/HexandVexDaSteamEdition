@@ -561,7 +561,7 @@ public class MapManager : MonoBehaviour
     }
 
     // ─── Oyuncu bir node seçtiğinde ───
-    public void SelectNode(int nodeId)
+    public void SelectNode(int nodeId, bool force = false)
     {
         if (isTransitioning) return;
         if (currentMap == null) return;
@@ -569,16 +569,23 @@ public class MapManager : MonoBehaviour
         MapNode node = currentMap.GetNode(nodeId);
         if (node == null) return;
 
-        // İlk hamle: row 0 node'larından birine girebilir
-        if (currentMap.currentNodeId == -1)
+        if (!force)
         {
-            if (node.row != 0) return;
+            // İlk hamle: row 0 node'larından birine girebilir
+            if (currentMap.currentNodeId == -1)
+            {
+                if (node.row != 0) return;
+            }
+            else
+            {
+                // Sadece current node'un child'larına gidilebilir
+                MapNode current = currentMap.GetNode(currentMap.currentNodeId);
+                if (current == null || !current.childIds.Contains(nodeId)) return;
+            }
         }
         else
         {
-            // Sadece current node'un child'larına gidilebilir
-            MapNode current = currentMap.GetNode(currentMap.currentNodeId);
-            if (current == null || !current.childIds.Contains(nodeId)) return;
+            Debug.Log($"[DEV] Force-selected node {nodeId} (row {node.row}, {node.nodeType})");
         }
 
         node.visited = true;
