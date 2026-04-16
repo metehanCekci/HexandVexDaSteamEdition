@@ -57,7 +57,7 @@ public class PauseManager : MonoBehaviour
     public void Pause()
     {
         pauseMenuUI.SetActive(true);
-        EnsureCanvasSortingOrder(pauseMenuUI, 500);
+        EnsureCanvasSortingOrder(pauseMenuUI, 5000);
         EnsurePauseCanvasGroup();
 
         // Shop açıkken pause menüsüne tıklanabilmesi için shop etkileşimini kapat

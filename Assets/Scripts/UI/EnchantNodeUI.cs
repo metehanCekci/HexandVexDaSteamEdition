@@ -268,6 +268,37 @@ public class EnchantNodeUI : MonoBehaviour
         Close();
     }
 
+    // ─── Force Close (R-reset, scene reload) ───
+
+    public void ForceClose()
+    {
+        StopAllCoroutines();
+        hasChosen = true;
+        Time.timeScale = 1f;
+
+        if (enchantPanel != null)
+        {
+            enchantPanel.SetActive(false);
+            if (enchantPanel.transform.parent != null)
+                enchantPanel.transform.parent.gameObject.SetActive(false);
+        }
+
+        if (panelCG != null) panelCG.alpha = 1f;
+
+        if (choiceButtons != null)
+        {
+            for (int i = 0; i < choiceButtons.Length; i++)
+            {
+                if (choiceButtons[i] == null) continue;
+                choiceButtons[i].transform.localScale = Vector3.one;
+                choiceButtons[i].interactable = true;
+                choiceButtons[i].gameObject.SetActive(false);
+                var cg = choiceButtons[i].GetComponent<CanvasGroup>();
+                if (cg != null) cg.alpha = 1f;
+            }
+        }
+    }
+
     // ─── Close ───
 
     private void Close()

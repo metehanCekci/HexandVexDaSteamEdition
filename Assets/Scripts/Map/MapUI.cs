@@ -21,13 +21,15 @@ public class MapUI : MonoBehaviour
     [Header("Connection Lines")]
     public GameObject linePrefab; // Basit Image (stretched) prefab
 
-    [Header("Node Icons (opsiyonel)")]
+    [Header("Node Icons")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite restIcon;
-    public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite restIcon;
+    public Sprite shopIcon;
     public Sprite sacrificeIcon;
+    public Sprite enchantIcon;
+    public Sprite treasureIcon;
 
     private List<MapNodeUI> spawnedNodes = new List<MapNodeUI>();
     private List<GameObject> spawnedLines = new List<GameObject>();
@@ -44,7 +46,7 @@ public class MapUI : MonoBehaviour
 
     void Start()
     {
-        MapNodeUI.SetIcons(combatIcon, eliteIcon, restIcon, eventIcon, bossIcon, sacrificeIcon);
+        MapNodeUI.SetIcons(combatIcon, eliteIcon, bossIcon, restIcon, shopIcon, sacrificeIcon, enchantIcon, treasureIcon);
     }
 
     public void BuildMap(MapData map)
@@ -53,7 +55,7 @@ public class MapUI : MonoBehaviour
 
         if (map == null || mapNodePrefab == null || nodeContainer == null) return;
 
-        MapNodeUI.SetIcons(combatIcon, eliteIcon, restIcon, eventIcon, bossIcon, sacrificeIcon);
+        MapNodeUI.SetIcons(combatIcon, eliteIcon, bossIcon, restIcon, shopIcon, sacrificeIcon, enchantIcon, treasureIcon);
 
         // ─── Max row bul ───
         int maxRow = 0;

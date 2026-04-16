@@ -20,11 +20,12 @@ public class MapManager : MonoBehaviour
     [Header("Node Icons")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite restIcon;
-    public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite restIcon;
+    public Sprite shopIcon;
     public Sprite sacrificeIcon;
     public Sprite enchantIcon;
+    public Sprite treasureIcon;
 
     [Header("Rest UI")]
     public GameObject restCanvasPrefab; // Inspector'dan RestCanvas prefab'ını sürükle
@@ -267,10 +268,12 @@ public class MapManager : MonoBehaviour
         // Node icon'larını ata
         ui.combatIcon = combatIcon;
         ui.eliteIcon = eliteIcon;
-        ui.restIcon = restIcon;
-        ui.eventIcon = enchantIcon != null ? enchantIcon : eventIcon;
         ui.bossIcon = bossIcon;
+        ui.restIcon = restIcon;
+        ui.shopIcon = shopIcon;
         ui.sacrificeIcon = sacrificeIcon;
+        ui.enchantIcon = enchantIcon;
+        ui.treasureIcon = treasureIcon;
 
         mapUI = ui;
         canvasGO.SetActive(false); // Başlangıçta tüm canvas'ı kapat
@@ -561,7 +564,7 @@ public class MapManager : MonoBehaviour
     }
 
     // ─── Oyuncu bir node seçtiğinde ───
-    public void SelectNode(int nodeId)
+    public void SelectNode(int nodeId, bool force = false)
     {
         if (isTransitioning) return;
         if (currentMap == null) return;
@@ -569,16 +572,23 @@ public class MapManager : MonoBehaviour
         MapNode node = currentMap.GetNode(nodeId);
         if (node == null) return;
 
-        // İlk hamle: row 0 node'larından birine girebilir
-        if (currentMap.currentNodeId == -1)
+        if (!force)
         {
-            if (node.row != 0) return;
+            // İlk hamle: row 0 node'larından birine girebilir
+            if (currentMap.currentNodeId == -1)
+            {
+                if (node.row != 0) return;
+            }
+            else
+            {
+                // Sadece current node'un child'larına gidilebilir
+                MapNode current = currentMap.GetNode(currentMap.currentNodeId);
+                if (current == null || !current.childIds.Contains(nodeId)) return;
+            }
         }
         else
         {
-            // Sadece current node'un child'larına gidilebilir
-            MapNode current = currentMap.GetNode(currentMap.currentNodeId);
-            if (current == null || !current.childIds.Contains(nodeId)) return;
+            Debug.Log($"[DEV] Force-selected node {nodeId} (row {node.row}, {node.nodeType})");
         }
 
         node.visited = true;

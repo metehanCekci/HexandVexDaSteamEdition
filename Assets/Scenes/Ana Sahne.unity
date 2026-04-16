@@ -5282,11 +5282,12 @@ MonoBehaviour:
   mapBackgroundSprite: {fileID: 0}
   combatIcon: {fileID: 3131769299486017848, guid: 5b6404a72e4f2bd478462f8a2cc7c245, type: 3}
   eliteIcon: {fileID: 1279993407135696526, guid: 52b21dd94e08d7d40a6185a8c9f99307, type: 3}
-  restIcon: {fileID: 8472719745605931497, guid: 3d507ef671e236e458eb01202b037205, type: 3}
-  eventIcon: {fileID: -8871198759740952176, guid: 62e3a00ea2801244abc42e8f6aa08bd4, type: 3}
   bossIcon: {fileID: -174665580736101247, guid: 52a6655860d540749b3eb51fd6adde88, type: 3}
+  restIcon: {fileID: 8472719745605931497, guid: 3d507ef671e236e458eb01202b037205, type: 3}
+  shopIcon: {fileID: 5120115843549842449, guid: 04820ec0f47537d44b2f8acca7ed92af, type: 3}
   sacrificeIcon: {fileID: -2072518077068888634, guid: c00c2b8df29d7d441be73e74ac2da3ed, type: 3}
   enchantIcon: {fileID: 4180339982251627258, guid: 62e3a00ea2801244abc42e8f6aa08bd4, type: 3}
+  treasureIcon: {fileID: -520129284973205392, guid: 60ea26fa5f727e348bf15d2e66a99d88, type: 3}
   restCanvasPrefab: {fileID: 180707071757026693, guid: f46023b7f274a024cb5e23d4e61c46ff, type: 3}
   vignetteIntensity: 0.8
   vignetteSmoothness: 0.7

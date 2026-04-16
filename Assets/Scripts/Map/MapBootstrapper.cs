@@ -12,11 +12,12 @@ public class MapBootstrapper : MonoBehaviour
     [Header("Opsiyonel: Node İkonları (boş bırakabilirsin)")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite restIcon;
-    public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite restIcon;
+    public Sprite shopIcon;
     public Sprite sacrificeIcon;
     public Sprite enchantIcon;
+    public Sprite treasureIcon;
 
     [Header("Layer Config (opsiyonel)")]
     public MapLayerData[] layerConfigs;
@@ -144,10 +145,12 @@ public class MapBootstrapper : MonoBehaviour
         // İkonları ata
         mapUI.combatIcon = combatIcon;
         mapUI.eliteIcon = eliteIcon;
-        mapUI.restIcon = restIcon;
-        mapUI.eventIcon = enchantIcon != null ? enchantIcon : eventIcon;
         mapUI.bossIcon = bossIcon;
+        mapUI.restIcon = restIcon;
+        mapUI.shopIcon = shopIcon;
         mapUI.sacrificeIcon = sacrificeIcon;
+        mapUI.enchantIcon = enchantIcon;
+        mapUI.treasureIcon = treasureIcon;
 
         // MapManager'a bağla
         if (MapManager.instance != null)

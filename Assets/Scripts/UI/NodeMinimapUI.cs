@@ -131,15 +131,18 @@ public class NodeMinimapUI : MonoBehaviour
         ComputeReachability(map, nextStepIds, futureReachable);
 
         // İkonları al
-        Sprite combatIcon = null, eliteIcon = null;
-        Sprite restIcon = null, eventIcon = null, bossIcon = null;
+        Sprite combatIcon = null, eliteIcon = null, bossIcon = null;
+        Sprite restIcon = null, sacrificeIcon = null;
+        Sprite enchantIcon = null, treasureIcon = null;
         if (MapManager.instance != null)
         {
             combatIcon = MapManager.instance.combatIcon;
             eliteIcon = MapManager.instance.eliteIcon;
-            restIcon = MapManager.instance.restIcon;
-            eventIcon = MapManager.instance.eventIcon;
             bossIcon = MapManager.instance.bossIcon;
+            restIcon = MapManager.instance.restIcon;
+            sacrificeIcon = MapManager.instance.sacrificeIcon;
+            enchantIcon = MapManager.instance.enchantIcon;
+            treasureIcon = MapManager.instance.treasureIcon;
         }
 
         // Node pozisyonları
@@ -171,7 +174,7 @@ public class NodeMinimapUI : MonoBehaviour
             // İkon
             Image nodeImg = nodeGO.AddComponent<Image>();
             nodeImg.raycastTarget = false;
-            Sprite icon = GetIcon(node.nodeType, combatIcon, eliteIcon, restIcon, eventIcon, bossIcon);
+            Sprite icon = GetIcon(node.nodeType, combatIcon, eliteIcon, bossIcon, restIcon, sacrificeIcon, enchantIcon, treasureIcon);
 
             if (icon != null)
             {
@@ -309,16 +312,17 @@ public class NodeMinimapUI : MonoBehaviour
         return -totalWidth / 2f + column * COL_SPACING;
     }
 
-    private Sprite GetIcon(MapNodeType type, Sprite combat, Sprite elite, Sprite rest, Sprite evt, Sprite boss)
+    private Sprite GetIcon(MapNodeType type, Sprite combat, Sprite elite, Sprite boss, Sprite rest, Sprite sacrifice, Sprite enchant, Sprite treasure)
     {
         switch (type)
         {
             case MapNodeType.Combat:        return combat;
             case MapNodeType.EliteCombat:    return elite;
-            case MapNodeType.Rest:           return rest;
-            case MapNodeType.Enchant:        return evt;
             case MapNodeType.Boss:           return boss;
-            case MapNodeType.Treasure:       return evt; // TODO: treasure icon
+            case MapNodeType.Rest:           return rest;
+            case MapNodeType.Sacrifice:      return sacrifice;
+            case MapNodeType.Enchant:        return enchant;
+            case MapNodeType.Treasure:       return treasure;
             default:                         return null;
         }
     }
