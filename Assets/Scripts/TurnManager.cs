@@ -3511,7 +3511,7 @@ public class TurnManager : MonoBehaviour
 
     private bool IsNeighbor(Vector3Int cell1, Vector3Int cell2) => HexGridUtils.IsNeighbor(cell1, cell2);
 
-    private Vector3Int GetRandomSafeNeighbor(Vector3Int centerCell)
+    public Vector3Int GetRandomSafeNeighbor(Vector3Int centerCell)
     {
         Vector3Int[] offsets = (centerCell.y % 2 != 0) ? evenOffsets : oddOffsets;
         List<Vector3Int> safeNeighbors = new List<Vector3Int>();
@@ -3732,7 +3732,7 @@ public class TurnManager : MonoBehaviour
 
     private Vector3Int OffsetToCube(Vector3Int o) => HexGridUtils.OffsetToCube(o);
 
-    private IEnumerator FlashHazardTileCoroutine(Vector3Int cell)
+    public IEnumerator FlashHazardTileCoroutine(Vector3Int cell)
     {
         Tilemap targetMap = LevelGenerator.instance.foreGroundA;
         if (targetMap == null) yield break;

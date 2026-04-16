@@ -515,6 +515,9 @@ public class LevelGenerator : MonoBehaviour
         if (RunManager.instance != null)
         {
             RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
+            // Clear blue tile extended range from previous level
+            RunManager.instance.surgeBootActive = false;
+            RunManager.instance.surgeBootNextTurn = false;
         }
 
         TurnManager.instance.player.UpdateHighlights();

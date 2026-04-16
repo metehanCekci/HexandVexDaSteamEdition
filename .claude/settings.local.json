@@ -91,7 +91,10 @@
       "Bash(grep -n \"^\\\\s*//.*[a-zA-Z]\" Assets/Scripts/UI/SellBoxDropZone.cs Assets/Scripts/UI/UIVignette.cs Assets/Scripts/UI/SimpleScrollArea.cs Assets/Scripts/UI/UIHoverEffect.cs)",
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks -type f -name \"*.cs\" ! -name \"*Anim.cs\" ! -name \"*ShopReroll*\" -exec basename {} .cs \\\\;)",
       "Bash(grep -l \"Shopmanager\\\\|ShopDealer\\\\|MergedShopManager\" Assets/Scripts/*.cs Assets/Scripts/**/*.cs)",
-      "Bash(grep -l \"BombPlacementCursor\\\\|NecroShotCursor\\\\|PhaseShiftCursor\\\\|ThornPlacementCursor\" \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/\"*.unity)"
+      "Bash(grep -l \"BombPlacementCursor\\\\|NecroShotCursor\\\\|PhaseShiftCursor\\\\|ThornPlacementCursor\" \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/\"*.unity)",
+      "Bash(grep -n \"StartKnockback\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
+      "Bash(grep -n \"OnPlayerLeftCell\\\\|CheckMucusSlide\\\\|GetEnemyPushedIntoSpike\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
+      "Bash(grep -n \"surgeBootActive.*false\" Assets/Scripts/*.cs)"
     ]
   }
 }

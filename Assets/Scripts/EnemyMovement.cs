@@ -439,10 +439,21 @@ public class EnemyMovement : MonoBehaviour
                 ScaffoldManager.instance.OnEntityEnter(cell);
             }
 
-            // Hazard damage (spikes etc.)
+            // Hazard damage (spikes etc.) — same treatment as knockback into spikes
             if (isHazard && health != null)
             {
-                health.TakeDamage(1);
+                // 50% maxHP damage (same as TurnManager knockback-into-spike logic)
+                if (TurnManager.instance != null)
+                    TurnManager.instance.StartCoroutine(TurnManager.instance.FlashHazardTileCoroutine(cell));
+                health.TakeDamage(Mathf.Max(1, health.maxHP / 2));
+
+                // Bounce away to a safe neighbor if still alive
+                if (health.currentHP > 0 && TurnManager.instance != null)
+                {
+                    Vector3Int bounceCell = TurnManager.instance.GetRandomSafeNeighbor(cell);
+                    if (bounceCell != cell)
+                        StartKnockbackMovement(bounceCell);
+                }
             }
         }
     }

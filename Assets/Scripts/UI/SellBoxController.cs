@@ -215,6 +215,7 @@ public class SellBoxController : MonoBehaviour
     private void SlideIn()
     {
         if (isVisible) return;
+        isVisible = true; // Set immediately so SlideOut() can interrupt mid-animation
         if (animCoroutine != null) StopCoroutine(animCoroutine);
         animCoroutine = StartCoroutine(AnimateSlide(true));
     }
@@ -222,6 +223,7 @@ public class SellBoxController : MonoBehaviour
     private void SlideOut()
     {
         if (!isVisible) return;
+        isVisible = false; // Set immediately so SlideIn() can interrupt mid-animation
         if (animCoroutine != null) StopCoroutine(animCoroutine);
         animCoroutine = StartCoroutine(AnimateSlide(false));
     }
@@ -274,7 +276,6 @@ public class SellBoxController : MonoBehaviour
             panelCanvasGroup.interactable = false;
         }
 
-        isVisible = opening;
         animCoroutine = null;
     }
 
