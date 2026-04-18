@@ -58,7 +58,7 @@ public class PyrogenicGlandsPerk : BasePerk
                 continue;
             }
 
-            int damage = Mathf.Max(1, Mathf.RoundToInt(enemy.health.maxHP * damagePercent));
+            long damage = System.Math.Max(1L, (long)System.Math.Round(enemy.health.maxHP * (double)damagePercent));
             // Warlock'un burn hasarında ışınlanmaması için flag set et
             var warlock = enemy.GetComponent<WarlockEnemyAI>();
             if (warlock != null) warlock.isBurnDamage = true;

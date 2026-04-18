@@ -193,11 +193,9 @@ public class EnemyHealthBar : MonoBehaviour
             hpLabel.text = $"{FormatHP(health.currentHP)}/{FormatHP(health.maxHP)}";
     }
 
-    private string FormatHP(int hp)
+    private string FormatHP(long hp)
     {
-        if (hp >= 1000000) return $"{hp / 1000000}M";
-        if (hp >= 10000) return $"{hp / 1000}k";
-        return hp.ToString();
+        return NumberFormatter.Format(hp);
     }
 
     public void SetSortingOrder(int order)

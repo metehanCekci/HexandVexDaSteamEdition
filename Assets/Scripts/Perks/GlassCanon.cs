@@ -34,12 +34,12 @@ public class GlassCanonPerk : BasePerk
         var rm = RunManager.instance;
         if (rm.playerMaxHealth <= 3) return;
 
-        int oldMax = rm.playerMaxHealth;
-        int newMax = 3;
+        long oldMax = rm.playerMaxHealth;
+        long newMax = 3;
 
         rm.playerMaxHealth = newMax;
         // Current HP'yi 3'e düşür ama asla mevcut değerin altına indirme
-        rm.playerCurrentHealth = Mathf.Clamp(rm.playerCurrentHealth, 1, newMax);
+        rm.playerCurrentHealth = System.Math.Clamp(rm.playerCurrentHealth, 1, newMax);
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
@@ -53,7 +53,7 @@ public class GlassCanonPerk : BasePerk
     public override void OnUnequip()
     {
         var rm = RunManager.instance;
-        int defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
+        long defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
 
         // Sadece maxHP'yi geri yükselt, currentHP'ye dokunma (stash abuse fix)
         rm.playerMaxHealth = defaultMaxHP;

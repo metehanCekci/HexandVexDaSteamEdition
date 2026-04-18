@@ -13,7 +13,7 @@ public class OverkillProtocolPerk : BasePerk
     /// Called by TurnManager after an enemy dies from combat damage.
     /// Returns the overkill amount to transfer to a random living enemy.
     /// </summary>
-    public void TransferOverkill(EnemyMovement deadEnemy, int overkillAmount)
+    public void TransferOverkill(EnemyMovement deadEnemy, long overkillAmount)
     {
         if (overkillAmount <= 0 || TurnManager.instance == null) return;
 

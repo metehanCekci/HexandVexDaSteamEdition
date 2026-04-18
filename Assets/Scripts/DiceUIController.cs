@@ -175,11 +175,11 @@ public class DiceUIController : MonoBehaviour
         t.localScale = Vector3.one;
     }
 
-    public void UpdateTotalDamageDisplay(int val)
+    public void UpdateTotalDamageDisplay(long val)
     {
         if (totalDamageText == null) return;
         totalDamageText.gameObject.SetActive(true);
-        totalDamageText.text = val.ToString();
+        totalDamageText.text = NumberFormatter.Format(val);
         StartCoroutine(TotalTextFadeIn(totalDamageText));
         if (textPopCoroutine != null) StopCoroutine(textPopCoroutine);
         textPopCoroutine = StartCoroutine(TextPopAnimation(totalDamageText));

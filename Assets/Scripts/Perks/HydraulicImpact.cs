@@ -22,8 +22,8 @@ public class HydraulicImpactPerk : BasePerk
     public void ApplyWallDamage(EnemyMovement enemy)
     {
         if (enemy == null || enemy.health == null || enemy.health.currentHP <= 0) return;
-        int wallDamage = Mathf.CeilToInt(enemy.health.maxHP * GetWallDamagePercent());
-        wallDamage = Mathf.Max(1, wallDamage);
+        long wallDamage = (long)System.Math.Ceiling(enemy.health.maxHP * (double)GetWallDamagePercent());
+        wallDamage = System.Math.Max(1L, wallDamage);
         enemy.health.TakeDamage(wallDamage);
         ShowWallImpactVFX(enemy);
         TriggerVisualPop();

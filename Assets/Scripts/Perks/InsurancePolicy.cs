@@ -3,7 +3,7 @@ using UnityEngine;
 public class InsurancePolicyPerk : BasePerk
 {
     private bool subscribed = false;
-    private int previousHP;
+    private long previousHP;
 
     void OnEnable()
     {
@@ -66,19 +66,19 @@ public class InsurancePolicyPerk : BasePerk
             previousHP = TurnManager.instance.player.health.currentHP;
     }
 
-    private void OnPlayerDamaged(int remainingHP)
+    private void OnPlayerDamaged(long remainingHP)
     {
-        int lost = previousHP - remainingHP;
+        long lost = previousHP - remainingHP;
         if (lost <= 0) { previousHP = remainingHP; return; }
 
-        int maxHP = TurnManager.instance.player.health.maxHP;
-        int missingHP = maxHP - remainingHP;
+        long maxHP = TurnManager.instance.player.health.maxHP;
+        long missingHP = maxHP - remainingHP;
         int goldPerMissing = (currentLevel + 1) * 2; // Lv1: 4, Lv2: 6, Lv3: 8
-        int goldGain = goldPerMissing * missingHP;
+        long goldGain = goldPerMissing * missingHP;
 
         if (RunManager.instance != null)
         {
-            RunManager.instance.currentGold += goldGain;
+            RunManager.instance.currentGold += (int)System.Math.Min(goldGain, int.MaxValue);
             if (TurnManager.instance != null) TurnManager.instance.UpdateCoinUI();
         }
 

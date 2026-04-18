@@ -7,7 +7,7 @@ public class CombatPayload
 {
     public List<int> diceRolls = new List<int>();
     
-    public int flatBonus = 0;
+    public long flatBonus = 0;
     public float multiplier = 1.0f;
     
     // Legendary perk'ler için özel kurallar
@@ -22,9 +22,10 @@ public class CombatPayload
         diceRolls = new List<int>(rolls);
     }
 
-    public int GetFinalDamage()
+    public long GetFinalDamage()
     {
-        float baseDamage = 0f;
+        // double kullan — float 7 digit precision, double 15 digit, overflow riski sıfır
+        double baseDamage = 0.0;
 
         if (multiplyInsteadOfAdd && diceRolls.Count > 0)
         {
@@ -42,7 +43,7 @@ public class CombatPayload
         }
 
         // Düz hasar bonuslarını ekle ve genel çarpanla çarp
-        float total = (baseDamage + flatBonus) * multiplier;
+        double total = (baseDamage + flatBonus) * multiplier;
 
         // Kritik vuruş varsa RunManager'daki çarpanla çarp
         if (isCriticalHit)
@@ -50,7 +51,9 @@ public class CombatPayload
             total *= RunManager.instance.criticalDamageMultiplier;
         }
 
-        // Hasarın eksiye düşmemesini ve tam sayı olmasını sağla
-        return Mathf.Max(0, Mathf.FloorToInt(total));
+        // Hasarın eksiye düşmemesini ve long.MaxValue'da clamp'lemesini sağla
+        if (total <= 0) return 0;
+        if (total >= long.MaxValue) return long.MaxValue;
+        return (long)total;
     }
 }

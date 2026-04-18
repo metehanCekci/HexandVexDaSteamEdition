@@ -9,7 +9,7 @@ using System.Linq;
 /// </summary>
 public class CascadeProtocolPerk : BasePerk
 {
-    private int accumulatedDamage = 0;
+    private long accumulatedDamage = 0;
     private bool subscribed = false;
 
     void OnEnable()
@@ -40,13 +40,13 @@ public class CascadeProtocolPerk : BasePerk
     {
         if (accumulatedDamage > 0)
         {
-            float bonus = accumulatedDamage * (1f + (currentLevel - 1) * 0.25f);
-            payload.flatBonus += Mathf.FloorToInt(bonus);
+            double bonus = accumulatedDamage * (1.0 + (currentLevel - 1) * 0.25);
+            payload.flatBonus += (long)System.Math.Min(bonus, long.MaxValue - payload.flatBonus);
             TriggerVisualPop();
         }
 
         // Bu saldırının zar toplamını birikime ekle (kritik/mult hariç, sadece raw dice)
-        int diceSum = payload.diceRolls.Sum();
+        long diceSum = payload.diceRolls.Sum();
         accumulatedDamage += diceSum;
         description = GetDescription();
     }
@@ -84,7 +84,7 @@ public class CascadeProtocolPerk : BasePerk
         subscribed = false;
     }
 
-    private void OnPlayerDamaged(int remainingHP)
+    private void OnPlayerDamaged(long remainingHP)
     {
         accumulatedDamage = 0;
         description = GetDescription();

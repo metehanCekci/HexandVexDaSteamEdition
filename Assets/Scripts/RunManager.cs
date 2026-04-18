@@ -15,8 +15,8 @@ public class RunManager : MonoBehaviour
     [Header("Run Stats")]
 
     public int currentGold = 0;
-    public int playerMaxHealth = 5;
-    public int playerCurrentHealth = 5;
+    public long playerMaxHealth = 5;
+    public long playerCurrentHealth = 5;
     public int baseDiceCount = 2;
     public int maxTurns = 1;
     public int collectibleSlots = 3;
@@ -72,29 +72,37 @@ public class RunManager : MonoBehaviour
 
     [Header("Run Statistics")]
     public int totalEnemiesKilled = 0;
-    public int totalDamageDealt = 0;
-    public int totalDamageReceived = 0;
+    public long totalDamageDealt = 0;
+    public long totalDamageReceived = 0;
     public int totalTurnsPlayed = 0;
     public int totalDiceRolled = 0;
     public int totalGoldEarned = 0;
     public int totalLevelsPlayed = 0;
 
-    // Best run (PlayerPrefs ile kalici)
-    public static int BestKills      => PlayerPrefs.GetInt("best_kills", 0);
-    public static int BestDamage     => PlayerPrefs.GetInt("best_damage", 0);
-    public static int BestTurns      => PlayerPrefs.GetInt("best_turns", 0);
-    public static int BestDice       => PlayerPrefs.GetInt("best_dice", 0);
-    public static int BestGold       => PlayerPrefs.GetInt("best_gold", 0);
-    public static int BestLevels     => PlayerPrefs.GetInt("best_levels", 0);
+    // Best run (PlayerPrefs ile kalici — long değerler string olarak saklanır)
+    private static long GetLongPref(string key, long def = 0)
+    {
+        string s = PlayerPrefs.GetString(key, "");
+        if (long.TryParse(s, out long val)) return val;
+        // Eski int kayıtlarını da oku (geriye uyumluluk)
+        return PlayerPrefs.GetInt(key, (int)def);
+    }
+
+    public static long BestKills      => GetLongPref("best_kills");
+    public static long BestDamage     => GetLongPref("best_damage");
+    public static long BestTurns      => GetLongPref("best_turns");
+    public static long BestDice       => GetLongPref("best_dice");
+    public static long BestGold       => GetLongPref("best_gold");
+    public static long BestLevels     => GetLongPref("best_levels");
 
     public void SaveBestRun()
     {
-        if (totalEnemiesKilled > BestKills)   PlayerPrefs.SetInt("best_kills",   totalEnemiesKilled);
-        if (totalDamageDealt   > BestDamage)  PlayerPrefs.SetInt("best_damage",  totalDamageDealt);
-        if (totalTurnsPlayed   > BestTurns)   PlayerPrefs.SetInt("best_turns",   totalTurnsPlayed);
-        if (totalDiceRolled    > BestDice)    PlayerPrefs.SetInt("best_dice",    totalDiceRolled);
-        if (totalGoldEarned    > BestGold)    PlayerPrefs.SetInt("best_gold",    totalGoldEarned);
-        if (totalLevelsPlayed  > BestLevels)  PlayerPrefs.SetInt("best_levels",  totalLevelsPlayed);
+        if (totalEnemiesKilled > BestKills)   PlayerPrefs.SetString("best_kills",   totalEnemiesKilled.ToString());
+        if (totalDamageDealt   > BestDamage)  PlayerPrefs.SetString("best_damage",  totalDamageDealt.ToString());
+        if (totalTurnsPlayed   > BestTurns)   PlayerPrefs.SetString("best_turns",   totalTurnsPlayed.ToString());
+        if (totalDiceRolled    > BestDice)    PlayerPrefs.SetString("best_dice",    totalDiceRolled.ToString());
+        if (totalGoldEarned    > BestGold)    PlayerPrefs.SetString("best_gold",    totalGoldEarned.ToString());
+        if (totalLevelsPlayed  > BestLevels)  PlayerPrefs.SetString("best_levels",  totalLevelsPlayed.ToString());
         PlayerPrefs.Save();
     }
 

@@ -91,7 +91,7 @@ public class TurnManager : MonoBehaviour
     private static readonly Vector3Int[] oddOffsets = HexGridUtils.OddOffsets;
     private static readonly Vector3Int[] evenOffsets = HexGridUtils.EvenOffsets;
 
-    public int finalDamage = 0;
+    public long finalDamage = 0;
 
     [Header("Run Reset (R tuşu)")]
     private float holdRTimer = 0f;
@@ -658,7 +658,7 @@ public class TurnManager : MonoBehaviour
         activeMineCell = new Vector3Int(-999, -999, -999);
     }
 
-    public void PlayerTakeDamage(int amt)
+    public void PlayerTakeDamage(long amt)
     {
         if (player == null || player.health.currentHP <= 0) return;
         ResetCombo();
@@ -1137,7 +1137,7 @@ public class TurnManager : MonoBehaviour
             payload.isCriticalHit = true;
         }
 
-        int totalDamage = payload.GetFinalDamage();
+        long totalDamage = payload.GetFinalDamage();
         if (!skipDiceVisuals)
         {
             UpdateTotalDamageDisplay(totalDamage);
@@ -1589,7 +1589,7 @@ public class TurnManager : MonoBehaviour
         foreach (var e in enemiesToHit)
         {
             if (e == null) continue;
-            int explosionDamage = Mathf.Max(1, Mathf.RoundToInt(e.health.maxHP * damagePercent));
+            long explosionDamage = System.Math.Max(1L, (long)(e.health.maxHP * damagePercent));
             e.health.TakeDamage(explosionDamage);
 
             // Patlama sonrası alpha'yı hemen reset et (stun alpha kalmasın)
@@ -1644,7 +1644,7 @@ public class TurnManager : MonoBehaviour
         foreach (var e in enemiesToHit)
         {
             if (e == null) continue;
-            e.health.TakeDamage(Mathf.Max(1, e.health.maxHP / 2));
+            e.health.TakeDamage(System.Math.Max(1L, e.health.maxHP / 2));
         }
 
         // Oyuncu hasarı (merkez veya komşuda ise)
@@ -2394,7 +2394,7 @@ public class TurnManager : MonoBehaviour
         }
 
         // OverClok: zar gizlenmeden önce 2x hasarı göster
-        int finalDamage = payload.GetFinalDamage();
+        long finalDamage = payload.GetFinalDamage();
         if (RunManager.instance.doubleDamageNextCombat)
         {
             finalDamage *= 2;
@@ -2427,7 +2427,7 @@ public class TurnManager : MonoBehaviour
         HideDiceResults();
         diceUI.EndDiceAnim();
 
-        int damagePerEnemy = 0;
+        long damagePerEnemy = 0;
         if (targets.Count > 0)
         {
             if (RunManager.instance.cleaveNextCombat) { damagePerEnemy = finalDamage; RunManager.instance.cleaveNextCombat = false; }
@@ -2454,23 +2454,23 @@ public class TurnManager : MonoBehaviour
         foreach (var enemy in targets)
         {
             if (enemy == null) continue;
-            int actualDamage = damagePerEnemy;
+            long actualDamage = damagePerEnemy;
 
             // Pressure Point: dusmanin HP yuzdesine gore hasar carpani
             if (pressurePointPerk != null)
             {
-                float ppMult = pressurePointPerk.GetMultiplier(enemy);
-                actualDamage = Mathf.FloorToInt(actualDamage * ppMult);
+                double ppMult = pressurePointPerk.GetMultiplier(enemy);
+                actualDamage = (long)System.Math.Min(actualDamage * ppMult, long.MaxValue);
                 if (ppMult > 1f) pressurePointPerk.TriggerVisualPop();
             }
 
             // Necrotic Touch: %25 alti HP'deki dusmanlar 2x hasar alir
             if (necroticTouchPerk != null)
             {
-                float ntMult = necroticTouchPerk.GetMultiplier(enemy);
+                double ntMult = necroticTouchPerk.GetMultiplier(enemy);
                 if (ntMult > 1f)
                 {
-                    actualDamage = Mathf.FloorToInt(actualDamage * ntMult);
+                    actualDamage = (long)System.Math.Min(actualDamage * ntMult, long.MaxValue);
                     necroticTouchPerk.TriggerVisualPop();
                 }
             }
@@ -2478,28 +2478,28 @@ public class TurnManager : MonoBehaviour
             // Deadweight: stunlanmış düşmanlar ekstra hasar alır
             if (deadweightPerk != null && deadweightPerk.IsStunned(enemy))
             {
-                float dwMult = deadweightPerk.GetStunnedMultiplier();
-                actualDamage = Mathf.FloorToInt(actualDamage * dwMult);
+                double dwMult = deadweightPerk.GetStunnedMultiplier();
+                actualDamage = (long)System.Math.Min(actualDamage * dwMult, long.MaxValue);
                 deadweightPerk.TriggerVisualPop();
             }
 
             if (retributionPerk != null)
             {
-                int stackBonus = retributionPerk.GetBonusFor(enemy);
+                long stackBonus = retributionPerk.GetBonusFor(enemy);
                 retributionPerk.RegisterHit(enemy);
                 if (stackBonus > 0)
                 {
                     // Retribution bonusunu payload multiplier ve crit ile scale et
-                    float scaledBonus = stackBonus * payload.multiplier;
+                    double scaledBonus = stackBonus * (double)payload.multiplier;
                     if (payload.isCriticalHit)
                         scaledBonus *= RunManager.instance.criticalDamageMultiplier;
-                    actualDamage += Mathf.FloorToInt(scaledBonus);
+                    actualDamage += (long)System.Math.Min(scaledBonus, long.MaxValue - actualDamage);
                     retributionPerk.TriggerVisualPop();
                     if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.TriggerShakeForPerk(retributionPerk);
                 }
             }
 
-            int hpBefore = enemy.health.currentHP;
+            long hpBefore = enemy.health.currentHP;
             bool dies = hpBefore <= actualDamage;
             enemy.health.TakeDamage(actualDamage, true);
             ApplyBurnIfActive(enemy);
@@ -2516,7 +2516,7 @@ public class TurnManager : MonoBehaviour
                 yield return new WaitForSeconds(0.2f);
                 if (AudioManager.instance != null) AudioManager.instance.PlayHit();
 
-                int echoDmg = actualDamage;
+                long echoDmg = actualDamage;
                 if (enemy.health.currentHP <= echoDmg) dies = true;
                 enemy.health.TakeDamage(echoDmg, true);
                 SpawnSlashEffect(enemy.transform.position);
@@ -2525,7 +2525,7 @@ public class TurnManager : MonoBehaviour
             // Overkill Protocol: fazla hasari baska dusmana aktar
             if (overkillPerk != null && dies)
             {
-                int overkill = actualDamage - hpBefore;
+                long overkill = actualDamage - hpBefore;
                 if (overkill > 0) overkillPerk.TransferOverkill(enemy, overkill);
             }
 
@@ -2748,7 +2748,7 @@ public class TurnManager : MonoBehaviour
             GameEvents.EnemyPushedIntoSpike(spikeTotal);
 
             yield return new WaitForSeconds(0.2f);
-            foreach (var s in spikedEnemies) { StartCoroutine(FlashHazardTileCoroutine(s.GetCurrentCellPosition())); s.health.TakeDamage(Mathf.Max(1, s.health.maxHP / 2)); }
+            foreach (var s in spikedEnemies) { StartCoroutine(FlashHazardTileCoroutine(s.GetCurrentCellPosition())); s.health.TakeDamage(System.Math.Max(1L, s.health.maxHP / 2)); }
 
             var acidPerk = RunManager.instance.activePerks.Find(p => p is AcidBloodPerk) as AcidBloodPerk;
             if (acidPerk != null) { player.health.Heal(spikedEnemies.Count * acidPerk.currentLevel); acidPerk.TriggerVisualPop(); }
@@ -2903,7 +2903,7 @@ public class TurnManager : MonoBehaviour
 
     // ──────── Neural Hijack: Dost Düşman Sistemi ────────
 
-    private void ConvertToAlly(EnemyMovement enemy, int damage, EnemyMovement pushedEnemy = null)
+    private void ConvertToAlly(EnemyMovement enemy, long damage, EnemyMovement pushedEnemy = null)
     {
         enemy.isAllied = true;
         enemy.wasAllied = true;
@@ -2919,7 +2919,7 @@ public class TurnManager : MonoBehaviour
         enemy.isBumping = false;
 
         // Neural Hijack: oyuncunun bu saldırıdaki hasarını kaydet
-        enemy.hijackDamage = Mathf.Max(1, damage);
+        enemy.hijackDamage = System.Math.Max(1L, damage);
 
         // Sprite'ı itilen düşmana doğru çevir
         if (pushedEnemy != null)
@@ -3100,7 +3100,7 @@ public class TurnManager : MonoBehaviour
 
                 foreach (var target in targets)
                 {
-                    int allyDamage = Mathf.Max(1, ally.hijackDamage);
+                    long allyDamage = System.Math.Max(1L, ally.hijackDamage);
                     target.health.TakeDamage(allyDamage);
                     AllyKnockbackTarget(target, allyCell);
                 }
@@ -3201,7 +3201,7 @@ public class TurnManager : MonoBehaviour
         }
 
         // Damage
-        int allyDamage = Mathf.Max(1, ally.hijackDamage);
+        long allyDamage = System.Math.Max(1L, ally.hijackDamage);
         foreach (var c in lineCells)
         {
             EnemyMovement hit = GetEnemyAtCell(c);
@@ -3361,7 +3361,7 @@ public class TurnManager : MonoBehaviour
         }
 
         // Damage
-        int allyDamage = Mathf.Max(1, ally.hijackDamage);
+        long allyDamage = System.Math.Max(1L, ally.hijackDamage);
         foreach (var c in aoeCells)
         {
             EnemyMovement hit = GetEnemyAtCell(c);
@@ -3458,7 +3458,7 @@ public class TurnManager : MonoBehaviour
         if (perk != null) perk.TickBurns();
     }
 
-    public void UpdateTotalDamageDisplay(int val) => diceUI.UpdateTotalDamageDisplay(val);
+    public void UpdateTotalDamageDisplay(long val) => diceUI.UpdateTotalDamageDisplay(val);
     public void HideDiceResults() => diceUI.HideDiceResults();
     public void RegisterComboHit() => diceUI.RegisterComboHit();
     public void ResetCombo() => diceUI.ResetCombo();

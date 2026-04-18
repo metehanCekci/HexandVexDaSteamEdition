@@ -10,8 +10,8 @@ using System.Linq;
 /// </summary>
 public class PentUpStrikePerk : BasePerk
 {
-    [HideInInspector] public int storedDamage = 0;
-    [HideInInspector] public int storedStacks = 0;
+    [HideInInspector] public long storedDamage = 0;
+    [HideInInspector] public long storedStacks = 0;
     [HideInInspector] public bool isReleasing = false;
 
     void OnEnable()
@@ -30,8 +30,8 @@ public class PentUpStrikePerk : BasePerk
         {
             // Skip saldırısı: biriken hasarı flatBonus olarak ekle
             // Lv1: %100, Lv2: %150, Lv3: %200
-            float bonus = storedDamage * (0.5f + currentLevel * 0.5f);
-            payload.flatBonus += Mathf.FloorToInt(bonus);
+            double bonus = storedDamage * (0.5 + currentLevel * 0.5);
+            payload.flatBonus += (long)System.Math.Min(bonus, long.MaxValue - payload.flatBonus);
             storedDamage = 0;
             storedStacks = 0;
             isReleasing = false;
@@ -41,7 +41,7 @@ public class PentUpStrikePerk : BasePerk
         else
         {
             // Normal saldırı: zar toplamını biriktir, hasarı sıfırla
-            int diceSum = payload.diceRolls.Sum();
+            long diceSum = payload.diceRolls.Sum();
             storedDamage += diceSum;
             storedStacks++;
 

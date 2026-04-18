@@ -58,7 +58,7 @@ public class SporeCloudPerk : BasePerk
         subscribed = false;
     }
 
-    private void OnPlayerDamaged(int remainingHP)
+    private void OnPlayerDamaged(long remainingHP)
     {
         if (TurnManager.instance == null || TurnManager.instance.player == null) return;
 

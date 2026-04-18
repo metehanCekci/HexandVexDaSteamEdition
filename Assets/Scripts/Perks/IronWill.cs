@@ -83,7 +83,7 @@ public class IronWillPerk : BasePerk
         subscribed = false;
     }
 
-    private void OnPlayerDamaged(int remainingHP)
+    private void OnPlayerDamaged(long remainingHP)
     {
         tookDamageThisLevel = true;
         cleanLevelStreak = 0;

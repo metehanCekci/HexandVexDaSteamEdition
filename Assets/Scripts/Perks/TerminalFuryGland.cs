@@ -22,8 +22,8 @@ public class TerminalFuryGlandPerk : BasePerk
         var tm = TurnManager.instance;
         if (rm == null || tm == null || tm.player == null) return;
 
-        int maxHP = rm.playerMaxHealth;
-        int currentHP = tm.player.health.currentHP;
+        long maxHP = rm.playerMaxHealth;
+        long currentHP = tm.player.health.currentHP;
         if (currentHP < 1) currentHP = 1;
 
         // Always 2x base, +1x per missing HP (5/5=2x, 4/5=3x, 1/5=6x)

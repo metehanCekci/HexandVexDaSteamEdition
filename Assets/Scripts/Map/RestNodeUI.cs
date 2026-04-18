@@ -42,7 +42,7 @@ public class RestNodeUI : MonoBehaviour
         Time.timeScale = 0f;
 
         // Heal miktarını hesapla — canı tamamen doldur
-        int healAmount = 999;
+        long healAmount = 999;
         if (RunManager.instance != null)
             healAmount = RunManager.instance.playerMaxHealth - RunManager.instance.playerCurrentHealth;
 
@@ -92,7 +92,7 @@ public class RestNodeUI : MonoBehaviour
 
         if (RunManager.instance != null)
         {
-            RunManager.instance.playerCurrentHealth = Mathf.Min(
+            RunManager.instance.playerCurrentHealth = System.Math.Min(
                 RunManager.instance.playerCurrentHealth + amount,
                 RunManager.instance.playerMaxHealth
             );

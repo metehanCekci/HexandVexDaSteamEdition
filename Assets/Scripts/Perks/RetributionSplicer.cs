@@ -37,12 +37,12 @@ public class RetributionSplicerPerk : BasePerk
     }
 
     /// <summary>Returns the flat damage bonus against this target (based on previous hits).</summary>
-    public int GetBonusFor(EnemyMovement target)
+    public long GetBonusFor(EnemyMovement target)
     {
         if (target == null) return 0;
         int id = target.GetInstanceID();
         if (!hitCounts.ContainsKey(id)) return 0;
-        int bonusPerHit = 1 + currentLevel; // lv1=+2, lv2=+3, lv3=+4
+        long bonusPerHit = 1 + currentLevel; // lv1=+2, lv2=+3, lv3=+4
         return hitCounts[id] * bonusPerHit;
     }
 
