@@ -12,57 +12,75 @@ public class HypertrophicShellPerk : BasePerk
 
     public override void OnAcquire()
     {
-        // HP is handled by OnEquip — no action needed here.
-        // OnEquip runs right after OnAcquire when perk goes to active slot.
-        // If perk goes to stash, HP bonus is deferred until OnEquip.
+        // Sadece aktif slottaysa HP bonusu uygula
+        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
+            ApplyHPBonus(1);
     }
 
     public override void Upgrade()
     {
         base.Upgrade();
-        // If active, recalculate HP with the new level
+        // Sadece aktif slottaysa HP bonusu uygula
         if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
-            ApplyShellHP(true);
+            ApplyHPBonus(1);
     }
 
     public override void OnEquip()
     {
-        ApplyShellHP(true);
+        // Re-apply full bonus when moved to active slots
+        // (currentLevel includes upgrades already applied)
+        // Don't re-add — just ensure max HP reflects shell level
+        RecalculateMaxHP();
     }
 
     public override void OnUnequip()
     {
-        ApplyShellHP(false);
+        // Remove shell bonus
+        RecalculateMaxHP();
     }
 
-    /// <summary>
-    /// Directly sets max HP based on whether the shell is equipped or not.
-    /// Does NOT check activePerks list — the equipped parameter is authoritative.
-    /// This fixes the SwapPerk bug where callbacks fire before the list is updated.
-    /// </summary>
-    private void ApplyShellHP(bool equipped)
+    private void ApplyHPBonus(int amount)
     {
         var rm = RunManager.instance;
         if (rm == null) return;
 
-        // Glass Canon aktifse max HP'yi degistirme
+        // Glass Canon aktifse max HP'yi değiştirme
         if (rm.activePerks.Exists(p => p is GlassCanonPerk)) return;
 
-        int baseHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
-        int shellBonus = equipped ? currentLevel : 0;
-        int newMax = Mathf.Min(baseHP + shellBonus, HP_CAP);
-        int oldMax = rm.playerMaxHealth;
-
-        if (newMax == oldMax) return;
+        int newMax = Mathf.Min(rm.playerMaxHealth + amount, HP_CAP);
+        if (newMax == rm.playerMaxHealth) return;
 
         rm.playerMaxHealth = newMax;
-        if (newMax > oldMax)
-            rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth + (newMax - oldMax), newMax);
-        else
-            rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth, newMax);
+        // Yeni HP'yi de artır (can bonusu olarak)
+        rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth + amount, newMax);
 
         SyncHealthToScene();
         TriggerVisualPop();
+    }
+
+    private void RecalculateMaxHP()
+    {
+        var rm = RunManager.instance;
+        if (rm == null) return;
+
+        // Glass Canon aktifse shell hiç etki etmez
+        if (rm.activePerks.Exists(p => p is GlassCanonPerk)) return;
+
+        int baseHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
+
+        // Check if shell is currently active (equipped)
+        bool isActive = rm.activePerks.Contains(this);
+        int shellBonus = isActive ? currentLevel : 0;
+
+        int newMax = Mathf.Min(baseHP + shellBonus, HP_CAP);
+        int oldMax = rm.playerMaxHealth;
+
+        if (newMax != oldMax)
+        {
+            rm.playerMaxHealth = newMax;
+            rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth, newMax);
+            SyncHealthToScene();
+        }
     }
 
     private void SyncHealthToScene()
