@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Globalization;
 
 public class SymbioticArsenalPerk : BasePerk
 {
@@ -15,7 +14,7 @@ public class SymbioticArsenalPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", "x" + (0.25f + 0.25f * currentLevel).ToString("0.##", CultureInfo.InvariantCulture) }
+        { "bonus", $"X{0.25f + 0.25f * currentLevel:0.##}" }
     };
 
     public override void ModifyCombat(CombatPayload payload)

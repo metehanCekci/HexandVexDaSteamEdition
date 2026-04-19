@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Globalization;
 
 public class MutantSwarmPerk : BasePerk
 {
@@ -14,7 +13,7 @@ public class MutantSwarmPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", "x" + (0.5f * currentLevel).ToString("0.##", CultureInfo.InvariantCulture) }
+        { "bonus", $"X{0.5f * currentLevel:0.##}" }
     };
 
     public override void Upgrade()

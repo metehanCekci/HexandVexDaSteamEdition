@@ -53,16 +53,16 @@ public class CreateNewPerkPrefabs
             "When you skip, pull enemies within 2-3 hex range 1 hex closer to you.");
 
         CreatePerk<NecroticTouchPerk>("NecroticTouch", "Necrotic Touch",
-            "Enemies at or below 50% HP take 2x damage.");
+            "Enemies at or below 50% HP take 2X damage.");
 
         CreatePerk<CondensedFuryPerk>("CondensedFury", "Condensed Fury",
             "Roll 1 fewer die, but each remaining die deals double its rolled value.");
 
         CreatePerk<SymbioticArsenalPerk>("SymbioticArsenal", "Symbiotic Arsenal",
-            "Gain damage multiplier per filled item slot. Lv1: +0.5x, Lv2: +0.75x, Lv3: +1.0x per slot.");
+            "Gain damage multiplier per filled item slot. Lv1: +0.5X, Lv2: +0.75X, Lv3: +1.0X per slot.");
 
         CreatePerk<IronWillPerk>("IronWill", "Iron Will",
-            "Each combat level cleared without taking damage grants +1x damage multiplier. Resets on damage.");
+            "Each combat level cleared without taking damage grants +1X damage multiplier. Resets on damage.");
 
         CreatePerk<NeuralHijackPerk>("NeuralHijack", "Neural Hijack",
             "Knocking an enemy into another enemy converts the hit enemy to your side. Allies attack adjacent enemies each turn.");
@@ -80,10 +80,10 @@ public class CreateNewPerkPrefabs
             "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once.");
 
         CreatePerk<VoidHungerPerk>("VoidHunger", "Void Hunger",
-            "Each collapsed tile grants permanent +0.25x damage multiplier.");
+            "Each collapsed tile grants permanent +0.25X damage multiplier.");
 
         CreatePerk<DeadweightPerk>("Deadweight", "Deadweight",
-            "Stunned enemies take 2x damage. +1x per level.");
+            "Stunned enemies take 2X damage. +1X per level.");
 
         CreatePerk<KillChainPerk>("KillChain", "Kill Chain",
             "Killing an enemy grants +1 extra move this turn. +1 per level.");

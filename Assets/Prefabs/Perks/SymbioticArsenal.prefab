@@ -47,8 +47,9 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Symbiotic Arsenal
-  description: Each filled item slot adds {bonus} multiplier.
+  description: Each filled item slot adds <color=#FF5252>X0,5</color> multiplier.
   icon: {fileID: -1287039010249613666, guid: 56f81d08a4edee04da089a17df07114e, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
   rarity: 1

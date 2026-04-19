@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CleaveAxe
   itemName: Cleave-Axe
   description: Next attack deals {full} to all adjacent enemies without splitting.
-  price: 7
+  price: 21
   icon: {fileID: -3472828434593650774, guid: 25e5cecdebe26d24fb3e2e0dbcb5fb78, type: 3}

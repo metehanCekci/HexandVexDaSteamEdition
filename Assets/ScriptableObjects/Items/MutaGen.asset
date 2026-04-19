@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MutaGen
   itemName: Muta-Gen
   description: Restore {heal}.
-  price: 5
+  price: 15
   icon: {fileID: 8796583169327146959, guid: 549e3fedc06a5c1499c4f92447a8f2b2, type: 3}

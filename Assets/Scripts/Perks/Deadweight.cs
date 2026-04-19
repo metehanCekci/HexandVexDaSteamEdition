@@ -13,7 +13,7 @@ public class DeadweightPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult", $"x{1 + currentLevel}" }
+        { "mult", $"X{1 + currentLevel}" }
     };
 
     public float GetStunnedMultiplier()

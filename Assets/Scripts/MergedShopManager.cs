@@ -81,6 +81,7 @@ public class MergedShopManager : MonoBehaviour
 
     private int   perkRerollCount;
     private float currentPerkRerollCost;
+    private bool  catalystFreeRerollPending;
     private int   hoveredPerkIndex = -1;
     private int   hoveredItemIndex = -1;
 
@@ -461,11 +462,13 @@ public class MergedShopManager : MonoBehaviour
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
+        catalystFreeRerollPending = false;
 
         // Mutation Catalyst: ilk reroll bedava + sayaç sıfırdan başlar
         if (RunManager.instance != null && RunManager.instance.pendingRerollReset)
         {
             currentPerkRerollCost = 0f;
+            catalystFreeRerollPending = true;
             RunManager.instance.pendingRerollReset = false;
         }
 
@@ -767,18 +770,10 @@ public class MergedShopManager : MonoBehaviour
         Debug.Log($"[MergedShop] >>> TryReroll CALLED on {this.GetType().Name}");
         if (RunManager.instance == null) { Debug.Log("[MergedShop] TryReroll: RunManager null!"); return; }
 
-        // Mutation Catalyst shop açıkken kullanıldıysa: sayaç sıfırlanır, bu reroll bedava
-        if (RunManager.instance.pendingRerollReset)
-        {
-            perkRerollCount = 0;
-            currentPerkRerollCost = 0f;
-            RunManager.instance.pendingRerollReset = false;
-        }
-
-        // Mutation Catalyst: bedava reroll (tek seferlik)
-        bool freeReroll = RunManager.instance.hasPerkReroll;
+        // Mutation Catalyst: Perk reroll hakki (bedava ve sayaci artirmaz, tek seferlik)
+        bool freeReroll = catalystFreeRerollPending || RunManager.instance.hasPerkReroll;
         int goldBefore = RunManager.instance.currentGold;
-        Debug.Log($"[MergedShop] TryReroll: hasPerkReroll={freeReroll}, baseCost={perkRerollBaseCost}, increment={perkRerollIncrement}, rerollCount={perkRerollCount}, currentCost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={goldBefore}");
+        Debug.Log($"[MergedShop] TryReroll: catalystFree={catalystFreeRerollPending}, hasPerkReroll={RunManager.instance.hasPerkReroll}, baseCost={perkRerollBaseCost}, increment={perkRerollIncrement}, rerollCount={perkRerollCount}, currentCost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={goldBefore}");
         if (!freeReroll)
         {
             int cost = Mathf.RoundToInt(currentPerkRerollCost);
@@ -789,8 +784,15 @@ public class MergedShopManager : MonoBehaviour
         }
         else
         {
-            RunManager.instance.hasPerkReroll = false;
-            // Bedava reroll maliyeti artırmasın
+            if (catalystFreeRerollPending)
+            {
+                catalystFreeRerollPending = false;
+                currentPerkRerollCost = perkRerollBaseCost + perkRerollIncrement * perkRerollCount;
+            }
+            else
+            {
+                RunManager.instance.hasPerkReroll = false;
+            }
         }
 
         if (!freeReroll)
@@ -805,10 +807,18 @@ public class MergedShopManager : MonoBehaviour
         RefreshRerollButton();
     }
 
+    public void ApplyFreeRerollFromCatalyst()
+    {
+        catalystFreeRerollPending = true;
+        currentPerkRerollCost = 0f;
+        if (RunManager.instance != null) RunManager.instance.pendingRerollReset = false;
+        RefreshRerollButton();
+    }
+
     private void RefreshRerollButton()
     {
         if (RunManager.instance == null) return;
-        bool free = RunManager.instance.hasPerkReroll;
+        bool free = catalystFreeRerollPending || RunManager.instance.hasPerkReroll;
         int cost = free ? 0 : Mathf.RoundToInt(currentPerkRerollCost);
         bool canAfford = free || RunManager.instance.currentGold >= cost;
         if (perkRerollPriceText != null)

@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -34,12 +33,12 @@ public static class GameKeywords
         return $"<color=#{UIColors.Chips}>{body}</color>";
     }
 
-    /// <summary>"x2 damage" gibi kirmizi mult ifadesi.</summary>
+    /// <summary>"X2 damage" gibi kirmizi mult ifadesi.</summary>
     public static string Times(float baseValue, string suffix = "")
     {
         float final = baseValue + MultValueBonus;
-        string num = final % 1f == 0 ? ((int)final).ToString(CultureInfo.InvariantCulture) : final.ToString("0.##", CultureInfo.InvariantCulture);
-        string body = string.IsNullOrEmpty(suffix) ? $"x{num}" : $"x{num} {suffix}";
+        string num = final % 1f == 0 ? ((int)final).ToString() : final.ToString("0.##");
+        string body = string.IsNullOrEmpty(suffix) ? $"X{num}" : $"X{num} {suffix}";
         return $"<color=#{UIColors.Mult}>{body}</color>";
     }
 
