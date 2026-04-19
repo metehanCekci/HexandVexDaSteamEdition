@@ -24,9 +24,9 @@ public class CarrionFeederPerk : BasePerk
         float maxMultiplier = Mathf.Pow(2, MaxStacks);
         return new Dictionary<string, object>
         {
-            { "max",     $"x{maxMultiplier}" },
+            { "max",     $"X{maxMultiplier}" },
             { "streak",  $"{killStreak}/{MaxStacks}" },
-            { "current", $"x{currentMultiplier}" }
+            { "current", $"X{currentMultiplier}" }
         };
     }
 

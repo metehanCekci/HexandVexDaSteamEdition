@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HexThorn
   itemName: Hex-Thorn
   description: Place a spike trap on any empty hex tile. Breaks after {turns} turns (blinks on turn {warn}).
-  price: 5
+  price: 15
   icon: {fileID: -6242459698676535975, guid: 7181871ca736cd74b8cc273a168af673, type: 3}

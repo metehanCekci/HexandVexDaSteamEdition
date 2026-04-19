@@ -25,9 +25,9 @@ public class VoidHungerPerk : BasePerk
         float totalBonus = collapsedCount * 0.25f;
         return new Dictionary<string, object>
         {
-            { "per",   "+0.25x" },
+            { "per",   "+0.25X" },
             { "count", collapsedCount },
-            { "total", $"+{totalBonus:F1}x" }
+            { "total", $"+{totalBonus:F1}X" }
         };
     }
 

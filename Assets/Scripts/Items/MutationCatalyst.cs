@@ -21,8 +21,9 @@ public class MutationCatalyst : BaseItem
     public override bool Use()
     {
         if (RunManager.instance == null) return false;
-        RunManager.instance.hasPerkReroll = true;
         RunManager.instance.pendingRerollReset = true;
+        if (MergedShopManager.instance != null)
+            MergedShopManager.instance.ApplyFreeRerollFromCatalyst();
         return true;
     }
 }

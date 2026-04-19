@@ -13,7 +13,7 @@ public class MutantSwarmPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", $"x{0.5f * currentLevel:0.##}" }
+        { "bonus", $"X{0.5f * currentLevel:0.##}" }
     };
 
     public override void Upgrade()

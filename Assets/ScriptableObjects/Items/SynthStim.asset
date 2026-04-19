@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SynthStim
   itemName: Synth-Stim
   description: Roll {bonus} extra die in the next combat.
-  price: 6
+  price: 18
   icon: {fileID: 7764831295479663515, guid: d470eb7d9703c2b45b22cda85f3d3209, type: 3}

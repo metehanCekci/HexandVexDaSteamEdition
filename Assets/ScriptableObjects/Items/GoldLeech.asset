@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GoldLeech
   itemName: Gold-Leech
   description: Next enemy drops {mult} {gold}.
-  price: 4
+  price: 12
   icon: {fileID: -7793842298176169276, guid: bf7dc8d27f4de174b94e6ef05d88563f, type: 3}
