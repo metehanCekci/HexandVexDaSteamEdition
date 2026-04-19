@@ -28,6 +28,11 @@ public class MagicTileManager : MonoBehaviour
              "Prevents the camera animation from falling behind at high counts.")]
     public int cameraPanMaxTileCount = 3;
 
+    [Header("Spacing")]
+    [Tooltip("Minimum hex distance between two spawned magic tiles (any type). " +
+             "Prevents clustering when many tiles spawn in the same turn.")]
+    public int minTileSeparation = 2;
+
     // Runtime lookup — built from tileEntries
     private Dictionary<MagicTileType, MagicTileEntry> entryMap;
 
@@ -43,6 +48,11 @@ public class MagicTileManager : MonoBehaviour
 
     // Foreground overlay tilemap — created at runtime, sorting order 200 (above characters)
     private Tilemap overlayMap;
+
+    // Mid-layer overlay — created at runtime, sorting order 50 (above ground/foreground/warning decor,
+    // below characters ~100+). Enchanted groundTile sprites render here so they aren't covered by
+    // foreground decor tilemaps that sit at sorting 1–3.
+    private Tilemap midOverlayMap;
 
     // Blue tile: consume after 2-hex move away
     private Vector3Int blueTileCell = new Vector3Int(0, -999, 0);
@@ -74,6 +84,7 @@ public class MagicTileManager : MonoBehaviour
             return;
         }
         RebuildLookup();
+        MagicTileTooltip.EnsureExists();
     }
 
     void OnDestroy()
@@ -113,11 +124,48 @@ public class MagicTileManager : MonoBehaviour
         GameObject go = new GameObject("MagicOverlay");
         go.transform.SetParent(grid.transform, false);
         overlayMap = go.AddComponent<Tilemap>();
+        MatchTilemapAnchor(overlayMap, LevelGenerator.instance.groundMap);
         TilemapRenderer renderer = go.AddComponent<TilemapRenderer>();
         renderer.sortingOrder = 200; // Above character sprites (~100)
         renderer.mode = TilemapRenderer.Mode.Individual;
 
         return overlayMap;
+    }
+
+    private Tilemap GetOrCreateMidOverlayMap()
+    {
+        if (midOverlayMap != null) return midOverlayMap;
+        if (LevelGenerator.instance == null || LevelGenerator.instance.groundMap == null) return null;
+
+        Grid grid = LevelGenerator.instance.groundMap.layoutGrid;
+        if (grid == null) return null;
+
+        Transform existing = grid.transform.Find("MagicMidOverlay");
+        if (existing != null)
+        {
+            midOverlayMap = existing.GetComponent<Tilemap>();
+            return midOverlayMap;
+        }
+
+        GameObject go = new GameObject("MagicMidOverlay");
+        go.transform.SetParent(grid.transform, false);
+        midOverlayMap = go.AddComponent<Tilemap>();
+        MatchTilemapAnchor(midOverlayMap, LevelGenerator.instance.groundMap);
+        TilemapRenderer renderer = go.AddComponent<TilemapRenderer>();
+        renderer.sortingOrder = 50; // Above ground/foreground/warning decor, below characters (~100+)
+        renderer.mode = TilemapRenderer.Mode.Individual;
+
+        return midOverlayMap;
+    }
+
+    // Runtime-created Tilemaps default to tileAnchor (0.5, 0.5, 0), but the scene's tilemaps
+    // use (0, 0, 0). Mirror the source map's anchor/orientation so overlay sprites align perfectly.
+    private static void MatchTilemapAnchor(Tilemap target, Tilemap source)
+    {
+        if (target == null || source == null) return;
+        target.tileAnchor = source.tileAnchor;
+        target.orientation = source.orientation;
+        target.orientationMatrix = source.orientationMatrix;
     }
 
     // ─────────────────────────────────────────
@@ -142,20 +190,21 @@ public class MagicTileManager : MonoBehaviour
         List<Vector3Int> candidates = GetOccupiedCells(groundMap);
         if (candidates.Count == 0) return;
 
-        // Check if any entry has a foreground tile — only create overlay if needed
+        // Check which overlays are needed
         bool needsOverlay = false;
+        bool needsMidOverlay = false;
         foreach (var type in tiles)
         {
             var entry = GetEntry(type);
-            if (entry != null && entry.foregroundTile != null)
-            {
-                needsOverlay = true;
-                break;
-            }
+            if (entry == null) continue;
+            if (entry.foregroundTile != null) needsOverlay = true;
+            if (entry.groundTile != null) needsMidOverlay = true;
         }
         if (needsOverlay) GetOrCreateOverlayMap();
+        if (needsMidOverlay) GetOrCreateMidOverlayMap();
 
         List<PendingSpawn> pending = new List<PendingSpawn>();
+        List<Vector3Int> placedCells = new List<Vector3Int>();
 
         Debug.Log($"[MagicTile] SpawnMagicTiles: {tiles.Count} tile, {candidates.Count} aday hucre, validCells={LevelGenerator.instance.validCells.Count}");
 
@@ -163,8 +212,9 @@ public class MagicTileManager : MonoBehaviour
         {
             if (candidates.Count == 0) break;
 
-            Vector3Int cell = PickSmartCell(type, candidates);
+            Vector3Int cell = PickSmartCell(type, candidates, placedCells);
             if (cell.y == -999) continue;
+            placedCells.Add(cell);
 
             // Save originals before any replacement
             TileBase origGround = groundMap.GetTile(cell);
@@ -203,6 +253,12 @@ public class MagicTileManager : MonoBehaviour
         return activeTiles.ContainsKey(cell);
     }
 
+    // Used by tooltip / hover UI to query what magic type sits on a cell.
+    public bool TryGetTileAt(Vector3Int cell, out MagicTileType type)
+    {
+        return activeTiles.TryGetValue(cell, out type);
+    }
+
     // ─────────────────────────────────────────
     //  CONSUME
     // ─────────────────────────────────────────
@@ -228,13 +284,16 @@ public class MagicTileManager : MonoBehaviour
         Tilemap gm = LevelGenerator.instance.groundMap;
         Tilemap cm = LevelGenerator.instance.columnMap;
         Tilemap fm = overlayMap;
+        Tilemap mm = midOverlayMap;
 
         bool groundIsTinted = tintedCells.TryGetValue(cell, out Color tintColor);
 
+        bool hasMid = mm != null && mm.HasTile(cell);
         bool hasGround = gm != null && gm.HasTile(cell);
         bool hasColumn = cm != null && cm.HasTile(cell) && savedColumn.ContainsKey(cell);
         bool hasFg = fm != null && fm.HasTile(cell);
 
+        if (hasMid)    mm.SetTileFlags(cell, TileFlags.None);
         if (hasGround) gm.SetTileFlags(cell, TileFlags.None);
         if (hasColumn) cm.SetTileFlags(cell, TileFlags.None);
         if (hasFg)     fm.SetTileFlags(cell, TileFlags.None);
@@ -253,8 +312,14 @@ public class MagicTileManager : MonoBehaviour
                 ? Mathf.Lerp(1f, 1.8f, t / 0.25f)
                 : Mathf.Lerp(1.8f, 1f, (t - 0.25f) / 0.75f);
             float alpha = 1f - Mathf.SmoothStep(0f, 1f, t);
+            Color fadeCol = new Color(flash, flash, flash, alpha);
 
-            if (hasGround)
+            if (hasMid)
+            {
+                // Mid-overlay fades out; underlying groundMap tile was never replaced.
+                mm.SetColor(cell, fadeCol);
+            }
+            else if (hasGround)
             {
                 if (groundIsTinted)
                 {
@@ -267,11 +332,10 @@ public class MagicTileManager : MonoBehaviour
                 }
                 else
                 {
-                    gm.SetColor(cell, new Color(flash, flash, flash, alpha));
+                    gm.SetColor(cell, fadeCol);
                 }
             }
 
-            Color fadeCol = new Color(flash, flash, flash, alpha);
             if (hasColumn) cm.SetColor(cell, fadeCol);
             if (hasFg)     fm.SetColor(cell, fadeCol);
 
@@ -402,9 +466,11 @@ public class MagicTileManager : MonoBehaviour
         savedColumn.Clear();
         tintedCells.Clear();
 
-        // Clear the overlay tilemap completely
+        // Clear the overlay tilemaps completely
         if (overlayMap != null)
             overlayMap.ClearAllTiles();
+        if (midOverlayMap != null)
+            midOverlayMap.ClearAllTiles();
 
         blueTileCell = new Vector3Int(0, -999, 0);
         orangeTileCell = new Vector3Int(0, -999, 0);
@@ -438,6 +504,10 @@ public class MagicTileManager : MonoBehaviour
         // Remove foreground overlay tile
         if (overlayMap != null && overlayMap.HasTile(cell))
             overlayMap.SetTile(cell, null);
+
+        // Remove mid-overlay tile (enchanted ground sprite layer)
+        if (midOverlayMap != null && midOverlayMap.HasTile(cell))
+            midOverlayMap.SetTile(cell, null);
 
         tintedCells.Remove(cell);
     }
@@ -481,7 +551,7 @@ public class MagicTileManager : MonoBehaviour
         return result;
     }
 
-    private Vector3Int PickSmartCell(MagicTileType type, List<Vector3Int> candidates)
+    private Vector3Int PickSmartCell(MagicTileType type, List<Vector3Int> candidates, List<Vector3Int> placedCells)
     {
         if (candidates.Count == 0) return new Vector3Int(0, -999, 0);
 
@@ -489,14 +559,35 @@ public class MagicTileManager : MonoBehaviour
         if (TurnManager.instance != null && TurnManager.instance.player != null)
             playerCell = TurnManager.instance.player.GetCurrentCellPosition();
 
+        // Spread tiles apart: filter out cells too close to already-placed magic tiles.
+        // Relax separation progressively if nothing qualifies, so we never fail to place.
+        List<Vector3Int> pool = candidates;
+        if (placedCells != null && placedCells.Count > 0 && minTileSeparation > 0)
+        {
+            for (int minSep = minTileSeparation; minSep >= 1; minSep--)
+            {
+                var filtered = new List<Vector3Int>(candidates.Count);
+                foreach (var c in candidates)
+                {
+                    bool tooClose = false;
+                    foreach (var p in placedCells)
+                    {
+                        if (HexGridUtils.DistanceCube(c, p) < minSep) { tooClose = true; break; }
+                    }
+                    if (!tooClose) filtered.Add(c);
+                }
+                if (filtered.Count > 0) { pool = filtered; break; }
+            }
+        }
+
         switch (type)
         {
-            case MagicTileType.Red:    return PickNearEnemies(candidates, playerCell);
-            case MagicTileType.Blue:   return PickNearPlayer(candidates, playerCell);
-            case MagicTileType.Green:  return PickMediumDistance(candidates, playerCell);
-            case MagicTileType.Yellow: return PickAwayFromEnemies(candidates, playerCell);
-            case MagicTileType.Orange: return PickMediumDistance(candidates, playerCell);
-            default: return candidates[Random.Range(0, candidates.Count)];
+            case MagicTileType.Red:    return PickNearEnemies(pool, playerCell);
+            case MagicTileType.Blue:   return PickNearPlayer(pool, playerCell);
+            case MagicTileType.Green:  return PickMediumDistance(pool, playerCell);
+            case MagicTileType.Yellow: return PickAwayFromEnemies(pool, playerCell);
+            case MagicTileType.Orange: return PickMediumDistance(pool, playerCell);
+            default: return pool[Random.Range(0, pool.Count)];
         }
     }
 
@@ -659,9 +750,10 @@ public class MagicTileManager : MonoBehaviour
 
         // Staggered tile replacement + fade-in (original tiles visible until each one transforms)
         // These per-tile effects always run, regardless of camera pan.
+        Tilemap mm = midOverlayMap;
         for (int i = 0; i < pending.Count; i++)
         {
-            StartCoroutine(FadeSingleTile(pending[i], gm, cm, fm));
+            StartCoroutine(FadeSingleTile(pending[i], gm, cm, fm, mm));
             if (i < pending.Count - 1)
                 yield return new WaitForSeconds(0.15f);
         }
@@ -683,20 +775,29 @@ public class MagicTileManager : MonoBehaviour
         }
     }
 
-    private IEnumerator FadeSingleTile(PendingSpawn spawn, Tilemap gm, Tilemap cm, Tilemap fm)
+    private IEnumerator FadeSingleTile(PendingSpawn spawn, Tilemap gm, Tilemap cm, Tilemap fm, Tilemap mm)
     {
         Vector3Int cell = spawn.cell;
         MagicTileEntry entry = spawn.entry;
         MagicTileType type = spawn.type;
 
         bool groundIsTinted = (entry == null || entry.groundTile == null);
+        bool hasMidGround = !groundIsTinted && mm != null;
         Color tintColor = Color.white;
 
         // ── Apply tile replacement right now (original was visible until this moment) ──
 
-        if (!groundIsTinted)
+        if (hasMidGround)
         {
-            // Replace ground with magic sprite — start invisible, will fade in
+            // Paint magic ground sprite on the mid-overlay (sorting 50) instead of the base
+            // groundMap. Keeps it above foreground decor / warning layers and below characters.
+            mm.SetTile(cell, entry.groundTile);
+            mm.SetTileFlags(cell, TileFlags.None);
+            mm.SetColor(cell, new Color(1, 1, 1, 0));
+        }
+        else if (!groundIsTinted)
+        {
+            // Fallback (no mid-overlay available) — replace ground directly
             gm.SetTile(cell, entry.groundTile);
             gm.SetTileFlags(cell, TileFlags.None);
             gm.SetColor(cell, new Color(1, 1, 1, 0));
@@ -746,10 +847,15 @@ public class MagicTileManager : MonoBehaviour
                 ? Mathf.Lerp(1f, 1.5f, t / 0.4f)
                 : Mathf.Lerp(1.5f, 1f, (t - 0.4f) / 0.6f);
 
-            if (!groundIsTinted)
+            Color fadeCol = new Color(glow, glow, glow, alpha);
+            if (hasMidGround)
             {
-                // Normal fade-in for magic ground sprite
-                gm.SetColor(cell, new Color(glow, glow, glow, alpha));
+                // Fade in the mid-overlay sprite; leave the underlying groundMap tile untouched.
+                mm.SetColor(cell, fadeCol);
+            }
+            else if (!groundIsTinted)
+            {
+                gm.SetColor(cell, fadeCol);
             }
             else
             {
@@ -761,7 +867,6 @@ public class MagicTileManager : MonoBehaviour
                 gm.SetColor(cell, blended);
             }
 
-            Color fadeCol = new Color(glow, glow, glow, alpha);
             if (hasColumn) cm.SetColor(cell, fadeCol);
             if (hasFg) fm.SetColor(cell, fadeCol);
 
@@ -770,7 +875,9 @@ public class MagicTileManager : MonoBehaviour
 
         // ── Final settled color ──
 
-        if (!groundIsTinted)
+        if (hasMidGround)
+            mm.SetColor(cell, Color.white);
+        else if (!groundIsTinted)
             gm.SetColor(cell, Color.white);
         else
             gm.SetColor(cell, tintColor);

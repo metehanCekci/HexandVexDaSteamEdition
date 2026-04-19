@@ -12,6 +12,14 @@ public class RunManager : MonoBehaviour
     public int currentLayerIndex = 0;
     public MapNodeType currentNodeType = MapNodeType.Combat;
 
+    [Header("Sacrifice")]
+    // Number of sacrifice nodes completed (lever pulled + perk received) this run.
+    // Reset to 0 at run start. Drives SacrificeNodeManager tier unlocks.
+    public int sacrificeNodesVisited = 0;
+    // When true, the next AddPerk() call bypasses the "upgrade existing" path and
+    // always creates a duplicate instance. Only set by the sacrifice reward flow.
+    [System.NonSerialized] public bool allowDuplicatePerk = false;
+
     [Header("Run Stats")]
 
     public int currentGold = 0;
@@ -153,7 +161,11 @@ public class RunManager : MonoBehaviour
         // Dice Hoarder: maxLevel=1 olduğu için upgrade path anlamsız; her kopya ayrı stacklenmeli
         bool isStackable = prefabScript is DiceHoarderPerk;
 
-        if (!isStackable)
+        // Sacrifice rewards can force duplicate instances even for normally-unique perks.
+        bool forceDuplicate = allowDuplicatePerk;
+        allowDuplicatePerk = false; // consume the flag — one-shot override
+
+        if (!isStackable && !forceDuplicate)
         {
             // Hem activePerks hem inventoryPerks'te bu perk tipinden var mi kontrol et
             BasePerk existingActive = activePerks.Find(p => p.GetType() == prefabScript.GetType());

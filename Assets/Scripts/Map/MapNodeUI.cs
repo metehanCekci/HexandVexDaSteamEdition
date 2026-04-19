@@ -25,6 +25,14 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     private const float normalOutline = 2f;
     private const float hoverOutline = 4f;
 
+    // State-driven visuals
+    private bool isNextStep;      // player can click this right now
+    private bool isCurrentNode;   // player is on this node
+    private bool isLocked;        // future-unreachable
+    private float pulseTime;      // accumulator for "next step" pulse
+    private float currentPulseTime; // accumulator for "you are here" pulse
+    private const float pulseSpeed = 3.5f;
+
     // ─── Node tipine göre icon sprite'ları (MapUI'dan atanacak) ───
     private static Sprite combatIcon;
     private static Sprite eliteIcon;
@@ -99,18 +107,76 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     void Update()
     {
-        // Lerp hover
-        float target = isHovered ? 1f : 0f;
-        if (Mathf.Abs(hoverT - target) < 0.001f)
+        // ── Current node: steady bright ring so player always sees where they are ──
+        if (isCurrentNode)
         {
-            hoverT = target;
+            currentPulseTime += Time.unscaledDeltaTime * (pulseSpeed * 0.7f);
+            float pulse = 0.5f + 0.5f * Mathf.Sin(currentPulseTime);
+            float scale = 1.08f + 0.03f * pulse;
+            transform.localScale = new Vector3(scale, scale, 1f);
+
+            if (outlineRT != null)
+            {
+                float size = Mathf.Lerp(3f, 6f, pulse);
+                outlineRT.offsetMin = new Vector2(-size, -size);
+                outlineRT.offsetMax = new Vector2(size, size);
+            }
+            if (outlineImage != null)
+            {
+                float a = Mathf.Lerp(0.7f, 1f, pulse);
+                outlineImage.color = new Color(1f, 0.95f, 0.4f, a); // gold
+            }
             return;
         }
 
-        hoverT = Mathf.Lerp(hoverT, target, Time.unscaledDeltaTime * lerpSpeed);
+        // ── Next-step nodes: pulse to draw the eye ──
+        if (isNextStep)
+        {
+            pulseTime += Time.unscaledDeltaTime * pulseSpeed;
+            float pulse = 0.5f + 0.5f * Mathf.Sin(pulseTime);
 
-        float scale = Mathf.Lerp(1f, hoverScale, hoverT);
-        transform.localScale = new Vector3(scale, scale, 1f);
+            // Hover still takes priority — blend hover on top of pulse
+            float target = isHovered ? 1f : 0f;
+            hoverT = Mathf.Lerp(hoverT, target, Time.unscaledDeltaTime * lerpSpeed);
+
+            float baseScale = Mathf.Lerp(1.04f, 1.1f, pulse);
+            float scale = Mathf.Lerp(baseScale, hoverScale + 0.04f, hoverT);
+            transform.localScale = new Vector3(scale, scale, 1f);
+
+            if (outlineRT != null)
+            {
+                float baseSize = Mathf.Lerp(3f, 5.5f, pulse);
+                float size = Mathf.Lerp(baseSize, hoverOutline + 1.5f, hoverT);
+                outlineRT.offsetMin = new Vector2(-size, -size);
+                outlineRT.offsetMax = new Vector2(size, size);
+            }
+            if (outlineImage != null)
+            {
+                float a = Mathf.Lerp(0.85f, 1f, pulse);
+                outlineImage.color = new Color(1f, 1f, 1f, a);
+            }
+            return;
+        }
+
+        // ── Locked / unreachable / visited: no interaction, no pulse ──
+        if (isLocked)
+        {
+            transform.localScale = Vector3.one;
+            return;
+        }
+
+        // ── Default hover behaviour for any other state (e.g. visited-but-hoverable) ──
+        float hoverTarget = isHovered ? 1f : 0f;
+        if (Mathf.Abs(hoverT - hoverTarget) < 0.001f)
+        {
+            hoverT = hoverTarget;
+            return;
+        }
+
+        hoverT = Mathf.Lerp(hoverT, hoverTarget, Time.unscaledDeltaTime * lerpSpeed);
+
+        float hScale = Mathf.Lerp(1f, hoverScale, hoverT);
+        transform.localScale = new Vector3(hScale, hScale, 1f);
 
         if (outlineRT != null && showOutline)
         {
@@ -141,8 +207,14 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     public void SetState(bool isReachable, bool isVisited, bool isCurrent, bool isFutureReachable = true)
     {
+        // Only next-step (reachable AND not visited AND not the node we're already on) is clickable.
+        bool canClick = isReachable && !isVisited && !isCurrent;
         if (button != null)
-            button.interactable = isReachable && !isVisited;
+            button.interactable = canClick;
+
+        isNextStep = canClick;
+        isCurrentNode = isCurrent;
+        isLocked = !isFutureReachable && !isVisited && !isCurrent;
 
         if (backgroundImage != null)
         {
@@ -151,7 +223,7 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
                 // Icon varsa background her zaman gizli
                 backgroundImage.color = new Color(0f, 0f, 0f, 0f);
             }
-            else if (isReachable && !isVisited)
+            else if (canClick)
             {
                 backgroundImage.color = new Color(0.15f, 0.15f, 0.18f, 0.9f);
             }
@@ -161,44 +233,76 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             }
         }
 
+        // Text and icon: next-step = bright, current = dim gold, visited = dim grey, locked = very faint & desaturated.
         if (labelText != null)
         {
-            if (isVisited || isCurrent)
-                labelText.color = new Color(0.5f, 0.5f, 0.5f, 0.4f);
-            else if (!isFutureReachable)
-                labelText.color = new Color(0.5f, 0.5f, 0.5f, 0.15f);
-            else
+            if (isCurrent)
+                labelText.color = new Color(1f, 0.9f, 0.5f, 0.9f); // gold tint — "you are here"
+            else if (isVisited)
+                labelText.color = new Color(0.5f, 0.5f, 0.5f, 0.35f);
+            else if (isLocked)
+                labelText.color = new Color(0.4f, 0.4f, 0.4f, 0.25f);
+            else if (canClick)
                 labelText.color = Color.white;
+            else
+                labelText.color = new Color(0.75f, 0.75f, 0.75f, 0.7f);
         }
 
         if (iconImage != null && hasIcon)
         {
-            if (isVisited || isCurrent)
-                iconImage.color = new Color(1f, 1f, 1f, 0.3f);
-            else if (!isFutureReachable)
-                iconImage.color = new Color(1f, 1f, 1f, 0.1f);
-            else
+            if (isCurrent)
+                iconImage.color = new Color(1f, 0.95f, 0.55f, 1f); // gold-tinted, full alpha
+            else if (isVisited)
+                iconImage.color = new Color(0.45f, 0.45f, 0.45f, 0.5f); // desaturated
+            else if (isLocked)
+                iconImage.color = new Color(0.35f, 0.35f, 0.35f, 0.35f); // greyed out
+            else if (canClick)
                 iconImage.color = Color.white;
+            else
+                iconImage.color = new Color(0.85f, 0.85f, 0.85f, 0.8f); // future-reachable but not next
         }
 
-        // Outline: tüm node'larda beyaz, seçilebilir olanlarda daha parlak
+        // Outline base color — Update() overrides this for current/next-step pulse.
         showOutline = true;
         if (outlineImage != null)
         {
-            if (isReachable && !isVisited)
+            if (isCurrent)
+                outlineImage.color = new Color(1f, 0.95f, 0.4f, 1f); // gold
+            else if (canClick)
                 outlineImage.color = new Color(1f, 1f, 1f, 1f);
-            else if (isVisited || isCurrent)
-                outlineImage.color = new Color(1f, 1f, 1f, 0.25f);
-            else if (!isFutureReachable)
-                outlineImage.color = new Color(1f, 1f, 1f, 0.15f);
+            else if (isVisited)
+                outlineImage.color = new Color(0.5f, 0.5f, 0.5f, 0.3f);
+            else if (isLocked)
+                outlineImage.color = new Color(0.4f, 0.4f, 0.4f, 0.2f);
             else
                 outlineImage.color = new Color(1f, 1f, 1f, 0.4f);
         }
 
-        // Hover resetle
+        // Reset hover — Update() will re-drive pulse/scale next frame for current/next-step.
         isHovered = false;
         hoverT = 0f;
-        transform.localScale = Vector3.one;
+
+        // Offset per-node so pulses don't all tick in lockstep (adds visual life when multiple next-step nodes).
+        pulseTime = (nodeId * 0.37f) % (Mathf.PI * 2f);
+        currentPulseTime = 0f;
+
+        // Apply the pulse state immediately instead of waiting a frame — otherwise first-open nodes
+        // briefly render at flat scale before Update() runs.
+        if (isNextStep)
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(pulseTime);
+            float s = Mathf.Lerp(1.04f, 1.1f, pulse);
+            transform.localScale = new Vector3(s, s, 1f);
+        }
+        else if (isCurrentNode)
+        {
+            transform.localScale = new Vector3(1.08f, 1.08f, 1f);
+        }
+        else
+        {
+            transform.localScale = Vector3.one;
+        }
+
         if (outlineRT != null)
         {
             float size = normalOutline;

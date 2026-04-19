@@ -371,6 +371,8 @@ public class SacrificeNodeManager : MonoBehaviour
         persistentEpicPerk = null;
         persistentLegendaryPerk = null;
         persistentSecretPerk = null;
+        if (RunManager.instance != null)
+            RunManager.instance.sacrificeNodesVisited = 0;
         ReturnAllTubePerks();
     }
 
@@ -498,15 +500,49 @@ public class SacrificeNodeManager : MonoBehaviour
     // LEVER
     // ═══════════════════════════════════════════
 
+    // 1-based visit number for the CURRENT open sacrifice node.
+    // sacrificeNodesVisited counts completed visits, so the current one is +1.
+    private int CurrentVisitNumber()
+    {
+        if (RunManager.instance == null) return 1;
+        return RunManager.instance.sacrificeNodesVisited + 1;
+    }
+
+    private bool IsTierUnlocked(PerkRarity tier)
+    {
+        int v = CurrentVisitNumber();
+        switch (tier)
+        {
+            case PerkRarity.Rare:      return v >= 1;
+            case PerkRarity.Epic:      return v >= 2;
+            case PerkRarity.Legendary: return v >= 3;
+            case PerkRarity.Secret:    return v >= 3;
+        }
+        return false;
+    }
+
+    // Required visit number to unlock a given tier (for locked-slot labels).
+    private static int UnlockVisitFor(PerkRarity tier)
+    {
+        switch (tier)
+        {
+            case PerkRarity.Rare:      return 1;
+            case PerkRarity.Epic:      return 2;
+            case PerkRarity.Legendary: return 3;
+            case PerkRarity.Secret:    return 3;
+        }
+        return 1;
+    }
+
     private bool CanPullLever()
     {
         if (isAnimating) return false;
         int c = tubePerks.Count;
         if (c == 1) return true; // reroll her zaman
-        if (c == 2) return persistentRarePerk != null;
-        if (c == 4) return persistentEpicPerk != null;
-        if (c == 6) return persistentLegendaryPerk != null;
-        if (c == 10) return true; // secret uses SecretPerkOrb directly
+        if (c == 2) return persistentRarePerk != null && IsTierUnlocked(PerkRarity.Rare);
+        if (c == 4) return persistentEpicPerk != null && IsTierUnlocked(PerkRarity.Epic);
+        if (c == 6) return persistentLegendaryPerk != null && IsTierUnlocked(PerkRarity.Legendary);
+        if (c == 10) return IsTierUnlocked(PerkRarity.Secret);
         return false;
     }
 
@@ -558,6 +594,8 @@ public class SacrificeNodeManager : MonoBehaviour
 
             SecretPerkOrb orb = FindSecretPerkOrb();
             Debug.Log($"[SACRIFICE] SecretPerkOrb found={orb != null}, pool={orb?.secretPerkPool?.Count ?? -1}");
+            // Let duplicate perks stack when the reward comes from sacrifice.
+            if (RunManager.instance != null) RunManager.instance.allowDuplicatePerk = true;
             bool orbResult = orb != null && orb.Use();
             Debug.Log($"[SACRIFICE] SecretPerkOrb.Use() returned {orbResult}");
             if (orbResult)
@@ -576,11 +614,17 @@ public class SacrificeNodeManager : MonoBehaviour
                 }
 
                 if (statusText != null) statusText.text = "SECRET MUTATION ACQUIRED!";
-                if (RunManager.instance != null) RunManager.instance.RefreshPerkUI();
+                if (RunManager.instance != null)
+                {
+                    RunManager.instance.sacrificeNodesVisited++;
+                    RunManager.instance.RefreshPerkUI();
+                }
                 yield return new WaitForSecondsRealtime(0.5f);
             }
             else
             {
+                // Clear the unused dupe flag since AddPerk was never reached.
+                if (RunManager.instance != null) RunManager.instance.allowDuplicatePerk = false;
                 Debug.LogWarning("[SACRIFICE] SecretPerkOrb not found or Use() failed!");
                 if (statusText != null) statusText.text = "NO SECRET AVAILABLE";
                 yield return new WaitForSecondsRealtime(1f);
@@ -631,10 +675,12 @@ public class SacrificeNodeManager : MonoBehaviour
                 // Show reward perk appearing in tube
                 yield return StartCoroutine(ShowRewardInTube(rewardPrefab));
 
-                // Actually grant the perk
+                // Actually grant the perk — allow duplicate (sacrifice-only rule)
                 if (RunManager.instance != null)
                 {
+                    RunManager.instance.allowDuplicatePerk = true;
                     RunManager.instance.AddPerk(rewardPrefab);
+                    RunManager.instance.sacrificeNodesVisited++;
                     RunManager.instance.RefreshPerkUI();
                     Debug.Log($"[SACRIFICE] AddPerk SUCCESS: {perkName}");
                 }
@@ -862,6 +908,11 @@ public class SacrificeNodeManager : MonoBehaviour
     private void RefreshUI()
     {
         int count = tubePerks.Count;
+        int visit = CurrentVisitNumber();
+
+        // Sacrifice progression label in the title
+        if (titleText != null)
+            titleText.text = $"SACRIFICE MACHINE  <size=22><color=#888888>#{visit}</color></size>";
 
         // Lever
         bool canPull = CanPullLever();
@@ -874,23 +925,42 @@ public class SacrificeNodeManager : MonoBehaviour
             leverText.color = canPull ? Color.white : new Color(0.35f, 0.35f, 0.35f);
         }
 
-        // Reward slots — always show info
-        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count == 2); }
-        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count == 4); }
-        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count == 6); }
+        // Reward slots — lock tiers not yet unlocked for this visit number
+        bool rareUnlocked = IsTierUnlocked(PerkRarity.Rare);
+        bool epicUnlocked = IsTierUnlocked(PerkRarity.Epic);
+        bool legendaryUnlocked = IsTierUnlocked(PerkRarity.Legendary);
 
-        // Status
+        if (rareSlot != null)
+        {
+            rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2, !rareUnlocked, UnlockVisitFor(PerkRarity.Rare));
+            rareSlot.SetHighlighted(count == 2 && rareUnlocked);
+        }
+        if (epicSlot != null)
+        {
+            epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4, !epicUnlocked, UnlockVisitFor(PerkRarity.Epic));
+            epicSlot.SetHighlighted(count == 4 && epicUnlocked);
+        }
+        if (legendarySlot != null)
+        {
+            legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6, !legendaryUnlocked, UnlockVisitFor(PerkRarity.Legendary));
+            legendarySlot.SetHighlighted(count == 6 && legendaryUnlocked);
+        }
+
+        // Status — gate messages by unlock state
         if (statusText != null)
         {
-            if (count == 0) statusText.text = "DRAG PERKS INTO THE TUBE";
-            else if (count == 1) statusText.text = "PULL LEVER TO REROLL REWARDS";
-            else if (count == 2) statusText.text = "PULL LEVER FOR RARE PERK";
-            else if (count == 3) statusText.text = "NEED 1 MORE FOR EPIC (4)";
-            else if (count == 4) statusText.text = "PULL LEVER FOR EPIC PERK";
-            else if (count == 5) statusText.text = "NEED 1 MORE FOR LEGENDARY (6)";
-            else if (count == 6) statusText.text = "PULL LEVER FOR LEGENDARY PERK";
-            else if (count >= 7 && count <= 9) statusText.text = $"NEED {10 - count} MORE FOR ???";
-            else if (count == 10) statusText.text = "PULL LEVER FOR ??? PERK";
+            string s;
+            if (count == 0) s = "DRAG PERKS INTO THE TUBE";
+            else if (count == 1) s = "PULL LEVER TO REROLL REWARDS";
+            else if (count == 2) s = rareUnlocked ? "PULL LEVER FOR RARE PERK" : $"RARE LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Rare)}";
+            else if (count == 3) s = "NEED 1 MORE FOR EPIC (4)";
+            else if (count == 4) s = epicUnlocked ? "PULL LEVER FOR EPIC PERK" : $"EPIC LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Epic)}";
+            else if (count == 5) s = "NEED 1 MORE FOR LEGENDARY (6)";
+            else if (count == 6) s = legendaryUnlocked ? "PULL LEVER FOR LEGENDARY PERK" : $"LEGENDARY LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Legendary)}";
+            else if (count >= 7 && count <= 9) s = $"NEED {10 - count} MORE FOR ???";
+            else if (count == 10) s = IsTierUnlocked(PerkRarity.Secret) ? "PULL LEVER FOR ??? PERK" : $"??? LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Secret)}";
+            else s = "";
+            statusText.text = s;
         }
     }
 

@@ -78,6 +78,19 @@ public abstract class BasePerk : MonoBehaviour
     //   "N damage" -> DamageHex
     public virtual Dictionary<string, object> GetDescValues() { return null; }
 
+    // Returns GetDescValues() as if currentLevel were `level`. Used for level-up diff UI.
+    public Dictionary<string, object> GetDescValuesForLevel(int level)
+    {
+        int saved = currentLevel;
+        currentLevel = Mathf.Clamp(level, 1, maxLevel);
+        var result = GetDescValues();
+        currentLevel = saved;
+        return result;
+    }
+
+    // Public wrapper so UI code can reuse the same colorization pipeline for diff values.
+    public static string ColorizeValue(object raw) => Colorize(raw);
+
     // Description'i yeniden insa eder (seviye atlayinca veya GameKeywords renk/deger degisince cagrilir)
     public virtual void RebuildDescription()
     {

@@ -198,21 +198,54 @@ public class MapUI : MonoBehaviour
 
             bool fromReachable = futureReachable.Contains(edge.fromId);
             bool toReachable = futureReachable.Contains(edge.toId);
+            bool fromVisited = map.GetNode(edge.fromId)?.visited ?? false;
+            bool toVisited = map.GetNode(edge.toId)?.visited ?? false;
 
-            if (fromReachable && toReachable)
+            // The edge the player is about to take: fat, bright gold.
+            bool isNextEdge = nextStepIds.Contains(edge.toId) &&
+                (edge.fromId == map.currentNodeId || map.currentNodeId == -1);
+
+            // Edges that are already traversed: muted grey so the "path I came from" is visible but dim.
+            bool isTraversed = fromVisited && (toVisited || edge.toId == map.currentNodeId);
+
+            RectTransform lineRT = edge.image.rectTransform;
+            if (isNextEdge)
             {
-                // Aktif yol — normal parlak çizgi
-                bool isNextEdge = nextStepIds.Contains(edge.toId) &&
-                    (edge.fromId == map.currentNodeId || map.currentNodeId == -1);
-                if (isNextEdge)
-                    edge.image.color = new Color(0.9f, 0.9f, 0.9f, 0.7f);
-                else
-                    edge.image.color = new Color(0.6f, 0.6f, 0.6f, 0.5f);
+                edge.image.color = new Color(1f, 0.95f, 0.4f, 0.95f); // gold
+                if (lineRT != null)
+                {
+                    var s = lineRT.sizeDelta;
+                    lineRT.sizeDelta = new Vector2(s.x, 6f);
+                }
+            }
+            else if (isTraversed)
+            {
+                edge.image.color = new Color(0.55f, 0.55f, 0.55f, 0.55f);
+                if (lineRT != null)
+                {
+                    var s = lineRT.sizeDelta;
+                    lineRT.sizeDelta = new Vector2(s.x, 3f);
+                }
+            }
+            else if (fromReachable && toReachable)
+            {
+                // Still possible in the future, but not the current choice — dim.
+                edge.image.color = new Color(0.5f, 0.5f, 0.5f, 0.35f);
+                if (lineRT != null)
+                {
+                    var s = lineRT.sizeDelta;
+                    lineRT.sizeDelta = new Vector2(s.x, 3f);
+                }
             }
             else
             {
-                // Artık ulaşılamaz — soluk
-                edge.image.color = new Color(0.3f, 0.3f, 0.3f, 0.15f);
+                // Unreachable — barely visible.
+                edge.image.color = new Color(0.25f, 0.25f, 0.25f, 0.1f);
+                if (lineRT != null)
+                {
+                    var s = lineRT.sizeDelta;
+                    lineRT.sizeDelta = new Vector2(s.x, 2f);
+                }
             }
         }
     }

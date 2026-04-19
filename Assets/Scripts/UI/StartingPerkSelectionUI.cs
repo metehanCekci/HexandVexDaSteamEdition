@@ -190,18 +190,50 @@ public class StartingPerkSelectionUI : MonoBehaviour
 
         Debug.Log($"[StartingPerkSelection] Granted {selectedIndices.Count} starting perks");
 
-        // Fade out entire panel
-        float fadeDur = 0.35f;
-        float fadeElapsed = 0f;
-        while (fadeElapsed < fadeDur)
+        // Brief pause so the player can register the last card fading
+        yield return new WaitForSecondsRealtime(0.1f);
+
+        // Fade the screen to black so the character/map doesn't pop in after this screen.
+        // Downstream (MapManager.StartNewRunDelayed or the legacy path) does its own FadeFromBlack
+        // once the world is ready, so here we only need to hit full black and then hand off.
+        CanvasGroup fader = ScreenFader.instance != null ? ScreenFader.instance.faderGroup : null;
+        if (fader != null)
         {
-            if (canvasGroup != null)
-                canvasGroup.alpha = 1f - (fadeElapsed / fadeDur);
-            fadeElapsed += Time.unscaledDeltaTime;
-            yield return null;
+            // Stop any in-flight ScreenFader coroutines (e.g. auto fade-in from a prior scene load)
+            // so they don't fight our fade-to-black.
+            ScreenFader.instance.StopAllCoroutines();
+
+            fader.blocksRaycasts = true;
+            float faderStart = fader.alpha;
+            float faderDur = 0.5f;
+            float faderElapsed = 0f;
+
+            // Fade panel and screen together for a smooth handoff
+            while (faderElapsed < faderDur)
+            {
+                faderElapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(faderElapsed / faderDur);
+                fader.alpha = Mathf.Lerp(faderStart, 1f, t);
+                if (canvasGroup != null) canvasGroup.alpha = 1f - t;
+                yield return null;
+            }
+            fader.alpha = 1f;
+        }
+        else
+        {
+            // Fallback — just fade the panel if no ScreenFader is present.
+            float fadeDur = 0.35f;
+            float fadeElapsed = 0f;
+            while (fadeElapsed < fadeDur)
+            {
+                if (canvasGroup != null)
+                    canvasGroup.alpha = 1f - (fadeElapsed / fadeDur);
+                fadeElapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
         }
 
-        // Hide
+        // Screen is now black (or panel faded, fallback). Hide panel and let the caller build the world.
         if (panel != null) panel.SetActive(false);
         if (canvasGroup != null) { canvasGroup.alpha = 1f; canvasGroup.blocksRaycasts = false; }
 

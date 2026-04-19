@@ -186,7 +186,17 @@ public class LevelUpManager : MonoBehaviour
                 if (choiceDescriptionTexts.Length > i && choiceDescriptionTexts[i] != null)
                 {
                     perkScript.RebuildDescription();
-                    choiceDescriptionTexts[i].text = perkScript.description;
+                    string descText = perkScript.description;
+
+                    // Level-up diff: show which tokens change between current and next level
+                    if (existing != null && displayLevel <= existing.maxLevel)
+                    {
+                        string diffBlock = BuildLevelUpDiff(existing, existing.currentLevel, displayLevel);
+                        if (!string.IsNullOrEmpty(diffBlock))
+                            descText += "\n\n" + diffBlock;
+                    }
+
+                    choiceDescriptionTexts[i].text = descText;
                     choiceDescriptionTexts[i].color = Color.Lerp(rarityColor, new Color(0.85f, 0.85f, 0.85f, 1f), 0.4f);
                 }
 
@@ -343,6 +353,46 @@ public class LevelUpManager : MonoBehaviour
     }
 
     private Color GetRarityColor(PerkRarity rarity) => UIColors.GetRarityColor(rarity);
+
+    // Renders a "token: old → new" block for every GetDescValues key whose value
+    // differs between fromLevel and toLevel. Returns empty string if nothing changes.
+    private string BuildLevelUpDiff(BasePerk perk, int fromLevel, int toLevel)
+    {
+        var oldVals = perk.GetDescValuesForLevel(fromLevel);
+        var newVals = perk.GetDescValuesForLevel(toLevel);
+        if (oldVals == null || newVals == null) return "";
+
+        var sb = new System.Text.StringBuilder();
+        foreach (var kv in newVals)
+        {
+            if (!oldVals.TryGetValue(kv.Key, out object oldVal)) continue;
+            string oldStr = oldVal?.ToString() ?? "";
+            string newStr = kv.Value?.ToString() ?? "";
+            if (oldStr == newStr) continue;
+
+            string label = PrettifyTokenKey(kv.Key);
+            string oldCol = BasePerk.ColorizeValue(oldVal);
+            string newCol = BasePerk.ColorizeValue(kv.Value);
+            if (sb.Length > 0) sb.Append('\n');
+            sb.Append($"<color=#BFBFBF>{label}:</color> {oldCol} <color=#BFBFBF>→</color> {newCol}");
+        }
+        return sb.ToString();
+    }
+
+    // "burnDamage" -> "burn damage", "goldPerKill" -> "gold per kill"
+    private static string PrettifyTokenKey(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return key;
+        var sb = new System.Text.StringBuilder(key.Length + 4);
+        for (int i = 0; i < key.Length; i++)
+        {
+            char c = key[i];
+            if (i > 0 && char.IsUpper(c) && !char.IsUpper(key[i - 1]))
+                sb.Append(' ');
+            sb.Append(i == 0 ? char.ToUpperInvariant(c) : char.ToLowerInvariant(c));
+        }
+        return sb.ToString();
+    }
 
     private GameObject GetAnyValidFallback()
     {

@@ -14,13 +14,28 @@ public class SacrificeRewardSlot : MonoBehaviour
 
     private PerkRarity slotRarity;
     private int cost;
+    private bool isLocked;
 
     public void Setup(PerkRarity rarity, GameObject perkPrefab, int perkCost)
     {
+        Setup(rarity, perkPrefab, perkCost, false, 0);
+    }
+
+    // lockedUntilVisit: 1-based sacrifice visit number at which this slot unlocks.
+    // Only meaningful when locked=true.
+    public void Setup(PerkRarity rarity, GameObject perkPrefab, int perkCost, bool locked, int lockedUntilVisit)
+    {
         slotRarity = rarity;
         cost = perkCost;
+        isLocked = locked;
 
-        if (perkPrefab != null)
+        if (locked)
+        {
+            if (nameText != null) nameText.text = "LOCKED";
+            if (descText != null) descText.text = $"Unlocks at Sacrifice #{lockedUntilVisit}";
+            if (iconImage != null) iconImage.enabled = false;
+        }
+        else if (perkPrefab != null)
         {
             BasePerk bp = perkPrefab.GetComponent<BasePerk>();
             if (bp != null)
@@ -42,7 +57,7 @@ public class SacrificeRewardSlot : MonoBehaviour
             if (iconImage != null) iconImage.enabled = false;
         }
 
-        if (costText != null) costText.text = $"{cost} PERKS";
+        if (costText != null) costText.text = locked ? "LOCKED" : $"{cost} PERKS";
         if (rarityLabel != null)
         {
             rarityLabel.text = rarity.ToString().ToUpper();
@@ -52,6 +67,23 @@ public class SacrificeRewardSlot : MonoBehaviour
 
     public void SetHighlighted(bool active)
     {
+        if (isLocked)
+        {
+            // Locked — very dim, red-tinted cost, rarity label muted
+            if (background != null) background.color = new Color(0.04f, 0.02f, 0.04f, 0.85f);
+            if (glowBorder != null) glowBorder.gameObject.SetActive(false);
+            if (iconImage != null) iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.4f);
+            if (nameText != null) nameText.color = new Color(0.55f, 0.2f, 0.2f);
+            if (descText != null) descText.color = new Color(0.65f, 0.5f, 0.3f);
+            if (costText != null) costText.color = new Color(0.5f, 0.2f, 0.2f);
+            if (rarityLabel != null)
+            {
+                Color rc = GetRarityColor(slotRarity);
+                rarityLabel.color = new Color(rc.r * 0.4f, rc.g * 0.4f, rc.b * 0.4f, 1f);
+            }
+            return;
+        }
+
         if (active)
         {
             // Aktif — karartma yok, her şey net görünür
