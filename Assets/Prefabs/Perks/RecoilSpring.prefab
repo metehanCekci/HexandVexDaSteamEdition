@@ -47,11 +47,9 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Recoil Spring
-  description: After [white]attacking[/white], bounce back and [white]attack[/white]
-    again if an enemy is adjacent.
+  description: After attacking, bounce backward. If you land next to another enemy,
+    attack again.
   icon: {fileID: -4629115114559398676, guid: f579110dd4bb8974499ed93e2b54edd4, type: 3}
   priority: 0
   isRerollPerk: 0
-  processLast: 0
-  isPerkRetrigger: 0
   rarity: 1

@@ -47,12 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Pyrogenic Glands
-  description: Attacks [orange]burn[/orange] enemies. deals {dmg} of max [green]HP[/green]
-    per turn for [white]5 turns[/white].
+  description: Attacks set enemies on fire for 5 turns. Each burn deals damage based
+    on enemy's max health per tick.
   icon: {fileID: -2207031521626848329, guid: 81d622b916f51d94fb56499332fde2ea, type: 3}
   priority: 0
   isRerollPerk: 0
-  processLast: 0
-  isPerkRetrigger: 0
   rarity: 2
   fireEffectPrefab: {fileID: 7792017491707608846, guid: f9ed83b3f3c156b4b9322c1693d0b676, type: 3}

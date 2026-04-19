@@ -1,13 +1,12 @@
-﻿using System.Collections.Generic;
-
 public class LuckyCloverPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "reroll", GameKeywords.Action("Reroll") },
-        { "rerolls", GameKeywords.Plus(currentLevel) }
-    };
+        rarity = PerkRarity.Rare;
+        maxLevel = 3;
+    }
 
+    /// <summary>Lucky Clover artik perk secim havuzunda cikmaz.</summary>
     public override bool CanBeOffered() { return false; }
 
     public override void OnAcquire()

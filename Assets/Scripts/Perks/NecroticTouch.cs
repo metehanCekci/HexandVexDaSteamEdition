@@ -1,13 +1,12 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class NecroticTouchPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "threshold", GameKeywords.HealthText("50% HP") },
-        { "mult", GameKeywords.Mult(2) }
-    };
+        maxLevel = 1;
+        rarity = PerkRarity.Rare;
+    }
 
     public float GetMultiplier(EnemyMovement enemy)
     {

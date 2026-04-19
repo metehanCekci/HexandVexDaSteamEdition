@@ -8,10 +8,10 @@ public class DamageNumber : MonoBehaviour
     private Color textColor;
     private Vector3 moveVector;
 
-    public void Setup(long damageAmount)
+    public void Setup(int damageAmount)
     {
         textMesh = GetComponent<TextMeshPro>();
-        textMesh.text = NumberFormatter.Format(damageAmount);
+        textMesh.text = damageAmount.ToString();
         textColor = textMesh.color;
 
         // Tilemap'in önünde görünsün

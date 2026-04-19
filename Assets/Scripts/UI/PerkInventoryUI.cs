@@ -706,7 +706,6 @@ public class PerkInventoryUI : MonoBehaviour
                 if (sellZone == null) sellZone = result.gameObject.GetComponentInParent<SellBoxDropZone>();
                 if (sellZone != null && SellBoxController.instance != null)
                 {
-                    if (!SellBoxController.instance.IsAcceptingDrops) continue;
                     handled = SellBoxController.instance.TrySell();
                     break;
                 }
@@ -1322,7 +1321,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipNameText.fontSize = 16;
         tooltipNameText.color = Color.white;
         tooltipNameText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipNameText.textWrappingMode = TextWrappingModes.NoWrap;
+        tooltipNameText.enableWordWrapping = false;
         tooltipNameText.richText = true;
         tooltipNameText.raycastTarget = false;
 
@@ -1339,7 +1338,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipLevelText.fontSize = 16;
         tooltipLevelText.color = new Color(0.8f, 0.8f, 0.8f);
         tooltipLevelText.alignment = TextAlignmentOptions.TopRight;
-        tooltipLevelText.textWrappingMode = TextWrappingModes.NoWrap;
+        tooltipLevelText.enableWordWrapping = false;
         tooltipLevelText.raycastTarget = false;
 
         // Açıklama
@@ -1355,7 +1354,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipDescText.fontSize = 16;
         tooltipDescText.color = new Color(0.67f, 0.67f, 0.67f);
         tooltipDescText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipDescText.enableWordWrapping = true;
         tooltipDescText.richText = true;
         tooltipDescText.raycastTarget = false;
 
@@ -1382,7 +1381,6 @@ public class PerkInventoryUI : MonoBehaviour
         if (tooltipLevelText != null)
             tooltipLevelText.text = $"Lv {perk.currentLevel}/{perk.maxLevel}";
 
-        perk.RebuildDescription();
         if (tooltipDescText != null)
             tooltipDescText.text = string.IsNullOrEmpty(perk.renderedDescription) ? "" : perk.renderedDescription;
 

@@ -47,16 +47,11 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Pent-Up Strike
-  description: '[white]Attacks[/white] deal {zero}. Dice values are stored. [white]Skip[/white]
-    to unleash all stored damage at {percent}.
-    [stack]
-    [white]Currently:[/white] {stored}
-    ({stacks} stacks)[/stack]'
+  description: Attacks deal no damage but still knockback. Dice values are stored.
+    Skip to unleash all stored damage at once.
   icon: {fileID: -6057070678955543277, guid: e0985c2aa7805be4083330c7e00651fb, type: 3}
   priority: 0
   isRerollPerk: 0
-  processLast: 0
-  isPerkRetrigger: 0
   rarity: 2
   storedDamage: 0
   storedStacks: 0

@@ -212,26 +212,8 @@ public class ProfileUI : MonoBehaviour
         if (cards == null || cards[id] == null) return;
 
         string newName = cards[id].GetRenameText();
-        string oldName = ProfileManager.instance != null
-            ? ProfileManager.instance.GetProfileName(id) : "";
-
-        // Boş veya değişmemiş → sessizce iptal
-        if (!string.IsNullOrWhiteSpace(newName) &&
-            !string.Equals(newName, oldName, System.StringComparison.Ordinal) &&
-            ProfileManager.instance != null)
-        {
-            bool ok = ProfileManager.instance.SetProfileName(id, newName);
-            if (!ok)
-            {
-                // Çakışma veya geçersiz — kullanıcıya bildir, input'u açık tut
-                Debug.LogWarning($"[ProfileUI] Rename reddedildi (boş veya çakışan isim): '{newName}'");
-                // Input'u açık bırak, sadece refresh yap
-                return;
-            }
-            // Aktif profil yeniden adlandırıldıysa değişikliği diske zorla
-            if (id == ProfileManager.instance.ActiveProfileId)
-                ProfileManager.instance.SaveCurrentProfile();
-        }
+        if (!string.IsNullOrEmpty(newName) && ProfileManager.instance != null)
+            ProfileManager.instance.SetProfileName(id, newName);
 
         cards[id].HideRenameInput();
         renamingProfileId = -1;

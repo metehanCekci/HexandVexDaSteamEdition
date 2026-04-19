@@ -31,7 +31,7 @@ public class SpawnerBossAI : MonoBehaviour
     
     private bool isTransitioning = false; 
     private bool isSummoning = false; 
-    private long previousHP;
+    private int previousHP; 
 
     private Tilemap groundMap;
     private Tilemap bossWarningMap;

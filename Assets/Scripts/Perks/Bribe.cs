@@ -1,10 +1,6 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class BribePerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
-    {
-        { "free", GameKeywords.GoldText("free") }
-    };
+    void OnEnable() { maxLevel = 1; rarity = PerkRarity.Epic; }
 }

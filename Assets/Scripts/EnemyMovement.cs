@@ -35,7 +35,7 @@ public class EnemyMovement : MonoBehaviour
     /// <summary>Bir kez dost olan düşman bir daha düşman olamaz.</summary>
     [HideInInspector] public bool wasAllied = false;
     /// <summary>Neural Hijack: dönüştürülürken oyuncunun attığı zar toplamı. Her vuruşta bu kadar hasar verir.</summary>
-    [HideInInspector] public long hijackDamage = 0;
+    [HideInInspector] public int hijackDamage = 0;
 
     private Vector3Int cell;
     private Vector3 targetWorldPos;
@@ -131,7 +131,7 @@ public class EnemyMovement : MonoBehaviour
         if (ninja != null) { ninja.OnNinjaDied(); return; }
     }
 
-    private void HandleDamaged(long remainingHP)
+    private void HandleDamaged(int remainingHP)
     {
         // Ally iken hasar alınca charge animasyonunu bozma
         if (isAllied) return;
@@ -439,21 +439,10 @@ public class EnemyMovement : MonoBehaviour
                 ScaffoldManager.instance.OnEntityEnter(cell);
             }
 
-            // Hazard damage (spikes etc.) — same treatment as knockback into spikes
+            // Hazard damage (spikes etc.)
             if (isHazard && health != null)
             {
-                // 50% maxHP damage (same as TurnManager knockback-into-spike logic)
-                if (TurnManager.instance != null)
-                    TurnManager.instance.StartCoroutine(TurnManager.instance.FlashHazardTileCoroutine(cell));
-                health.TakeDamage(System.Math.Max(1L, health.maxHP / 2));
-
-                // Bounce away to a safe neighbor if still alive
-                if (health.currentHP > 0 && TurnManager.instance != null)
-                {
-                    Vector3Int bounceCell = TurnManager.instance.GetRandomSafeNeighbor(cell);
-                    if (bounceCell != cell)
-                        StartKnockbackMovement(bounceCell);
-                }
+                health.TakeDamage(1);
             }
         }
     }
