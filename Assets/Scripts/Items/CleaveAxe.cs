@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/CleaveAxe", fileName = "CleaveAxe")]
 public class CleaveAxe : BaseItem
@@ -6,9 +7,15 @@ public class CleaveAxe : BaseItem
     void OnEnable()
     {
         itemName = "Cleave-Axe";
-        description = $"Next attack deals <color=#{UIColors.Damage}>full damage</color> to all adjacent enemies without splitting";
-        price = 21;
+        if (string.IsNullOrEmpty(description))
+            description = "Next attack deals {full} to all adjacent enemies without splitting.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "full", "full damage" }
+    };
 
     public override bool Use()
     {

@@ -260,6 +260,7 @@ public class HotbarUI : MonoBehaviour
                 HotbarSlotTooltip tt = slot.tooltip ?? slot.GetComponent<HotbarSlotTooltip>();
                 if (tt != null)
                 {
+                    item.RebuildDescription();
                     tt.itemName = item.itemName ?? "";
                     tt.itemDesc = item.description ?? "";
                     tt.hasItem = true;

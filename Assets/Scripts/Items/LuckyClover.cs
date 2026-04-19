@@ -6,9 +6,10 @@ public class LuckyClover : BaseItem
     void OnEnable()
     {
         itemName = "Lucky Clover";
-        description = "(Disabled) This item has been removed from the game.";
-        price = 0;
+        if (string.IsNullOrEmpty(description))
+            description = "(Disabled) This item has been removed from the game.";
         itemType = ItemType.Consumable;
+        RebuildDescription();
     }
 
     public override bool Use()

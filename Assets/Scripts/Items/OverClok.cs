@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/OverClok", fileName = "OverClok")]
 public class OverClok : BaseItem
@@ -6,9 +7,15 @@ public class OverClok : BaseItem
     void OnEnable()
     {
         itemName = "Over-Clock";
-        description = $"Deal {GameKeywords.Times(2f, "damage")} on your next dice roll";
-        price = 21;
+        if (string.IsNullOrEmpty(description))
+            description = "Deal {mult} damage on your next dice roll.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "mult", "X2" }
+    };
 
     public override bool Use()
     {

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/HexThorn", fileName = "HexThorn")]
 public class HexThorn : BaseItem
@@ -6,9 +7,16 @@ public class HexThorn : BaseItem
     void OnEnable()
     {
         itemName = "Hex-Thorn";
-        description = $"Place a spike trap on any empty hex tile. Breaks after {GameKeywords.Number(3)} turns (blinks on turn {GameKeywords.Number(2)}).";
-        price = 15;
+        if (string.IsNullOrEmpty(description))
+            description = "Place a spike trap on any empty hex tile. Breaks after {turns} turns (blinks on turn {warn}).";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "turns", 3 },
+        { "warn", 2 }
+    };
 
     public override bool Use()
     {

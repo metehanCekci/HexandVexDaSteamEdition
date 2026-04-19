@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Alpha-Omega Strand
-  description: First and last die gets +2.
+  description: First and last die gain {bonus}.
   icon: {fileID: -7347702412918682891, guid: 4aefa56b75e4fd044b2257ed9f98059f, type: 3}
   priority: 1
   isRerollPerk: 0

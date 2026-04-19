@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Glass Canon
-  description: Your max health reduces, but your damage is doubled.
+  description: Max HP drops to {hp}, but you deal {mult} damage.
   icon: {fileID: 7513065474429622654, guid: 4a80d21134e2b264bb33538c8aef599d, type: 3}
   priority: 2
   isRerollPerk: 0

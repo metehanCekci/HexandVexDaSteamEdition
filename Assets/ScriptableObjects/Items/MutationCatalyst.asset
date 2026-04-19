@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MutationCatalyst
   m_EditorClassIdentifier: Assembly-CSharp::MutationCatalyst
   itemName: Mutation Catalyst
-  description: Once acquired, your next reroll will be free.
+  description: Sets the next shop reroll cost to {cost} gold.
   price: 6
   icon: {fileID: 8711613802454188474, guid: 135b76c47aa7af94391775449b63aa4b, type: 3}
   itemType: 1

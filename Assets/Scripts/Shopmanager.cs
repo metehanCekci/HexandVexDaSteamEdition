@@ -400,6 +400,7 @@ public class Shopmanager : MonoBehaviour
             if (item.icon != null) { card.iconImage.sprite = item.icon; card.iconImage.color = Color.white; card.iconImage.enabled = true; }
             else { card.iconImage.sprite = null; card.iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); }
         }
+        item.RebuildDescription();
         if (card.descriptionText != null) card.descriptionText.text = item.description;
         if (card.priceText != null) card.priceText.text = item.price.ToString();
     }

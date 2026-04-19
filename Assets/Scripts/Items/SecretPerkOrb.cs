@@ -10,10 +10,16 @@ public class SecretPerkOrb : BaseItem
     void OnEnable()
     {
         itemName = "??? Orb";
-        description = $"A mysterious orb pulsing with unknown energy. Grants a <color=#{UIColors.GetRarityHex(PerkRarity.Secret)}>secret mutation</color>.";
-        price = 404;
+        if (string.IsNullOrEmpty(description))
+            description = "A mysterious orb pulsing with unknown energy. Grants a {secret}.";
         itemType = ItemType.Instant;
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "secret", $"<color=#{UIColors.GetRarityHex(PerkRarity.Secret)}>secret mutation</color>" }
+    };
 
     /// <summary>
     /// Verilecek secret perk kaldı mı? Shop bu metodu kontrol eder.

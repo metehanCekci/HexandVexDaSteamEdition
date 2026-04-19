@@ -14,9 +14,9 @@ public class PressurePointPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult1", "x2" },
-        { "mult2", "x1.75" },
-        { "mult3", "x1.5" }
+        { "mult1", "X2" },
+        { "mult2", "X1.75" },
+        { "mult3", "X1.5" }
     };
 
     public float GetMultiplier(EnemyMovement enemy)

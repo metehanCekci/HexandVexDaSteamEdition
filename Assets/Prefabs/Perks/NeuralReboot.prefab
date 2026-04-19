@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Neural Reboot
-  description: Any die rolled 3 or below is automatically rerolled until it lands
-    above 3.
+  description: Any die rolling {low} or lower is rerolled until above.
   icon: {fileID: 2016930833858598064, guid: bb445e7ec0dd64a43a1dfe2a36101f25, type: 3}
   priority: 0
   isRerollPerk: 0

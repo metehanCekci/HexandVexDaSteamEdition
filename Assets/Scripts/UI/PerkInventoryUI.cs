@@ -1382,6 +1382,7 @@ public class PerkInventoryUI : MonoBehaviour
         if (tooltipLevelText != null)
             tooltipLevelText.text = $"Lv {perk.currentLevel}/{perk.maxLevel}";
 
+        perk.RebuildDescription();
         if (tooltipDescText != null)
             tooltipDescText.text = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
 

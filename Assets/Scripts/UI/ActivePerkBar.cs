@@ -609,6 +609,7 @@ public class ActivePerkBar : MonoBehaviour
         if (tooltipLevelText != null)
             tooltipLevelText.text = $"Lv {perk.currentLevel}";
 
+        perk.RebuildDescription();
         if (tooltipDescText != null)
             tooltipDescText.text = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
 

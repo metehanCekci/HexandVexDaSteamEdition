@@ -13,8 +13,7 @@ MonoBehaviour:
   m_Name: LuckyClover
   m_EditorClassIdentifier: Assembly-CSharp::LuckyClover
   itemName: Lucky Clover
-  description: Equalizes all perk rarity chances on the next perk selection screen.
-    Use during perk selection to re-roll with equal odds.
+  description: (Disabled) This item has been removed from the game.
   price: 8
   icon: {fileID: 8348925219702116603, guid: c4bf3e0bec5d5f9469f4e2e7428f037a, type: 3}
   itemType: 0

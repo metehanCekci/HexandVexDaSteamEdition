@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Pressure Point
-  description: Deal more damage to healthier enemies.
+  description: 'Full HP: {mult1}. Above half: {mult2}. Below half: {mult3}.'
   icon: {fileID: 2736176967971650083, guid: fbb0a2fd518471944876506f526def58, type: 3}
   priority: 0
   isRerollPerk: 0

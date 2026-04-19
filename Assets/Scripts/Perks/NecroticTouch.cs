@@ -14,7 +14,7 @@ public class NecroticTouchPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult", "x2" }
+        { "mult", "X2" }
     };
 
     public float GetMultiplier(EnemyMovement enemy)

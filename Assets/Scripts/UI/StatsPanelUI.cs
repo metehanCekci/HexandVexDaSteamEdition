@@ -85,7 +85,10 @@ public class StatsPanelUI : MonoBehaviour
         }
 
         foreach (var perk in rm.activePerks)
+        {
+            perk.RebuildDescription();
             spawnedRows.Add(CreatePerkRow(perk.icon, perk.perkName, perk.currentLevel, perk.description, true));
+        }
     }
 
     private GameObject CreatePerkRow(Sprite icon, string name, int level, string description, bool showLevel)

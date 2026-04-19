@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Necrotic Touch
-  description: Enemies below half health takes double damage from all sources.
+  description: Enemies below 50% HP take {mult} damage.
   icon: {fileID: 9151199779766822160, guid: db4542524fdb7ea45b6f051f0717dd00, type: 3}
   priority: 0
   isRerollPerk: 0

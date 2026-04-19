@@ -20,8 +20,8 @@ public class TerminalFuryGlandPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "base", "x2" },
-        { "per",  "+1x" }
+        { "base", "X2" },
+        { "per",  "+1X" }
     };
 
     public override void ModifyCombat(CombatPayload payload)

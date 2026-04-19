@@ -185,6 +185,7 @@ public class LevelUpManager : MonoBehaviour
 
                 if (choiceDescriptionTexts.Length > i && choiceDescriptionTexts[i] != null)
                 {
+                    perkScript.RebuildDescription();
                     choiceDescriptionTexts[i].text = perkScript.description;
                     choiceDescriptionTexts[i].color = Color.Lerp(rarityColor, new Color(0.85f, 0.85f, 0.85f, 1f), 0.4f);
                 }

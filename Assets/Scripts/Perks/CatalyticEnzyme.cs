@@ -16,7 +16,7 @@ public class CatalyticEnzymePerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "per",   "x1.3" },
+        { "per",   "X1.3" },
         { "count", skipStacks },
         { "bonus", $"+{Mathf.RoundToInt(skipStacks * 30)}%" }
     };

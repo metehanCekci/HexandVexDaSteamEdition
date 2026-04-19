@@ -47,8 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Ouroboros
-  description: Cheat death. All perks lose 1 level. Lv1 perks are destroyed. No perks
-    left = true death.
+  description: On death, revive at full HP. A random perk loses 1 level.
   icon: {fileID: -3073073945092753719, guid: 03c5920c47d85df45a312156a6631021, type: 3}
   priority: 0
   isRerollPerk: 0

@@ -13,8 +13,8 @@ public class ApexPredatorPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult", "x5" },
-        { "penalty", "x1" }
+        { "mult", "X5" },
+        { "penalty", "X1" }
     };
 
     public override void ModifyCombat(CombatPayload payload)

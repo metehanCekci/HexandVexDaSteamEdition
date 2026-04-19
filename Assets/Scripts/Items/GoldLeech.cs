@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/GoldLeech", fileName = "GoldLeech")]
 public class GoldLeech : BaseItem
@@ -6,9 +7,16 @@ public class GoldLeech : BaseItem
     void OnEnable()
     {
         itemName = "Gold-Leech";
-        description = $"Next enemy drops {GameKeywords.Times(2f)} <color=#{UIColors.Gold}>gold</color>";
-        price = 12;
+        if (string.IsNullOrEmpty(description))
+            description = "Next enemy drops {mult} {gold}.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "mult", "X2" },
+        { "gold", "gold" }
+    };
 
     public override bool Use()
     {

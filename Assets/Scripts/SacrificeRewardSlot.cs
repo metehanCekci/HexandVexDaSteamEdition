@@ -25,6 +25,7 @@ public class SacrificeRewardSlot : MonoBehaviour
             BasePerk bp = perkPrefab.GetComponent<BasePerk>();
             if (bp != null)
             {
+                bp.RebuildDescription();
                 if (nameText != null) nameText.text = bp.perkName;
                 if (descText != null) descText.text = bp.description;
                 if (iconImage != null && bp.icon != null)

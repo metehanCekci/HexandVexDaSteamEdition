@@ -15,7 +15,7 @@ public class CondensedFuryPerk : BasePerk
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
         { "diceDelta", "-1" },
-        { "mult", "x2" }
+        { "mult", "X2" }
     };
 
     public int GetDiceReduction()

@@ -12,7 +12,7 @@ public class AdrenalSurgePerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult", "x2" }
+        { "mult", "X2" }
     };
 
     public override void ModifyCombat(CombatPayload payload)

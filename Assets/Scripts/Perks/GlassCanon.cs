@@ -14,7 +14,7 @@ public class GlassCanonPerk : BasePerk
     public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
         { "hp", "3 HP" },
-        { "mult", "x2" }
+        { "mult", "X2" }
     };
 
     public override void OnAcquire()

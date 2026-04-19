@@ -18,9 +18,9 @@ public class IronWillPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "per",    "x1" },
+        { "per",    "X1" },
         { "streak", cleanLevelStreak },
-        { "bonus",  $"x{cleanLevelStreak}" }
+        { "bonus",  $"X{cleanLevelStreak}" }
     };
 
     public override void OnAcquire()

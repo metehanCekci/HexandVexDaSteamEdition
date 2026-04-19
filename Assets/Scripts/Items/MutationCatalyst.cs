@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/MutationCatalyst", fileName = "MutationCatalyst")]
 public class MutationCatalyst : BaseItem
@@ -6,10 +7,16 @@ public class MutationCatalyst : BaseItem
     void OnEnable()
     {
         itemName = "Mutation Catalyst";
-        description = $"Sets the next shop reroll cost to <color=#{UIColors.Gold}>0</color>.";
-        price = 18;
+        if (string.IsNullOrEmpty(description))
+            description = "Sets the next shop reroll cost to {cost} gold.";
         itemType = ItemType.Consumable;
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "cost", 0 }
+    };
 
     public override bool Use()
     {
