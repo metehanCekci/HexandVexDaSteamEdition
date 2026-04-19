@@ -1,87 +1,68 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class HypertrophicShellPerk : BasePerk
 {
     private const int HP_CAP = 10;
 
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    void OnEnable()
     {
-        { "bonusHP", GameKeywords.HealthText($"+{currentLevel} HP") },
-        { "maxHp", GameKeywords.HealthText("max HP") },
-        { "cap", GameKeywords.Hp(HP_CAP) }
-    };
+        maxLevel = 5;
+        rarity = PerkRarity.Common;
+    }
 
     public override void OnAcquire()
     {
-        // Sadece aktif slottaysa HP bonusu uygula
-        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
-            ApplyHPBonus(1);
+        // HP is handled by OnEquip — no action needed here.
+        // OnEquip runs right after OnAcquire when perk goes to active slot.
+        // If perk goes to stash, HP bonus is deferred until OnEquip.
     }
 
     public override void Upgrade()
     {
         base.Upgrade();
-        // Sadece aktif slottaysa HP bonusu uygula
+        // If active, recalculate HP with the new level
         if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
-            ApplyHPBonus(1);
+            ApplyShellHP(true);
     }
 
     public override void OnEquip()
     {
-        // Re-apply full bonus when moved to active slots
-        // (currentLevel includes upgrades already applied)
-        // Don't re-add â€” just ensure max HP reflects shell level
-        RecalculateMaxHP();
+        ApplyShellHP(true);
     }
 
     public override void OnUnequip()
     {
-        // Remove shell bonus
-        RecalculateMaxHP();
+        ApplyShellHP(false);
     }
 
-    private void ApplyHPBonus(int amount)
+    /// <summary>
+    /// Directly sets max HP based on whether the shell is equipped or not.
+    /// Does NOT check activePerks list — the equipped parameter is authoritative.
+    /// This fixes the SwapPerk bug where callbacks fire before the list is updated.
+    /// </summary>
+    private void ApplyShellHP(bool equipped)
     {
         var rm = RunManager.instance;
         if (rm == null) return;
 
-        // Glass Canon aktifse max HP'yi deÄŸiÅŸtirme
+        // Glass Canon aktifse max HP'yi degistirme
         if (rm.activePerks.Exists(p => p is GlassCanonPerk)) return;
 
-        long newMax = System.Math.Min(rm.playerMaxHealth + amount, HP_CAP);
-        if (newMax == rm.playerMaxHealth) return;
+        int baseHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
+        int shellBonus = equipped ? currentLevel : 0;
+        int newMax = Mathf.Min(baseHP + shellBonus, HP_CAP);
+        int oldMax = rm.playerMaxHealth;
+
+        if (newMax == oldMax) return;
 
         rm.playerMaxHealth = newMax;
-        // Yeni HP'yi de artÄ±r (can bonusu olarak)
-        rm.playerCurrentHealth = System.Math.Min(rm.playerCurrentHealth + amount, newMax);
+        if (newMax > oldMax)
+            rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth + (newMax - oldMax), newMax);
+        else
+            rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth, newMax);
 
         SyncHealthToScene();
         TriggerVisualPop();
-    }
-
-    private void RecalculateMaxHP()
-    {
-        var rm = RunManager.instance;
-        if (rm == null) return;
-
-        // Glass Canon aktifse shell hiÃ§ etki etmez
-        if (rm.activePerks.Exists(p => p is GlassCanonPerk)) return;
-
-        long baseHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
-
-        // Check if shell is currently active (equipped)
-        bool isActive = rm.activePerks.Contains(this);
-        long shellBonus = isActive ? currentLevel : 0;
-
-        long newMax = System.Math.Min(baseHP + shellBonus, HP_CAP);
-        long oldMax = rm.playerMaxHealth;
-
-        if (newMax != oldMax)
-        {
-            rm.playerMaxHealth = newMax;
-            rm.playerCurrentHealth = System.Math.Min(rm.playerCurrentHealth, newMax);
-            SyncHealthToScene();
-        }
     }
 
     private void SyncHealthToScene()
