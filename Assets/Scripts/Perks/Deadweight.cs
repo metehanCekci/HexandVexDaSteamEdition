@@ -1,19 +1,29 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine;
 
+/// <summary>
+/// Deadweight (Rare)
+/// Stunlanmış (skipTurns > 0) düşmanlar ekstra hasar alır.
+/// TurnManager hasar dağıtırken kontrol eder.
+/// Lv1: 2x, Lv2: 3x, Lv3: 4x
+/// </summary>
 public class DeadweightPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "stunned", GameKeywords.Status("Stunned") },
-        { "mult",    GameKeywords.Mult(1 + currentLevel) }
-    };
-
-    public float GetStunnedMultiplier()
-    {
-        return 1f + currentLevel;
+        rarity = PerkRarity.Rare;
     }
 
+    /// <summary>
+    /// Stunlanmış düşmana uygulanan hasar çarpanı.
+    /// </summary>
+    public float GetStunnedMultiplier()
+    {
+        return 1f + currentLevel; // Lv1: 2x, Lv2: 3x, Lv3: 4x
+    }
+
+    /// <summary>
+    /// Düşman stunlanmış mı kontrol et.
+    /// </summary>
     public bool IsStunned(EnemyMovement enemy)
     {
         return enemy != null && enemy.skipTurns > 0;

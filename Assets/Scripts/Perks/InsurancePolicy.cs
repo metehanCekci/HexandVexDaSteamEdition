@@ -1,16 +1,16 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class InsurancePolicyPerk : BasePerk
 {
     private bool subscribed = false;
-    private long previousHP;
+    private int previousHP;
 
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "amount", GameKeywords.PlusGold((currentLevel + 1) * 2) },
-        { "missing", GameKeywords.HealthText("missing HP") }
-    };
+        maxLevel = 3;
+        rarity = PerkRarity.Rare;
+        description = "Gain gold when you take damage. +4 gold per missing HP at Lv1, +6 at Lv2, +8 at Lv3.";
+    }
 
     public override void OnAcquire()
     {
@@ -66,19 +66,23 @@ public class InsurancePolicyPerk : BasePerk
             previousHP = TurnManager.instance.player.health.currentHP;
     }
 
-    private void OnPlayerDamaged(long remainingHP)
+    private void OnPlayerDamaged(int remainingHP)
     {
-        long lost = previousHP - remainingHP;
+        int lost = previousHP - remainingHP;
         if (lost <= 0) { previousHP = remainingHP; return; }
 
-        long maxHP = TurnManager.instance.player.health.maxHP;
-        long missingHP = maxHP - remainingHP;
+        int maxHP = TurnManager.instance.player.health.maxHP;
+        int missingHP = maxHP - remainingHP;
         int goldPerMissing = (currentLevel + 1) * 2; // Lv1: 4, Lv2: 6, Lv3: 8
-        long goldGain = goldPerMissing * missingHP;
+        int goldGain = goldPerMissing * missingHP;
 
         if (RunManager.instance != null)
-            RunManager.instance.GrantGold(this, (int)System.Math.Min(goldGain, int.MaxValue));
+        {
+            RunManager.instance.currentGold += goldGain;
+            if (TurnManager.instance != null) TurnManager.instance.UpdateCoinUI();
+        }
 
         previousHP = remainingHP;
+        TriggerVisualPop();
     }
 }

@@ -1,10 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class RecoilSpringPerk : BasePerk
 {
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
-    {
-        { "attack", GameKeywords.Action("attacking") },
-        { "echo",   GameKeywords.Action("attack again") }
-    };
+    void OnEnable() { maxLevel = 1; rarity = PerkRarity.Rare; }
+    // Saldırıdan sonra oyuncu geri sıçrar. Yeni komşu düşman varsa yeniden saldırır.
+    // Mantık TurnManager.MultiAttack içinde çalışıyor.
 }

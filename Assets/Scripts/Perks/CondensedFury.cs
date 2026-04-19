@@ -1,46 +1,31 @@
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 
-/// <summary>
-/// Condensed Fury — Tek zar atilir, kalanlar otomatik retrigger olur.
-/// Mimetic ile replay olunca: ekstra retrigger katkisi cogalir.
-/// </summary>
 public class CondensedFuryPerk : BasePerk
 {
-    [System.NonSerialized] public int pendingRetriggerCount = 0;
-    private int replayCount = 0;
-
-    public override bool CanBeRetriggeredByPerks => true;
-
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "diceDelta", GameKeywords.Minus(1) },
-        { "mult",      GameKeywords.Mult(2) }
-    };
+        rarity = PerkRarity.Epic;
+        maxLevel = 1;
+    }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    /// <summary>
+    /// TurnManager tarafından çağrılır — zar sayısını 1 azaltır.
+    /// </summary>
+    public int GetDiceReduction()
     {
-        switch (ctx.eventType)
+        return 1;
+    }
+
+    /// <summary>
+    /// Zar 1'e düşünce atılan zarı 2 katına çıkarır (toplam değil, zar değeri).
+    /// </summary>
+    public override void ModifyCombat(CombatPayload payload)
+    {
+        for (int i = 0; i < payload.diceRolls.Count; i++)
         {
-            case CombatEventType.BeforeCombat:
-                replayCount = 0;
-                break;
-
-            case CombatEventType.OnAttack:
-                if (ctx.currentPerk != this) yield break;
-                if (ctx.isReplay) replayCount++;
-                break;
-
-            case CombatEventType.OnDiceScored:
-                if (ctx.retrigCountSoFar != 0) yield break;
-                if (ctx.diceIndex != 0) yield break;
-
-                int n = Mathf.Max(0, pendingRetriggerCount);
-                if (n <= 0) yield break;
-                // Replay her uygulamada yine n ekstra retrigger ister.
-                ctx.RequestExtraDicePass(ctx.diceIndex, n * (1 + replayCount));
-                break;
+            payload.diceRolls[i] *= 2;
         }
+        if (payload.diceRolls.Count > 0)
+            TriggerVisualPop();
     }
 }

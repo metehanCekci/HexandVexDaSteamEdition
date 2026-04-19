@@ -1,35 +1,27 @@
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Cascade Protocol (Legendary)
-/// Her saldirinin zar toplami bir sonraki saldiriya flat bonus olarak eklenir.
-/// Lv1: %100, Lv2: %125, Lv3: %150 birikim orani.
-/// Oda bitince VEYA hasar alinca sifirlanir.
-/// Mimetic ile replay olunca: bonus 2x uygulanir, ama birikim sadece orijinalde 1 kez yapilir.
+/// Her saldırının zar toplamı (kritik/multiplier HARİÇ) bir sonraki saldırıya flat bonus olarak eklenir.
+/// Lv1: %100, Lv2: %125, Lv3: %150 birikim oranı.
+/// Oda bitince VEYA hasar alınca sıfırlanır.
 /// </summary>
 public class CascadeProtocolPerk : BasePerk
 {
-    private long accumulatedDamage = 0;
+    private int accumulatedDamage = 0;
     private bool subscribed = false;
 
-    // Replay aktif — sadece bonus 2x, birikim 1x.
-    public override bool CanBeRetriggeredByPerks => true;
-
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "attack",      GameKeywords.Action("attack") },
-        { "percent",     $"{100 + (currentLevel - 1) * 25}%" },
-        { "cleared",     GameKeywords.Action("level cleared") },
-        { "accumulated", GameKeywords.Counter($"{accumulatedDamage} damage") }
-    };
+        rarity = PerkRarity.Legendary;
+        maxLevel = 1;
+    }
 
     public override void OnAcquire()
     {
         Subscribe();
-        RebuildDescription();
+        description = GetDescription();
     }
 
     public override void OnEquip()
@@ -41,35 +33,29 @@ public class CascadeProtocolPerk : BasePerk
     {
         Unsubscribe();
         accumulatedDamage = 0;
-        RebuildDescription();
+        description = GetDescription();
     }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void ModifyCombat(CombatPayload payload)
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-
         if (accumulatedDamage > 0)
         {
-            double bonus = accumulatedDamage * (1.0 + (currentLevel - 1) * 0.25);
-            ctx.payload.ApplyAdd(bonus);
-            ctx.AnimatePop(this);
+            float bonus = accumulatedDamage * (1f + (currentLevel - 1) * 0.25f);
+            payload.flatBonus += Mathf.FloorToInt(bonus);
+            TriggerVisualPop();
         }
 
-        // Birikim sadece orijinalde — replay birikime eklemez.
-        if (!ctx.isReplay)
-        {
-            long diceSum = ctx.payload.diceRolls.Sum();
-            accumulatedDamage += diceSum;
-            RebuildDescription();
-        }
+        // Bu saldırının zar toplamını birikime ekle (kritik/mult hariç, sadece raw dice)
+        int diceSum = payload.diceRolls.Sum();
+        accumulatedDamage += diceSum;
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
         accumulatedDamage = 0;
-        RebuildDescription();
+        description = GetDescription();
     }
 
     void OnDestroy()
@@ -98,9 +84,15 @@ public class CascadeProtocolPerk : BasePerk
         subscribed = false;
     }
 
-    private void OnPlayerDamaged(long remainingHP)
+    private void OnPlayerDamaged(int remainingHP)
     {
         accumulatedDamage = 0;
-        RebuildDescription();
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        int percent = 100 + (currentLevel - 1) * 25;
+        return $"Each attack's dice sum carries forward as flat bonus to the next attack ({percent}%). Resets on damage taken or level clear.\nAccumulated: {accumulatedDamage}";
     }
 }

@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/PhaseShift", fileName = "PhaseShift")]
 public class PhaseShift : BaseItem
@@ -7,12 +6,9 @@ public class PhaseShift : BaseItem
     void OnEnable()
     {
         itemName = "Phase-Shift";
+        description = "Select an enemy and swap positions with it";
+        price = 18;
     }
-
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
-    {
-        { "swap", "swap positions" }
-    };
 
     public override bool Use()
     {

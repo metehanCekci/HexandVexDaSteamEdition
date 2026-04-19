@@ -1,14 +1,13 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class HydraulicImpactPerk : BasePerk
 {
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    void OnEnable()
     {
-        { "push", GameKeywords.Action("Pushing") },
-        { "wallDmg", GameKeywords.HealthText($"{Mathf.RoundToInt(GetWallDamagePercent() * 100)}%") },
-        { "maxHp", GameKeywords.HealthText("max HP") }
-    };
+        maxLevel = 3;
+        rarity = PerkRarity.Epic;
+    }
 
     public float GetWallDamagePercent()
     {
@@ -23,8 +22,8 @@ public class HydraulicImpactPerk : BasePerk
     public void ApplyWallDamage(EnemyMovement enemy)
     {
         if (enemy == null || enemy.health == null || enemy.health.currentHP <= 0) return;
-        long wallDamage = (long)System.Math.Ceiling(enemy.health.maxHP * (double)GetWallDamagePercent());
-        wallDamage = System.Math.Max(1L, wallDamage);
+        int wallDamage = Mathf.CeilToInt(enemy.health.maxHP * GetWallDamagePercent());
+        wallDamage = Mathf.Max(1, wallDamage);
         enemy.health.TakeDamage(wallDamage);
         ShowWallImpactVFX(enemy);
         TriggerVisualPop();

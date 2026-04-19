@@ -42,7 +42,7 @@ public class RestNodeUI : MonoBehaviour
         Time.timeScale = 0f;
 
         // Heal miktarını hesapla — canı tamamen doldur
-        long healAmount = 999;
+        int healAmount = 999;
         if (RunManager.instance != null)
             healAmount = RunManager.instance.playerMaxHealth - RunManager.instance.playerCurrentHealth;
 
@@ -86,22 +86,16 @@ public class RestNodeUI : MonoBehaviour
         if (infoText != null) infoText.text = "";
     }
 
-    private void OnRest(long amount)
+    private void OnRest(int amount)
     {
         Debug.Log($"[REST] OnRest called — amount={amount}");
 
         if (RunManager.instance != null)
         {
-            RunManager.instance.playerCurrentHealth = System.Math.Min(
+            RunManager.instance.playerCurrentHealth = Mathf.Min(
                 RunManager.instance.playerCurrentHealth + amount,
                 RunManager.instance.playerMaxHealth
             );
-
-            // Dice Hoarder: Rest butonuna basıldığında active+stash tüm kopyaları +1
-            foreach (var p in RunManager.instance.activePerks)
-                if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
-            foreach (var p in RunManager.instance.inventoryPerks)
-                if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
         }
 
         // HealthScript'i de senkronize et (yoksa savaşta eski can değeri kalır)

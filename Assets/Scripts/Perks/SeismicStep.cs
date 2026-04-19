@@ -1,30 +1,29 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
 /// Seismic Step (Legendary)
-/// Skip yaptÄ±ÄŸÄ±nda, skip yapÄ±lan tile titremeye baÅŸlar.
-/// Oyuncu o tile'dan Ã§Ä±ktÄ±ÄŸÄ±nda tile Ã§Ã¶ker (scaffold mantÄ±ÄŸÄ±).
-/// DÃ¼ÅŸman Ã§Ã¶ken tile Ã¼zerindeyse dÃ¼ÅŸer ve hasar alÄ±r.
-/// Seviye baÅŸÄ±na ek etki: Lv2 Ã§Ã¶kme hasarÄ± 2x, Lv3 Ã§Ã¶kme hasarÄ± 3x + komÅŸu tile'lar da titrer.
+/// Skip yaptığında, skip yapılan tile titremeye başlar.
+/// Oyuncu o tile'dan çıktığında tile çöker (scaffold mantığı).
+/// Düşman çöken tile üzerindeyse düşer ve hasar alır.
+/// Seviye başına ek etki: Lv2 çökme hasarı 2x, Lv3 çökme hasarı 3x + komşu tile'lar da titrer.
 /// </summary>
 public class SeismicStepPerk : BasePerk
 {
-    // Aktif titreyen tile'lar (skip yapÄ±lmÄ±ÅŸ ama oyuncu henÃ¼z Ã§Ä±kmamÄ±ÅŸ)
+    // Aktif titreyen tile'lar (skip yapılmış ama oyuncu henüz çıkmamış)
     private HashSet<Vector3Int> shakingCells = new HashSet<Vector3Int>();
     private Dictionary<Vector3Int, Coroutine> shakeCoroutines = new Dictionary<Vector3Int, Coroutine>();
 
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    void OnEnable()
     {
-        { "skip",     GameKeywords.Action("Skip") },
-        { "collapse", GameKeywords.Action("collapse") },
-        { "dmg",      GameKeywords.Plus(1, "damage") }
-    };
+        rarity = PerkRarity.Legendary;
+        maxLevel = 1;
+    }
 
     /// <summary>
-    /// Skip yapÄ±ldÄ±ÄŸÄ±nda Ã§aÄŸrÄ±lÄ±r. Oyuncunun bulunduÄŸu tile'Ä± titretmeye baÅŸla.
+    /// Skip yapıldığında çağrılır. Oyuncunun bulunduğu tile'ı titretmeye başla.
     /// </summary>
     public override void OnSkip()
     {
@@ -36,13 +35,13 @@ public class SeismicStepPerk : BasePerk
         if (shakingCells.Contains(playerCell)) return;
         if (ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(playerCell)) return;
 
-        // Ground tile olmayan hÃ¼crelere de dokunma
+        // Ground tile olmayan hücrelere de dokunma
         if (LevelGenerator.instance == null || !LevelGenerator.instance.groundMap.HasTile(playerCell)) return;
 
-        // Hazard tile'Ä±na da dokunma â€” diken Ã§Ã¶kerse mantÄ±k bozulur
+        // Hazard tile'ına da dokunma — diken çökerse mantık bozulur
         if (LevelGenerator.instance.hazardCells.Contains(playerCell)) return;
 
-        // Magic tile'lar yÄ±kÄ±lmaz
+        // Magic tile'lar yıkılmaz
         if (MagicTileManager.instance != null && MagicTileManager.instance.IsMagicTileCell(playerCell)) return;
 
         shakingCells.Add(playerCell);
@@ -53,8 +52,8 @@ public class SeismicStepPerk : BasePerk
     }
 
     /// <summary>
-    /// TurnManager tarafÄ±ndan oyuncu her hareket ettiÄŸinde Ã§aÄŸrÄ±lÄ±r.
-    /// Oyuncu eski tile'dan ayrÄ±ldÄ±ysa ve o tile titriyorsa Ã§Ã¶ker.
+    /// TurnManager tarafından oyuncu her hareket ettiğinde çağrılır.
+    /// Oyuncu eski tile'dan ayrıldıysa ve o tile titriyorsa çöker.
     /// </summary>
     public void OnPlayerLeftCell(Vector3Int oldCell)
     {
@@ -63,22 +62,22 @@ public class SeismicStepPerk : BasePerk
         // Pre-collapse safety: don't collapse if it would disconnect player from all enemies
         if (TurnManager.instance != null && !TurnManager.instance.WouldRemainConnectedToEnemies(oldCell))
         {
-            // Tile stabilizes â€” cancel shake, don't collapse
+            // Tile stabilizes — cancel shake, don't collapse
             StopShake(oldCell);
             shakingCells.Remove(oldCell);
             return;
         }
 
-        // TitreÅŸimi durdur
+        // Titreşimi durdur
         StopShake(oldCell);
         shakingCells.Remove(oldCell);
 
-        // Ã‡Ã¶kme baÅŸlat
+        // Çökme başlat
         TurnManager.instance.StartCoroutine(CollapseCoroutine(oldCell));
     }
 
     /// <summary>
-    /// Level geÃ§iÅŸinde temizle.
+    /// Level geçişinde temizle.
     /// </summary>
     public override void OnLevelStart()
     {
@@ -99,7 +98,7 @@ public class SeismicStepPerk : BasePerk
         }
         shakeCoroutines.Clear();
 
-        // Titreyen tile'larÄ±n transform'larÄ±nÄ± resetle
+        // Titreyen tile'ların transform'larını resetle
         if (LevelGenerator.instance != null)
         {
             Tilemap groundMap = LevelGenerator.instance.groundMap;
@@ -120,7 +119,7 @@ public class SeismicStepPerk : BasePerk
         return shakingCells.Contains(cell);
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€ TitreÅŸim (Scaffold ile aynÄ± kalitede) â”€â”€â”€â”€â”€â”€â”€â”€
+    // ──────── Titreşim (Scaffold ile aynı kalitede) ────────
 
     private IEnumerator ShakeCoroutine(Vector3Int cell)
     {
@@ -153,7 +152,7 @@ public class SeismicStepPerk : BasePerk
         }
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€ Ã‡Ã¶kme (Scaffold ile aynÄ± polish seviyesinde) â”€â”€â”€â”€â”€â”€â”€â”€
+    // ──────── Çökme (Scaffold ile aynı polish seviyesinde) ────────
 
     private IEnumerator CollapseCoroutine(Vector3Int cell)
     {
@@ -163,7 +162,7 @@ public class SeismicStepPerk : BasePerk
 
         if (AudioManager.instance != null) AudioManager.instance.PlayWall();
 
-        // Ã‡Ã¶kme sÄ±rasÄ±nda dÃ¼ÅŸman varsa hasar ver
+        // Çökme sırasında düşman varsa hasar ver
         int collapseDamage = 1;
         if (TurnManager.instance != null)
         {
@@ -172,7 +171,7 @@ public class SeismicStepPerk : BasePerk
             {
                 victim.health.TakeDamage(collapseDamage);
 
-                // DÃ¼ÅŸmanÄ± gÃ¼venli komÅŸu hÃ¼creye it
+                // Düşmanı güvenli komşu hücreye it
                 if (victim.health.currentHP > 0)
                 {
                     Vector3Int safeCell = TurnManager.instance.GetSafeNeighborForEnemy(cell);
@@ -182,7 +181,7 @@ public class SeismicStepPerk : BasePerk
             }
         }
 
-        // Ã‡Ã¶kme animasyonu â€” scaffold ile birebir aynÄ± kalite
+        // Çökme animasyonu — scaffold ile birebir aynı kalite
         float collapseDuration = 0.35f;
         float elapsed = 0f;
 
@@ -213,15 +212,15 @@ public class SeismicStepPerk : BasePerk
             yield return null;
         }
 
-        // Tile'Ä± kaldÄ±r
+        // Tile'ı kaldır
         RemoveTile(groundMap, cell);
         RemoveTile(bgMap, cell);
 
-        // validCells'den kaldÄ±r â€” artÄ±k yÃ¼rÃ¼nebilir deÄŸil
+        // validCells'den kaldır — artık yürünebilir değil
         if (LevelGenerator.instance != null)
             LevelGenerator.instance.validCells.Remove(cell);
 
-        // VoidHunger gibi dinleyiciler iÃ§in event yayÄ±nla
+        // VoidHunger gibi dinleyiciler için event yayınla
         TrapTileEvents.FireTileDestroyed(cell);
     }
 

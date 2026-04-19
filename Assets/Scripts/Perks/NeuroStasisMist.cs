@@ -1,19 +1,19 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
-/// Neuro-Stasis Mist (Common)
-/// Any stun you apply to an enemy lasts +1 extra turn per level.
+/// Neuro-Stasis Mist (Rare)
+/// Any stun you apply to an enemy lasts +1 extra turn (lv1), +2 extra turns (lv3).
+/// The bonus is read by HealthScript when a stun is applied.
 /// </summary>
 public class NeuroStasisMistPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "stun",  GameKeywords.Status("Stuns") },
-        { "turns", GameKeywords.Counter("+1 turn") },
-        { "per",   GameKeywords.Counter("+1") },
-        { "level", GameKeywords.Action("level") }
-    };
+        perkName    = "Neuro-Stasis Mist";
+        description = "Stuns you apply last +1 extra turn. +1 per level.";
+        rarity      = PerkRarity.Common;
+        maxLevel    = 3;
+    }
 
     /// <summary>Returns how many extra stun turns this perk adds. +1 per level.</summary>
     public int GetStunBonus()

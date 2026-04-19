@@ -26,7 +26,6 @@ public class SellBoxController : MonoBehaviour
 
     // State
     private bool isVisible;
-    private bool isSettled;
     private Coroutine animCoroutine;
     private Vector2 finalPosition;   // Inspector'da ayarlanan hedef konum
     private Vector2 hiddenPosition;  // sağa kaydırılmış gizli konum
@@ -126,7 +125,6 @@ public class SellBoxController : MonoBehaviour
     /// <summary>SellBox drop zone'una bırakıldığında çağır — satışı gerçekleştirir.</summary>
     public bool TrySell()
     {
-        if (!isSettled) return false;
         if (pendingPerk != null)
             return SellPerk();
         if (pendingItem != null)
@@ -226,8 +224,6 @@ public class SellBoxController : MonoBehaviour
     private void SlideIn()
     {
         if (isVisible) return;
-        isVisible = true; // Set immediately so SlideOut() can interrupt mid-animation
-        isSettled = false;
         if (animCoroutine != null) StopCoroutine(animCoroutine);
         animCoroutine = StartCoroutine(AnimateSlide(true));
     }
@@ -235,8 +231,6 @@ public class SellBoxController : MonoBehaviour
     private void SlideOut()
     {
         if (!isVisible) return;
-        isVisible = false; // Set immediately so SlideIn() can interrupt mid-animation
-        isSettled = false;
         if (animCoroutine != null) StopCoroutine(animCoroutine);
         animCoroutine = StartCoroutine(AnimateSlide(false));
     }
@@ -288,11 +282,8 @@ public class SellBoxController : MonoBehaviour
             panelCanvasGroup.blocksRaycasts = false;
             panelCanvasGroup.interactable = false;
         }
-        else
-        {
-            isSettled = true;
-        }
 
+        isVisible = opening;
         animCoroutine = null;
     }
 
@@ -303,7 +294,7 @@ public class SellBoxController : MonoBehaviour
     /// <summary>Drop zone hover'da mı? PerkInventoryUI drag sırasında kontrol eder.</summary>
     public bool IsMouseOverSellBox()
     {
-        if (!isSettled || panelRect == null) return false;
+        if (!isVisible || panelRect == null) return false;
 
         // ScreenSpaceOverlay canvas'lar arası çalışması için
         // doğrudan screen-space bounds kontrolü yap
@@ -317,7 +308,4 @@ public class SellBoxController : MonoBehaviour
 
     /// <summary>Şu anda görünür ve aktif mi?</summary>
     public bool IsActive => isVisible;
-
-    /// <summary>Slide-in tamamlandı mı? Drop yalnızca bu true iken kabul edilir.</summary>
-    public bool IsAcceptingDrops => isSettled;
 }

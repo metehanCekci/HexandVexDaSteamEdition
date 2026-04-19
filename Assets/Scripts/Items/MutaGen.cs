@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/MutaGen", fileName = "MutaGen")]
 public class MutaGen : BaseItem
@@ -7,12 +6,9 @@ public class MutaGen : BaseItem
     void OnEnable()
     {
         itemName = "Muta-Gen";
+        description = "Restore 2 HP";
+        price = 15;
     }
-
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
-    {
-        { "heal", "2 HP" }
-    };
 
     public override bool Use()
     {

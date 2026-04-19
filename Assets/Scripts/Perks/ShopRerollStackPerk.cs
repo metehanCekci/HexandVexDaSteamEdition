@@ -1,29 +1,36 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class ShopRerollStackPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "reroll", GameKeywords.Action("shop reroll") },
-        { "bonus",  GameKeywords.Plus(1) },
-        { "stack",  GameKeywords.Counter((RunManager.instance != null ? RunManager.instance.shopRerollStack : 0).ToString()) }
-    };
+        rarity = PerkRarity.Epic;
+    }
 
     public override void OnAcquire()
     {
-        RebuildDescription();
+        perkName = "Genetic Cartel";
+        description = GetDescription();
+        priority = 30;
     }
 
     public override void OnShopReroll()
     {
-        RebuildDescription();
+        // Stack artık RunManager'da tutulup TurnManager'da zarlara ekleniyor
+        // Sadece açıklama güncelle ve visual feedback ver
+        description = GetDescription();
         TriggerVisualPop();
     }
 
-    // Reroll stack bonusu zar atilirken TurnManager tarafindan eklenir; OnEvent'te is yok.
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void ModifyCombat(CombatPayload payload)
     {
-        yield break;
+        // Reroll stack bonusu artık doğrudan zar atılırken ekleniyor (TurnManager)
+        // Bu perk artık sadece bilgilendirme amaçlı
+    }
+
+    private string GetDescription()
+    {
+        int stack = RunManager.instance != null ? RunManager.instance.shopRerollStack : 0;
+        return $"Her shop reroll'da tüm zarlarına kalıcı +1 bonus. Stack: {stack}";
     }
 }
