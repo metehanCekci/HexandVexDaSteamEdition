@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UnityEngine;
 
 /// <summary>
@@ -37,7 +38,7 @@ public static class GameKeywords
     public static string Times(float baseValue, string suffix = "")
     {
         float final = baseValue + MultValueBonus;
-        string num = final % 1f == 0 ? ((int)final).ToString() : final.ToString("0.##");
+        string num = final % 1f == 0 ? ((int)final).ToString(CultureInfo.InvariantCulture) : final.ToString("0.##", CultureInfo.InvariantCulture);
         string body = string.IsNullOrEmpty(suffix) ? $"X{num}" : $"X{num} {suffix}";
         return $"<color=#{UIColors.Mult}>{body}</color>";
     }

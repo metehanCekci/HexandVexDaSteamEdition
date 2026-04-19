@@ -375,7 +375,7 @@ public class DiceUIController : MonoBehaviour
     {
         if (comboTextObj == null) return;
         var tmp = comboTextObj.GetComponentInChildren<TMP_Text>();
-        if (tmp != null) tmp.text = $"x{count} COMBO!";
+        if (tmp != null) tmp.text = $"X{count} COMBO!";
         comboTextObj.SetActive(true);
         if (comboFadeCoroutine != null) StopCoroutine(comboFadeCoroutine);
         comboFadeCoroutine = StartCoroutine(ComboPopAndFade());
