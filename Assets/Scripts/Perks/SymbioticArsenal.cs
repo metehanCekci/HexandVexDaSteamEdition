@@ -1,39 +1,26 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class SymbioticArsenalPerk : BasePerk
 {
-    private ScaledValue _bonusPerItem = new ScaledValue(baseValue: 0.5f, perLevel: 0.25f);
-    public ScaledValue BonusPerItemValue => _bonusPerItem;
-
-    public float GetBonusPerItem() => _bonusPerItem.Get(currentLevel);
-
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "bonus", GameKeywords.Mult(GetBonusPerItem()) }
-    };
-
-    public override IEnumerator OnEvent(CombatContext ctx)
-    {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-        if (InventoryManager.instance == null) yield break;
-
-        int readyItems = CountReadyItems();
-        if (readyItems <= 0) yield break;
-
-        ctx.payload.ApplyMult(1f + GetBonusPerItem() * readyItems);
-        ctx.AnimatePop(this);
+        rarity = PerkRarity.Rare;
+        processLast = true;
     }
 
-    private static int CountReadyItems()
+    /// <summary>
+    /// Dolu her item slotu basina +0.5x multiplier, seviye basina +0.25x ekstra.
+    /// Lv1: 0.5x per slot, Lv2: 0.75x per slot, Lv3: 1.0x per slot
+    /// </summary>
+    public override void ModifyCombat(CombatPayload payload)
     {
-        int count = 0;
-        for (int i = 0; i < InventoryManager.instance.SlotCount; i++)
-        {
-            var item = InventoryManager.instance.GetItem(i);
-            if (item != null && !item.usedThisCombat) count++;
-        }
-        return count;
+        if (InventoryManager.instance == null) return;
+
+        int filledSlots = InventoryManager.instance.OccupiedSlotCount();
+        if (filledSlots <= 0) return;
+
+        float bonusPerSlot = 0.25f + (0.25f * currentLevel);
+        payload.multiplier += bonusPerSlot * filledSlots;
+        TriggerVisualPop();
     }
 }

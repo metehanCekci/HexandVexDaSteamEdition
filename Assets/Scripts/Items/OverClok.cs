@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/OverClok", fileName = "OverClok")]
 public class OverClok : BaseItem
@@ -7,18 +6,15 @@ public class OverClok : BaseItem
     void OnEnable()
     {
         itemName = "Over-Clock";
+        description = "Deal 2x damage on your next dice roll";
+        price = 21;
     }
-
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
-    {
-        { "mult", "X2" }
-    };
 
     public override bool Use()
     {
         if (RunManager.instance == null) return false;
 
-        RunManager.instance.doubleDamageNextCombatStacks++;
+        RunManager.instance.doubleDamageNextCombat = true;
         return true;
     }
 }

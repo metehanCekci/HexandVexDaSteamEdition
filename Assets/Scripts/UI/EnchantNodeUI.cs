@@ -567,7 +567,7 @@ public class EnchantNodeUI : MonoBehaviour
             TMP_Text descText = descGO.AddComponent<TextMeshProUGUI>();
             descText.fontSize = 17;
             descText.alignment = TextAlignmentOptions.Center;
-            descText.textWrappingMode = TextWrappingModes.Normal;
+            descText.enableWordWrapping = true;
             if (alagardFont != null) descText.font = alagardFont;
             choiceDescTexts[i] = descText;
 

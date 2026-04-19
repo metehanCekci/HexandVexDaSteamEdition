@@ -1,22 +1,16 @@
-using System.Collections;
-using System.Collections.Generic;
-
 public class VolatileCellsPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "kill",    GameKeywords.Action("Killed") },
-        { "explode", GameKeywords.Action("explode") },
-        { "dmg",     GameKeywords.Plus(currentLevel * 25, "%") },
-        { "maxHp",   GameKeywords.HealthText("max HP") }
-    };
+        maxLevel = 3;
+        rarity = PerkRarity.Rare;
+    }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void ModifyCombat(CombatPayload payload)
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-        ctx.payload.triggerExplosion = true;
-        ctx.payload.explosionDamagePercent = currentLevel * 0.25f;
-        ctx.AnimatePop(this);
+        payload.triggerExplosion = true;
+        payload.explosionDamagePercent = currentLevel * 0.25f; // Lv1=%25, Lv2=%50, Lv3=%75, Lv4=%100
+        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
+            TriggerVisualPop();
     }
 }

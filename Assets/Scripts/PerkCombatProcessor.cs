@@ -1,41 +1,162 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 
-// =========================================================================
-// PerkCombatProcessor — facade over CombatPipeline.
-// =========================================================================
-// Eski API'yi (ProcessPerks / ProcessLetsGoAgainPass) korur ki TurnManager kirilmasin.
-// Asil mantik CombatPipeline'da event-driven olarak yasiyor.
-// Mimetic/Leftmost/Parasitic gibi perk-retrigger perkleri artik switch-case ile
-// hardcoded degil — perk ctx.RequestPerkReplay(target) cagirir, pipeline halleder.
-// =========================================================================
 public class PerkCombatProcessor : MonoBehaviour
 {
     private DiceUIController diceUI;
-    private CombatPipeline pipeline;
 
     public void Initialize(DiceUIController diceUIController)
     {
         diceUI = diceUIController;
-        pipeline = new CombatPipeline(diceUI);
     }
 
     public IEnumerator ProcessPerks(CombatPayload payload, List<int> rolls)
     {
-        if (pipeline == null) yield break;
-        if (RunManager.instance == null || RunManager.instance.activePerks.Count == 0) yield break;
+        if (RunManager.instance == null || RunManager.instance.activePerks.Count == 0)
+            yield break;
 
-        yield return StartCoroutine(pipeline.RunBaseCombat(payload, rolls));
+        List<BasePerk> perksToProcess = RunManager.instance.activePerks.FindAll(p => p != null);
+
+        // processLast perkleri sona at (SymbioticArsenal vb.)
+        perksToProcess.Sort((a, b) => a.processLast.CompareTo(b.processLast));
+
+        yield return StartCoroutine(ProcessPerksFromList(payload, rolls, perksToProcess));
     }
 
-    // Lets Go Again now retriggers each perk inline (right after that perk fires) inside
-    // CombatPipeline.RunPerkAttack — Balatro-style. This pass used to run a full second
-    // pipeline pass; that's superseded, so this method is a no-op kept so the existing
-    // TurnManager call sites stay valid until they're cleaned up.
     public IEnumerator ProcessLetsGoAgainPass(CombatPayload payload, List<int> rolls)
     {
-        yield break;
+        if (RunManager.instance == null) yield break;
+        if (!RunManager.instance.activePerks.Exists(p => p is LetsGoAgainPerk)) yield break;
+
+        var lgaPerk = RunManager.instance.activePerks.Find(p => p is LetsGoAgainPerk);
+        if (lgaPerk != null && !diceUI.skipDiceVisuals)
+        {
+            lgaPerk.TriggerVisualPop();
+            if (PerkListUI.instance != null)
+                PerkListUI.instance.TriggerShakeForPerk(lgaPerk);
+            yield return StartCoroutine(diceUI.SkippableWait(0.4f));
+        }
+
+        List<BasePerk> secondPass = RunManager.instance.activePerks
+            .FindAll(p => p != null && !(p is LetsGoAgainPerk));
+
+        payload.flatBonus = 0;
+        payload.multiplier = 1.0f;
+
+        yield return StartCoroutine(ProcessPerksFromList(payload, rolls, secondPass));
+
+        // Non-combat perk efektlerini de tetikle (RegenTissue vs.)
+        foreach (var perk in secondPass)
+            perk.OnLetsGoAgain();
+
+        var sfPerk = RunManager.instance.activePerks.Find(p => p is SymbioticFuryPerk);
+        if (sfPerk != null && !diceUI.skipDiceVisuals)
+        {
+            sfPerk.TriggerVisualPop();
+            if (PerkListUI.instance != null)
+                PerkListUI.instance.TriggerShakeForPerk(sfPerk);
+            diceUI.UpdateTotalDamageDisplay(payload.GetFinalDamage());
+            yield return StartCoroutine(diceUI.SkippableWait(0.3f));
+        }
     }
 
+    private IEnumerator ProcessPerksFromList(CombatPayload payload, List<int> rolls, List<BasePerk> perks)
+    {
+        foreach (BasePerk perk in perks)
+        {
+            int beforeTotal = payload.GetFinalDamage();
+            perk.ModifyCombat(payload);
+
+            bool anyDieChanged = false;
+            List<int> changedIndices = new List<int>();
+            for (int i = 0; i < rolls.Count; i++)
+                if (rolls[i] != payload.diceRolls[i])
+                    changedIndices.Add(i);
+
+            // Volatile Roll gibi perkler zincirleme zar ekleyebilir — yeni zarları sync et
+            List<int> addedDiceIndices = new List<int>();
+            while (rolls.Count < payload.diceRolls.Count)
+            {
+                addedDiceIndices.Add(rolls.Count);
+                rolls.Add(payload.diceRolls[rolls.Count]);
+            }
+
+            if (changedIndices.Count > 0)
+            {
+                if (!diceUI.skipDiceVisuals)
+                {
+                    if (perk.isRerollPerk)
+                    {
+                        foreach (int idx in changedIndices)
+                        {
+                            if (idx < diceUI.SpawnedDiceUI.Count)
+                            {
+                                Animator dieAnim = diceUI.SpawnedDiceUI[idx].GetComponent<Animator>();
+                                TMP_Text dieText = diceUI.SpawnedDiceUI[idx].GetComponentInChildren<TMP_Text>();
+                                if (dieAnim != null) dieAnim.enabled = true;
+                                if (dieText != null) dieText.text = "!";
+                            }
+                        }
+                        yield return StartCoroutine(diceUI.SkippableWait(0.5f));
+                        foreach (int idx in changedIndices)
+                        {
+                            rolls[idx] = payload.diceRolls[idx];
+                            if (idx < diceUI.SpawnedDiceUI.Count)
+                            {
+                                Animator dieAnim = diceUI.SpawnedDiceUI[idx].GetComponent<Animator>();
+                                if (dieAnim != null) dieAnim.enabled = false;
+                            }
+                            diceUI.AnimateSpecificDie(idx, rolls[idx]);
+                        }
+                    }
+                    else
+                    {
+                        foreach (int idx in changedIndices)
+                        {
+                            rolls[idx] = payload.diceRolls[idx];
+                            diceUI.AnimateSpecificDie(idx, rolls[idx]);
+                        }
+                    }
+                    anyDieChanged = true;
+                    yield return StartCoroutine(diceUI.SkippableWait(0.3f));
+                }
+                else
+                {
+                    foreach (int idx in changedIndices)
+                        rolls[idx] = payload.diceRolls[idx];
+                    anyDieChanged = true;
+                }
+            }
+
+            // Zincirleme eklenen zarlar için UI spawn et
+            if (addedDiceIndices.Count > 0)
+            {
+                if (!diceUI.skipDiceVisuals)
+                {
+                    foreach (int idx in addedDiceIndices)
+                        diceUI.SpawnExtraDie(payload.diceRolls[idx]);
+                    yield return StartCoroutine(diceUI.SkippableWait(0.3f));
+                }
+                anyDieChanged = true;
+            }
+
+            int afterTotal = payload.GetFinalDamage();
+            if (beforeTotal != afterTotal || anyDieChanged)
+            {
+                if (!diceUI.skipDiceVisuals)
+                {
+                    perk.TriggerVisualPop();
+                    if (PerkListUI.instance != null)
+                        PerkListUI.instance.TriggerShakeForPerk(perk);
+                    diceUI.UpdateTotalDamageDisplay(afterTotal);
+                    yield return StartCoroutine(diceUI.SkippableWait(0.3f));
+                }
+            }
+
+            // Adım adım animasyonlu efektler (ör. CarrionFeeder x2 x2 x2)
+            yield return StartCoroutine(perk.AnimatedCombatEffect(payload, diceUI));
+        }
+    }
 }

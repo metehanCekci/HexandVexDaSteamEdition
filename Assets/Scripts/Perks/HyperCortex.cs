@@ -1,24 +1,25 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class HyperCortexPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "crit", GameKeywords.CritPlus(50 * currentLevel, "crit damage") }
-    };
+        rarity = PerkRarity.Common;
+    }
 
+    // İlk alındığında çalışır (1. Seviye)
     public override void OnAcquire()
     {
         RunManager.instance.criticalDamageMultiplier += 0.5f;
         TriggerVisualPop();
     }
 
+    // YENİ: Kart tekrar seçilirse çalışır (Seviye Atlama)
     public override void Upgrade()
     {
-        base.Upgrade();
-
-        RunManager.instance.criticalDamageMultiplier += 0.5f;
+        base.Upgrade(); // Seviyeyi 1 artırır
+        
+        RunManager.instance.criticalDamageMultiplier += 0.5f; // Her seviyede +0.5x daha ekle!
         TriggerVisualPop();
     }
 }

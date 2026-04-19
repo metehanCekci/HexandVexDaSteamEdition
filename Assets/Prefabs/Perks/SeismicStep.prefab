@@ -47,10 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Seismic Step
-  description: 
+  description: Skip to crack the ground beneath you. Leaving makes it collapse.
   icon: {fileID: 2968922446593118486, guid: 1c844646e75eddb4fb69d2ef1074f4ee, type: 3}
   priority: 0
   isRerollPerk: 0
-  processLast: 0
-  isPerkRetrigger: 0
   rarity: 3

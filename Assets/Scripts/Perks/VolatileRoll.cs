@@ -1,19 +1,18 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class VolatileRollPerk : BasePerk
 {
-    private const int MAX_CHAIN = 50; // sonsuz dÃ¶ngÃ¼ korumasÄ±
+    private const int MAX_CHAIN = 50; // sonsuz döngü koruması
 
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    void OnEnable()
     {
-        { "one",    GameKeywords.Status("1") },
-        { "six",    GameKeywords.Status("6") },
-        { "reroll", GameKeywords.Action("re-rolls") }
-    };
+        maxLevel = 1;
+        rarity = PerkRarity.Legendary;
+    }
 
     /// <summary>
-    /// Base zarlarÄ± 1 veya 6 olarak Ã¼retir. ShowDiceSequence'dan Ã–NCE Ã§aÄŸrÄ±lÄ±r.
+    /// Base zarları 1 veya 6 olarak üretir. ShowDiceSequence'dan ÖNCE çağrılır.
     /// </summary>
     public void ApplyToBaseRolls(List<int> rolls)
     {
@@ -22,8 +21,8 @@ public class VolatileRollPerk : BasePerk
     }
 
     /// <summary>
-    /// 6 gelen zarlardan zincirleme extra zarlar Ã¼retir.
-    /// Her chain adÄ±mÄ±nda yeni zarlarÄ± dÃ¶ndÃ¼rÃ¼r (animasyon iÃ§in tek tek Ã§aÄŸrÄ±lacak).
+    /// 6 gelen zarlardan zincirleme extra zarlar üretir.
+    /// Her chain adımında yeni zarları döndürür (animasyon için tek tek çağrılacak).
     /// </summary>
     public List<int> GenerateChainRolls(List<int> allRolls, int startIndex)
     {

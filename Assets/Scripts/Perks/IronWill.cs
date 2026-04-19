@@ -1,26 +1,21 @@
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 
 public class IronWillPerk : BasePerk
 {
-    private int cleanLevelStreak = 0;
+    private int cleanLevelStreak = 0; // Arka arkaya hasar almadan geçilen bölüm sayısı
     private bool tookDamageThisLevel = false;
     private bool subscribed = false;
 
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "clear",       GameKeywords.Action("level cleared") },
-        { "per",         GameKeywords.Mult(1) },
-        { "streakLabel", GameKeywords.Counter("Streak:") },
-        { "streak",      GameKeywords.Counter(cleanLevelStreak.ToString()) },
-        { "bonus",       GameKeywords.Mult(Mathf.Max(1, cleanLevelStreak)) }
-    };
+        rarity = PerkRarity.Rare;
+        maxLevel = 1;
+    }
 
     public override void OnAcquire()
     {
         Subscribe();
-        RebuildDescription();
+        description = GetDescription();
     }
 
     public override void OnEquip()
@@ -31,31 +26,35 @@ public class IronWillPerk : BasePerk
     public override void OnUnequip()
     {
         Unsubscribe();
-        RebuildDescription();
+        // cleanLevelStreak sifirlanmaz — stash'ten cikarip takinca stack korunur
+        description = GetDescription();
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
         tookDamageThisLevel = false;
-        RebuildDescription();
+        description = GetDescription();
     }
 
     public override void OnLevelClear()
     {
+        // Sadece Combat, EliteCombat ve Boss levellerinde stack toplanir
         if (RunManager.instance != null)
         {
             var nodeType = RunManager.instance.currentNodeType;
             if (nodeType != MapNodeType.Combat && nodeType != MapNodeType.EliteCombat && nodeType != MapNodeType.Boss)
             {
-                RebuildDescription();
+                description = GetDescription();
                 return;
             }
         }
 
         if (!tookDamageThisLevel)
+        {
             cleanLevelStreak++;
-        RebuildDescription();
+        }
+        description = GetDescription();
     }
 
     void OnDestroy()
@@ -84,20 +83,23 @@ public class IronWillPerk : BasePerk
         subscribed = false;
     }
 
-    private void OnPlayerDamaged(long remainingHP)
+    private void OnPlayerDamaged(int remainingHP)
     {
         tookDamageThisLevel = true;
         cleanLevelStreak = 0;
-        RebuildDescription();
+        description = GetDescription();
     }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void ModifyCombat(CombatPayload payload)
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-        if (cleanLevelStreak <= 0) yield break;
+        if (cleanLevelStreak <= 0) return;
 
-        ctx.payload.ApplyMult(1f + cleanLevelStreak);
-        ctx.AnimatePop(this);
+        payload.multiplier += cleanLevelStreak;
+        TriggerVisualPop();
+    }
+
+    private string GetDescription()
+    {
+        return $"Each level cleared without taking damage grants +1x damage multiplier. Resets on damage.\nStreak: {cleanLevelStreak} (+{cleanLevelStreak}x)";
     }
 }

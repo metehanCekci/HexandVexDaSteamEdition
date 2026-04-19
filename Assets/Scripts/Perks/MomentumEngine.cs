@@ -1,24 +1,32 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class MomentumEnginePerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "bonus", GameKeywords.Plus(1) }
-    };
+        rarity = PerkRarity.Rare;
+    }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void OnAcquire()
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-        if (TurnManager.instance == null || TurnManager.instance.hexesMovedThisTurn <= 0) yield break;
+        priority = 5; // Hasar çarpanlarından önce, normal zar manipülasyonlarıyla aynı anda eklensin
+    }
+
+    public override void ModifyCombat(CombatPayload payload)
+    {
+        // Eğer TurnManager yoksa veya hiç yürümediysek boşuna yorma
+        if (TurnManager.instance == null || TurnManager.instance.hexesMovedThisTurn <= 0) return;
 
         int stepsTaken = TurnManager.instance.hexesMovedThisTurn;
 
-        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
-            ctx.payload.diceRolls[i] += stepsTaken;
-        ctx.payload.ApplyAdd(stepsTaken * ctx.payload.diceRolls.Count);
-        ctx.AnimatePop(this);
+        // Bütün zarlara atılan adım kadar değer ekle
+        for (int i = 0; i < payload.diceRolls.Count; i++)
+        {
+            payload.diceRolls[i] += stepsTaken;
+        }
+
+        // Çalıştığını belli etmek için hoplat
+        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
+            TriggerVisualPop();
     }
 }

@@ -1,41 +1,42 @@
-﻿using UnityEngine;
-using System;
-using System.Collections.Generic;
-
+using UnityEngine; // Unity motoru için
+using System;      // Temel fonksiyonlar için
+using System.Collections.Generic; // Listeler için
 public class DormantSporePerk : BasePerk
 {
-    public int storedExtraDices = 0;
-
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "skip",   GameKeywords.Action("skip") },
-        { "die",    GameKeywords.Plus(1, "die") },
-        { "attack", GameKeywords.Action("attack") },
-        { "stored", GameKeywords.Counter(storedExtraDices.ToString()) }
-    };
+        rarity = PerkRarity.Common;
+    }
+
+    public int storedExtraDices = 0;
 
     public int ConsumeStoredDice()
     {
         int dice = storedExtraDices;
         storedExtraDices = 0;
-        RebuildDescription();
+        description = GetDescription();
         return dice;
     }
 
     public override void OnAcquire()
     {
-        RebuildDescription();
+        description = GetDescription();
     }
 
     public override void OnSkip()
     {
         storedExtraDices++;
-        RebuildDescription();
+        description = GetDescription();
         TriggerVisualPop();
     }
 
     public override void OnLevelStart()
     {
-        RebuildDescription();
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        return $"Each skip stores +1 extra die for your next attack.\nStored dice: {storedExtraDices}";
     }
 }

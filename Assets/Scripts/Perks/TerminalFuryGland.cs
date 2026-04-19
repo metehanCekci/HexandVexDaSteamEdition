@@ -1,33 +1,46 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
-/// Terminal Fury Gland (Legendary). Multiplier = 2 + (maxHP - currentHP).
+/// Terminal Fury Gland (Legendary)
+/// Always active. Multiplier = maxHP / currentHP
+/// 5/5 HP = 1x, 1/5 HP = 5x
 /// </summary>
 public class TerminalFuryGlandPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "base",    GameKeywords.Mult(2f) },
-        { "per",     GameKeywords.Mult(1f) },
-        { "missing", GameKeywords.HealthText("missing HP") }
-    };
+        perkName    = "Terminal Fury Gland";
+        description = "Always deal double damage, get +1x mult per missing health.";
+        rarity      = PerkRarity.Legendary;
+        maxLevel    = 1;
+        priority    = 15;
+    }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void ModifyCombat(CombatPayload payload)
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-
         var rm = RunManager.instance;
         var tm = TurnManager.instance;
-        if (rm == null || tm == null || tm.player == null) yield break;
+        if (rm == null || tm == null || tm.player == null) return;
 
-        long maxHP = rm.playerMaxHealth;
-        long currentHP = tm.player.health.currentHP;
+        int maxHP = rm.playerMaxHealth;
+        int currentHP = tm.player.health.currentHP;
         if (currentHP < 1) currentHP = 1;
 
+        // Always 2x base, +1x per missing HP (5/5=2x, 4/5=3x, 1/5=6x)
         float tfgMult = 2f + (maxHP - currentHP);
-        ctx.payload.ApplyMult(tfgMult);
-        ctx.AnimatePop(this);
+
+        // Glass Cannon varsa: additif birlestir (TFG + GC), GC'nin *= 2'sini geri al
+        bool hasGC = rm.activePerks.Exists(p => p is GlassCanonPerk);
+        if (hasGC)
+        {
+            // GC daha once payload.multiplier *= 2 uyguladi, geri al ve toplami koy
+            payload.multiplier = payload.multiplier / 2f * (tfgMult + 2f);
+        }
+        else
+        {
+            payload.multiplier *= tfgMult;
+        }
+
+        TriggerVisualPop();
     }
 }
