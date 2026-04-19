@@ -5,7 +5,15 @@ public class MomentumEnginePerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "Each die gains {bonus} per hex walked this turn.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "bonus", "+1" }
+    };
 
     public override void OnAcquire()
     {

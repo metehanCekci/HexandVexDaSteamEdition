@@ -6,7 +6,7 @@ public class GoldLeech : BaseItem
     void OnEnable()
     {
         itemName = "Gold-Leech";
-        description = "Next enemy drops 2x gold";
+        description = $"Next enemy drops {GameKeywords.Times(2f)} <color=#{UIColors.Gold}>gold</color>";
         price = 12;
     }
 

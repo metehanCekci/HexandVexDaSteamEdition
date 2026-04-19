@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class SymbioticArsenalPerk : BasePerk
 {
@@ -6,12 +7,16 @@ public class SymbioticArsenalPerk : BasePerk
     {
         rarity = PerkRarity.Rare;
         processLast = true;
+        if (string.IsNullOrEmpty(description))
+            description = "Each filled item slot adds {bonus} multiplier.";
+        RebuildDescription();
     }
 
-    /// <summary>
-    /// Dolu her item slotu basina +0.5x multiplier, seviye basina +0.25x ekstra.
-    /// Lv1: 0.5x per slot, Lv2: 0.75x per slot, Lv3: 1.0x per slot
-    /// </summary>
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "bonus", $"x{0.25f + 0.25f * currentLevel:0.##}" }
+    };
+
     public override void ModifyCombat(CombatPayload payload)
     {
         if (InventoryManager.instance == null) return;

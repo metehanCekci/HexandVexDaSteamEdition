@@ -180,7 +180,7 @@ public class SacrificeNodeManager : MonoBehaviour
             // Method 2: FindObjectOfType
             if (lum == null)
             {
-                lum = FindObjectOfType<LevelUpManager>();
+                lum = FindFirstObjectByType<LevelUpManager>();
                 Debug.Log("[SACRIFICE] FindObjectOfType result = " + (lum == null ? "NULL" : lum.name));
             }
 
@@ -287,7 +287,7 @@ public class SacrificeNodeManager : MonoBehaviour
         // Method 2: Steal from MergedShopManager which caches its own copies
         try
         {
-            var shop = FindObjectOfType<MergedShopManager>();
+            var shop = FindFirstObjectByType<MergedShopManager>();
             if (shop == null)
             {
                 var allShops = Resources.FindObjectsOfTypeAll<MergedShopManager>();
@@ -1051,7 +1051,7 @@ public class SacrificeNodeManager : MonoBehaviour
         // Description
         TMP_Text descTxt = MakeAnchText("Desc", slotGO.transform,
             new Vector2(0, 0.12f), new Vector2(1, 0.30f), "", 9, new Color(0.65f, 0.65f, 0.65f));
-        descTxt.enableWordWrapping = true;
+        descTxt.textWrappingMode = TextWrappingModes.Normal;
         descTxt.overflowMode = TextOverflowModes.Truncate;
 
         // Cost (bottom)
@@ -1135,7 +1135,7 @@ public class SacrificeNodeManager : MonoBehaviour
         txt.text = text; txt.fontSize = fontSize; txt.color = color;
         txt.alignment = TextAlignmentOptions.Center;
         txt.raycastTarget = false;
-        txt.enableWordWrapping = false;
+        txt.textWrappingMode = TextWrappingModes.NoWrap;
         txt.overflowMode = TextOverflowModes.Ellipsis;
         if (cachedFont != null) txt.font = cachedFont;
         return txt;

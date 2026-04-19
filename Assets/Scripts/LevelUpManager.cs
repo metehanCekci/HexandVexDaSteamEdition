@@ -57,6 +57,11 @@ public class LevelUpManager : MonoBehaviour
         if (instance == null) instance = this;
         SetupCardHoverListeners();
 
+        commonPerks?.RemoveAll(IsDisabledPerk);
+        rarePerks?.RemoveAll(IsDisabledPerk);
+        epicPerks?.RemoveAll(IsDisabledPerk);
+        legendaryPerks?.RemoveAll(IsDisabledPerk);
+
         // Skip butonunun orijinal rengini ve color block'ı kaydet
         if (skipButtonImage != null)
             skipButtonOriginalColor = skipButtonImage.color;
@@ -73,6 +78,13 @@ public class LevelUpManager : MonoBehaviour
         // Sahne değişirken perk panelini temizle
         ForceClose();
         if (instance == this) instance = null;
+    }
+
+    private static bool IsDisabledPerk(GameObject prefab)
+    {
+        if (prefab == null) return true;
+        var bp = prefab.GetComponent<BasePerk>();
+        return bp is SeismicStepPerk;
     }
 
     public void ShowLevelUpScreen()
@@ -293,38 +305,26 @@ public class LevelUpManager : MonoBehaviour
         if (isBossReward && legendaryPerks.Count > 0)
             return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
 
-        // Yüzdelik sistem: Legendary dahil
-        // Level ilerledikçe legendary şansı artar
-        int level = RunManager.instance != null ? RunManager.instance.currentLevel : 1;
-
-        // Legendary: her bölümde çıkabilir, level ilerledikçe şans artar
-        //   Base: %4 (lv1-7), %6 (lv8-15), %8 (lv16+)
-        float legendaryChance = 4f;
-        if (level >= 16) legendaryChance = 8f;
-        else if (level >= 8) legendaryChance = 6f;
-
+        // Sabit dağılım: Common %70 / Rare %15 / Epic %10 / Legendary %5
+        float legendaryChance = 5f;
         float epicBase = 10f;
-        float rareBase = 30f;
+        float rareBase = 15f;
 
         float roll = Random.Range(0f, 100f);
         float cursor = 0f;
 
-        // Legendary
         cursor += legendaryChance;
         if (roll < cursor && legendaryPerks.Count > 0)
             return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
 
-        // Epic
         cursor += epicBase;
         if (roll < cursor && epicPerks.Count > 0)
             return epicPerks[Random.Range(0, epicPerks.Count)];
 
-        // Rare
         cursor += rareBase;
         if (roll < cursor && rarePerks.Count > 0)
             return rarePerks[Random.Range(0, rarePerks.Count)];
 
-        // Common (kalan)
         if (commonPerks.Count > 0)
             return commonPerks[Random.Range(0, commonPerks.Count)];
         return null;
@@ -341,18 +341,7 @@ public class LevelUpManager : MonoBehaviour
         return PerkRarity.Common;
     }
 
-    private Color GetRarityColor(PerkRarity rarity)
-    {
-        switch (rarity)
-        {
-            case PerkRarity.Common: return new Color(0.8f, 0.8f, 0.8f); // Gri
-            case PerkRarity.Rare: return new Color(0.2f, 0.5f, 1f);   // Mavi
-            case PerkRarity.Epic: return new Color(0.6f, 0.2f, 1f);   // Mor
-            case PerkRarity.Legendary: return new Color(1f, 0.6f, 0f);     // Turuncu/Altın
-            case PerkRarity.Secret: return new Color(1f, 0.27f, 0.27f); // Kırmızı
-            default: return Color.white;
-        }
-    }
+    private Color GetRarityColor(PerkRarity rarity) => UIColors.GetRarityColor(rarity);
 
     private GameObject GetAnyValidFallback()
     {

@@ -1,12 +1,11 @@
 using UnityEngine;
+using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Pent-Up Strike (Epic)
 /// Normal saldırıda 0 hasar verir (knockback kalır), zar toplamını biriktirir.
 /// Skip ile saldırdığında biriken tüm hasarı tek seferde verir.
-/// Seviye başına birikim %25 ekstra bonus.
-/// Lv1: %100, Lv2: %125, Lv3: %150
 /// </summary>
 public class PentUpStrikePerk : BasePerk
 {
@@ -17,41 +16,48 @@ public class PentUpStrikePerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Attacks deal {zero} but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}.\nStored: {stored} ({stacks} stacks)";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "zero",    "0 damage" },
+        { "percent", $"+{50 + currentLevel * 50}%" },
+        { "stored",  $"{storedDamage} damage" },
+        { "stacks",  storedStacks }
+    };
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void ModifyCombat(CombatPayload payload)
     {
         if (isReleasing)
         {
-            // Skip saldırısı: biriken hasarı flatBonus olarak ekle
-            // Lv1: %100, Lv2: %150, Lv3: %200
             double bonus = storedDamage * (0.5 + currentLevel * 0.5);
             payload.flatBonus += (long)System.Math.Min(bonus, long.MaxValue - payload.flatBonus);
             storedDamage = 0;
             storedStacks = 0;
             isReleasing = false;
-            description = GetDescription();
+            RebuildDescription();
             TriggerVisualPop();
         }
         else
         {
-            // Normal saldırı: zar toplamını biriktir, hasarı sıfırla
             long diceSum = payload.diceRolls.Sum();
             storedDamage += diceSum;
             storedStacks++;
 
-            // Tüm zarları 0 yap — knockback hâlâ çalışır ama hasar 0
             for (int i = 0; i < payload.diceRolls.Count; i++)
                 payload.diceRolls[i] = 0;
             payload.flatBonus = 0;
             payload.multiplier = 0f;
 
-            description = GetDescription();
+            RebuildDescription();
             TriggerVisualPop();
         }
     }
@@ -67,12 +73,6 @@ public class PentUpStrikePerk : BasePerk
         storedDamage = 0;
         storedStacks = 0;
         isReleasing = false;
-        description = GetDescription();
-    }
-
-    private string GetDescription()
-    {
-        int percent = 50 + currentLevel * 50;
-        return $"Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}%.\nStored: {storedDamage} ({storedStacks} stacks)";
+        RebuildDescription();
     }
 }

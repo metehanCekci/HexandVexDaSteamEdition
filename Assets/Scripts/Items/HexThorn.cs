@@ -6,7 +6,7 @@ public class HexThorn : BaseItem
     void OnEnable()
     {
         itemName = "Hex-Thorn";
-        description = "Place a spike trap on any empty hex tile. Breaks after 3 turns (blinks on turn 2).";
+        description = $"Place a spike trap on any empty hex tile. Breaks after {GameKeywords.Number(3)} turns (blinks on turn {GameKeywords.Number(2)}).";
         price = 15;
     }
 

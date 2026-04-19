@@ -31,6 +31,23 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         instance = this;
     }
 
+    void OnEnable()
+    {
+        UIColors.OnChanged     += OnColorsChanged;
+        GameKeywords.OnChanged += OnColorsChanged;
+    }
+
+    void OnDisable()
+    {
+        UIColors.OnChanged     -= OnColorsChanged;
+        GameKeywords.OnChanged -= OnColorsChanged;
+    }
+
+    private void OnColorsChanged()
+    {
+        if (perkListPanel != null && perkListPanel.activeSelf) RefreshPerkList();
+    }
+
     void Start()
     {
         // ActivePerkBar varsa eski sistem tamamen devre disi — buton + panel gizle
@@ -321,15 +338,7 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public static string GetRarityHex(PerkRarity rarity)
     {
-        return rarity switch
-        {
-            PerkRarity.Common    => "#FFFFFF",
-            PerkRarity.Rare      => "#4DA6FF",
-            PerkRarity.Epic      => "#CC44FF",
-            PerkRarity.Legendary => "#FFB300",
-            PerkRarity.Secret    => "#FF4444",
-            _                    => "#FFFFFF"
-        };
+        return "#" + UIColors.GetRarityHex(rarity);
     }
 
     private static int GetRarityOrder(PerkRarity rarity)
@@ -415,7 +424,7 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             ColorUtility.TryParseHtmlString(GetRarityHex(perk.rarity), out rarityCol);
             descTmp.color = Color.Lerp(rarityCol, new Color(0.65f, 0.65f, 0.65f, 1f), 0.45f);
             descTmp.alignment = TextAlignmentOptions.TopLeft;
-            descTmp.enableWordWrapping = true;
+            descTmp.textWrappingMode = TextWrappingModes.Normal;
             descTmp.raycastTarget = false;
             if (font != null) descTmp.font = font;
             var descLE = descObj.AddComponent<LayoutElement>();

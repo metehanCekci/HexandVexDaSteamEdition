@@ -145,7 +145,8 @@ public class HealthScript : MonoBehaviour
 
     private IEnumerator DamageFlash()
     {
-        spriteRenderer.color = Color.red;
+        Color dmg = UIColors.DamageColor;
+        spriteRenderer.color = dmg;
 
         float duration = 0.35f;
         float elapsed = 0f;
@@ -154,7 +155,7 @@ public class HealthScript : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             // originalColor'ın alpha'sı o sırada değişiyor olsa bile sorunsuz takip eder
-            spriteRenderer.color = Color.Lerp(Color.red, originalColor, elapsed / duration);
+            spriteRenderer.color = Color.Lerp(dmg, originalColor, elapsed / duration);
             yield return null;
         }
 

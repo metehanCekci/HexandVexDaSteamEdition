@@ -6,7 +6,7 @@ public class OverClok : BaseItem
     void OnEnable()
     {
         itemName = "Over-Clock";
-        description = "Deal 2x damage on your next dice roll";
+        description = $"Deal {GameKeywords.Times(2f, "damage")} on your next dice roll";
         price = 21;
     }
 

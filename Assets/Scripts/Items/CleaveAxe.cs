@@ -6,7 +6,7 @@ public class CleaveAxe : BaseItem
     void OnEnable()
     {
         itemName = "Cleave-Axe";
-        description = "Next attack deals full damage to all adjacent enemies without splitting";
+        description = $"Next attack deals <color=#{UIColors.Damage}>full damage</color> to all adjacent enemies without splitting";
         price = 21;
     }
 

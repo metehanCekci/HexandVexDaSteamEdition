@@ -6,7 +6,7 @@ public class SynthStim : BaseItem
     void OnEnable()
     {
         itemName = "Synth-Stim";
-        description = "Roll +1 extra die in the next combat";
+        description = $"Roll {GameKeywords.Dice(1)} in the next combat";
         price = 18;
     }
 

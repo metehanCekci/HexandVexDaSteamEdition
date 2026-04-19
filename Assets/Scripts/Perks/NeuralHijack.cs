@@ -12,5 +12,8 @@ public class NeuralHijackPerk : BasePerk
     {
         rarity = PerkRarity.Legendary;
         maxLevel = 1;
+        if (string.IsNullOrEmpty(description))
+            description = "Push an enemy into another to convert it to your side.";
+        RebuildDescription();
     }
 }

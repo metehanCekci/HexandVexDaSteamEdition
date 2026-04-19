@@ -197,7 +197,7 @@ public class BossIntroSequence : MonoBehaviour
         tmp.fontStyle      = FontStyles.Bold;
         tmp.color          = popupTextColor;
         tmp.alignment      = TextAlignmentOptions.Center;
-        tmp.enableWordWrapping = false;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
 
         StartCoroutine(PopIn(container.transform));
         return container;

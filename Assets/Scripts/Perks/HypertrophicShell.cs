@@ -8,7 +8,15 @@ public class HypertrophicShellPerk : BasePerk
     {
         maxLevel = 5;
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Gain {bonusHP} max HP per level (cap 10).";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "bonusHP", $"+{currentLevel} HP" }
+    };
 
     public override void OnAcquire()
     {

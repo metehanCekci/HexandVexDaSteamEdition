@@ -608,7 +608,7 @@ public class TurnManager : MonoBehaviour
             rm.surgeBootActive = false;
             rm.hasPerkReroll = false;
             rm.hasLuckyClover = false;
-            rm.hasMutationCatalyst = false;
+            rm.pendingRerollReset = false;
             // selectedWeapon sıfırlanMAZ — silah seçimi MainMenu'de yapılır, ResetGame silahı ezmesin
 
             // Perkleri temizle (Sahnedeki objeleri yok et)
@@ -2299,8 +2299,9 @@ public class TurnManager : MonoBehaviour
         if (RunManager.instance.bonusDiceNextCombat > 0) { extraDices += RunManager.instance.bonusDiceNextCombat; RunManager.instance.bonusDiceNextCombat = 0; }
         // Host Syndrome: +1 die per adjacent enemy
         foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
-        // Dice Hoarder: +1 die per visited perk/shop level
+        // Dice Hoarder: +1 die per visited rest (active + stash kopyaları toplanır)
         foreach (var p in RunManager.instance.activePerks) if (p is DiceHoarderPerk hoardPerk) { extraDices += hoardPerk.GetExtraDice(); }
+        foreach (var p in RunManager.instance.inventoryPerks) if (p is DiceHoarderPerk hoardPerk) { extraDices += hoardPerk.GetExtraDice(); }
         // Green Magic Tile: +1 die while standing on it (single-use)
         if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType magicType) && magicType == MagicTileType.Green)
         {
@@ -2546,7 +2547,12 @@ public class TurnManager : MonoBehaviour
                 int voodooHits = Mathf.Min(voodooPerk.currentLevel, others.Count);
                 for (int v = 0; v < voodooHits; v++)
                 {
-                    others[v].health.TakeDamage(damagePerEnemy, true);
+                    // Voodoo Parasite ikincil hasari — AI/hareket interrupt etme (Pyrogenic Glands ile ayni pattern).
+                    // applyStun=false => HealthScript enemy.ApplyStun cagirmaz.
+                    // Warlock'un teleport etmemesi icin isBurnDamage flag'ini set et.
+                    var warlock = others[v].GetComponent<WarlockEnemyAI>();
+                    if (warlock != null) warlock.isBurnDamage = true;
+                    others[v].health.TakeDamage(damagePerEnemy, false, false);
 
                     SpawnSlashEffect(others[v].transform.position);
                 }

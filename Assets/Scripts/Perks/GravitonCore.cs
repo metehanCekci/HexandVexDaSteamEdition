@@ -8,6 +8,9 @@ public class GravitonCorePerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "On skip, pull enemies 2-3 hexes away closer to you.";
+        RebuildDescription();
     }
 
     public override void OnSkip()

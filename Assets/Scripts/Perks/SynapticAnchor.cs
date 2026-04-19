@@ -12,6 +12,9 @@ public class SynapticAnchorPerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "First skip drops an anchor. Next skip teleports you back.";
+        RebuildDescription();
     }
 
     public override void OnEquip()

@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
 public enum PerkRarity { Common, Rare, Epic, Legendary, Secret }
 
@@ -10,6 +12,9 @@ public abstract class BasePerk : MonoBehaviour
     public int maxLevel = 3;
     public string perkName;
     [TextArea] public string description;
+    // Inspector'da girilen orijinal template (token'li). Runtime'da `description` overwrite edilse bile
+    // token'lar korunur ki RebuildDescription tekrar cagrilabilsin.
+    [System.NonSerialized] private string _descriptionTemplate;
     public Sprite icon;
     public int priority = 0;
     public bool isRerollPerk = false;
@@ -63,11 +68,100 @@ public abstract class BasePerk : MonoBehaviour
     // Ancient Blessing bu komutu çağıracak. Diğer perkler de bu komutu alınca ne yapacaklarını bilecek.
     public virtual void UpgradePerk() { }
 
+    // Inspector'da description'a token yazar (orn: "Deal {mult} damage, gain {goldPerKill}.")
+    // Perk bu metodu override edip token -> deger esleme dondurur.
+    // Deger formatina gore otomatik renklendirilir:
+    //   "xN"       -> MultHex  (kirmizi)
+    //   "+N" / "N" -> ChipsHex (mavi)
+    //   icinde "gold" -> GoldHex (sari) (+N gold ise hem + hem gold tonu, gold wrap oncelikli)
+    //   "N HP"     -> HealHex
+    //   "N damage" -> DamageHex
+    public virtual Dictionary<string, object> GetDescValues() { return null; }
+
+    // Description'i yeniden insa eder (seviye atlayinca veya GameKeywords renk/deger degisince cagrilir)
+    public virtual void RebuildDescription()
+    {
+        if (string.IsNullOrEmpty(_descriptionTemplate))
+        {
+            if (string.IsNullOrEmpty(description)) return;
+            _descriptionTemplate = description;
+        }
+
+        var values = GetDescValues();
+        if (values == null || values.Count == 0)
+        {
+            // Token yoksa template'i oldugu gibi biraktir.
+            description = _descriptionTemplate;
+            return;
+        }
+
+        description = ApplyTokens(_descriptionTemplate, values);
+    }
+
+    private static string ApplyTokens(string template, Dictionary<string, object> values)
+    {
+        StringBuilder sb = new StringBuilder(template.Length + 64);
+        int i = 0;
+        while (i < template.Length)
+        {
+            char c = template[i];
+            if (c == '{' && i + 1 < template.Length && template[i + 1] != '{')
+            {
+                int end = template.IndexOf('}', i + 1);
+                if (end > i)
+                {
+                    string key = template.Substring(i + 1, end - i - 1);
+                    if (values.TryGetValue(key, out object raw))
+                    {
+                        sb.Append(Colorize(raw));
+                        i = end + 1;
+                        continue;
+                    }
+                }
+            }
+            sb.Append(c);
+            i++;
+        }
+        return sb.ToString();
+    }
+
+    private static string Colorize(object raw)
+    {
+        if (raw == null) return "";
+        string s = raw.ToString();
+        if (s.Length == 0) return s;
+
+        string lower = s.ToLowerInvariant();
+        string hex;
+
+        // Gold ifadesi varsa sari (oncelikli, "+N gold" dahil)
+        if (lower.Contains("gold"))
+            hex = UIColors.Gold;
+        // "x2", "x1.5" gibi mult ifadeleri -> kirmizi
+        else if (s[0] == 'x' || s[0] == 'X')
+            hex = UIColors.Mult;
+        // "+3", "-1" gibi chips -> mavi
+        else if (s[0] == '+' || s[0] == '-')
+            hex = UIColors.Chips;
+        // "N HP", "heal" -> yesil
+        else if (lower.Contains("hp") || lower.Contains("heal"))
+            hex = UIColors.Heal;
+        // "N damage" -> damage rengi
+        else if (lower.Contains("damage"))
+            hex = UIColors.Damage;
+        // ciplak sayi / % degeri -> chips mavi
+        else
+            hex = UIColors.Chips;
+
+        return $"<color=#{hex}>{s}</color>";
+    }
+
     public virtual void Upgrade()
     {
         if (currentLevel >= maxLevel) return;
         currentLevel++;
         Debug.Log($"{perkName} seviye atladı! Yeni Seviye: {currentLevel}");
+        RebuildDescription();
     }
     // ======================================================
 

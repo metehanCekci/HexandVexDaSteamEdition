@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class ChitinArmorPerk : BasePerk
 {
@@ -8,7 +9,15 @@ public class ChitinArmorPerk : BasePerk
     {
         rarity = PerkRarity.Common;
         maxLevel = 1;
+        if (string.IsNullOrEmpty(description))
+            description = "Gain {dodge} dodge chance.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "dodge", "+30%" }
+    };
 
     public override void OnAcquire()
     {
@@ -17,7 +26,7 @@ public class ChitinArmorPerk : BasePerk
 
     public override void OnEquip()
     {
-        if (isEquipped) return; // Çift uygulamayı engelle
+        if (isEquipped) return;
         isEquipped = true;
         RunManager.instance.dodgeChance += 0.30f;
     }

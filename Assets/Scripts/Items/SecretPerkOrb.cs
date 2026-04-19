@@ -10,7 +10,7 @@ public class SecretPerkOrb : BaseItem
     void OnEnable()
     {
         itemName = "??? Orb";
-        description = "A mysterious orb pulsing with unknown energy. Grants a secret mutation.";
+        description = $"A mysterious orb pulsing with unknown energy. Grants a <color=#{UIColors.GetRarityHex(PerkRarity.Secret)}>secret mutation</color>.";
         price = 404;
         itemType = ItemType.Instant;
     }

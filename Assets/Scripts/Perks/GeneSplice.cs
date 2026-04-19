@@ -7,23 +7,29 @@ public class GeneSplicePerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "Upgrade a random perk, then consume itself.";
+        RebuildDescription();
     }
 
     public override bool CanBeOffered()
     {
-        if (RunManager.instance == null) return true;
+        if (RunManager.instance == null) return false;
         foreach (var perk in RunManager.instance.activePerks)
         {
-            if (perk != this && perk.maxLevel > 1)
+            if (perk != this && perk.maxLevel > 1 && perk.currentLevel < perk.maxLevel)
                 return true;
         }
-        return RunManager.instance.activePerks.Count == 0;
+        foreach (var perk in RunManager.instance.inventoryPerks)
+        {
+            if (perk != this && perk.maxLevel > 1 && perk.currentLevel < perk.maxLevel)
+                return true;
+        }
+        return false;
     }
 
     public override void OnAcquire()
     {
-        // GeneSplice alındığında: kısa süre gözükür, sonra animasyonla parçalanıp
-        // dönüştüğü perke dönüşür ve kendisi yok olur
         StartCoroutine(SpliceAndTransform());
     }
 
@@ -35,9 +41,7 @@ public class GeneSplicePerk : BasePerk
 
     private IEnumerator SpliceAndTransform()
     {
-        // Önce hangi perki vereceğimizi belirle
         BasePerk targetPerk = null;
-        GameObject newPerkPrefab = null;
 
         List<BasePerk> upgradablePerks = new List<BasePerk>();
         foreach (var perk in RunManager.instance.activePerks)
@@ -45,45 +49,36 @@ public class GeneSplicePerk : BasePerk
             if (perk != this && perk.maxLevel > 1 && perk.currentLevel < perk.maxLevel)
                 upgradablePerks.Add(perk);
         }
-
-        if (upgradablePerks.Count > 0)
+        foreach (var perk in RunManager.instance.inventoryPerks)
         {
-            // Mevcut bir perki upgrade et
-            targetPerk = upgradablePerks[Random.Range(0, upgradablePerks.Count)];
-        }
-        else
-        {
-            // Yeni perk ver
-            if (LevelUpManager.instance != null)
-                newPerkPrefab = LevelUpManager.instance.GetRandomPerkByRarity(false);
+            if (perk != this && perk.maxLevel > 1 && perk.currentLevel < perk.maxLevel)
+                upgradablePerks.Add(perk);
         }
 
-        // ActivePerkBar'da GeneSplice ikonunu bul ve parçalanma animasyonu oynat
+        if (upgradablePerks.Count == 0)
+        {
+            RemoveSelf();
+            yield break;
+        }
+
+        targetPerk = upgradablePerks[Random.Range(0, upgradablePerks.Count)];
+
         if (ActivePerkBar.instance != null)
             ActivePerkBar.instance.TriggerSpliceAnimation(this);
 
-        // Animasyon süresi boyunca bekle
         yield return new WaitForSeconds(0.6f);
 
-        // Efekti uygula
         if (targetPerk != null)
         {
             targetPerk.Upgrade();
-            Debug.Log($"✨ Gene Splice: {targetPerk.perkName} güçlendirildi! (Yeni Seviye: {targetPerk.currentLevel})");
+            Debug.Log($"Gene Splice: {targetPerk.perkName} güçlendirildi! (Yeni Seviye: {targetPerk.currentLevel})");
 
-            // Hedef perkte parlama animasyonu
             if (PerkListUI.instance != null)
                 PerkListUI.instance.TriggerLevelUpAnimForPerk(targetPerk);
             if (ActivePerkBar.instance != null)
                 ActivePerkBar.instance.TriggerPopForPerk(targetPerk);
         }
-        else if (newPerkPrefab != null)
-        {
-            Debug.Log("⚠️ Güçlendirilecek yetenek yok, Gene Splice yeni bir yetenek hediye ediyor!");
-            RunManager.instance.AddPerk(newPerkPrefab);
-        }
 
-        // GeneSplice'ı listeden kaldır ve yok et
         yield return new WaitForSeconds(0.2f);
         RemoveSelf();
     }

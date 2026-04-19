@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class ExtraDendritePerk : BasePerk
 {
@@ -6,21 +7,27 @@ public class ExtraDendritePerk : BasePerk
     {
         maxLevel = 999;
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Roll {extraDice} extra die.";
+        RebuildDescription();
     }
 
-    // İlk alındığında çalışır (1. Seviye)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "extraDice", $"+{currentLevel}" }
+    };
+
     public override void OnAcquire()
     {
         RunManager.instance.baseDiceCount += 1;
         TriggerVisualPop();
     }
 
-    // YENİ: Kart tekrar seçilirse çalışır (Seviye Atlama)
     public override void Upgrade()
     {
-        base.Upgrade(); // Seviyeyi 1 artırır
+        base.Upgrade();
 
-        RunManager.instance.baseDiceCount += 1; // Her seviyede +1 zar daha!
+        RunManager.instance.baseDiceCount += 1;
         TriggerVisualPop();
     }
 }

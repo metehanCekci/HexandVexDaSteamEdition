@@ -9,21 +9,34 @@ using System.Collections.Generic;
 /// </summary>
 public class RetributionSplicerPerk : BasePerk
 {
-    // enemyInstanceID → hit count
     private readonly Dictionary<int, int> hitCounts = new Dictionary<int, int>();
 
     void OnEnable()
     {
-        perkName    = "Retribution Splicer";
-        description = "Each time you hit the same target, gain +2 flat damage against them. No stack limit. +1 more per level.";
         rarity      = PerkRarity.Common;
         maxLevel    = 3;
         priority    = 20; // Apply after other bonuses
+        if (string.IsNullOrEmpty(description))
+            description = "Each hit on the same target grants {bonus} damage against them. No stack limit.\nTargets: {targets} | Total hits: {hits}";
+        RebuildDescription();
+    }
+
+    public override Dictionary<string, object> GetDescValues()
+    {
+        int bonusPerHit = 1 + currentLevel;
+        int totalHits = 0;
+        foreach (var kv in hitCounts) totalHits += kv.Value;
+        return new Dictionary<string, object>
+        {
+            { "bonus",   $"+{bonusPerHit} flat damage" },
+            { "targets", hitCounts.Count },
+            { "hits",    totalHits }
+        };
     }
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
     /// <summary>Called by TurnManager after each hit to register the target.</summary>
@@ -33,7 +46,7 @@ public class RetributionSplicerPerk : BasePerk
         int id = target.GetInstanceID();
         if (!hitCounts.ContainsKey(id)) hitCounts[id] = 0;
         hitCounts[id]++;
-        description = GetDescription();
+        RebuildDescription();
     }
 
     /// <summary>Returns the flat damage bonus against this target (based on previous hits).</summary>
@@ -50,21 +63,12 @@ public class RetributionSplicerPerk : BasePerk
     {
         if (enemy == null) return;
         hitCounts.Remove(enemy.GetInstanceID());
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnLevelStart()
     {
         hitCounts.Clear();
-        description = GetDescription();
-    }
-
-    private string GetDescription()
-    {
-        int bonusPerHit = 1 + currentLevel;
-        int totalTargets = hitCounts.Count;
-        int totalHits = 0;
-        foreach (var kv in hitCounts) totalHits += kv.Value;
-        return $"Each hit on the same target grants +{bonusPerHit} flat damage against them. No stack limit.\nTargets: {totalTargets} | Total hits: {totalHits}";
+        RebuildDescription();
     }
 }

@@ -7,7 +7,15 @@ public class HydraulicImpactPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Pushing an enemy into a wall deals {wallDmg} of their max HP.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "wallDmg", $"{Mathf.RoundToInt(GetWallDamagePercent() * 100)}%" }
+    };
 
     public float GetWallDamagePercent()
     {

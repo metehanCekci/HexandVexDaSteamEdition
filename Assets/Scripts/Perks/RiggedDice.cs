@@ -6,6 +6,9 @@ public class RiggedDicePerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "All dice are rerolled to match the highest rolled value.";
+        RebuildDescription();
     }
 
     public override void OnAcquire()

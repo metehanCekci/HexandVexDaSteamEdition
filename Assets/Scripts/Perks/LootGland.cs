@@ -9,20 +9,24 @@ public class LootGlandPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
-        description = "Gain +2 bonus gold per kill for each level.";
+        if (string.IsNullOrEmpty(description))
+            description = "Gain {bonus} bonus per kill for each level.";
+        RebuildDescription();
     }
 
-    // İlk alındığında çalışır (1. Seviye)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "bonus", $"+{2 * currentLevel} gold" }
+    };
+
     public override void OnAcquire()
     {
         ApplyBonus();
         TriggerVisualPop();
     }
 
-    // YENİ: Kart tekrar seçilirse çalışır (2. ve 3. Seviyeler)
     public override void Upgrade()
     {
-        // Mevcut bonusu kaldır, seviye atla, yeni bonusu uygula
         RemoveBonus();
         base.Upgrade();
         ApplyBonus();

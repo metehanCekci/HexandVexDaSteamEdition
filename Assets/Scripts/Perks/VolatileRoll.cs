@@ -9,7 +9,15 @@ public class VolatileRollPerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Legendary;
+        if (string.IsNullOrEmpty(description))
+            description = "Dice only roll 1 or 6. Every {six} re-rolls a chain die.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "six", "6" }
+    };
 
     /// <summary>
     /// Base zarları 1 veya 6 olarak üretir. ShowDiceSequence'dan ÖNCE çağrılır.

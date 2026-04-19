@@ -1,13 +1,21 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class AlphaOmegaStrandPerk : BasePerk
 {
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "First and last die gain {bonus}.";
+        RebuildDescription();
     }
 
-    // YENİ: Kart tekrar seçilirse seviye artsın
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "bonus", $"+{2 * currentLevel}" }
+    };
+
     public override void Upgrade()
     {
         base.Upgrade();
@@ -18,12 +26,10 @@ public class AlphaOmegaStrandPerk : BasePerk
     {
         if (payload.diceRolls.Count > 0)
         {
-            // İlk zara seviye başına +2 ekler
             payload.diceRolls[0] += (2 * currentLevel);
 
             if (payload.diceRolls.Count > 1)
             {
-                // Son zara seviye başına +2 ekler
                 payload.diceRolls[payload.diceRolls.Count - 1] += (2 * currentLevel);
             }
             if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)

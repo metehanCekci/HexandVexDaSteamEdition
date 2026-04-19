@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Terminal Fury Gland (Legendary)
@@ -9,12 +10,19 @@ public class TerminalFuryGlandPerk : BasePerk
 {
     void OnEnable()
     {
-        perkName    = "Terminal Fury Gland";
-        description = "Always deal double damage, get +1x mult per missing health.";
         rarity      = PerkRarity.Legendary;
         maxLevel    = 1;
         priority    = 15;
+        if (string.IsNullOrEmpty(description))
+            description = "Always deal {base} damage, get {per} mult per missing health.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "base", "x2" },
+        { "per",  "+1x" }
+    };
 
     public override void ModifyCombat(CombatPayload payload)
     {
@@ -26,14 +34,11 @@ public class TerminalFuryGlandPerk : BasePerk
         long currentHP = tm.player.health.currentHP;
         if (currentHP < 1) currentHP = 1;
 
-        // Always 2x base, +1x per missing HP (5/5=2x, 4/5=3x, 1/5=6x)
         float tfgMult = 2f + (maxHP - currentHP);
 
-        // Glass Cannon varsa: additif birlestir (TFG + GC), GC'nin *= 2'sini geri al
         bool hasGC = rm.activePerks.Exists(p => p is GlassCanonPerk);
         if (hasGC)
         {
-            // GC daha once payload.multiplier *= 2 uyguladi, geri al ve toplami koy
             payload.multiplier = payload.multiplier / 2f * (tfgMult + 2f);
         }
         else

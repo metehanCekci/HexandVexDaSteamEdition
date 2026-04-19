@@ -6,7 +6,7 @@ public class MutaGen : BaseItem
     void OnEnable()
     {
         itemName = "Muta-Gen";
-        description = "Restore 2 HP";
+        description = $"Restore {GameKeywords.Heal(2)}";
         price = 15;
     }
 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class CarrionFeederPerk : BasePerk
 {
@@ -12,11 +13,26 @@ public class CarrionFeederPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "Each consecutive kill doubles your total damage (max {max}). Resets when an attack fails to kill.\nKill Streak: {streak} ({current} dmg)";
+        RebuildDescription();
+    }
+
+    public override Dictionary<string, object> GetDescValues()
+    {
+        float currentMultiplier = killStreak > 0 ? Mathf.Pow(2, killStreak) : 1;
+        float maxMultiplier = Mathf.Pow(2, MaxStacks);
+        return new Dictionary<string, object>
+        {
+            { "max",     $"x{maxMultiplier}" },
+            { "streak",  $"{killStreak}/{MaxStacks}" },
+            { "current", $"x{currentMultiplier}" }
+        };
     }
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void ModifyCombat(CombatPayload payload)
@@ -27,7 +43,7 @@ public class CarrionFeederPerk : BasePerk
         }
 
         pendingReset = true;
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI)
@@ -46,7 +62,7 @@ public class CarrionFeederPerk : BasePerk
                 yield return StartCoroutine(diceUI.SkippableWait(0.3f));
             }
         }
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnEnemyKilled(EnemyMovement enemy)
@@ -54,20 +70,7 @@ public class CarrionFeederPerk : BasePerk
         if (killStreak < MaxStacks)
             killStreak++;
         pendingReset = false;
-        description = GetDescription();
+        RebuildDescription();
         TriggerVisualPop();
-    }
-
-    public override void Upgrade()
-    {
-        base.Upgrade();
-        description = GetDescription();
-    }
-
-    private string GetDescription()
-    {
-        float currentMultiplier = killStreak > 0 ? Mathf.Pow(2, killStreak) : 1;
-        float maxMultiplier = Mathf.Pow(2, MaxStacks);
-        return $"Each consecutive kill doubles your total damage (max x{maxMultiplier}). Resets when an attack fails to kill.\nKill Streak: {killStreak}/{MaxStacks} (x{currentMultiplier} dmg)";
     }
 }

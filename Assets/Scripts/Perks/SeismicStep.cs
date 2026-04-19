@@ -20,7 +20,15 @@ public class SeismicStepPerk : BasePerk
     {
         rarity = PerkRarity.Legendary;
         maxLevel = 1;
+        if (string.IsNullOrEmpty(description))
+            description = "Skip makes your tile collapse after you leave it. Enemies on it fall and take {dmg} damage.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "dmg", "1 damage" }
+    };
 
     /// <summary>
     /// Skip yapıldığında çağrılır. Oyuncunun bulunduğu tile'ı titretmeye başla.

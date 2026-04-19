@@ -1,25 +1,32 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class NeuroAimPerk : BasePerk
 {
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Gain {crit} crit chance.";
+        RebuildDescription();
     }
 
-    // İlk alındığında çalışır (1. Seviye)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "crit", $"+{25 * currentLevel}%" }
+    };
+
     public override void OnAcquire()
     {
         RunManager.instance.criticalChance += 0.25f;
         TriggerVisualPop();
     }
 
-    // YENİ: Kart tekrar seçilirse çalışır (Seviye Atlama)
     public override void Upgrade()
     {
-        base.Upgrade(); // Seviyeyi 1 artırır
-        
-        RunManager.instance.criticalChance += 0.25f; // Her seviyede +%25 Kritik şansı daha!
+        base.Upgrade();
+
+        RunManager.instance.criticalChance += 0.25f;
         TriggerVisualPop();
     }
 }

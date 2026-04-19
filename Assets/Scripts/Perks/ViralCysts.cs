@@ -14,11 +14,24 @@ public class ViralCystsPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Attacks plant cysts. Skip to detonate: {perMark} per mark, damage split among marked.\nMarked: {count}";
+        RebuildDescription();
+    }
+
+    public override Dictionary<string, object> GetDescValues()
+    {
+        CleanDeadMarks();
+        return new Dictionary<string, object>
+        {
+            { "perMark", "+1 die" },
+            { "count",   $"+{markedEnemies.Count}" }
+        };
     }
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public void PlantCyst(EnemyMovement enemy)
@@ -29,14 +42,9 @@ public class ViralCystsPerk : BasePerk
 
         GameObject marker = CreateCystMarker(enemy);
         markedEnemies.Add(id, marker);
-        description = GetDescription();
+        RebuildDescription();
     }
 
-    /// <summary>
-    /// Skip basınca TurnManager tarafından çağrılır.
-    /// Marklı düşmanları döndürür, marker VFX'lerini patlatır, markleri temizler.
-    /// Hasar TurnManager'da zar atılarak verilecek.
-    /// </summary>
     public List<EnemyMovement> ConsumeMarkedTargets()
     {
         CleanDeadMarks();
@@ -54,7 +62,6 @@ public class ViralCystsPerk : BasePerk
             }
         }
 
-        // Marker pop VFX
         foreach (var kvp in markedEnemies)
         {
             if (kvp.Value != null && kvp.Value.activeInHierarchy)
@@ -68,11 +75,10 @@ public class ViralCystsPerk : BasePerk
         }
 
         markedEnemies.Clear();
-        description = GetDescription();
+        RebuildDescription();
         return targets;
     }
 
-    /// <summary>Kaç düşman marklı? Skip'te bonus zar sayısı olarak kullanılır.</summary>
     public int GetMarkedCount()
     {
         CleanDeadMarks();
@@ -82,13 +88,13 @@ public class ViralCystsPerk : BasePerk
     public override void OnLevelStart()
     {
         ClearAllMarkers();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnEnemyKilled(EnemyMovement enemy)
     {
         if (enemy != null) RemoveMarker(enemy.GetInstanceID());
-        description = GetDescription();
+        RebuildDescription();
     }
 
     private void CleanDeadMarks()
@@ -109,14 +115,6 @@ public class ViralCystsPerk : BasePerk
         }
         foreach (var id in toRemove) RemoveMarker(id);
     }
-
-    private string GetDescription()
-    {
-        CleanDeadMarks();
-        return $"Attacks plant cysts. Skip to detonate: +1 die per mark, damage split among marked.\nMarked: {markedEnemies.Count}";
-    }
-
-    // --- Persistent Visual Marker ---
 
     private GameObject CreateCystMarker(EnemyMovement enemy)
     {
@@ -201,35 +199,6 @@ public class ViralCystsPerk : BasePerk
     void OnDestroy()
     {
         ClearAllMarkers();
-    }
-
-    // --- VFX ---
-
-    private void ShowDetonateVFX(EnemyMovement enemy)
-    {
-        if (enemy == null || !enemy.gameObject.activeInHierarchy) return;
-        SpriteRenderer sr = enemy.GetComponentInChildren<SpriteRenderer>();
-        if (sr != null)
-            enemy.StartCoroutine(DetonateFlash(sr));
-        CameraController.ShakeLighter();
-    }
-
-    private IEnumerator DetonateFlash(SpriteRenderer sr)
-    {
-        if (sr == null) yield break;
-        Color original = sr.color;
-        Color blastColor = new Color(0.8f, 1f, 0.2f, original.a);
-        sr.color = blastColor;
-        float dur = 0.4f;
-        float elapsed = 0f;
-        while (elapsed < dur)
-        {
-            elapsed += Time.deltaTime;
-            if (sr == null) yield break;
-            sr.color = Color.Lerp(blastColor, original, elapsed / dur);
-            yield return null;
-        }
-        if (sr != null) sr.color = original;
     }
 
     private static Sprite cachedCircle;

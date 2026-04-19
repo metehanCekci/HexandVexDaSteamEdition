@@ -13,6 +13,9 @@ public class OuroborosPerk : BasePerk
     {
         rarity = PerkRarity.Secret;
         maxLevel = 1;
+        if (string.IsNullOrEmpty(description))
+            description = "On death, revive at full HP. A random perk loses 1 level.";
+        RebuildDescription();
     }
 
     /// <summary>

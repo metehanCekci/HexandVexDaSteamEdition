@@ -64,10 +64,51 @@ public class ProfileManager : MonoBehaviour
         return ProfileExists(id) ? $"Profile {id + 1}" : "";
     }
 
-    /// <summary>Profil adını değiştirir.</summary>
-    public void SetProfileName(int id, string name)
+    /// <summary>Profil adını değiştirir. Boş/çakışan isimleri reddeder. Başarılıysa true döner.</summary>
+    public bool SetProfileName(int id, string name)
     {
-        File.WriteAllText(GetMetaPath(id), name);
+        if (id < 0 || id >= MAX_PROFILES) return false;
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        name = name.Trim();
+
+        // İsim çakışması kontrolü (başka bir profilde aynı isim var mı?)
+        for (int i = 0; i < MAX_PROFILES; i++)
+        {
+            if (i == id) continue;
+            if (!ProfileExists(i) && !File.Exists(GetMetaPath(i))) continue;
+            string other = GetProfileName(i);
+            if (!string.IsNullOrEmpty(other) &&
+                string.Equals(other, name, System.StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        if (!Directory.Exists(SaveDir))
+            Directory.CreateDirectory(SaveDir);
+
+        // Atomik yazım: önce temp'e yaz, sonra replace et
+        string metaPath = GetMetaPath(id);
+        string tmpPath = metaPath + ".tmp";
+        File.WriteAllText(tmpPath, name);
+        if (File.Exists(metaPath)) File.Delete(metaPath);
+        File.Move(tmpPath, metaPath);
+
+        // JSON içindeki profileName alanını da güncelle (varsa) — tutarlılık için
+        string jsonPath = GetProfilePath(id);
+        if (File.Exists(jsonPath))
+        {
+            try
+            {
+                string json = File.ReadAllText(jsonPath);
+                ProfileSaveData data = JsonUtility.FromJson<ProfileSaveData>(json);
+                if (data != null)
+                {
+                    data.profileName = name;
+                    File.WriteAllText(jsonPath, JsonUtility.ToJson(data, true));
+                }
+            }
+            catch { /* JSON bozuksa meta dosyası yeterli */ }
+        }
+        return true;
     }
 
     /// <summary>Profil collection %'sini hesaplar (default perkler hariç).</summary>
@@ -170,10 +211,17 @@ public class ProfileManager : MonoBehaviour
         }
     }
 
-    /// <summary>Yeni profil oluşturur (boş).</summary>
+    /// <summary>Yeni profil oluşturur (boş). Mevcut isim varsa korur (rename clobber engeli).</summary>
     public void CreateProfile(int id, string name)
     {
-        SetProfileName(id, name);
+        // Kullanıcı bu slotu önceden yeniden adlandırmışsa (meta dosyası var) ismi koru
+        string existing = File.Exists(GetMetaPath(id)) ? GetProfileName(id) : "";
+        string finalName = !string.IsNullOrWhiteSpace(existing) ? existing : name;
+
+        if (!Directory.Exists(SaveDir))
+            Directory.CreateDirectory(SaveDir);
+        File.WriteAllText(GetMetaPath(id), finalName);
+
         if (id == ActiveProfileId)
         {
             ResetPlayerPrefs();
@@ -182,7 +230,7 @@ public class ProfileManager : MonoBehaviour
         else
         {
             // Boş profil dosyası yaz
-            ProfileSaveData empty = new ProfileSaveData { profileName = name };
+            ProfileSaveData empty = new ProfileSaveData { profileName = finalName };
             string json = JsonUtility.ToJson(empty, true);
             File.WriteAllText(GetProfilePath(id), json);
         }

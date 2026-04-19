@@ -391,10 +391,35 @@ public class HotbarUI : MonoBehaviour
         {
             bool sold = false;
 
-            // SellBox kontrolü
-            if (SellBoxController.instance != null && SellBoxController.instance.IsMouseOverSellBox())
+            // SellBox kontrolü — perk drag yoluyla aynı: EventSystem RaycastAll ile
+            // farklı Canvas'lardaki SellBoxDropZone'u bul. Rect-only kontrolü
+            // canvas sıralaması/ghost overlay nedeniyle güvenilmez oluyordu.
+            if (SellBoxController.instance != null && EventSystem.current != null)
             {
-                sold = SellBoxController.instance.TrySell();
+                PointerEventData ped = new PointerEventData(EventSystem.current)
+                {
+                    position = Input.mousePosition
+                };
+                var results = new List<RaycastResult>();
+                EventSystem.current.RaycastAll(ped, results);
+
+                foreach (var r in results)
+                {
+                    SellBoxDropZone zone = r.gameObject.GetComponent<SellBoxDropZone>();
+                    if (zone == null) zone = r.gameObject.GetComponentInParent<SellBoxDropZone>();
+                    if (zone != null)
+                    {
+                        sold = SellBoxController.instance.TrySell();
+                        break;
+                    }
+                }
+
+                // Fallback: RaycastAll ghost/overlay tarafından engellenirse
+                // doğrudan rect kontrolü yap (eski davranış).
+                if (!sold && SellBoxController.instance.IsMouseOverSellBox())
+                {
+                    sold = SellBoxController.instance.TrySell();
+                }
             }
 
             EndItemDrag();
@@ -577,7 +602,7 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         descText.alignment = TextAlignmentOptions.Left;
         descText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
         descText.raycastTarget = false;
-        descText.enableWordWrapping = true;
+        descText.textWrappingMode = TextWrappingModes.Normal;
 
         Canvas ttCanvas = tooltipObj.AddComponent<Canvas>();
         ttCanvas.overrideSorting = true;

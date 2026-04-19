@@ -58,7 +58,7 @@ public class RunManager : MonoBehaviour
     [HideInInspector] public bool surgeBootActive = false;
     public bool hasPerkReroll = false; // Perk reroll hakki (LevelUpManager)
     public bool hasLuckyClover = false; // Lucky Clover item -- sonraki perk seciminde esit rarity
-    public bool hasMutationCatalyst = false; // Mutation Catalyst -- her shopta 1 bedava item reroll
+    public bool pendingRerollReset = false; // Mutation Catalyst -- sonraki shop açılınca perk reroll counter'ı sıfırlanır
 
     [Header("Silah Seçimi")]
     public WeaponType selectedWeapon = WeaponType.Greatsword;
@@ -150,26 +150,32 @@ public class RunManager : MonoBehaviour
     {
         BasePerk prefabScript = perkPrefab.GetComponent<BasePerk>();
 
-        // Hem activePerks hem inventoryPerks'te bu perk tipinden var mi kontrol et
-        BasePerk existingActive = activePerks.Find(p => p.GetType() == prefabScript.GetType());
-        BasePerk existingInventory = inventoryPerks.Find(p => p.GetType() == prefabScript.GetType());
+        // Dice Hoarder: maxLevel=1 olduğu için upgrade path anlamsız; her kopya ayrı stacklenmeli
+        bool isStackable = prefabScript is DiceHoarderPerk;
 
-        if (existingActive != null)
+        if (!isStackable)
         {
-            // Aktif slotlarda zaten varsa: sadece yukselt
-            existingActive.Upgrade();
-            GameEvents.PerkAcquired(existingActive.GetType().Name);
-            RefreshPerkUI();
-            return;
-        }
+            // Hem activePerks hem inventoryPerks'te bu perk tipinden var mi kontrol et
+            BasePerk existingActive = activePerks.Find(p => p.GetType() == prefabScript.GetType());
+            BasePerk existingInventory = inventoryPerks.Find(p => p.GetType() == prefabScript.GetType());
 
-        if (existingInventory != null)
-        {
-            // Envanterde (stash) varsa: orani yukselt
-            existingInventory.Upgrade();
-            GameEvents.PerkAcquired(existingInventory.GetType().Name);
-            RefreshPerkUI();
-            return;
+            if (existingActive != null)
+            {
+                // Aktif slotlarda zaten varsa: sadece yukselt
+                existingActive.Upgrade();
+                GameEvents.PerkAcquired(existingActive.GetType().Name);
+                RefreshPerkUI();
+                return;
+            }
+
+            if (existingInventory != null)
+            {
+                // Envanterde (stash) varsa: orani yukselt
+                existingInventory.Upgrade();
+                GameEvents.PerkAcquired(existingInventory.GetType().Name);
+                RefreshPerkUI();
+                return;
+            }
         }
 
         // Collection: perk ilk kez alındı event'i

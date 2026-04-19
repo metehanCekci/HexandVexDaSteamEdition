@@ -6,7 +6,7 @@ public class FragMine : BaseItem
     void OnEnable()
     {
         itemName = "Frag-Mine";
-        description = "Place a bomb on any hex. Rolls dice and deals damage to all enemies within 1 hex radius";
+        description = $"Place a bomb on any hex. Rolls dice and deals <color=#{UIColors.Damage}>damage</color> to all enemies within {GameKeywords.Number(1)} hex radius";
         price = 24;
     }
 

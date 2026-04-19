@@ -6,6 +6,9 @@ public class BioBarrierPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Start each level with a shield that blocks one hit.";
+        RebuildDescription();
     }
 
     [Header("Obje Ayarları")]

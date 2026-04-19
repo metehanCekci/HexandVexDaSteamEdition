@@ -15,7 +15,15 @@ public class PyrogenicGlandsPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Attacks burn enemies: {dmg} of max HP per turn for 5 turns.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "dmg", $"{currentLevel * 5}%" }
+    };
 
     public override void ModifyCombat(CombatPayload payload)
     {

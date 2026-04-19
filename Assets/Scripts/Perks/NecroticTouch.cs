@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class NecroticTouchPerk : BasePerk
 {
@@ -6,7 +7,15 @@ public class NecroticTouchPerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "Enemies below 50% HP take {mult} damage.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "mult", "x2" }
+    };
 
     public float GetMultiplier(EnemyMovement enemy)
     {

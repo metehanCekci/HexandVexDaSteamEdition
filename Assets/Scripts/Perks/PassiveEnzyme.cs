@@ -1,26 +1,31 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class PassiveEnzymePerk : BasePerk
 {
     void OnEnable()
     {
         rarity = PerkRarity.Common;
-        description = "Skipping a turn grants 4 gold per level. Does not work on bosses or the last enemy.";
+        if (string.IsNullOrEmpty(description))
+            description = "Skipping a turn grants {reward} per level. Does not work on bosses or the last enemy.";
+        RebuildDescription();
     }
 
-    // YENİ: Kart tekrar seçilirse sadece seviyeyi artır (Matematiği OnSkip içinde halledeceğiz)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "reward", "4 gold" }
+    };
+
     public override void Upgrade()
     {
-        base.Upgrade(); 
+        base.Upgrade();
         TriggerVisualPop();
     }
 
     public override void OnSkip()
     {
-        // Boss sahnesinde çalışmasın
         if (RunManager.instance != null && RunManager.instance.currentNodeType == MapNodeType.Boss) return;
 
-        // Son 1 düşman kaldıysa çalışmasın — sonsuz para kasma engeli
         if (TurnManager.instance != null && TurnManager.instance.enemies != null)
         {
             int alive = 0;

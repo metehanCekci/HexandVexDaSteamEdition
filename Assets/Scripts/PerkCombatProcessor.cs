@@ -66,7 +66,7 @@ public class PerkCombatProcessor : MonoBehaviour
     {
         foreach (BasePerk perk in perks)
         {
-            int beforeTotal = payload.GetFinalDamage();
+            long beforeTotal = payload.GetFinalDamage();
             perk.ModifyCombat(payload);
 
             bool anyDieChanged = false;
@@ -142,7 +142,7 @@ public class PerkCombatProcessor : MonoBehaviour
                 anyDieChanged = true;
             }
 
-            int afterTotal = payload.GetFinalDamage();
+            long afterTotal = payload.GetFinalDamage();
             if (beforeTotal != afterTotal || anyDieChanged)
             {
                 if (!diceUI.skipDiceVisuals)

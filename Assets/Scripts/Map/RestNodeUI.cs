@@ -86,7 +86,7 @@ public class RestNodeUI : MonoBehaviour
         if (infoText != null) infoText.text = "";
     }
 
-    private void OnRest(int amount)
+    private void OnRest(long amount)
     {
         Debug.Log($"[REST] OnRest called — amount={amount}");
 
@@ -96,6 +96,12 @@ public class RestNodeUI : MonoBehaviour
                 RunManager.instance.playerCurrentHealth + amount,
                 RunManager.instance.playerMaxHealth
             );
+
+            // Dice Hoarder: Rest butonuna basıldığında active+stash tüm kopyaları +1
+            foreach (var p in RunManager.instance.activePerks)
+                if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
+            foreach (var p in RunManager.instance.inventoryPerks)
+                if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
         }
 
         // HealthScript'i de senkronize et (yoksa savaşta eski can değeri kalır)

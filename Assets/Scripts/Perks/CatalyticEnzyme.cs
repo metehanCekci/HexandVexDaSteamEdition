@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class CatalyticEnzymePerk : BasePerk
 {
@@ -8,17 +9,27 @@ public class CatalyticEnzymePerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "Each skip grants {per} damage multiplier (stacks). Consumed on attack.\nStacks: {count} ({bonus})";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "per",   "x1.3" },
+        { "count", skipStacks },
+        { "bonus", $"+{Mathf.RoundToInt(skipStacks * 30)}%" }
+    };
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnSkip()
     {
         skipStacks++;
-        description = GetDescription();
+        RebuildDescription();
         TriggerVisualPop();
     }
 
@@ -28,18 +39,12 @@ public class CatalyticEnzymePerk : BasePerk
         // Each stack = +30% multiplier
         payload.multiplier *= 1f + (skipStacks * 0.3f);
         skipStacks = 0; // Consume on attack
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnLevelStart()
     {
         skipStacks = 0;
-        description = GetDescription();
-    }
-
-    private string GetDescription()
-    {
-        int bonus = Mathf.RoundToInt(skipStacks * 30);
-        return $"Each skip grants +30% damage multiplier (stacks). Consumed on attack.\nStacks: {skipStacks} (+{bonus}%)";
+        RebuildDescription();
     }
 }

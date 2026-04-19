@@ -6,16 +6,16 @@ public class MutationCatalyst : BaseItem
     void OnEnable()
     {
         itemName = "Mutation Catalyst";
-        description = "Unlocks a free item reroll in every shop for the rest of the run.";
+        description = $"Sets the next shop reroll cost to <color=#{UIColors.Gold}>0</color>.";
         price = 18;
-        itemType = ItemType.Instant;
+        itemType = ItemType.Consumable;
     }
 
     public override bool Use()
     {
         if (RunManager.instance == null) return false;
-        if (RunManager.instance.hasMutationCatalyst) return false; // Zaten sahip
-        RunManager.instance.hasMutationCatalyst = true;
+        RunManager.instance.hasPerkReroll = true;
+        RunManager.instance.pendingRerollReset = true;
         return true;
     }
 }

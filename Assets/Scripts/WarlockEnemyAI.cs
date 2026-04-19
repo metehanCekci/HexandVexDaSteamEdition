@@ -21,7 +21,7 @@ public class WarlockEnemyAI : MonoBehaviour
 
     private bool isTransitioning = false;
     [HideInInspector] public bool isBurnDamage = false;
-    private int previousHP;
+    private long previousHP;
 
     private List<Vector3Int> attack1WarningCells = new List<Vector3Int>();
     private List<Vector3Int> attack2WarningCells = new List<Vector3Int>();

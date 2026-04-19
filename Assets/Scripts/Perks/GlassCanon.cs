@@ -6,7 +6,16 @@ public class GlassCanonPerk : BasePerk
     {
         rarity = PerkRarity.Rare;
         maxLevel = 1;
+        if (string.IsNullOrEmpty(description))
+            description = "Max HP drops to {hp}, but you deal {mult} damage.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "hp", "3 HP" },
+        { "mult", "x2" }
+    };
 
     public override void OnAcquire()
     {

@@ -2,7 +2,12 @@ using UnityEngine;
 
 public class RecoilSpringPerk : BasePerk
 {
-    void OnEnable() { maxLevel = 1; rarity = PerkRarity.Rare; }
-    // Saldırıdan sonra oyuncu geri sıçrar. Yeni komşu düşman varsa yeniden saldırır.
-    // Mantık TurnManager.MultiAttack içinde çalışıyor.
+    void OnEnable()
+    {
+        maxLevel = 1;
+        rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "After attacking, bounce back and attack again if an enemy is adjacent.";
+        RebuildDescription();
+    }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class InsurancePolicyPerk : BasePerk
 {
@@ -9,8 +10,15 @@ public class InsurancePolicyPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Rare;
-        description = "Gain gold when you take damage. +4 gold per missing HP at Lv1, +6 at Lv2, +8 at Lv3.";
+        if (string.IsNullOrEmpty(description))
+            description = "Gain gold when you take damage. {amount} per missing HP.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "amount", $"+{(currentLevel + 1) * 2} gold" }
+    };
 
     public override void OnAcquire()
     {

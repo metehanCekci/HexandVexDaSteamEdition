@@ -1,10 +1,10 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Void Hunger (Common)
-/// Çöken her tile (scaffold + seismic) başına kalıcı +0.5x damage multiplier.
+/// Çöken her tile (scaffold + seismic) başına kalıcı +0.25x damage multiplier.
 /// Run boyunca birikir, sıfırlanmaz.
-/// +0.25x per collapsed tile, max level 1
 /// </summary>
 public class VoidHungerPerk : BasePerk
 {
@@ -15,30 +15,44 @@ public class VoidHungerPerk : BasePerk
     {
         rarity = PerkRarity.Common;
         maxLevel = 1;
+        if (string.IsNullOrEmpty(description))
+            description = "Each collapsed tile grants permanent {per} damage multiplier.\nCollapsed: {count} ({total})";
+        RebuildDescription();
+    }
+
+    public override Dictionary<string, object> GetDescValues()
+    {
+        float totalBonus = collapsedCount * 0.25f;
+        return new Dictionary<string, object>
+        {
+            { "per",   "+0.25x" },
+            { "count", collapsedCount },
+            { "total", $"+{totalBonus:F1}x" }
+        };
     }
 
     public override void OnAcquire()
     {
         Subscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnEquip()
     {
         Subscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnUnequip()
     {
         Unsubscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     private void Subscribe()
@@ -63,7 +77,7 @@ public class VoidHungerPerk : BasePerk
     private void OnTileDestroyed(Vector3Int cell)
     {
         collapsedCount++;
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void ModifyCombat(CombatPayload payload)
@@ -72,11 +86,5 @@ public class VoidHungerPerk : BasePerk
 
         payload.multiplier += collapsedCount * 0.25f;
         TriggerVisualPop();
-    }
-
-    private string GetDescription()
-    {
-        float totalBonus = collapsedCount * 0.25f;
-        return $"Each collapsed tile grants permanent +0.25x damage multiplier.\nCollapsed: {collapsedCount} (+{totalBonus:F1}x)";
     }
 }

@@ -14,12 +14,21 @@ public class PhantomAssaultPerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Legendary;
+        if (string.IsNullOrEmpty(description))
+            description = "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, {attack} at each.\nGhosts: {count}";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "attack", "attacking damage" },
+        { "count",  $"+{ghostCells.Count}" }
+    };
 
     public override void OnAcquire()
     {
         SubscribeScaffold();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnEquip()
@@ -37,7 +46,7 @@ public class PhantomAssaultPerk : BasePerk
     {
         ClearGhosts();
         SubscribeScaffold();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnLevelClear()
@@ -67,7 +76,6 @@ public class PhantomAssaultPerk : BasePerk
 
     private void OnScaffoldTileDestroyed(Vector3Int cell)
     {
-        // Scaffold düştüğünde o cell'deki ghost'u sil
         if (ghostCells.Contains(cell))
             DestroyGhostAtCell(cell);
     }
@@ -78,28 +86,19 @@ public class PhantomAssaultPerk : BasePerk
     /// </summary>
     public void SpawnGhostAtCell(Vector3Int cell)
     {
-        // Don't stack ghosts on the same cell
         if (ghostCells.Contains(cell)) return;
 
         ghostCells.Add(cell);
         SpawnGhostVisual(cell);
         TriggerVisualPop();
-        description = GetDescription();
+        RebuildDescription();
     }
 
-    /// <summary>
-    /// Returns all ghost cell positions (ordered: oldest first, newest last).
-    /// Called by TurnManager during HandleSkipPhase.
-    /// </summary>
     public List<Vector3Int> GetAllGhostCells()
     {
         return new List<Vector3Int>(ghostCells);
     }
 
-    /// <summary>
-    /// Returns all ghost cell positions that have adjacent enemies.
-    /// Called by TurnManager during HandleSkipPhase to let ghosts attack.
-    /// </summary>
     public List<Vector3Int> GetGhostCellsWithTargets()
     {
         var tm = TurnManager.instance;
@@ -115,21 +114,14 @@ public class PhantomAssaultPerk : BasePerk
         return result;
     }
 
-    /// <summary>
-    /// Clear all ghosts after skip attack resolves.
-    /// </summary>
     public void ConsumeGhosts()
     {
         ClearGhosts();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public bool HasGhosts() => ghostCells.Count > 0;
 
-    /// <summary>
-    /// Called by TurnManager when an enemy walks into a ghost cell.
-    /// Removes that ghost with a fade-out effect.
-    /// </summary>
     public void DestroyGhostAtCell(Vector3Int cell)
     {
         int idx = ghostCells.IndexOf(cell);
@@ -143,20 +135,14 @@ public class PhantomAssaultPerk : BasePerk
             if (ghost != null)
                 StartCoroutine(FadeOutAndDestroy(ghost));
         }
-        description = GetDescription();
+        RebuildDescription();
     }
 
-    /// <summary>
-    /// Check if the given cell has a ghost.
-    /// </summary>
     public bool HasGhostAtCell(Vector3Int cell)
     {
         return ghostCells.Contains(cell);
     }
 
-    /// <summary>
-    /// Teleport the player to a ghost cell with fade-out/in animation.
-    /// </summary>
     public IEnumerator TeleportPlayerToCell(Vector3Int targetCell)
     {
         var tm = TurnManager.instance;
@@ -180,7 +166,6 @@ public class PhantomAssaultPerk : BasePerk
             }
         }
 
-        // Teleport
         if (ScaffoldManager.instance != null)
             ScaffoldManager.instance.OnEntityLeave(currentCell);
         tm.player.ForceSetPosition(targetCell);
@@ -223,7 +208,7 @@ public class PhantomAssaultPerk : BasePerk
             elapsed += Time.deltaTime;
             float t = elapsed / dur;
             sr.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(startColor.a, 0f, t));
-            ghost.transform.localScale = startScale * (1f + t * 0.3f); // slight expand as it fades
+            ghost.transform.localScale = startScale * (1f + t * 0.3f);
             yield return null;
         }
 
@@ -249,7 +234,7 @@ public class PhantomAssaultPerk : BasePerk
             ghostSR.sprite = playerSR.sprite;
             ghostSR.flipX = playerSR.flipX;
         }
-        ghostSR.color = new Color(0.5f, 0.8f, 1f, 0.45f); // translucent blue ghost
+        ghostSR.color = new Color(0.5f, 0.8f, 1f, 0.45f);
         ghostSR.sortingOrder = 4;
         ghost.transform.localScale = Vector3.one * 0.9f;
 
@@ -263,11 +248,4 @@ public class PhantomAssaultPerk : BasePerk
         ghostVisuals.Clear();
         ghostCells.Clear();
     }
-
-    private string GetDescription()
-    {
-        int count = ghostCells.Count;
-        return $"Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each.\nGhosts: {count}";
-    }
-
 }

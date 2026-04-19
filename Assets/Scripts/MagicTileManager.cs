@@ -22,6 +22,12 @@ public class MagicTileManager : MonoBehaviour
     [Header("Magic Tile Data")]
     public MagicTileEntry[] tileEntries = new MagicTileEntry[0];
 
+    [Header("Animation")]
+    [Tooltip("When more than this many enchanted tiles spawn in one sequence, " +
+             "skip the camera pan entirely (per-tile VFX/SFX still play). " +
+             "Prevents the camera animation from falling behind at high counts.")]
+    public int cameraPanMaxTileCount = 3;
+
     // Runtime lookup — built from tileEntries
     private Dictionary<MagicTileType, MagicTileEntry> entryMap;
 
@@ -204,14 +210,158 @@ public class MagicTileManager : MonoBehaviour
     public void ConsumeTile(Vector3Int cell)
     {
         if (!activeTiles.ContainsKey(cell)) return;
+        MagicTileType type = activeTiles[cell];
         activeTiles.Remove(cell);
-        RestoreOriginal(cell);
+        StartCoroutine(FadeOutAndRestore(cell, type));
     }
 
     public void ConsumePlayerTile()
     {
         if (TurnManager.instance == null || TurnManager.instance.player == null) return;
         ConsumeTile(TurnManager.instance.player.GetCurrentCellPosition());
+    }
+
+    private IEnumerator FadeOutAndRestore(Vector3Int cell, MagicTileType type)
+    {
+        if (LevelGenerator.instance == null) { RestoreOriginal(cell); yield break; }
+
+        Tilemap gm = LevelGenerator.instance.groundMap;
+        Tilemap cm = LevelGenerator.instance.columnMap;
+        Tilemap fm = overlayMap;
+
+        bool groundIsTinted = tintedCells.TryGetValue(cell, out Color tintColor);
+
+        bool hasGround = gm != null && gm.HasTile(cell);
+        bool hasColumn = cm != null && cm.HasTile(cell) && savedColumn.ContainsKey(cell);
+        bool hasFg = fm != null && fm.HasTile(cell);
+
+        if (hasGround) gm.SetTileFlags(cell, TileFlags.None);
+        if (hasColumn) cm.SetTileFlags(cell, TileFlags.None);
+        if (hasFg)     fm.SetTileFlags(cell, TileFlags.None);
+
+        SpawnDissolveVFX(cell, type, gm);
+
+        float dur = 0.4f;
+        float elapsed = 0f;
+        while (elapsed < dur)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / dur);
+
+            // Flash peak at ~25%, then fade out with a soft glow tail
+            float flash = t < 0.25f
+                ? Mathf.Lerp(1f, 1.8f, t / 0.25f)
+                : Mathf.Lerp(1.8f, 1f, (t - 0.25f) / 0.75f);
+            float alpha = 1f - Mathf.SmoothStep(0f, 1f, t);
+
+            if (hasGround)
+            {
+                if (groundIsTinted)
+                {
+                    Color blended = Color.Lerp(tintColor, Color.white, t);
+                    blended.r *= flash;
+                    blended.g *= flash;
+                    blended.b *= flash;
+                    blended.a = Mathf.Lerp(tintColor.a, 1f, t);
+                    gm.SetColor(cell, blended);
+                }
+                else
+                {
+                    gm.SetColor(cell, new Color(flash, flash, flash, alpha));
+                }
+            }
+
+            Color fadeCol = new Color(flash, flash, flash, alpha);
+            if (hasColumn) cm.SetColor(cell, fadeCol);
+            if (hasFg)     fm.SetColor(cell, fadeCol);
+
+            yield return null;
+        }
+
+        RestoreOriginal(cell);
+    }
+
+    private void SpawnDissolveVFX(Vector3Int cell, MagicTileType type, Tilemap gm)
+    {
+        if (gm == null) return;
+
+        Vector3 worldCenter = gm.GetCellCenterWorld(cell);
+        Color tint = GetMagicTint(type);
+        tint.a = 1f;
+
+        GameObject vfx = new GameObject("MagicTileDissolveVFX");
+        vfx.transform.position = worldCenter;
+
+        ParticleSystem ps = vfx.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.duration = 0.5f;
+        main.loop = false;
+        main.startLifetime = 0.55f;
+        main.startSpeed = 1.4f;
+        main.startSize = 0.18f;
+        main.startColor = tint;
+        main.gravityModifier = -0.4f;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.playOnAwake = true;
+        main.maxParticles = 40;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 0f;
+        emission.SetBursts(new ParticleSystem.Burst[]
+        {
+            new ParticleSystem.Burst(0f, 22)
+        });
+
+        var shape = ps.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius = 0.35f;
+        shape.radiusThickness = 0.8f;
+
+        var colorOverLifetime = ps.colorOverLifetime;
+        colorOverLifetime.enabled = true;
+        Gradient grad = new Gradient();
+        grad.SetKeys(
+            new GradientColorKey[]
+            {
+                new GradientColorKey(tint, 0f),
+                new GradientColorKey(Color.white, 1f)
+            },
+            new GradientAlphaKey[]
+            {
+                new GradientAlphaKey(1f, 0f),
+                new GradientAlphaKey(0.9f, 0.3f),
+                new GradientAlphaKey(0f, 1f)
+            }
+        );
+        colorOverLifetime.color = new ParticleSystem.MinMaxGradient(grad);
+
+        var sizeOverLifetime = ps.sizeOverLifetime;
+        sizeOverLifetime.enabled = true;
+        AnimationCurve sizeCurve = new AnimationCurve(
+            new Keyframe(0f, 1f),
+            new Keyframe(0.3f, 1.2f),
+            new Keyframe(1f, 0f)
+        );
+        sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+
+        var velocityOverLifetime = ps.velocityOverLifetime;
+        velocityOverLifetime.enabled = true;
+        velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(0.6f, 1.4f);
+
+        ParticleSystemRenderer psr = vfx.GetComponent<ParticleSystemRenderer>();
+        if (psr != null)
+        {
+            psr.renderMode = ParticleSystemRenderMode.Billboard;
+            psr.sortingOrder = 210;
+            Shader particleShader = Shader.Find("Sprites/Default");
+            if (particleShader != null)
+                psr.material = new Material(particleShader);
+        }
+
+        if (AudioManager.instance != null) AudioManager.instance.PlayHit();
+
+        Destroy(vfx, 1.2f);
     }
 
     // ── Blue tile (consume after 2-hex move) ──
@@ -472,30 +622,43 @@ public class MagicTileManager : MonoBehaviour
         Tilemap fm = overlayMap;
         if (gm == null) yield break;
 
+        // ── Decide BEFORE animating whether to pan the camera at all ──
+        // If we're about to animate more than the threshold, skip camera entirely
+        // for the whole sequence (per-tile VFX/SFX inside FadeSingleTile are unaffected).
+        bool useCameraPan = pending.Count <= cameraPanMaxTileCount;
+
         // Brief pause — original tiles are still fully visible
-        yield return new WaitForSeconds(0.3f);
+        // Only relevant when we're about to pan the camera; otherwise fire VFX immediately.
+        if (useCameraPan)
+            yield return new WaitForSeconds(0.3f);
 
-        // Camera pan to tile center
-        CameraController cam = Object.FindFirstObjectByType<CameraController>();
-        Vector3 center = Vector3.zero;
-        foreach (var p in pending)
-            center += gm.CellToWorld(p.cell);
-        center /= pending.Count;
-
+        // Camera pan to tile center (skipped entirely when count > threshold)
+        CameraController cam = useCameraPan ? Object.FindFirstObjectByType<CameraController>() : null;
         Vector3 camStart = cam != null ? cam.GetTargetPosition() : Vector3.zero;
-        Vector3 camTarget = new Vector3(center.x, center.y, camStart.z + 3f);
-
+        Vector3 camTarget = camStart;
         float panDur = 0.4f;
-        float elapsed = 0f;
-        while (cam != null && elapsed < panDur)
+
+        if (cam != null)
         {
-            elapsed += Time.deltaTime;
-            float ease = Mathf.SmoothStep(0, 1, elapsed / panDur);
-            cam.SetTargetPosition(Vector3.Lerp(camStart, camTarget, ease));
-            yield return null;
+            Vector3 center = Vector3.zero;
+            foreach (var p in pending)
+                center += gm.CellToWorld(p.cell);
+            center /= pending.Count;
+
+            camTarget = new Vector3(center.x, center.y, camStart.z + 3f);
+
+            float elapsed = 0f;
+            while (elapsed < panDur)
+            {
+                elapsed += Time.deltaTime;
+                float ease = Mathf.SmoothStep(0, 1, elapsed / panDur);
+                cam.SetTargetPosition(Vector3.Lerp(camStart, camTarget, ease));
+                yield return null;
+            }
         }
 
         // Staggered tile replacement + fade-in (original tiles visible until each one transforms)
+        // These per-tile effects always run, regardless of camera pan.
         for (int i = 0; i < pending.Count; i++)
         {
             StartCoroutine(FadeSingleTile(pending[i], gm, cm, fm));
@@ -505,16 +668,19 @@ public class MagicTileManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.55f);
 
-        // Camera return
-        elapsed = 0f;
-        while (cam != null && elapsed < panDur)
+        // Camera return (only if we panned out in the first place)
+        if (cam != null)
         {
-            elapsed += Time.deltaTime;
-            float ease = Mathf.SmoothStep(0, 1, elapsed / panDur);
-            cam.SetTargetPosition(Vector3.Lerp(camTarget, camStart, ease));
-            yield return null;
+            float elapsed = 0f;
+            while (elapsed < panDur)
+            {
+                elapsed += Time.deltaTime;
+                float ease = Mathf.SmoothStep(0, 1, elapsed / panDur);
+                cam.SetTargetPosition(Vector3.Lerp(camTarget, camStart, ease));
+                yield return null;
+            }
+            cam.SetTargetPosition(camStart);
         }
-        if (cam != null) cam.SetTargetPosition(camStart);
     }
 
     private IEnumerator FadeSingleTile(PendingSpawn spawn, Tilemap gm, Tilemap cm, Tilemap fm)

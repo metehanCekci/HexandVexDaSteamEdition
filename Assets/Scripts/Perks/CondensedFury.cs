@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class CondensedFuryPerk : BasePerk
 {
@@ -6,19 +7,22 @@ public class CondensedFuryPerk : BasePerk
     {
         rarity = PerkRarity.Epic;
         maxLevel = 1;
+        if (string.IsNullOrEmpty(description))
+            description = "Roll {diceDelta} die but each die value is {mult}.";
+        RebuildDescription();
     }
 
-    /// <summary>
-    /// TurnManager tarafından çağrılır — zar sayısını 1 azaltır.
-    /// </summary>
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "diceDelta", "-1" },
+        { "mult", "x2" }
+    };
+
     public int GetDiceReduction()
     {
         return 1;
     }
 
-    /// <summary>
-    /// Zar 1'e düşünce atılan zarı 2 katına çıkarır (toplam değil, zar değeri).
-    /// </summary>
     public override void ModifyCombat(CombatPayload payload)
     {
         for (int i = 0; i < payload.diceRolls.Count; i++)

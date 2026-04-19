@@ -73,15 +73,5 @@ public class SacrificeRewardSlot : MonoBehaviour
         }
     }
 
-    public static Color GetRarityColor(PerkRarity rarity)
-    {
-        switch (rarity)
-        {
-            case PerkRarity.Rare:      return new Color(0.27f, 0.53f, 1f);
-            case PerkRarity.Epic:      return new Color(0.67f, 0.27f, 1f);
-            case PerkRarity.Legendary: return new Color(1f, 0.67f, 0f);
-            case PerkRarity.Secret:    return new Color(1f, 0.27f, 0.27f);
-            default:                   return Color.white;
-        }
-    }
+    public static Color GetRarityColor(PerkRarity rarity) => UIColors.GetRarityColor(rarity);
 }

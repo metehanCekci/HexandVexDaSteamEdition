@@ -657,7 +657,6 @@ public class MapManager : MonoBehaviour
             case MapNodeType.Rest:
                 if (RestNodeUI.instance != null)
                     RestNodeUI.instance.Show();
-                NotifyDiceHoarder();
                 break;
 
             case MapNodeType.Sacrifice:
@@ -1109,13 +1108,6 @@ public class MapManager : MonoBehaviour
         }
     }
 
-    private void NotifyDiceHoarder()
-    {
-        if (RunManager.instance == null) return;
-        foreach (var p in RunManager.instance.activePerks)
-            if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
-    }
-
     // ─── Layer config'i güvenli al (fallback: son config) ───
     public MapLayerData GetLayerConfig(int layerIndex)
     {
@@ -1125,7 +1117,9 @@ public class MapManager : MonoBehaviour
             return ScriptableObject.CreateInstance<MapLayerData>();
         }
 
-        int idx = Mathf.Clamp(layerIndex, 0, layerConfigs.Length - 1);
+        // Layer'lar arasında sonsuza dek döngü yap: 1 → 2 → … → N → 1 → 2 → …
+        // (Eski davranış Mathf.Clamp idi — son layer'da takılıp kalıyordu.)
+        int idx = ((layerIndex % layerConfigs.Length) + layerConfigs.Length) % layerConfigs.Length;
         return layerConfigs[idx];
     }
 }

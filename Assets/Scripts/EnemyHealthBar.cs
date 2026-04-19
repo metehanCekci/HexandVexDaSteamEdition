@@ -25,6 +25,8 @@ public class EnemyHealthBar : MonoBehaviour
     public Color fullColor = new Color(0.2f, 0.8f, 0.2f, 1f);
     public Color midColor = new Color(1f, 0.8f, 0f, 1f);
     public Color lowColor = new Color(0.8f, 0.1f, 0.1f, 1f);
+    [Tooltip("Aktifse UIColors registry'sinden alinir (runtime tweak'lenebilir).")]
+    public bool useRegistryColors = true;
 
     [Header("Trail Ayarları")]
     public Color trailColor = new Color(0.6f, 0.6f, 0.6f, 0.8f);
@@ -169,6 +171,10 @@ public class EnemyHealthBar : MonoBehaviour
         fillRT.anchorMax = new Vector2(ratio, 1f);
 
         // Renk: elite = mor, boss = kalkan durumuna göre, normal = gradyan
+        Color fullC = useRegistryColors ? UIColors.HpFullColor : fullColor;
+        Color midC  = useRegistryColors ? UIColors.HpMidColor  : midColor;
+        Color lowC  = useRegistryColors ? UIColors.HpLowColor  : lowColor;
+
         if (isBossEnemy && bossAI != null)
         {
             if (bossAI.isShielded)
@@ -178,15 +184,15 @@ public class EnemyHealthBar : MonoBehaviour
         }
         else if (isEliteEnemy)
         {
-            fillImage.color = new Color(0.6f, 0.2f, 0.85f, 1f); // Mor — elite
+            fillImage.color = useRegistryColors ? UIColors.HpEliteColor : new Color(0.6f, 0.2f, 0.85f, 1f);
         }
         else
         {
             // Normal gradyan: full → mid → low
             if (ratio > 0.5f)
-                fillImage.color = Color.Lerp(midColor, fullColor, (ratio - 0.5f) * 2f);
+                fillImage.color = Color.Lerp(midC, fullC, (ratio - 0.5f) * 2f);
             else
-                fillImage.color = Color.Lerp(lowColor, midColor, ratio * 2f);
+                fillImage.color = Color.Lerp(lowC, midC, ratio * 2f);
         }
 
         if (hpLabel != null)

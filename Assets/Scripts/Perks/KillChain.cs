@@ -11,7 +11,15 @@ public class KillChainPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Killing an enemy grants {moves} extra move.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "moves", $"+{currentLevel}" }
+    };
 
     public override void OnEnemyKilled(EnemyMovement enemy)
     {

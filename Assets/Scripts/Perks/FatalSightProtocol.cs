@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Fatal Sight Protocol (Legendary)
@@ -9,12 +10,19 @@ public class FatalSightProtocolPerk : BasePerk
 {
     void OnEnable()
     {
-        perkName    = "Fatal Sight Protocol";
-        description = "All attacks are Critical Hits. Each 1% Crit Chance converts to +1% Crit Damage.";
         rarity      = PerkRarity.Legendary;
         maxLevel    = 1;
         priority    = 1; // Önce çalışsın, sonraki perkler critHit=true üzerine eklensin
+        if (string.IsNullOrEmpty(description))
+            description = "All attacks are Critical Hits. Each {chance} Crit Chance converts to {dmg}.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "chance", "+1%" },
+        { "dmg",    "+1% Crit Damage" }
+    };
 
     public override void ModifyCombat(CombatPayload payload)
     {
@@ -22,7 +30,6 @@ public class FatalSightProtocolPerk : BasePerk
         if (rm == null) return;
 
         // Her saldırıda: birikmiş critChance varsa dönüştür
-        // (sonradan alınan crit perkleri de bu şekilde yakalanır)
         if (rm.criticalChance > 0f)
         {
             // critChance → critDamage: 1:1 dönüşüm (0.10 critChance = +0.10 critDamage)

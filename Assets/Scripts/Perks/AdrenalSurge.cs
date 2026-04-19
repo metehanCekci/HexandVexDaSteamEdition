@@ -1,9 +1,19 @@
+using System.Collections.Generic;
+
 public class AdrenalSurgePerk : BasePerk
 {
     void OnEnable()
     {
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Every attack deals {mult} damage.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "mult", "x2" }
+    };
 
     public override void ModifyCombat(CombatPayload payload)
     {

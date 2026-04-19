@@ -1,9 +1,19 @@
+using System.Collections.Generic;
+
 public class ReflexFiberPerk : BasePerk
 {
     void OnEnable()
     {
         rarity = PerkRarity.Epic;
+        if (string.IsNullOrEmpty(description))
+            description = "Gain {moves} extra move per turn.";
+        RebuildDescription();
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "moves", $"+{currentLevel}" }
+    };
 
     public override void OnAcquire()
     {
@@ -13,7 +23,7 @@ public class ReflexFiberPerk : BasePerk
 
     public override void Upgrade()
     {
-        base.Upgrade(); // Seviyeyi 1 artırır
-        RunManager.instance.extraMovesPerTurn += 1; // Her seviyede 1 hak daha ver!
+        base.Upgrade();
+        RunManager.instance.extraMovesPerTurn += 1;
     }
 }

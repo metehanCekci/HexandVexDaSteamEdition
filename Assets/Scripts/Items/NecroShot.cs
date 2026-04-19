@@ -6,7 +6,7 @@ public class NecroShot : BaseItem
     void OnEnable()
     {
         itemName = "Necro-Shot";
-        description = "Instantly kill any non-boss enemy on the map";
+        description = $"<color=#{UIColors.Damage}>Instantly kill</color> any non-boss enemy on the map";
         price = 30;
     }
 

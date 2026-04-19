@@ -6,7 +6,7 @@ public class PhaseShift : BaseItem
     void OnEnable()
     {
         itemName = "Phase-Shift";
-        description = "Select an enemy and swap positions with it";
+        description = "Select an enemy and <color=#" + UIColors.Chips + ">swap positions</color> with it";
         price = 18;
     }
 

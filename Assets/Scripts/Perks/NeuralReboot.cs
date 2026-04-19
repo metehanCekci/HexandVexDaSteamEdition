@@ -9,6 +9,18 @@ public class NeuralRebootPerk : BasePerk
         isRerollPerk = true;
     }
 
+    void OnEnable()
+    {
+        if (string.IsNullOrEmpty(description))
+            description = "Any die rolling {low} or lower is rerolled until above.";
+        RebuildDescription();
+    }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "low", "3" }
+    };
+
     public override void OnAcquire()
     {
         base.OnAcquire();

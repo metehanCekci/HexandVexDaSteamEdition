@@ -5,7 +5,15 @@ public class RegenTissuePerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Heal {heal} after clearing a level.";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "heal", $"{currentLevel} HP" }
+    };
 
     public override void OnAcquire()
     {
@@ -36,7 +44,7 @@ public class RegenTissuePerk : BasePerk
         // Seviyesi ne kadarsa o kadar can versin (Lv 1 = 1 Can, Lv 3 = 3 Can)
         int healAmount = currentLevel;
 
-        RunManager.instance.playerCurrentHealth = Mathf.Min(
+        RunManager.instance.playerCurrentHealth = System.Math.Min(
             RunManager.instance.playerCurrentHealth + healAmount,
             RunManager.instance.playerMaxHealth
         );

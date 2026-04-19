@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class PressurePointPerk : BasePerk
 {
@@ -6,18 +7,26 @@ public class PressurePointPerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "Full HP: {mult1}. Above half: {mult2}. Below half: {mult3}.";
+        RebuildDescription();
     }
 
-    // Hasar carpani dusmanin mevcut HP yuzdesine gore belirlenir.
-    // TurnManager hasar uygulamadan once bu metodu cagirir.
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "mult1", "x2" },
+        { "mult2", "x1.75" },
+        { "mult3", "x1.5" }
+    };
+
     public float GetMultiplier(EnemyMovement enemy)
     {
         if (enemy == null || enemy.health == null) return 1f;
 
         float hpPercent = (float)enemy.health.currentHP / enemy.health.maxHP;
 
-        if (hpPercent >= 1f) return 2f;     // %100 HP -> 2x
-        if (hpPercent >= 0.50f) return 1.75f; // %99-%50 HP -> 1.75x
-        return 1.5f;                        // %50 alti -> 1.5x
+        if (hpPercent >= 1f) return 2f;
+        if (hpPercent >= 0.50f) return 1.75f;
+        return 1.5f;
     }
 }

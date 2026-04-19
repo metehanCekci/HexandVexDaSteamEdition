@@ -1,13 +1,21 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class ToxinEdgePerk : BasePerk
 {
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Each die gains {bonus}.";
+        RebuildDescription();
     }
 
-    // YENİ: Kart tekrar seçilirse sadece seviyeyi artır
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "bonus", $"+{currentLevel}" }
+    };
+
     public override void Upgrade()
     {
         base.Upgrade();
@@ -18,7 +26,6 @@ public class ToxinEdgePerk : BasePerk
     {
         for (int i = 0; i < payload.diceRolls.Count; i++)
         {
-            // Zarın değerine direkt yeteneğin seviyesini ekle (Lv 1 ise +1, Lv 3 ise +3 ekler)
             payload.diceRolls[i] += currentLevel;
         }
         if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)

@@ -706,6 +706,7 @@ public class PerkInventoryUI : MonoBehaviour
                 if (sellZone == null) sellZone = result.gameObject.GetComponentInParent<SellBoxDropZone>();
                 if (sellZone != null && SellBoxController.instance != null)
                 {
+                    if (!SellBoxController.instance.IsAcceptingDrops) continue;
                     handled = SellBoxController.instance.TrySell();
                     break;
                 }
@@ -1321,7 +1322,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipNameText.fontSize = 16;
         tooltipNameText.color = Color.white;
         tooltipNameText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipNameText.enableWordWrapping = false;
+        tooltipNameText.textWrappingMode = TextWrappingModes.NoWrap;
         tooltipNameText.richText = true;
         tooltipNameText.raycastTarget = false;
 
@@ -1338,7 +1339,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipLevelText.fontSize = 16;
         tooltipLevelText.color = new Color(0.8f, 0.8f, 0.8f);
         tooltipLevelText.alignment = TextAlignmentOptions.TopRight;
-        tooltipLevelText.enableWordWrapping = false;
+        tooltipLevelText.textWrappingMode = TextWrappingModes.NoWrap;
         tooltipLevelText.raycastTarget = false;
 
         // Açıklama
@@ -1354,7 +1355,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipDescText.fontSize = 16;
         tooltipDescText.color = new Color(0.67f, 0.67f, 0.67f);
         tooltipDescText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipDescText.enableWordWrapping = true;
+        tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
         tooltipDescText.richText = true;
         tooltipDescText.raycastTarget = false;
 

@@ -9,6 +9,9 @@ public class PhantomLimbPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Rare;
+        if (string.IsNullOrEmpty(description))
+            description = "Leave a proximity mine on tiles you leave.";
+        RebuildDescription();
     }
 
     public override void OnAcquire()

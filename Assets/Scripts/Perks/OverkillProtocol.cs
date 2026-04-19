@@ -7,6 +7,9 @@ public class OverkillProtocolPerk : BasePerk
     {
         maxLevel = 1;
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Overkill damage carries over to a random living enemy.";
+        RebuildDescription();
     }
 
     /// <summary>

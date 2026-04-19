@@ -15,6 +15,9 @@ public class SlipperySecretionPerk : BasePerk
     {
         maxLevel = 3;
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Leave a slime trail. Enemies stepping on it slide forward.";
+        RebuildDescription();
     }
 
     public override void OnAcquire()

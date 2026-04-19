@@ -5,7 +5,15 @@ public class OrganPouchPerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Common;
+        if (string.IsNullOrEmpty(description))
+            description = "Gain {slots} item slot per level (cap 5).";
+        RebuildDescription();
     }
+
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "slots", $"+{currentLevel}" }
+    };
 
     // İlk alındığında çalışır (1. Seviye)
     public override void OnAcquire()
