@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8660bf65d27cf604c93446361a5b229f
+guid: 9adcf4c0aa3020f48ae8a76dd8c566ac
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -76,8 +76,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.5, y: 0.6922}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -91,8 +91,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.5, y: 0.6922}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: BlueMagicTile
+  - name: DownDamburlaz
     originalName: 
-    pivot: {x: 0.4909091, y: 0.9485666}
+    pivot: {x: 0.4909091, y: -0.023809524}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -139,7 +139,7 @@ ScriptedImporter:
       y: 4
       width: 55
       height: 42
-    spriteID: 5b20432f7febc2642b92373ee9f55b9a
+    spriteID: 7c2e636fd2d4aa8418d15e99715576ce
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,17 +153,17 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 2866495363
+      value0: 2510308288
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: BlueMagicTile
+    name: DownDamburlaz
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: BlueMagicTile
+    - name: DownDamburlaz
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
@@ -171,7 +171,7 @@ ScriptedImporter:
         y: 1
         width: 55
         height: 42
-      spriteId: 5b20432f7febc2642b92373ee9f55b9a
+      spriteId: 7c2e636fd2d4aa8418d15e99715576ce
     linkedCells: []
     tileCells: []
     tileSetIndex: 0

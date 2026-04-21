@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8660bf65d27cf604c93446361a5b229f
+guid: 48836cd189619d742b3d47ef7bfcb7c3
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -76,8 +76,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.5, y: 0.6922}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -91,8 +91,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.5, y: 0.6922}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: BlueMagicTile
+  - name: UpDamburlaz
     originalName: 
-    pivot: {x: 0.4909091, y: 0.9485666}
+    pivot: {x: 0.5, y: 0.3809524}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -139,7 +139,7 @@ ScriptedImporter:
       y: 4
       width: 55
       height: 42
-    spriteID: 5b20432f7febc2642b92373ee9f55b9a
+    spriteID: 3757922df50f3e0429039e1e663cdc74
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 2866495363
+      value0: 534039091
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: BlueMagicTile
+    name: UpDamburlaz
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: BlueMagicTile
+    - name: UpDamburlaz
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 3
-        y: 1
+        x: 1
+        y: -16
         width: 55
         height: 42
-      spriteId: 5b20432f7febc2642b92373ee9f55b9a
+      spriteId: 3757922df50f3e0429039e1e663cdc74
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 60, y: 59}
+  canvasSize: {x: 57, y: 29}
   previousTextureSize: {x: 64, y: 64}
