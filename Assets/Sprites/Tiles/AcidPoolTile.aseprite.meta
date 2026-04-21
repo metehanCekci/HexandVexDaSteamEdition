@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: e6fa1148606403d459e86e742d2daf02
+guid: 0b639fa1815acee40b8b5bc961747d40
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -76,8 +76,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.5, y: 0.4955}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -91,8 +91,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.5, y: 0.4955}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: OrangeMagicTile
+  - name: Frame_0
     originalName: 
-    pivot: {x: 0.49999997, y: 0.6357857}
+    pivot: {x: 0.48999998, y: -0.07692307}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -138,8 +138,8 @@ ScriptedImporter:
       x: 4
       y: 4
       width: 50
-      height: 49
-    spriteID: 59ea704beb10a8c46a58af89461dfb8f
+      height: 26
+    spriteID: 5ef1baadf1491664e9db4a3b0b7744b1
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -148,30 +148,120 @@ ScriptedImporter:
     edges: []
     tessellationDetail: 0
     uvTransform: {x: 4, y: 4}
+  - name: Frame_1
+    originalName: 
+    pivot: {x: 0.48999998, y: -0.07692307}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 38
+      width: 50
+      height: 26
+    spriteID: d6915b3a10c263c4bbc589d58cd4ac45
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 38}
+  - name: Frame_2
+    originalName: 
+    pivot: {x: 0.48999998, y: -0.07692307}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 4
+      y: 72
+      width: 50
+      height: 26
+    spriteID: c756c8f298289e742b7b03fc6af274f0
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 4, y: 72}
+  - name: Frame_3
+    originalName: 
+    pivot: {x: 0.48999998, y: -0.07692307}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 62
+      y: 4
+      width: 50
+      height: 26
+    spriteID: 1aea954b817df964d958948ba0b17333
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 62, y: 4}
   spriteSheetImportData: []
   tileSetImportData: []
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 4019438341
+      value0: 1909613451
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: OrangeMagicTile
+    name: AcidPoolTile
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: OrangeMagicTile
+    - name: Frame_0
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 4
-        y: 7
+        x: 2
+        y: 2
         width: 50
-        height: 49
-      spriteId: 59ea704beb10a8c46a58af89461dfb8f
+        height: 26
+      spriteId: 5ef1baadf1491664e9db4a3b0b7744b1
+    - name: Frame_1
+      frameIndex: 1
+      additiveSortOrder: 0
+      cellRect:
+        x: 2
+        y: 2
+        width: 50
+        height: 26
+      spriteId: d6915b3a10c263c4bbc589d58cd4ac45
+    - name: Frame_2
+      frameIndex: 2
+      additiveSortOrder: 0
+      cellRect:
+        x: 2
+        y: 2
+        width: 50
+        height: 26
+      spriteId: c756c8f298289e742b7b03fc6af274f0
+    - name: Frame_3
+      frameIndex: 3
+      additiveSortOrder: 0
+      cellRect:
+        x: 2
+        y: 2
+        width: 50
+        height: 26
+      spriteId: 1aea954b817df964d958948ba0b17333
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +271,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 58, y: 77}
-  previousTextureSize: {x: 64, y: 64}
+  canvasSize: {x: 53, y: 31}
+  previousTextureSize: {x: 128, y: 128}
