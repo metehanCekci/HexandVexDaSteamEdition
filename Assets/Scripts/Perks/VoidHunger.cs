@@ -84,7 +84,8 @@ public class VoidHungerPerk : BasePerk
     {
         if (collapsedCount <= 0) return;
 
-        payload.multiplier += collapsedCount * 0.25f;
+        // Eski model: multiplier += X -> efektif (1+X). Balatro modelinde ApplyMult(1+X).
+        payload.ApplyMult(1f + collapsedCount * 0.25f);
         TriggerVisualPop();
     }
 }

@@ -50,15 +50,22 @@ public class MimeticGrowthPerk : BasePerk
         var neighbor = GetRightNeighbor();
         if (neighbor == null) yield break;
 
-        TriggerVisualPop();
-        if (PerkListUI.instance != null)
-            PerkListUI.instance.TriggerShakeForPerk(this);
-
-        // Komsu perki tek basina yeniden calistir (dice-retrigger pass'i de dahil).
+        // Komsu perki tek basina yeniden calistir. ModifyCombat bir sey yaparsa (damage degisirse)
+        // kendimizi de pop et; yapmazsa (ornegin komsu pure dice-retrigger perkiyse — o is pre-pass'te
+        // zaten hallediliyor) sessiz kal, fazla pop gorulmesin.
         var processor = TurnManager.instance != null ? TurnManager.instance.PerkProcessor : null;
         if (processor == null) yield break;
 
+        long before = payload.GetFinalDamage();
         List<int> rolls = new List<int>(payload.diceRolls);
         yield return processor.RetriggerPerk(neighbor, payload, rolls);
+        long after = payload.GetFinalDamage();
+
+        if (after != before)
+        {
+            TriggerVisualPop();
+            if (PerkListUI.instance != null)
+                PerkListUI.instance.TriggerShakeForPerk(this);
+        }
     }
 }

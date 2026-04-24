@@ -2479,8 +2479,16 @@ public class TurnManager : MonoBehaviour
                 retributionPerk.RegisterHit(enemy);
                 if (stackBonus > 0)
                 {
-                    // Retribution bonusunu payload multiplier ve crit ile scale et
-                    double scaledBonus = stackBonus * (double)payload.multiplier;
+                    // Retribution bonusunu runningDamage seviyesine olcekle.
+                    // Balatro modelinde "birikmis multiplier" artik yok — bunun yerine
+                    // stackBonus'u zar tabanina gore olceklenmis etkin multiplier ile carpmaliyiz.
+                    // effectiveMult = runningDamage / baseSum (zar tabani).
+                    double baseSum = 0;
+                    foreach (int r in payload.diceRolls) baseSum += r;
+                    double effectiveMult = baseSum > 0 ? (payload.runningDamage / baseSum) : 1.0;
+                    if (effectiveMult <= 0) effectiveMult = 1.0;
+
+                    double scaledBonus = stackBonus * effectiveMult;
                     if (payload.isCriticalHit)
                         scaledBonus *= RunManager.instance.criticalDamageMultiplier;
                     actualDamage += (long)System.Math.Min(scaledBonus, long.MaxValue - actualDamage);

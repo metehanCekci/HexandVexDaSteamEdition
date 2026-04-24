@@ -103,7 +103,8 @@ public class IronWillPerk : BasePerk
     {
         if (cleanLevelStreak <= 0) return;
 
-        payload.multiplier += cleanLevelStreak;
+        // Eski model: multiplier += X -> efektif (1+X). Balatro modelinde ApplyMult(1+X).
+        payload.ApplyMult(1f + cleanLevelStreak);
         TriggerVisualPop();
     }
 }

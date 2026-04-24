@@ -28,7 +28,7 @@ public class DoubleOrNothingPerk : BasePerk
 
         if (total % 2 == 0)
         {
-            payload.multiplier *= 2f;
+            payload.ApplyMult(2f);
             if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
                 TriggerVisualPop();
         }

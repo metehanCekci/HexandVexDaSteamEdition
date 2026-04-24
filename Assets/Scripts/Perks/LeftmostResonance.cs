@@ -53,12 +53,19 @@ public class LeftmostResonancePerk : BasePerk
 
         List<int> rolls = new List<int>(payload.diceRolls);
 
+        // Target pure dice-retrigger ise pre-pass zaten 2 ekstra uygulandi — perk pass'inde sessiz kal.
         for (int i = 0; i < 2; i++)
         {
-            TriggerVisualPop();
-            if (PerkListUI.instance != null)
-                PerkListUI.instance.TriggerShakeForPerk(this);
+            long before = payload.GetFinalDamage();
             yield return processor.RetriggerPerk(target, payload, rolls);
+            long after = payload.GetFinalDamage();
+
+            if (after != before)
+            {
+                TriggerVisualPop();
+                if (PerkListUI.instance != null)
+                    PerkListUI.instance.TriggerShakeForPerk(this);
+            }
         }
     }
 }

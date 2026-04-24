@@ -25,7 +25,8 @@ public class SymbioticArsenalPerk : BasePerk
         if (filledSlots <= 0) return;
 
         float bonusPerSlot = 0.25f + (0.25f * currentLevel);
-        payload.multiplier += bonusPerSlot * filledSlots;
+        // Eski model: multiplier += X -> efektif carpan (1+X). Balatro modelinde ApplyMult(1+X).
+        payload.ApplyMult(1f + bonusPerSlot * filledSlots);
         TriggerVisualPop();
     }
 }
