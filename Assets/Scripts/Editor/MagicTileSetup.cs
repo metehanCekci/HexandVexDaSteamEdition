@@ -5,47 +5,38 @@ using UnityEditor;
 using System.Collections.Generic;
 
 /// <summary>
-/// Magic Tile asset'lerini otomatik olusturur ve MagicTileManager'a atar.
-/// 3 katman destegi: ground (arka) + column (sutun) + foreground (on, karakter arkasinda)
+/// Magic Tile asset'lerini tek bir aseprite palette dosyasindan otomatik olusturur ve
+/// MagicTileManager'a atar.
+///
+/// Palette: Assets/Sprites/Tiles/EnchantedTiles.aseprite
+/// Slice sirasi (Aseprite slice adi "EnchantedTiles_N"):
+///   0-4: {Green,Blue,Red,Yellow,Orange} Upper  -> groundTile slot (mid overlay, sorting 50)
+///   5-9: {Green,Blue,Red,Yellow,Orange} Full   -> columnTile slot (sorting -1)
+///
+/// Foreground (Katman*) slot artik kullanilmiyor — 2 katmanli sistem.
+///
 /// Tools > Hex and Vex > Setup Magic Tile Assets
 /// </summary>
 public static class MagicTileSetup
 {
-    // Ground (upper/back) sprites — karakter onunde, groundMap (sorting 0)
-    private static readonly (string color, string path)[] groundSprites = {
-        ("Red",    "Assets/Sprites/Tiles/UpRedMagic.aseprite"),
-        ("Blue",   "Assets/Sprites/Tiles/BlueMagicUpper.aseprite"),
-        ("Green",  "Assets/Sprites/Tiles/GreenMagicUpper.aseprite"),
-        ("Yellow", "Assets/Sprites/Tiles/YellowMagicUpper.aseprite"),
-        ("Orange", "Assets/Sprites/Tiles/OrangeMagicTileUpper.aseprite"),
+    private const string PalettePath = "Assets/Sprites/Tiles/EnchantedTiles.aseprite";
+
+    // Slice index -> (color, slot) mapping (sliceIndex = 0..9)
+    private static readonly MagicTileType[] sliceColorOrder = {
+        MagicTileType.Green,   // 0
+        MagicTileType.Blue,    // 1
+        MagicTileType.Red,     // 2
+        MagicTileType.Yellow,  // 3
+        MagicTileType.Orange,  // 4
+        MagicTileType.Green,   // 5
+        MagicTileType.Blue,    // 6
+        MagicTileType.Red,     // 7
+        MagicTileType.Yellow,  // 8
+        MagicTileType.Orange,  // 9
     };
 
-    // Column (lower/full) sprites — columnMap (sorting -1)
-    private static readonly (string color, string path)[] columnSprites = {
-        ("Red",    "Assets/Sprites/Tiles/RedMagicTile.aseprite"),
-        ("Blue",   "Assets/Sprites/Tiles/BlueMagicTile.aseprite"),
-        ("Green",  "Assets/Sprites/Tiles/GreenMagicTile.aseprite"),
-        ("Yellow", "Assets/Sprites/Tiles/YellowMagicTile.aseprite"),
-        ("Orange", "Assets/Sprites/Tiles/OrangeMagicTile.aseprite"),
-    };
-
-    // Foreground (katman/front) sprites — karakter arkasinda, MagicOverlay (sorting 200)
-    // Yellow haric — aninda consume edildigi icin katman gereksiz
-    private static readonly (string color, string path)[] foregroundSprites = {
-        ("Red",    "Assets/Sprites/Tiles/KatmanRedTile.aseprite"),
-        ("Blue",   "Assets/Sprites/Tiles/KatmanBlueTile.aseprite"),
-        ("Green",  "Assets/Sprites/Tiles/KatmanGreenTile.aseprite"),
-        ("Orange", "Assets/Sprites/Tiles/KatmanOrangeTile.aseprite"),
-    };
-
-    private static readonly Dictionary<string, MagicTileType> colorToType = new Dictionary<string, MagicTileType>
-    {
-        { "Red",    MagicTileType.Red },
-        { "Blue",   MagicTileType.Blue },
-        { "Green",  MagicTileType.Green },
-        { "Yellow", MagicTileType.Yellow },
-        { "Orange", MagicTileType.Orange },
-    };
+    // Slots 0..4 = upper (ground), 5..9 = full (column)
+    private static bool IsUpperSlice(int sliceIndex) => sliceIndex < 5;
 
     [MenuItem("Tools/Hex and Vex/Setup Magic Tile Assets")]
     public static void SetupMagicTiles()
@@ -53,40 +44,114 @@ public static class MagicTileSetup
         if (!AssetDatabase.IsValidFolder("Assets/Resources"))
             AssetDatabase.CreateFolder("Assets", "Resources");
 
-        // Create/update ground tile assets
-        foreach (var (color, path) in groundSprites)
-            CreateOrUpdateTileAsset($"Assets/Resources/{color}MagicUpperTile.asset", path, color, "ground");
+        // Load all sub-sprites from the palette
+        var sprites = LoadPaletteSprites();
+        if (sprites == null)
+        {
+            Debug.LogError($"[MagicTileSetup] Palette bulunamadi: {PalettePath}");
+            return;
+        }
+        if (sprites.Count < 10)
+        {
+            Debug.LogError($"[MagicTileSetup] Palette'te 10 sprite bekleniyor, {sprites.Count} bulundu. Slice yapisini kontrol et.");
+            foreach (var kv in sprites)
+                Debug.Log($"  - {kv.Key}");
+            return;
+        }
 
-        // Create/update column tile assets
-        foreach (var (color, path) in columnSprites)
-            CreateOrUpdateTileAsset($"Assets/Resources/{color}MagicTile.asset", path, color, "column");
+        // For each of the 10 sub-sprites, create/update its Tile asset
+        for (int i = 0; i < 10; i++)
+        {
+            Sprite s = GetSpriteByIndex(sprites, i);
+            if (s == null)
+            {
+                Debug.LogWarning($"[MagicTileSetup] Slice #{i} bulunamadi (EnchantedTiles_{i}).");
+                continue;
+            }
 
-        // Create/update foreground tile assets
-        foreach (var (color, path) in foregroundSprites)
-            CreateOrUpdateTileAsset($"Assets/Resources/Katman{color}Tile.asset", path, color, "foreground");
+            MagicTileType color = sliceColorOrder[i];
+            string slot = IsUpperSlice(i) ? "upper" : "full";
+            string assetPath = IsUpperSlice(i)
+                ? $"Assets/Resources/{color}MagicUpperTile.asset"
+                : $"Assets/Resources/{color}MagicTile.asset";
+
+            CreateOrUpdateTileAsset(assetPath, s, color.ToString(), slot);
+        }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
         AssignToManager();
-        Debug.Log("[MagicTileSetup] Tum tile asset'ler olusturuldu ve MagicTileManager'a atandi!");
+        Debug.Log("[MagicTileSetup] Tum tile asset'ler palette'ten olusturuldu ve MagicTileManager'a atandi!");
     }
 
-    private static void CreateOrUpdateTileAsset(string assetPath, string spritePath, string color, string layer)
+    [MenuItem("Tools/Hex and Vex/Clean Old Magic Tile Assets")]
+    public static void CleanOldAssets()
     {
-        // .aseprite dosyalarinda sprite sub-asset olarak import edilir
-        // Once direkt dene, basarisiz olursa sub-asset'ler arasinda ara
-        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
-        if (sprite == null)
+        if (!EditorUtility.DisplayDialog("Clean Old Magic Tile Assets",
+            "Assets/Resources altindaki ESKI magic tile .asset'leri silinecek:\n" +
+            "- Katman{Color}Tile.asset (foreground, artik kullanilmiyor)\n\n" +
+            "Aktif olan {Color}MagicUpperTile.asset ve {Color}MagicTile.asset DOKUNULMAYACAK.\n\n" +
+            "Devam?", "Sil", "Iptal"))
+            return;
+
+        string[] colors = { "Red", "Blue", "Green", "Yellow", "Orange" };
+        int removed = 0;
+        foreach (var c in colors)
         {
-            foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(spritePath))
+            string p = $"Assets/Resources/Katman{c}Tile.asset";
+            if (AssetDatabase.LoadAssetAtPath<Object>(p) != null)
             {
-                if (obj is Sprite s) { sprite = s; break; }
+                AssetDatabase.DeleteAsset(p);
+                removed++;
+                Debug.Log($"[MagicTileSetup] Silindi: {p}");
             }
         }
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log($"[MagicTileSetup] {removed} eski asset silindi.");
+    }
+
+    private static Dictionary<string, Sprite> LoadPaletteSprites()
+    {
+        var result = new Dictionary<string, Sprite>();
+        var all = AssetDatabase.LoadAllAssetsAtPath(PalettePath);
+        if (all == null || all.Length == 0) return null;
+        foreach (var o in all)
+        {
+            if (o is Sprite s)
+                result[s.name] = s;
+        }
+        return result.Count > 0 ? result : null;
+    }
+
+    private static Sprite GetSpriteByIndex(Dictionary<string, Sprite> sprites, int index)
+    {
+        // Aseprite importer adlandirmasi: "EnchantedTiles_0", "EnchantedTiles_1", ...
+        // Ama importer bazen base-name kullanmadan sadece slice adini verebilir.
+        // Hem "EnchantedTiles_N" hem "{sliceAdi}" varyantlarini dene.
+        string[] candidates = {
+            $"EnchantedTiles_{index}",
+            $"EnchantedTiles {index}",
+        };
+        foreach (var name in candidates)
+            if (sprites.TryGetValue(name, out var s)) return s;
+
+        // Fallback: sirala ve index'e gore al (isim disinda siralama sağlayamazsak)
+        if (sprites.Count >= 10)
+        {
+            var sorted = new List<Sprite>(sprites.Values);
+            sorted.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.Ordinal));
+            if (index < sorted.Count) return sorted[index];
+        }
+        return null;
+    }
+
+    private static void CreateOrUpdateTileAsset(string assetPath, Sprite sprite, string color, string slot)
+    {
         if (sprite == null)
         {
-            Debug.LogWarning($"[MagicTileSetup] Sprite bulunamadi: {spritePath} ({color} {layer}) — sprite dosyasini olusturup tekrar calistir.");
+            Debug.LogWarning($"[MagicTileSetup] Sprite null: {color} {slot}");
             return;
         }
 
@@ -101,7 +166,7 @@ public static class MagicTileSetup
         tile.color = Color.white;
         EditorUtility.SetDirty(tile);
 
-        Debug.Log($"[MagicTileSetup] {color} {layer} tile -> {assetPath}");
+        Debug.Log($"[MagicTileSetup] {color} {slot} -> {assetPath} (sprite: {sprite.name})");
     }
 
     private static void AssignToManager()
@@ -113,30 +178,18 @@ public static class MagicTileSetup
             return;
         }
 
-        // Build sets of which colors have ground/foreground sprites
-        var hasGround = new HashSet<string>();
-        foreach (var (color, _) in groundSprites) hasGround.Add(color);
-        var hasForeground = new HashSet<string>();
-        foreach (var (color, _) in foregroundSprites) hasForeground.Add(color);
-
-        // Build entries array — one per MagicTileType
-        // Only load tiles that exist in the sprite arrays (prevents stale assets)
         var entries = new List<MagicTileManager.MagicTileEntry>();
-        foreach (var kvp in colorToType)
+        foreach (MagicTileType type in System.Enum.GetValues(typeof(MagicTileType)))
         {
-            string color = kvp.Key;
-            MagicTileType type = kvp.Value;
-
-            TileBase ground = hasGround.Contains(color) ? LoadTile($"{color}MagicUpperTile") : null;
-            TileBase column = LoadTile($"{color}MagicTile");
-            TileBase foreground = hasForeground.Contains(color) ? LoadTile($"Katman{color}Tile") : null;
+            TileBase ground = LoadTile($"{type}MagicUpperTile");
+            TileBase column = LoadTile($"{type}MagicTile");
 
             entries.Add(new MagicTileManager.MagicTileEntry
             {
                 type = type,
                 groundTile = ground,
                 columnTile = column,
-                foregroundTile = foreground,
+                foregroundTile = null, // artik kullanilmiyor
             });
         }
 

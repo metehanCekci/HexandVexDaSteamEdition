@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 9f3ce25965a76c644b072ecc6f1cd827
+guid: 716c16b65995a744b95f5c48af08f1c7
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: healthBar
+  - name: inventoryBar
     originalName: 
-    pivot: {x: 0.46491227, y: -0.2148148}
+    pivot: {x: 0.502994, y: -88}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 114
-      height: 135
-    spriteID: 9cf8cb1616e92b946bb86a67b51ddeee
+      width: 167
+      height: 1
+    spriteID: ce872f39bd583b7409da9e58caa552be
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 2006455713
+      value0: 487343771
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: healthBar
+    name: inventoryBar
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: healthBar
+    - name: inventoryBar
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 47
-        y: 29
-        width: 114
-        height: 135
-      spriteId: 9cf8cb1616e92b946bb86a67b51ddeee
+        x: 16
+        y: 88
+        width: 167
+        height: 1
+      spriteId: ce872f39bd583b7409da9e58caa552be
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -182,4 +182,4 @@ ScriptedImporter:
   secondarySpriteTextures: []
   spritePackingTag: 
   canvasSize: {x: 200, y: 200}
-  previousTextureSize: {x: 128, y: 256}
+  previousTextureSize: {x: 256, y: 16}
