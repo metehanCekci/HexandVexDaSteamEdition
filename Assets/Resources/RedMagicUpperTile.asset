@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: RedMagicUpperTile
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.Tilemaps.Tile
-  m_Sprite: {fileID: -718730592958222563, guid: c65b8f0a961184f4eb9eb1f5333478e8, type: 3}
+  m_Sprite: {fileID: -1547232502963840571, guid: 64a898643b7f261488d914563d35373b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Transform:
     e00: 1
