@@ -54,6 +54,7 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public CoinDropService coinService;
     private DiceUIController diceUI;
     private PerkCombatProcessor perkProcessor;
+    public PerkCombatProcessor PerkProcessor => perkProcessor;
     [HideInInspector] public bool isLevelClearTriggered = false;
     private bool manualDiceSkip = false;
     private bool speedDiceMode = false;
@@ -212,13 +213,6 @@ public class TurnManager : MonoBehaviour
                 holdRTimer = 0f;
                 StopAllCoroutines();
                 Time.timeScale = 1f;
-
-                // Perk menüsünü zorla kapat
-                if (LevelUpManager.instance != null)
-                {
-                    LevelUpManager.instance.StopAllCoroutines();
-                    LevelUpManager.instance.ForceClose();
-                }
 
                 // Enchant seçim panelini zorla kapat
                 if (EnchantNodeUI.instance != null)
@@ -474,9 +468,9 @@ public class TurnManager : MonoBehaviour
 
     private void DebugEquipAllPerks()
     {
-        if (LevelUpManager.instance == null || RunManager.instance == null) return;
-        var lum = LevelUpManager.instance;
-        List<List<GameObject>> allLists = new List<List<GameObject>> { lum.commonPerks, lum.rarePerks, lum.epicPerks, lum.legendaryPerks };
+        if (MergedShopManager.instance == null || RunManager.instance == null) return;
+        var shop = MergedShopManager.instance;
+        List<List<GameObject>> allLists = new List<List<GameObject>> { shop.commonPerks, shop.rarePerks, shop.epicPerks, shop.legendaryPerks };
         int added = 0;
         foreach (var list in allLists)
         {
@@ -566,10 +560,6 @@ public class TurnManager : MonoBehaviour
     }
     public void ResetGame()
     {
-        // Perk menüsünü zorla kapat
-        if (LevelUpManager.instance != null)
-            LevelUpManager.instance.ForceClose();
-
         // 1. Zamanı normale döndür (Pause'dan geliyorsa)
         Time.timeScale = 1f;
 
@@ -777,7 +767,6 @@ public class TurnManager : MonoBehaviour
             bool isBossLevel = RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0;
             if (isBossLevel) Shopmanager.instance.OnBossCleared(); else Shopmanager.instance.OnDungeonCleared();
         }
-        else if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
     }
 
     private void SetupCoinIcon()

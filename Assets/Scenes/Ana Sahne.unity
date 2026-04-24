@@ -5276,7 +5276,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
   layerConfigs:
   - {fileID: 11400000, guid: 164f60c6b908e094a96e00596a3a1204, type: 2}
-  - {fileID: 11400000, guid: 880e8ed46485d4f4f916a95ab6f0c727, type: 2}
   mapUI: {fileID: 0}
   mapBackgroundTexture: {fileID: 2800000, guid: da21a01ce7772d845ad47240c6b58ca2, type: 3}
   mapBackgroundSprite: {fileID: 0}
@@ -6315,8 +6314,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cb518e6b0f8fefc4389b15930865c72b, type: 2}
   secretItem: {fileID: 0}
   secretItemChance: 0.0005
-  itemRerollButton: {fileID: 0}
-  itemRerollText: {fileID: 0}
 --- !u!1 &373146767
 GameObject:
   m_ObjectHideFlags: 0
@@ -24509,6 +24506,7 @@ MonoBehaviour:
   currentLevel: 1
   currentLayerIndex: 0
   currentNodeType: 0
+  sacrificeNodesVisited: 0
   currentGold: 0
   playerMaxHealth: 5
   playerCurrentHealth: 5
@@ -24537,7 +24535,7 @@ MonoBehaviour:
   surgeBootActive: 0
   hasPerkReroll: 0
   hasLuckyClover: 0
-  hasMutationCatalyst: 0
+  pendingRerollReset: 0
   selectedWeapon: 0
   fastMode: 0
   extraMovesPerTurn: 0
@@ -43444,8 +43442,6 @@ MonoBehaviour:
   itemPool: []
   secretItem: {fileID: 0}
   secretItemChance: 0.0005
-  itemRerollButton: {fileID: 0}
-  itemRerollText: {fileID: 0}
 --- !u!1001 &884444815440572377
 PrefabInstance:
   m_ObjectHideFlags: 0

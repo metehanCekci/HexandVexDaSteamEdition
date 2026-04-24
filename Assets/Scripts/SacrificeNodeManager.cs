@@ -48,7 +48,7 @@ public class SacrificeNodeManager : MonoBehaviour
     private GameObject persistentSecretPerk;
     private bool poolGenerated;
 
-    // Cached perk lists (because LevelUpManager doesn't persist across scenes)
+    // Cached perk lists (because MergedShopManager doesn't persist across scenes)
     private List<GameObject> cachedRarePerks;
     private List<GameObject> cachedEpicPerks;
     private List<GameObject> cachedLegendaryPerks;
@@ -143,9 +143,8 @@ public class SacrificeNodeManager : MonoBehaviour
     // ═══════════════════════════════════════════
 
     /// <summary>
-    /// Cache perk lists from LevelUpManager. Call this early (e.g. MapManager.Start)
-    /// while LevelUpManager is still alive. LevelUpManager doesn't use DontDestroyOnLoad
-    /// so it gets destroyed on scene transitions.
+    /// Cache perk lists from MergedShopManager. Call this early (e.g. MapManager.Start)
+    /// while MergedShopManager is still alive.
     /// </summary>
     public void CachePerkLists()
     {
@@ -156,67 +155,25 @@ public class SacrificeNodeManager : MonoBehaviour
 
         try
         {
-            Debug.Log("[SACRIFICE] CachePerkLists: entering try block...");
-            LevelUpManager lum = null;
-
-            // Method 1: static instance
-            try
+            MergedShopManager shop = MergedShopManager.instance;
+            if (shop == null) shop = FindFirstObjectByType<MergedShopManager>();
+            if (shop == null)
             {
-                var inst = LevelUpManager.instance;
-                Debug.Log("[SACRIFICE] LevelUpManager.instance ref = " + (inst == null ? "NULL" : "EXISTS"));
-                if (inst != null)
-                {
-                    var go = inst.gameObject;
-                    lum = inst;
-                    Debug.Log("[SACRIFICE] Found LevelUpManager via instance: " + go.name);
-                }
-            }
-            catch (System.Exception e1)
-            {
-                Debug.Log("[SACRIFICE] instance is destroyed (fake null): " + e1.Message);
-                lum = null;
+                var allShops = Resources.FindObjectsOfTypeAll<MergedShopManager>();
+                if (allShops.Length > 0) shop = allShops[0];
             }
 
-            // Method 2: FindObjectOfType
-            if (lum == null)
+            if (shop == null)
             {
-                lum = FindFirstObjectByType<LevelUpManager>();
-                Debug.Log("[SACRIFICE] FindObjectOfType result = " + (lum == null ? "NULL" : lum.name));
-            }
-
-            // Method 3: Resources.FindObjectsOfTypeAll (includes inactive)
-            if (lum == null)
-            {
-                var allLums = Resources.FindObjectsOfTypeAll<LevelUpManager>();
-                Debug.Log("[SACRIFICE] Resources.FindObjectsOfTypeAll found " + allLums.Length + " LevelUpManagers");
-                foreach (var candidate in allLums)
-                {
-                    try
-                    {
-                        var go = candidate.gameObject;
-                        if (go.scene.isLoaded || string.IsNullOrEmpty(go.scene.name))
-                        {
-                            lum = candidate;
-                            Debug.Log("[SACRIFICE] Found LevelUpManager via Resources: " + go.name);
-                            break;
-                        }
-                    }
-                    catch { /* destroyed candidate, skip */ }
-                }
-            }
-
-            if (lum == null)
-            {
-                Debug.Log("[SACRIFICE] CachePerkLists: LevelUpManager not found anywhere. Will retry later.");
+                Debug.Log("[SACRIFICE] CachePerkLists: MergedShopManager not found anywhere. Will retry later.");
                 return;
             }
 
-            // Safely read the lists
-            var rare = lum.rarePerks;
-            var epic = lum.epicPerks;
-            var legendary = lum.legendaryPerks;
+            var rare = shop.rarePerks;
+            var epic = shop.epicPerks;
+            var legendary = shop.legendaryPerks;
 
-            Debug.Log("[SACRIFICE] LevelUpManager lists: rare=" + (rare != null ? rare.Count.ToString() : "null")
+            Debug.Log("[SACRIFICE] MergedShopManager lists: rare=" + (rare != null ? rare.Count.ToString() : "null")
                 + ", epic=" + (epic != null ? epic.Count.ToString() : "null")
                 + ", legendary=" + (legendary != null ? legendary.Count.ToString() : "null"));
 
@@ -279,7 +236,7 @@ public class SacrificeNodeManager : MonoBehaviour
     {
         if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
 
-        // Method 1: Try via LevelUpManager
+        // Method 1: Try via MergedShopManager primary lookup
         CachePerkLists();
 
         if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;

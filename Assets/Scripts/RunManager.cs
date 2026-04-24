@@ -197,14 +197,14 @@ public class RunManager : MonoBehaviour
         GameObject newPerkObj = Instantiate(perkPrefab, transform);
         BasePerk newPerk = newPerkObj.GetComponent<BasePerk>();
 
-        // LevelUpManager listelerinden dogru rarity'i ata
-        if (LevelUpManager.instance != null)
+        // MergedShopManager listelerinden dogru rarity'i ata
+        if (MergedShopManager.instance != null)
         {
-            if (LevelUpManager.instance.legendaryPerks.Contains(perkPrefab))
+            if (MergedShopManager.instance.legendaryPerks.Contains(perkPrefab))
                 newPerk.rarity = PerkRarity.Legendary;
-            else if (LevelUpManager.instance.epicPerks.Contains(perkPrefab))
+            else if (MergedShopManager.instance.epicPerks.Contains(perkPrefab))
                 newPerk.rarity = PerkRarity.Epic;
-            else if (LevelUpManager.instance.rarePerks.Contains(perkPrefab))
+            else if (MergedShopManager.instance.rarePerks.Contains(perkPrefab))
                 newPerk.rarity = PerkRarity.Rare;
         }
 
