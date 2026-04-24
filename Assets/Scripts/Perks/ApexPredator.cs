@@ -19,12 +19,10 @@ public class ApexPredatorPerk : BasePerk
 
     public override void ModifyCombat(CombatPayload payload)
     {
-        payload.multiplier *= 5.0f;
-
+        // Balatro model: net carpan = max(5 - zarSayisi, 1). Tek bir ApplyMult cagrisi.
         float penalty = payload.diceRolls.Count * 1.0f;
-        payload.multiplier -= penalty;
-
-        payload.multiplier = Mathf.Max(payload.multiplier, 1.0f);
+        float netMult = Mathf.Max(5.0f - penalty, 1.0f);
+        payload.ApplyMult(netMult);
 
         if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
             TriggerVisualPop();

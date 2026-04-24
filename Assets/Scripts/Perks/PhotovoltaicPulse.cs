@@ -3,9 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Photovoltaic Pulse — Rare. Ilk atilan zarin degeri kadar multiplier uygulanir
-/// (ornek: ilk zar 4 ise multiplier *= 4). Dice retrigger implantlariyla birlestiginde
-/// ilk zar kac kez islenirse o kadar kez catlar (X4 X4 X4 zinciri).
+/// Photovoltaic Pulse — Rare. Ilk zarin degeri kadar multiplier uygular (runningDamage *= first).
+/// Ilk zar dice-retrigger perkleriyle (Hanging Nerve, Stelzer, Sensory + Mimetic/Leftmost/Parasitic
+/// uzerinden kopyalananlar) her retriggerlaninca multiplier'i bir kez daha ARDISIK uygular.
+///
+/// Pipeline ornegi: zar 3, Photovoltaic, Hanging Nerve (+2 retrigger):
+///   base     -> runningDamage = 3,   Photovoltaic x3 -> 9
+///   retrig 1 -> +3 (= 12), Photovoltaic x3 (= 36)
+///   retrig 2 -> +3 (= 39), Photovoltaic x3 (= 117)
+///
+/// Pattern: per-die bagimli perkler BasePerk.OnDiceRetriggerEvent hook'unu override eder.
 /// </summary>
 public class PhotovoltaicPulsePerk : BasePerk
 {
@@ -14,7 +21,7 @@ public class PhotovoltaicPulsePerk : BasePerk
         maxLevel = 1;
         rarity = PerkRarity.Rare;
         if (string.IsNullOrEmpty(description))
-            description = "Multiplies damage by the {first} value.";
+            description = "Multiplies damage by the {first} value. Re-applies each time the first die retriggers.";
         RebuildDescription();
     }
 
@@ -23,24 +30,29 @@ public class PhotovoltaicPulsePerk : BasePerk
         { "first", "first die" }
     };
 
-    public override bool IsIncompatible()
-    {
-        // Tek bir zar yoksa (teorik olarak her zaman en az 1 zar var ama guvenlik icin)
-        return false;
-    }
+    public override bool IsIncompatible() => false;
 
     public override void ModifyCombat(CombatPayload payload)
     {
         if (payload == null || payload.diceRolls == null || payload.diceRolls.Count == 0) return;
         int first = payload.diceRolls[0];
         if (first <= 0) return;
-        payload.multiplier *= first;
+        payload.ApplyMult(first);
+    }
+
+    /// <summary>
+    /// Ilk zar her retriggerlandiginda multiplier'i bir kez daha ARDISIK uygula.
+    /// runningDamage += value (processor yapmis olur) sonra BU hook calisir: runningDamage *= value.
+    /// </summary>
+    public override void OnDiceRetriggerEvent(int diceIndex, int diceValue, CombatPayload payload)
+    {
+        if (diceIndex != 0) return;
+        if (diceValue <= 0) return;
+        payload.ApplyMult(diceValue);
     }
 
     public override IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI)
     {
-        // Gorsel: zarin uzerinde kisa bir pop animasyonu + toplam hasar guncelle.
-        // ModifyCombat'taki mult zaten uygulandi, burada sadece step-by-step gorsel geri bildirim.
         TriggerVisualPop();
         if (PerkListUI.instance != null)
             PerkListUI.instance.TriggerShakeForPerk(this);

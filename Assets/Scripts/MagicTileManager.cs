@@ -42,6 +42,13 @@ public class MagicTileManager : MonoBehaviour
     // Saved originals for restore on consume/clear
     private Dictionary<Vector3Int, TileBase> savedGround = new Dictionary<Vector3Int, TileBase>();
     private Dictionary<Vector3Int, TileBase> savedColumn = new Dictionary<Vector3Int, TileBase>();
+    // Cells where we hid a foreground decor/scaffold/hazard tile (alpha 0). On restore
+    // we only need to flip alpha back — we never replaced these tiles, just dimmed them.
+    private HashSet<Vector3Int> hiddenFgA = new HashSet<Vector3Int>();
+    private HashSet<Vector3Int> hiddenFgB = new HashSet<Vector3Int>();
+    // (tilemap, originalTile) pairs we cleared on each cell. On restore we put them back.
+    private Dictionary<Vector3Int, List<(Tilemap map, TileBase tile)>> clearedSceneTiles
+        = new Dictionary<Vector3Int, List<(Tilemap, TileBase)>>();
 
     // Cells where ground sprite is missing — stores target tint color
     private Dictionary<Vector3Int, Color> tintedCells = new Dictionary<Vector3Int, Color>();
@@ -152,10 +159,51 @@ public class MagicTileManager : MonoBehaviour
         midOverlayMap = go.AddComponent<Tilemap>();
         MatchTilemapAnchor(midOverlayMap, LevelGenerator.instance.groundMap);
         TilemapRenderer renderer = go.AddComponent<TilemapRenderer>();
-        renderer.sortingOrder = 50; // Above ground/foreground/warning decor, below characters (~100+)
         renderer.mode = TilemapRenderer.Mode.Individual;
 
+        // Match the scene's column tilemap sorting layer + order so enchanted sprites
+        // participate in the same Y-sort pass as regular hex columns. They then nestle
+        // between hexes correctly instead of floating in front of the whole grid.
+        TilemapRenderer columnRenderer = LevelGenerator.instance.columnMap != null
+            ? LevelGenerator.instance.columnMap.GetComponent<TilemapRenderer>()
+            : null;
+        if (columnRenderer != null)
+        {
+            renderer.sortingLayerID = columnRenderer.sortingLayerID;
+            // Same order as columnMap so Unity's Transparency Sort Axis (Y) decides
+            // front/back per-sprite. Using +1 pushes every enchanted sprite in front of
+            // every column, which is what caused the "floating in front" look.
+            renderer.sortingOrder = columnRenderer.sortingOrder;
+        }
+        else
+        {
+            renderer.sortingOrder = 0;
+        }
+
         return midOverlayMap;
+    }
+
+    // Make sure the "Highlight" tilemap renders above the columnMap (where enchanted
+    // sprites live). Without this, the move-highlight animation is hidden beneath
+    // enchanted tiles whose column sprites sit in front of it.
+    private static bool highlightOrderAdjusted = false;
+    private void EnsureHighlightAboveEnchanted()
+    {
+        if (highlightOrderAdjusted) return;
+        if (LevelGenerator.instance == null || LevelGenerator.instance.columnMap == null) return;
+
+        var hlGo = GameObject.Find("Highlight");
+        if (hlGo == null) return;
+        var hlRenderer = hlGo.GetComponent<TilemapRenderer>();
+        var colRenderer = LevelGenerator.instance.columnMap.GetComponent<TilemapRenderer>();
+        if (hlRenderer == null || colRenderer == null) return;
+
+        if (hlRenderer.sortingLayerID != colRenderer.sortingLayerID)
+            hlRenderer.sortingLayerID = colRenderer.sortingLayerID;
+        if (hlRenderer.sortingOrder <= colRenderer.sortingOrder)
+            hlRenderer.sortingOrder = colRenderer.sortingOrder + 1;
+
+        highlightOrderAdjusted = true;
     }
 
     // Runtime-created Tilemaps default to tileAnchor (0.5, 0.5, 0), but the scene's tilemaps
@@ -202,6 +250,7 @@ public class MagicTileManager : MonoBehaviour
         }
         if (needsOverlay) GetOrCreateOverlayMap();
         if (needsMidOverlay) GetOrCreateMidOverlayMap();
+        EnsureHighlightAboveEnchanted();
 
         List<PendingSpawn> pending = new List<PendingSpawn>();
         List<Vector3Int> placedCells = new List<Vector3Int>();
@@ -219,8 +268,8 @@ public class MagicTileManager : MonoBehaviour
             // Save originals before any replacement
             TileBase origGround = groundMap.GetTile(cell);
             savedGround[cell] = origGround;
-            if (columnMap != null && columnMap.HasTile(cell))
-                savedColumn[cell] = columnMap.GetTile(cell);
+            if (columnMap != null)
+                savedColumn[cell] = columnMap.HasTile(cell) ? columnMap.GetTile(cell) : null;
 
             MagicTileEntry entry = GetEntry(type);
 
@@ -465,6 +514,9 @@ public class MagicTileManager : MonoBehaviour
         savedGround.Clear();
         savedColumn.Clear();
         tintedCells.Clear();
+        hiddenFgA.Clear();
+        hiddenFgB.Clear();
+        clearedSceneTiles.Clear();
 
         // Clear the overlay tilemaps completely
         if (overlayMap != null)
@@ -500,6 +552,21 @@ public class MagicTileManager : MonoBehaviour
             cm.SetColor(cell, Color.white);
             savedColumn.Remove(cell);
         }
+
+        // Put back every scene tilemap tile we cleared at spawn.
+        if (clearedSceneTiles.TryGetValue(cell, out var cleared))
+        {
+            foreach (var (tm, tile) in cleared)
+            {
+                if (tm == null) continue;
+                tm.SetTile(cell, tile);
+                tm.SetTileFlags(cell, TileFlags.None);
+                tm.SetColor(cell, Color.white);
+            }
+            clearedSceneTiles.Remove(cell);
+        }
+        hiddenFgA.Remove(cell);
+        hiddenFgB.Remove(cell);
 
         // Remove foreground overlay tile
         if (overlayMap != null && overlayMap.HasTile(cell))
@@ -781,44 +848,67 @@ public class MagicTileManager : MonoBehaviour
         MagicTileEntry entry = spawn.entry;
         MagicTileType type = spawn.type;
 
-        bool groundIsTinted = (entry == null || entry.groundTile == null);
-        bool hasMidGround = !groundIsTinted && mm != null;
         Color tintColor = Color.white;
 
-        // ── Apply tile replacement right now (original was visible until this moment) ──
+        // ── Paint enchanted sprite directly onto the scene's columnMap ──
+        // The scene's columnMap already sorts correctly with neighbours (it's how regular
+        // hexes stack). Writing into it means the enchanted tile inherits that sort — no
+        // overlay in front of / behind everything. The original column tile is replaced;
+        // we'll restore it from savedColumn on consume.
+        bool cellHasColumn = cm != null && savedColumn.ContainsKey(cell);
+        TileBase chosenSprite = cellHasColumn && entry != null && entry.columnTile != null
+            ? entry.columnTile
+            : (entry != null ? entry.groundTile : null);
 
-        if (hasMidGround)
-        {
-            // Paint magic ground sprite on the mid-overlay (sorting 50) instead of the base
-            // groundMap. Keeps it above foreground decor / warning layers and below characters.
-            mm.SetTile(cell, entry.groundTile);
-            mm.SetTileFlags(cell, TileFlags.None);
-            mm.SetColor(cell, new Color(1, 1, 1, 0));
-        }
-        else if (!groundIsTinted)
-        {
-            // Fallback (no mid-overlay available) — replace ground directly
-            gm.SetTile(cell, entry.groundTile);
-            gm.SetTileFlags(cell, TileFlags.None);
-            gm.SetColor(cell, new Color(1, 1, 1, 0));
-        }
-        else
-        {
-            // No magic ground sprite — keep original tile, blend to tint color
-            tintColor = GetMagicTint(type);
-            tintedCells[cell] = tintColor;
-            gm.SetTileFlags(cell, TileFlags.None);
-            // Ground stays visible at white — will blend to tint during animation
-        }
+        bool paintedOnColumn = chosenSprite != null && cm != null;
+        bool groundIsTinted = !paintedOnColumn;
 
-        // Replace column tile
+        bool hasMidGround = false;
         bool hasColumn = false;
-        if (entry != null && entry.columnTile != null && cm != null && savedColumn.ContainsKey(cell))
+
+        if (paintedOnColumn)
         {
-            cm.SetTile(cell, entry.columnTile);
+            cm.SetTile(cell, chosenSprite);
             cm.SetTileFlags(cell, TileFlags.None);
             cm.SetColor(cell, new Color(1, 1, 1, 0));
             hasColumn = true;
+
+            // Hide the default groundMap tile visually so the enchanted sprite fully
+            // represents the cell. Tile stays in place for pathfinding/HasTile.
+            if (gm != null && gm.HasTile(cell))
+            {
+                gm.SetTileFlags(cell, TileFlags.None);
+                gm.SetColor(cell, new Color(1, 1, 1, 0));
+            }
+
+            // Clear EVERY other scene tilemap's tile on this cell — the "default upper"
+            // decor tile must fully disappear. Alpha-dimming is unreliable with some Tile
+            // asset types (animated/scriptable) so we just remove the tile and remember
+            // it so we can put it back on consume.
+            // groundMap and columnMap are handled above (savedGround/savedColumn restore them).
+            Grid grid = gm != null ? gm.layoutGrid : null;
+            if (grid != null)
+            {
+                var cleared = new List<(Tilemap, TileBase)>();
+                foreach (var tm in grid.GetComponentsInChildren<Tilemap>(true))
+                {
+                    if (tm == null) continue;
+                    if (tm == gm || tm == cm) continue;
+                    if (tm == midOverlayMap || tm == overlayMap) continue;
+                    if (!tm.HasTile(cell)) continue;
+                    TileBase orig = tm.GetTile(cell);
+                    tm.SetTile(cell, null);
+                    cleared.Add((tm, orig));
+                }
+                if (cleared.Count > 0)
+                    clearedSceneTiles[cell] = cleared;
+            }
+        }
+        else
+        {
+            tintColor = GetMagicTint(type);
+            tintedCells[cell] = tintColor;
+            if (gm != null) gm.SetTileFlags(cell, TileFlags.None);
         }
 
         // Place foreground overlay tile
@@ -853,11 +943,14 @@ public class MagicTileManager : MonoBehaviour
                 // Fade in the mid-overlay sprite; leave the underlying groundMap tile untouched.
                 mm.SetColor(cell, fadeCol);
             }
-            else if (!groundIsTinted)
+            else if (hasColumn)
             {
-                gm.SetColor(cell, fadeCol);
+                // Enchanted sprite lives on columnMap. Fade it in. Do NOT touch groundMap —
+                // its tile is still present and must stay alpha=0 so the default upper doesn't
+                // re-appear under the enchanted sprite.
+                cm.SetColor(cell, fadeCol);
             }
-            else
+            else if (groundIsTinted)
             {
                 // Blend from white to tint color with glow effect
                 Color blended = Color.Lerp(Color.white, tintColor, t);
@@ -867,7 +960,6 @@ public class MagicTileManager : MonoBehaviour
                 gm.SetColor(cell, blended);
             }
 
-            if (hasColumn) cm.SetColor(cell, fadeCol);
             if (hasFg) fm.SetColor(cell, fadeCol);
 
             yield return null;
@@ -877,12 +969,11 @@ public class MagicTileManager : MonoBehaviour
 
         if (hasMidGround)
             mm.SetColor(cell, Color.white);
-        else if (!groundIsTinted)
-            gm.SetColor(cell, Color.white);
-        else
+        else if (hasColumn)
+            cm.SetColor(cell, Color.white);
+        else if (groundIsTinted)
             gm.SetColor(cell, tintColor);
 
-        if (hasColumn) cm.SetColor(cell, Color.white);
         if (hasFg) fm.SetColor(cell, Color.white);
     }
 }

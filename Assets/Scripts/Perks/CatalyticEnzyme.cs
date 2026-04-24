@@ -37,7 +37,7 @@ public class CatalyticEnzymePerk : BasePerk
     {
         if (skipStacks <= 0) return;
         // Each stack = +30% multiplier
-        payload.multiplier *= 1f + (skipStacks * 0.3f);
+        payload.ApplyMult(1f + (skipStacks * 0.3f));
         skipStacks = 0; // Consume on attack
         RebuildDescription();
     }

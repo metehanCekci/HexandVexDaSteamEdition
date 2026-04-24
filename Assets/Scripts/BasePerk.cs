@@ -52,6 +52,33 @@ public abstract class BasePerk : MonoBehaviour
     /// </summary>
     public virtual int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload) { return 0; }
 
+    // ======================================================
+    // PER-DIE BAGIMLI PERK PATTERN'I (Photovoltaic Pulse, ilerideki Triboulet-clone vb.)
+    // ======================================================
+    // Eger perkin efekti belirli bir zara bagliysa (ilk zar, en yuksek zar, belirli deger vs.) ve
+    // o zar retriggerlandiginda efektin de bir kez daha ARDISIK uygulanmasi gerekiyorsa:
+    //
+    // 1. ModifyCombat icinde taban uygulamayi yap (ornek: ilk zar icin payload.ApplyMult(first)).
+    // 2. OnDiceRetriggerEvent'i override et — PerkCombatProcessor her retrigger icin
+    //    (diceIndex, diceValue, payload) ile bunu cagirir.
+    // 3. OnDiceRetriggerEvent icinde perkin ilgili oldugu zar index'i ise efekti yine uygula.
+    //
+    // Bu, Balatro'daki "joker her kart oynaninca tekrar tetiklenir" davranisini verir ve
+    // runningDamage modelinde +3 x3 +3 x3 +3 x3 gibi ARDISIK zincir kurar.
+    //
+    // Ornek (Photovoltaic):
+    //   ModifyCombat:          payload.ApplyMult(diceRolls[0]);       // base x3
+    //   OnDiceRetriggerEvent:  if (diceIndex == 0) payload.ApplyMult(diceValue); // her retrigger x3
+    // ======================================================
+
+    /// <summary>
+    /// Bir zar retriggerlandiginda (pre-pass/post-pass icindeki retrigger event'i) her abone perke cagrilir.
+    /// Retrigger event'i sirasi: PerkCombatProcessor once runningDamage'a zar degerini ekler, sonra
+    /// bu metod tum aktif perklere yayinlanir — per-die bagimli perkler kendi efektlerini burada uygular.
+    /// Ornek: Photovoltaic Pulse, diceIndex == 0 ise payload.ApplyMult(diceValue) yapar.
+    /// </summary>
+    public virtual void OnDiceRetriggerEvent(int diceIndex, int diceValue, CombatPayload payload) { }
+
     // 1. Perk satın alındığında / seçildiğinde 1 kez çalışır
     public virtual void OnAcquire() { }
 
