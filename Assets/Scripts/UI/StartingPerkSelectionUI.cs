@@ -318,18 +318,12 @@ public class StartingPerkSelectionUI : MonoBehaviour
     {
         List<GameObject> source = null;
 
-        Debug.Log($"[StartingPerkSelection] GetRandomCommonPerks: MergedShop={MergedShopManager.instance != null}, LevelUp={LevelUpManager.instance != null}");
+        Debug.Log($"[StartingPerkSelection] GetRandomCommonPerks: MergedShop={MergedShopManager.instance != null}");
 
-        // Try MergedShopManager first (most reliable at this point)
         if (MergedShopManager.instance != null && MergedShopManager.instance.commonPerks != null && MergedShopManager.instance.commonPerks.Count > 0)
         {
             source = MergedShopManager.instance.commonPerks;
             Debug.Log($"[StartingPerkSelection] Source: MergedShopManager.commonPerks = {source.Count}");
-        }
-        else if (LevelUpManager.instance != null && LevelUpManager.instance.commonPerks != null && LevelUpManager.instance.commonPerks.Count > 0)
-        {
-            source = LevelUpManager.instance.commonPerks;
-            Debug.Log($"[StartingPerkSelection] Source: LevelUpManager.commonPerks = {source.Count}");
         }
 
         // Fallback: scan all BasePerk prefabs

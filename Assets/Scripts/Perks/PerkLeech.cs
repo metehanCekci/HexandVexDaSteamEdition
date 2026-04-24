@@ -53,8 +53,8 @@ public class PerkLeechPerk : BasePerk
         isMerging = true;
 
         GameObject perkPrefab = null;
-        if (LevelUpManager.instance != null)
-            perkPrefab = LevelUpManager.instance.GetRandomPerkByRarity(false);
+        if (MergedShopManager.instance != null)
+            perkPrefab = MergedShopManager.instance.GetRandomPerkByRarity(false);
 
         if (perkPrefab == null) { isMerging = false; yield break; }
 

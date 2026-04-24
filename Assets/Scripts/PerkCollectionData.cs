@@ -20,7 +20,7 @@ public class PerkCollectionData : ScriptableObject
     [TextArea(2, 4)]
     public string loreText;
 
-    [Header("Rarity (LevelUpManager listelerinden belirlenir)")]
+    [Header("Rarity (MergedShopManager listelerinden belirlenir)")]
     public PerkRarity rarity = PerkRarity.Common;
 
     [Header("Unlock Koşulu")]

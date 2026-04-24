@@ -165,7 +165,6 @@ public class PauseManager : MonoBehaviour
     public void Restart()
     {
         Time.timeScale = 1f;
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ForceClose();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
@@ -184,10 +183,6 @@ public class PauseManager : MonoBehaviour
         Time.timeScale = 1f;
         isPaused = false;
         if (pauseMenuUI != null) pauseMenuUI.SetActive(false);
-
-        // Perk menüsünü zorla kapat
-        if (LevelUpManager.instance != null)
-            LevelUpManager.instance.ForceClose();
 
         if (ScreenFader.instance != null)
         {
