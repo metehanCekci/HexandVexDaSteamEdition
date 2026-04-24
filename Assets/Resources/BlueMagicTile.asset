@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: BlueMagicTile
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.Tilemaps.Tile
-  m_Sprite: {fileID: 3668991473439413597, guid: 8660bf65d27cf604c93446361a5b229f, type: 3}
+  m_Sprite: {fileID: 6736753028614078353, guid: 64a898643b7f261488d914563d35373b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Transform:
     e00: 1
