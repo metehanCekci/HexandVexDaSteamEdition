@@ -767,6 +767,13 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // Piggy bank interest payout — coins fly into gold counter; we hold until the animation wraps.
+        if (PiggyBankManager.instance != null)
+        {
+            float hold = PiggyBankManager.instance.PayInterest();
+            if (hold > 0f) yield return new WaitForSeconds(hold);
+        }
+
         // Map sistemi aktifse → haritaya dön
         if (MapManager.instance != null)
         {
