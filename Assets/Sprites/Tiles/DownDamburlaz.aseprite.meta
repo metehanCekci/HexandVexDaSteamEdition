@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: DownDamburlaz
     originalName: 
-    pivot: {x: 0.4909091, y: -0.023809524}
+    pivot: {x: 0.49090913, y: 0.677291}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
