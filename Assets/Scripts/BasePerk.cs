@@ -21,11 +21,36 @@ public abstract class BasePerk : MonoBehaviour
     /// <summary>true ise bu perk diger perklerin ModifyCombat'i bittikten sonra islenir.</summary>
     public bool processLast = false;
 
+    /// <summary>
+    /// true ise bu perk baska perklerin efektlerini tekrar tetikler (Mimetic Growth, Leftmost Resonance, Parasitic Chorus...).
+    /// Retrigger perkleri diger retrigger perklerini retriggerlayamaz (infinite loop korumasi).
+    /// Dice retrigger perkleri (Stelzer, Hanging Nerve, Sensory Overload) bunu ISARETLEMEZ — onlar zarlari retriggerlar, perkleri degil.
+    /// </summary>
+    public bool isPerkRetrigger = false;
+
     [Header("Rarity")]
     public PerkRarity rarity = PerkRarity.Common;
 
     // Perk havuzdan çekilirken gösterilebilir mi? (GeneSplice gibi koşullu perkler override eder)
     public virtual bool CanBeOffered() { return true; }
+
+    /// <summary>
+    /// Perk su an calisabilir durumda mi? (Ornegin en sagdaki Mimetic Growth'un kopyalayacagi komsusu yok)
+    /// false donerse UI "INCOMPATIBLE" etiketi gosterir ve perk ModifyCombat'a skip edilir.
+    /// </summary>
+    public virtual bool IsIncompatible() { return false; }
+
+    /// <summary>
+    /// IsIncompatible() true oldugunda tooltip'te gosterilecek kisa sebep.
+    /// </summary>
+    public virtual string GetIncompatibleReason() { return "Incompatible"; }
+
+    /// <summary>
+    /// Tek bir zar islendikten sonra cagrilir. Dice retrigger perkleri burada zarin tekrar
+    /// islenip islenmeyecegine karar verir. Geri donus degeri: bu zar icin kac ekstra retrigger
+    /// yapilacak (0 = retrigger yok).
+    /// </summary>
+    public virtual int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload) { return 0; }
 
     // 1. Perk satın alındığında / seçildiğinde 1 kez çalışır
     public virtual void OnAcquire() { }

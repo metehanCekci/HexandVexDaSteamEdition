@@ -5321,7 +5321,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
   layerConfigs:
   - {fileID: 11400000, guid: 164f60c6b908e094a96e00596a3a1204, type: 2}
-  - {fileID: 11400000, guid: 880e8ed46485d4f4f916a95ab6f0c727, type: 2}
   mapUI: {fileID: 0}
   mapBackgroundTexture: {fileID: 2800000, guid: da21a01ce7772d845ad47240c6b58ca2, type: 3}
   mapBackgroundSprite: {fileID: 0}

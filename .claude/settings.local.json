@@ -94,7 +94,10 @@
       "Bash(grep -l \"BombPlacementCursor\\\\|NecroShotCursor\\\\|PhaseShiftCursor\\\\|ThornPlacementCursor\" \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/\"*.unity)",
       "Bash(grep -n \"StartKnockback\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
       "Bash(grep -n \"OnPlayerLeftCell\\\\|CheckMucusSlide\\\\|GetEnemyPushedIntoSpike\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
-      "Bash(grep -n \"surgeBootActive.*false\" Assets/Scripts/*.cs)"
+      "Bash(grep -n \"surgeBootActive.*false\" Assets/Scripts/*.cs)",
+      "Bash(xargs -I {} wc -l {})",
+      "PowerShell(1..14 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })",
+      "PowerShell(1..7 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })"
     ]
   }
 }

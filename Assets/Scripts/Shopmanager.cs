@@ -261,8 +261,8 @@ public class Shopmanager : MonoBehaviour
     {
         RefreshCoinDisplay();
         if (MapManager.instance != null) { MapManager.instance.OnNodeComplete(); return; }
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
-        else { RunManager.instance.currentLevel++; LevelGenerator.instance.GenerateNextLevel(); }
+        RunManager.instance.currentLevel++;
+        LevelGenerator.instance.GenerateNextLevel();
     }
 
     public void OnBossCleared()
@@ -271,8 +271,8 @@ public class Shopmanager : MonoBehaviour
         currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
         RefreshCoinDisplay();
         if (MapManager.instance != null) { MapManager.instance.OnNodeComplete(); return; }
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
-        else { RunManager.instance.currentLevel++; LevelGenerator.instance.GenerateNextLevel(); }
+        RunManager.instance.currentLevel++;
+        LevelGenerator.instance.GenerateNextLevel();
     }
 
     // ═══════════════════════════════════════════

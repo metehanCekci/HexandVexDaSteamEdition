@@ -117,7 +117,7 @@ public class MapManager : MonoBehaviour
             GameObject sacGO = new GameObject("SacrificeNodeManager");
             sacGO.AddComponent<SacrificeNodeManager>();
         }
-        // Cache perk lists while LevelUpManager is still alive
+        // Cache perk lists from MergedShopManager early
         if (SacrificeNodeManager.instance != null)
             SacrificeNodeManager.instance.CachePerkLists();
 

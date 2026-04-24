@@ -283,23 +283,7 @@ public class MergedShopManager : MonoBehaviour
 
     private void AutoPopulatePerkPools()
     {
-        // Önce LevelUpManager'dan dene
-        if (LevelUpManager.instance != null && LevelUpManager.instance.commonPerks.Count > 0)
-        {
-            commonPerks    = LevelUpManager.instance.commonPerks.FindAll(p => !IsDisabledPerk(p));
-            rarePerks      = LevelUpManager.instance.rarePerks.FindAll(p => !IsDisabledPerk(p));
-            epicPerks      = LevelUpManager.instance.epicPerks.FindAll(p => !IsDisabledPerk(p));
-            legendaryPerks = LevelUpManager.instance.legendaryPerks.FindAll(p => !IsDisabledPerk(p));
-            Debug.Log($"[MergedShop] Perk pools from LevelUpManager: C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
-
-            // Also feed SacrificeNodeManager while we have valid perk lists
-            if (SacrificeNodeManager.instance != null)
-                SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks, GetSecretPerkPool());
-
-            return;
-        }
-
-        // LevelUpManager yoksa: projedeki tüm BasePerk prefab'larını tara
+        // Projedeki tüm BasePerk prefab'larını tara
         var allPerks = Resources.FindObjectsOfTypeAll<BasePerk>();
         foreach (var perk in allPerks)
         {
@@ -448,13 +432,8 @@ public class MergedShopManager : MonoBehaviour
         // PerkInventoryUI'ı shop'un üstünde tut — tıklanabilir olsun
         EnsurePerkPanelAboveShop();
 
-        if (commonPerks.Count == 0 && LevelUpManager.instance != null)
-        {
-            commonPerks    = LevelUpManager.instance.commonPerks.FindAll(p => !IsDisabledPerk(p));
-            rarePerks      = LevelUpManager.instance.rarePerks.FindAll(p => !IsDisabledPerk(p));
-            epicPerks      = LevelUpManager.instance.epicPerks.FindAll(p => !IsDisabledPerk(p));
-            legendaryPerks = LevelUpManager.instance.legendaryPerks.FindAll(p => !IsDisabledPerk(p));
-        }
+        if (commonPerks.Count == 0)
+            AutoPopulatePerkPools();
 
         // Always try to inject — perks may have been cached earlier via fallback
         if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
@@ -1014,7 +993,7 @@ public class MergedShopManager : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // PERK HELPERS (LevelUpManager'dan kopyalandı)
+    // PERK HELPERS
     // ═══════════════════════════════════════════
 
     private bool AreAllPerksMaxed()
@@ -1061,7 +1040,7 @@ public class MergedShopManager : MonoBehaviour
         return false;
     }
 
-    private GameObject GetRandomPerkByRarity(bool forceLegendary)
+    public GameObject GetRandomPerkByRarity(bool forceLegendary)
     {
         if (forceLegendary && legendaryPerks.Count > 0)
             return legendaryPerks[Random.Range(0, legendaryPerks.Count)];

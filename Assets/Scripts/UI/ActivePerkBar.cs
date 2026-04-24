@@ -611,7 +611,20 @@ public class ActivePerkBar : MonoBehaviour
 
         perk.RebuildDescription();
         if (tooltipDescText != null)
-            tooltipDescText.text = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
+        {
+            string body = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
+            if (perk.IsIncompatible())
+            {
+                string reason = perk.GetIncompatibleReason();
+                string badge = $"<color=#{UIColors.CantAfford}><b>INCOMPATIBLE</b></color>";
+                string reasonLine = string.IsNullOrEmpty(reason) ? "" : $"\n<color=#{UIColors.CantAfford}>{reason}</color>";
+                tooltipDescText.text = $"{badge}{reasonLine}\n\n{body}";
+            }
+            else
+            {
+                tooltipDescText.text = body;
+            }
+        }
 
         tooltipObj.SetActive(true);
         tooltipObj.transform.SetAsLastSibling();
