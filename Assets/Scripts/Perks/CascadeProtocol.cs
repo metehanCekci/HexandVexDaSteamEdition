@@ -51,7 +51,7 @@ public class CascadeProtocolPerk : BasePerk
         if (accumulatedDamage > 0)
         {
             double bonus = accumulatedDamage * (1.0 + (currentLevel - 1) * 0.25);
-            payload.flatBonus += (long)System.Math.Min(bonus, long.MaxValue - payload.flatBonus);
+            payload.ApplyAdd(bonus);
             TriggerVisualPop();
         }
 

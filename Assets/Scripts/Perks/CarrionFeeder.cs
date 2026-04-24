@@ -52,7 +52,7 @@ public class CarrionFeederPerk : BasePerk
 
         for (int i = 0; i < killStreak; i++)
         {
-            payload.multiplier *= 2f;
+            payload.ApplyMult(2f);
             TriggerVisualPop();
             if (PerkListUI.instance != null)
                 PerkListUI.instance.TriggerShakeForPerk(this);

@@ -36,15 +36,9 @@ public class TerminalFuryGlandPerk : BasePerk
 
         float tfgMult = 2f + (maxHP - currentHP);
 
-        bool hasGC = rm.activePerks.Exists(p => p is GlassCanonPerk);
-        if (hasGC)
-        {
-            payload.multiplier = payload.multiplier / 2f * (tfgMult + 2f);
-        }
-        else
-        {
-            payload.multiplier *= tfgMult;
-        }
+        // Balatro model: her perk bagimsiz calisir. Eski GlassCanon coexistence hack'i kaldirildi —
+        // iki perk ayri ayri ApplyMult yapiyor, inspector sirasina gore ardisik uygulanir.
+        payload.ApplyMult(tfgMult);
 
         TriggerVisualPop();
     }

@@ -16,6 +16,9 @@ public class PentUpStrikePerk : BasePerk
     void OnEnable()
     {
         rarity = PerkRarity.Epic;
+        // Balatro modelinde bu perk ardisik pipeline'in EN SONUNDA calismali,
+        // cunku runningDamage'i sifirlayip kendi bonusunu uyguluyor.
+        processLast = true;
         if (string.IsNullOrEmpty(description))
             description = "Attacks deal {zero} but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}.\nStored: {stored} ({stacks} stacks)";
         RebuildDescription();
@@ -38,8 +41,9 @@ public class PentUpStrikePerk : BasePerk
     {
         if (isReleasing)
         {
+            // Biriken hasari serbest birak: runningDamage'a dogrudan ekle (% ile olcekli).
             double bonus = storedDamage * (0.5 + currentLevel * 0.5);
-            payload.flatBonus += (long)System.Math.Min(bonus, long.MaxValue - payload.flatBonus);
+            payload.ApplyAdd(bonus);
             storedDamage = 0;
             storedStacks = 0;
             isReleasing = false;
@@ -48,14 +52,16 @@ public class PentUpStrikePerk : BasePerk
         }
         else
         {
+            // Normal saldiri: zarlari biriktir, bu saldiri 0 hasar versin.
             long diceSum = payload.diceRolls.Sum();
             storedDamage += diceSum;
             storedStacks++;
 
             for (int i = 0; i < payload.diceRolls.Count; i++)
                 payload.diceRolls[i] = 0;
-            payload.flatBonus = 0;
-            payload.multiplier = 0f;
+            // Balatro model: processLast oldugumuz icin tum onceki perkler calisti,
+            // simdi runningDamage'i sifirliyoruz (ve sonraki retrigger pass zar 0 olacagi icin bir sey eklemez).
+            payload.runningDamage = 0.0;
 
             RebuildDescription();
             TriggerVisualPop();

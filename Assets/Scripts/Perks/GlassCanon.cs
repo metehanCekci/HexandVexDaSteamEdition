@@ -78,7 +78,7 @@ public class GlassCanonPerk : BasePerk
     public override void ModifyCombat(CombatPayload payload)
     {
         // Glass Cannon: Her koşulda 2x hasar
-        payload.multiplier *= 2f;
+        payload.ApplyMult(2f);
 
         Debug.Log($"[GlassCanon] 2x damage applied, Final multiplier: {payload.multiplier}x");
 

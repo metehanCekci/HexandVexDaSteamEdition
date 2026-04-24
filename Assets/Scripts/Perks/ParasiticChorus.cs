@@ -62,10 +62,16 @@ public class ParasiticChorusPerk : BasePerk
 
         foreach (var target in targets)
         {
-            TriggerVisualPop();
-            if (PerkListUI.instance != null)
-                PerkListUI.instance.TriggerShakeForPerk(this);
+            long before = payload.GetFinalDamage();
             yield return processor.RetriggerPerk(target, payload, rolls);
+            long after = payload.GetFinalDamage();
+
+            if (after != before)
+            {
+                TriggerVisualPop();
+                if (PerkListUI.instance != null)
+                    PerkListUI.instance.TriggerShakeForPerk(this);
+            }
         }
     }
 }

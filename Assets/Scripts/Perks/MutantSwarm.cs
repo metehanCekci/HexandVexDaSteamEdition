@@ -28,7 +28,7 @@ public class MutantSwarmPerk : BasePerk
         float bonusPerDie = 0.5f * currentLevel;
         float extraMult = 1.0f + (payload.diceRolls.Count * bonusPerDie);
 
-        payload.multiplier *= extraMult;
+        payload.ApplyMult(extraMult);
         TriggerVisualPop();
     }
 }
