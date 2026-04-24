@@ -16,6 +16,7 @@ public class MagicTileTooltip : MonoBehaviour
     private CanvasGroup canvasGroup;
     private TMP_Text titleText;
     private TMP_Text bodyText;
+    private bool uiBuilt = false;
 
     private MagicTileType currentType;
     private bool hasCurrent = false;
@@ -33,7 +34,15 @@ public class MagicTileTooltip : MonoBehaviour
     {
         if (_instance != null && _instance != this) { Destroy(gameObject); return; }
         _instance = this;
-        BuildUI();
+        // BuildUI is deferred until the perk bar's canvas is available — we piggyback on it.
+    }
+
+    // Locate (or wait for) the shared perk tooltip canvas so we don't spawn our own.
+    private Canvas ResolveSharedCanvas()
+    {
+        if (ActivePerkBar.instance != null && ActivePerkBar.instance.barCanvas != null)
+            return ActivePerkBar.instance.barCanvas;
+        return null;
     }
 
     void OnDestroy()
@@ -41,24 +50,19 @@ public class MagicTileTooltip : MonoBehaviour
         if (_instance == this) _instance = null;
     }
 
-    private void BuildUI()
+    private void BuildUI(Canvas hostCanvas)
     {
-        // Canvas — screen-space overlay, sits above most UI
-        var canvasGO = new GameObject("Canvas", typeof(RectTransform));
-        canvasGO.transform.SetParent(transform, false);
-        canvas = canvasGO.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 5000;
-        canvasGO.AddComponent<CanvasScaler>();
-        // No GraphicRaycaster — tooltip must not intercept clicks
+        canvas = hostCanvas;
 
-        // Panel
-        var panelGO = new GameObject("Panel", typeof(RectTransform));
-        panelGO.transform.SetParent(canvasGO.transform, false);
+        // Panel — child of the shared perk tooltip canvas so everything sits on one Canvas.
+        var panelGO = new GameObject("MagicTileTooltipPanel", typeof(RectTransform));
+        panelGO.transform.SetParent(hostCanvas.transform, false);
         panelRT = panelGO.GetComponent<RectTransform>();
         panelRT.pivot = new Vector2(0f, 1f); // top-left pivot so positioning is easy near cursor
-        panelRT.anchorMin = new Vector2(0f, 0f);
-        panelRT.anchorMax = new Vector2(0f, 0f);
+        // Anchor at canvas center — PositionNearMouse computes coords via ScreenPointToLocalPointInRectangle,
+        // which returns canvas-local (centered) space.
+        panelRT.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRT.anchorMax = new Vector2(0.5f, 0.5f);
         panelRT.sizeDelta = new Vector2(260f, 90f);
 
         canvasGroup = panelGO.AddComponent<CanvasGroup>();
@@ -97,10 +101,14 @@ public class MagicTileTooltip : MonoBehaviour
         fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
+        // Use the same Alagard pixel font that the perk tooltip and rest of the UI uses.
+        var alagard = Resources.Load<TMP_FontAsset>("alagard SDF");
+
         // Title
         var titleGO = new GameObject("Title", typeof(RectTransform));
         titleGO.transform.SetParent(panelGO.transform, false);
         titleText = titleGO.AddComponent<TextMeshProUGUI>();
+        if (alagard != null) titleText.font = alagard;
         titleText.fontSize = 18f;
         titleText.fontStyle = FontStyles.Bold;
         titleText.color = Color.white;
@@ -111,15 +119,25 @@ public class MagicTileTooltip : MonoBehaviour
         var bodyGO = new GameObject("Body", typeof(RectTransform));
         bodyGO.transform.SetParent(panelGO.transform, false);
         bodyText = bodyGO.AddComponent<TextMeshProUGUI>();
+        if (alagard != null) bodyText.font = alagard;
         bodyText.fontSize = 14f;
         bodyText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
         bodyText.raycastTarget = false;
         bodyText.richText = true;
         bodyText.textWrappingMode = TextWrappingModes.Normal;
+
+        uiBuilt = true;
     }
 
     void Update()
     {
+        if (!uiBuilt)
+        {
+            var host = ResolveSharedCanvas();
+            if (host == null) return; // bar not ready yet — try again next frame
+            BuildUI(host);
+        }
+
         bool foundHover = TryGetHoveredTile(out MagicTileType type);
 
         if (foundHover)
@@ -164,19 +182,33 @@ public class MagicTileTooltip : MonoBehaviour
 
     private void PositionNearMouse()
     {
-        if (panelRT == null) return;
+        if (panelRT == null || canvas == null) return;
 
-        Vector2 mouse = Input.mousePosition;
-        Vector2 offset = new Vector2(18f, -18f); // to the right, slightly below cursor
-        Vector2 pos = mouse + offset;
+        RectTransform canvasRT = canvas.transform as RectTransform;
+        if (canvasRT == null) return;
 
-        // Keep inside screen bounds
+        // Convert screen-space mouse to the parent canvas's local coords. This handles
+        // CanvasScaler reference-resolution scaling correctly — raw Screen pixels won't
+        // match if the canvas isn't 1:1 with the screen.
+        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRT, Input.mousePosition, cam, out Vector2 local))
+            return;
+
+        Vector2 offset = new Vector2(18f, -18f); // right + slightly below
+        Vector2 pos = local + offset;
+
+        // Keep inside canvas bounds
+        Rect cRect = canvasRT.rect;
         float w = panelRT.rect.width;
         float h = panelRT.rect.height;
-        if (pos.x + w > Screen.width)  pos.x = mouse.x - w - 18f;
-        if (pos.y - h < 0f)            pos.y = h + 18f;
-        if (pos.x < 0f)                pos.x = 4f;
-        if (pos.y > Screen.height)     pos.y = Screen.height - 4f;
+        float halfW = cRect.width * 0.5f;
+        float halfH = cRect.height * 0.5f;
+
+        if (pos.x + w > halfW)       pos.x = local.x - w - 18f;
+        if (pos.y - h < -halfH)      pos.y = local.y + h + 18f;
+        if (pos.x < -halfW)          pos.x = -halfW + 4f;
+        if (pos.y > halfH)           pos.y = halfH - 4f;
 
         panelRT.anchoredPosition = pos;
     }
@@ -194,11 +226,11 @@ public class MagicTileTooltip : MonoBehaviour
     {
         switch (type)
         {
-            case MagicTileType.Red:    return "Red Rune";
-            case MagicTileType.Blue:   return "Blue Rune";
-            case MagicTileType.Green:  return "Green Rune";
-            case MagicTileType.Yellow: return "Yellow Rune";
-            case MagicTileType.Orange: return "Orange Rune";
+            case MagicTileType.Red:    return "Red Tile";
+            case MagicTileType.Blue:   return "Blue Tile";
+            case MagicTileType.Green:  return "Green Tile";
+            case MagicTileType.Yellow: return "Yellow Tile";
+            case MagicTileType.Orange: return "Orange Tile";
         }
         return "Enchanted Tile";
     }

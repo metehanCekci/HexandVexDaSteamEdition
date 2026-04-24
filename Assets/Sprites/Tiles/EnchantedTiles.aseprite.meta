@@ -151,7 +151,7 @@ ScriptedImporter:
   spriteSheetImportData:
   - name: EnchantedTiles_0
     originalName: 
-    pivot: {x: 0.50209624, y: 0.33877093}
+    pivot: {x: 0.50652784, y: 0.34432513}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -256,7 +256,7 @@ ScriptedImporter:
     uvTransform: {x: 0, y: 0}
   - name: EnchantedTiles_5
     originalName: 
-    pivot: {x: 0.5000002, y: 0.58179605}
+    pivot: {x: 0.49999985, y: 0.4156107}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
