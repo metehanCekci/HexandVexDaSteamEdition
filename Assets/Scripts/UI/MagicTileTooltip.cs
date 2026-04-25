@@ -131,6 +131,19 @@ public class MagicTileTooltip : MonoBehaviour
 
     void Update()
     {
+        // Scene reload (e.g. Hold-R reset) destroys the panel built under the previous canvas.
+        // Detect that and rebuild — otherwise we keep poking a destroyed CanvasGroup.
+        if (uiBuilt && (canvasGroup == null || panelRT == null || canvas == null))
+        {
+            uiBuilt = false;
+            canvasGroup = null;
+            panelRT = null;
+            canvas = null;
+            titleText = null;
+            bodyText = null;
+            hasCurrent = false;
+        }
+
         if (!uiBuilt)
         {
             var host = ResolveSharedCanvas();

@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class SacrificeRewardSlot : MonoBehaviour
+public class SacrificeRewardSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     public Image background;
     public Image iconImage;
@@ -15,6 +16,8 @@ public class SacrificeRewardSlot : MonoBehaviour
     private PerkRarity slotRarity;
     private int cost;
     private bool isLocked;
+    private int lockedUntilVisit;
+    private GameObject currentPerkPrefab;
 
     public void Setup(PerkRarity rarity, GameObject perkPrefab, int perkCost)
     {
@@ -28,6 +31,11 @@ public class SacrificeRewardSlot : MonoBehaviour
         slotRarity = rarity;
         cost = perkCost;
         isLocked = locked;
+        this.lockedUntilVisit = lockedUntilVisit;
+        this.currentPerkPrefab = perkPrefab;
+
+        // Slot needs a raycastable graphic so PointerEnter/Exit fire
+        if (background != null) background.raycastTarget = true;
 
         if (locked)
         {
@@ -107,4 +115,32 @@ public class SacrificeRewardSlot : MonoBehaviour
     }
 
     public static Color GetRarityColor(PerkRarity rarity) => UIColors.GetRarityColor(rarity);
+
+    // ─── Tooltip (uses the shared perk tooltip on ActivePerkBar) ───
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (ActivePerkBar.instance == null) return;
+        RectTransform anchor = transform as RectTransform;
+        if (anchor == null) return;
+
+        if (isLocked)
+        {
+            string title = $"{slotRarity.ToString().ToUpper()} LOCKED";
+            string body = $"Unlocks at Sacrifice #{lockedUntilVisit}.\nVisit more sacrifice nodes to access this tier.";
+            ActivePerkBar.instance.ShowGenericTooltip(title, body, GetRarityColor(slotRarity), anchor);
+        }
+        else if (currentPerkPrefab != null)
+        {
+            BasePerk bp = currentPerkPrefab.GetComponent<BasePerk>();
+            if (bp != null)
+                ActivePerkBar.instance.ShowPerkTooltip(bp, anchor);
+        }
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (ActivePerkBar.instance != null)
+            ActivePerkBar.instance.HideSharedTooltip();
+    }
 }

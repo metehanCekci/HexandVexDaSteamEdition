@@ -587,6 +587,85 @@ public class ActivePerkBar : MonoBehaviour
     // ======================================================
 
     private Coroutine tooltipFadeCoroutine;
+    private int savedBarSortingOrder = int.MinValue;
+
+    // When the tooltip is shown over a higher-z panel (e.g. sacrifice screen at 95),
+    // bump our canvas above it so the tooltip isn't hidden behind the panel.
+    private void EnsureTooltipOnTop()
+    {
+        if (barCanvas == null) return;
+        if (savedBarSortingOrder == int.MinValue)
+            savedBarSortingOrder = barCanvas.sortingOrder;
+        if (barCanvas.sortingOrder < 200)
+            barCanvas.sortingOrder = 200;
+    }
+
+    private void RestoreBarSortingOrder()
+    {
+        if (barCanvas == null || savedBarSortingOrder == int.MinValue) return;
+        barCanvas.sortingOrder = savedBarSortingOrder;
+        savedBarSortingOrder = int.MinValue;
+    }
+
+    /// <summary>
+    /// Show the shared perk tooltip with arbitrary title/body/color, anchored under iconRT.
+    /// Used for locked sacrifice slots (no BasePerk to show).
+    /// </summary>
+    public void ShowGenericTooltip(string title, string body, Color titleColor, RectTransform iconRT)
+    {
+        if (iconRT == null) return;
+        if (tooltipObj == null || tooltipNameText == null)
+        {
+            if (barCanvas != null) BuildTooltip(barCanvas.transform);
+            else return;
+        }
+
+        EnsureTooltipOnTop();
+
+        tooltipNameText.text = title ?? "";
+        tooltipNameText.color = titleColor;
+
+        if (tooltipLevelText != null) tooltipLevelText.text = "";
+
+        if (tooltipDescText != null) tooltipDescText.text = body ?? "";
+
+        tooltipObj.SetActive(true);
+        tooltipObj.transform.SetAsLastSibling();
+
+        Image ttBg = tooltipObj.GetComponent<Image>();
+        if (ttBg != null) ttBg.color = new Color(0f, 0.02f, 0.047f, 0.95f);
+
+        RectTransform ttRT = tooltipObj.GetComponent<RectTransform>();
+        float pad = 8f;
+        float topRowH = 22f;
+        float descH = 0f;
+        if (tooltipDescText != null && !string.IsNullOrEmpty(tooltipDescText.text))
+        {
+            tooltipDescText.ForceMeshUpdate();
+            descH = tooltipDescText.preferredHeight;
+        }
+        float totalH = pad + topRowH + 2f + descH + pad;
+        if (totalH < TOOLTIP_HEIGHT) totalH = TOOLTIP_HEIGHT;
+        ttRT.sizeDelta = new Vector2(TOOLTIP_WIDTH, totalH);
+
+        RectTransform canvasRT = barCanvas != null ? barCanvas.transform as RectTransform : null;
+        if (canvasRT == null) return;
+
+        Vector3[] iconCorners = new Vector3[4];
+        iconRT.GetWorldCorners(iconCorners);
+        Vector3 iconBottomCenter = (iconCorners[0] + iconCorners[3]) / 2f;
+        Vector3 localPoint = canvasRT.InverseTransformPoint(iconBottomCenter);
+        ttRT.localPosition = new Vector3(localPoint.x, localPoint.y - 12f, 0f);
+
+        if (tooltipFadeCoroutine != null) StopCoroutine(tooltipFadeCoroutine);
+        tooltipFadeCoroutine = StartCoroutine(TooltipFadeAnim(true));
+    }
+
+    /// <summary>Public overload — show tooltip for a perk anchored under iconRT.</summary>
+    public void ShowPerkTooltip(BasePerk perk, RectTransform iconRT) => ShowTooltip(perk, iconRT);
+
+    /// <summary>Public hide — used by external slots that share this tooltip.</summary>
+    public void HideSharedTooltip() => HideTooltip();
 
     private void ShowTooltip(BasePerk perk, RectTransform iconRT)
     {
@@ -598,6 +677,8 @@ public class ActivePerkBar : MonoBehaviour
             if (barCanvas != null) BuildTooltip(barCanvas.transform);
             else return;
         }
+
+        EnsureTooltipOnTop();
 
         string rarityHex = PerkListUI.GetRarityHex(perk.rarity);
         Color rarityColor;
@@ -664,10 +745,11 @@ public class ActivePerkBar : MonoBehaviour
 
     private void HideTooltip()
     {
-        if (tooltipObj == null) return;
+        if (tooltipObj == null) { RestoreBarSortingOrder(); return; }
         if (tooltipFadeCoroutine != null) StopCoroutine(tooltipFadeCoroutine);
         if (tooltipCanvasGroup != null) tooltipCanvasGroup.alpha = 0f;
         tooltipObj.SetActive(false);
+        RestoreBarSortingOrder();
     }
 
     private IEnumerator TooltipFadeAnim(bool fadeIn)

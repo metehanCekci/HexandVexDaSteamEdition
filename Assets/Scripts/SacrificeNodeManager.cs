@@ -36,6 +36,11 @@ public class SacrificeNodeManager : MonoBehaviour
     [Header("Leave")]
     public Button leaveButton;
 
+    [Header("Progression Bar")]
+    public Image[] progressionDots = new Image[3];   // ○  ○  ○  (3 sacrifice nodes)
+    public Image[] progressionLines = new Image[2];  // connecting segments between dots
+    private const int TOTAL_SACRIFICE_NODES = 3;
+
     // Runtime
     private List<BasePerk> tubePerks = new List<BasePerk>();
     private List<GameObject> tubePerkIcons = new List<GameObject>();
@@ -85,6 +90,9 @@ public class SacrificeNodeManager : MonoBehaviour
     public void Show()
     {
         if (panel == null) BuildFromCode();
+
+        // Older scenes (built via editor tool) may not have the progression bar — inject it on first Show.
+        EnsureProgressionBar();
 
         ReturnAllTubePerks();
 
@@ -871,6 +879,8 @@ public class SacrificeNodeManager : MonoBehaviour
         if (titleText != null)
             titleText.text = $"SACRIFICE MACHINE  <size=22><color=#888888>#{visit}</color></size>";
 
+        RefreshProgressionBar();
+
         // Lever
         bool canPull = CanPullLever();
         if (leverButton != null) leverButton.interactable = canPull;
@@ -951,6 +961,9 @@ public class SacrificeNodeManager : MonoBehaviour
             new Vector2(-50, -15), new Vector2(500, 55),
             "SACRIFICE MACHINE", 36, new Color(0.8f, 0.2f, 0.6f), TextAlignmentOptions.Center);
 
+        // Progression bar — three dots connected by short lines, sits under the title
+        BuildProgressionBar(panel.transform);
+
         // Machine
         GameObject machineGO = MakeUI("MachineBody", panel.transform);
         SetAnchored(machineGO.GetComponent<RectTransform>(), new Vector2(0.5f, 0.5f), new Vector2(-50, 20), new Vector2(420, 520));
@@ -1005,6 +1018,118 @@ public class SacrificeNodeManager : MonoBehaviour
         BuildLeaveButton(panel.transform);
 
         panel.SetActive(false);
+    }
+
+    // Build the progression bar lazily for scenes assembled via the editor setup tool
+    // (which predates this feature). Idempotent — does nothing once dots exist.
+    private void EnsureProgressionBar()
+    {
+        if (progressionDots != null && progressionDots.Length > 0 && progressionDots[0] != null) return;
+        if (panel == null) return;
+
+        // If a previous run left a stale "ProgressionBar" child around, clear it first.
+        Transform existing = panel.transform.Find("ProgressionBar");
+        if (existing != null) Destroy(existing.gameObject);
+
+        progressionDots = new Image[3];
+        progressionLines = new Image[2];
+        BuildProgressionBar(panel.transform);
+    }
+
+    // Three dots (○─○─○) showing sacrifice progression. Position: directly under the title.
+    private void BuildProgressionBar(Transform parent)
+    {
+        const float DOT_SIZE = 18f;
+        const float LINE_W = 36f;
+        const float LINE_H = 3f;
+        const float SPACING = 4f; // gap between dot edge and line start
+
+        GameObject barGO = MakeUI("ProgressionBar", parent);
+        RectTransform brt = barGO.GetComponent<RectTransform>();
+        brt.anchorMin = new Vector2(0.5f, 1f);
+        brt.anchorMax = new Vector2(0.5f, 1f);
+        brt.pivot = new Vector2(0.5f, 1f);
+        brt.anchoredPosition = new Vector2(-50f, -62f); // matches title's -50 X offset, sits below it
+        brt.sizeDelta = new Vector2(DOT_SIZE * 3 + LINE_W * 2 + SPACING * 4, DOT_SIZE + 6f);
+
+        // Layout: dot, line, dot, line, dot — manually positioned for precise alignment
+        float totalW = DOT_SIZE * 3 + LINE_W * 2 + SPACING * 4;
+        float cursorX = -totalW / 2f;
+
+        for (int i = 0; i < TOTAL_SACRIFICE_NODES; i++)
+        {
+            // Dot
+            GameObject dotGO = MakeUI($"Dot{i}", barGO.transform);
+            RectTransform drt = dotGO.GetComponent<RectTransform>();
+            drt.anchorMin = new Vector2(0.5f, 0.5f);
+            drt.anchorMax = new Vector2(0.5f, 0.5f);
+            drt.pivot = new Vector2(0.5f, 0.5f);
+            drt.sizeDelta = new Vector2(DOT_SIZE, DOT_SIZE);
+            drt.anchoredPosition = new Vector2(cursorX + DOT_SIZE / 2f, 0f);
+            Image dotImg = dotGO.AddComponent<Image>();
+            dotImg.color = new Color(0.25f, 0.25f, 0.3f, 0.9f);
+            dotImg.raycastTarget = false;
+            progressionDots[i] = dotImg;
+
+            cursorX += DOT_SIZE;
+
+            // Connecting line (skip after last dot)
+            if (i < TOTAL_SACRIFICE_NODES - 1)
+            {
+                cursorX += SPACING;
+                GameObject lineGO = MakeUI($"Line{i}", barGO.transform);
+                RectTransform lrt = lineGO.GetComponent<RectTransform>();
+                lrt.anchorMin = new Vector2(0.5f, 0.5f);
+                lrt.anchorMax = new Vector2(0.5f, 0.5f);
+                lrt.pivot = new Vector2(0.5f, 0.5f);
+                lrt.sizeDelta = new Vector2(LINE_W, LINE_H);
+                lrt.anchoredPosition = new Vector2(cursorX + LINE_W / 2f, 0f);
+                Image lineImg = lineGO.AddComponent<Image>();
+                lineImg.color = new Color(0.2f, 0.2f, 0.25f, 0.85f);
+                lineImg.raycastTarget = false;
+                progressionLines[i] = lineImg;
+
+                cursorX += LINE_W + SPACING;
+            }
+        }
+    }
+
+    // Update dot/line colors based on the current visit number (1..3).
+    // Visit N is "current" (highlight), visits < N are "completed" (filled), visits > N are "future" (dim).
+    private void RefreshProgressionBar()
+    {
+        if (progressionDots == null || progressionDots.Length == 0) return;
+
+        int currentVisit = CurrentVisitNumber(); // 1-based
+        Color completedColor = new Color(0.85f, 0.3f, 0.65f, 1f);   // pink — matches title
+        Color currentColor   = new Color(1f, 0.55f, 0.85f, 1f);     // brighter pink for "now"
+        Color futureColor    = new Color(0.22f, 0.22f, 0.27f, 0.9f);
+        Color lineCompleted  = new Color(0.7f, 0.25f, 0.55f, 0.9f);
+        Color lineFuture     = new Color(0.18f, 0.18f, 0.22f, 0.85f);
+
+        for (int i = 0; i < progressionDots.Length; i++)
+        {
+            if (progressionDots[i] == null) continue;
+            int visitNumber = i + 1;
+            if (visitNumber < currentVisit)
+                progressionDots[i].color = completedColor;
+            else if (visitNumber == currentVisit)
+                progressionDots[i].color = currentColor;
+            else
+                progressionDots[i].color = futureColor;
+
+            // Subtle scale pulse for current — bigger than the others
+            RectTransform drt = progressionDots[i].rectTransform;
+            drt.localScale = (visitNumber == currentVisit) ? Vector3.one * 1.25f : Vector3.one;
+        }
+
+        // Lines: filled if the visit before them is completed (i.e. line i is between dot i and dot i+1)
+        for (int i = 0; i < progressionLines.Length; i++)
+        {
+            if (progressionLines[i] == null) continue;
+            int leftVisit = i + 1;
+            progressionLines[i].color = (leftVisit < currentVisit) ? lineCompleted : lineFuture;
+        }
     }
 
     private void BuildLever(Transform parent)
