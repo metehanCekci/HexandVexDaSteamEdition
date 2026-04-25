@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: playButton
     originalName: 
-    pivot: {x: 0.7933884, y: -0.2972973}
+    pivot: {x: 0.8, y: -0.30555558}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,8 +137,8 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 121
-      height: 37
+      width: 120
+      height: 36
     spriteID: 2c89bf55322b2254aaeabaa28b39f859
     spriteBone: []
     spriteOutline: []
@@ -169,8 +169,8 @@ ScriptedImporter:
       cellRect:
         x: 0
         y: 11
-        width: 121
-        height: 37
+        width: 120
+        height: 36
       spriteId: 2c89bf55322b2254aaeabaa28b39f859
     linkedCells: []
     tileCells: []
@@ -182,4 +182,4 @@ ScriptedImporter:
   secondarySpriteTextures: []
   spritePackingTag: 
   canvasSize: {x: 192, y: 48}
-  previousTextureSize: {x: 256, y: 64}
+  previousTextureSize: {x: 128, y: 64}
