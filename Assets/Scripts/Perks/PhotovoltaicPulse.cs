@@ -1,9 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Photovoltaic Pulse — Rare. Ilk zarin degeri kadar multiplier uygular (runningDamage *= first).
+/// Photovoltaic Pulse â€” Rare. Ilk zarin degeri kadar multiplier uygular (runningDamage *= first).
 /// Ilk zar dice-retrigger perkleriyle (Hanging Nerve, Stelzer, Sensory + Mimetic/Leftmost/Parasitic
 /// uzerinden kopyalananlar) her retriggerlaninca multiplier'i bir kez daha ARDISIK uygular.
 ///
@@ -16,18 +16,10 @@ using System.Collections.Generic;
 /// </summary>
 public class PhotovoltaicPulsePerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Multiplies damage by the {first} value. Re-applies each time the first die retriggers.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "first", "first die" }
+        { "first",  GameKeywords.Status("first die") },
+        { "retrig", GameKeywords.Retrigger("retriggers") }
     };
 
     public override bool IsIncompatible() => false;

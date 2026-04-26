@@ -1,25 +1,23 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
 /// Ouroboros (Secret)
-/// Öldüğünde canın full dolar ve tüm perklerinin seviyesi 1 düşer.
-/// Lv1'deki perkler yok olur. Perk kalmayınca gerçekten ölürsün.
-/// maxLevel = 1, kendisi hiç yok olmaz (level düşürmeye dahil değil).
+/// Ã–ldÃ¼ÄŸÃ¼nde canÄ±n full dolar ve tÃ¼m perklerinin seviyesi 1 dÃ¼ÅŸer.
+/// Lv1'deki perkler yok olur. Perk kalmayÄ±nca gerÃ§ekten Ã¶lÃ¼rsÃ¼n.
+/// maxLevel = 1, kendisi hiÃ§ yok olmaz (level dÃ¼ÅŸÃ¼rmeye dahil deÄŸil).
 /// </summary>
 public class OuroborosPerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        rarity = PerkRarity.Secret;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "On death, revive at full HP. A random perk loses 1 level.";
-        RebuildDescription();
-    }
+        { "death", GameKeywords.Action("death") },
+        { "full",  GameKeywords.HealthText("full HP") },
+        { "loss",  GameKeywords.Status("1 level") }
+    };
 
     /// <summary>
-    /// Canı yeterli mi kontrol et — en az 1 tane Lv1+ başka perk olmalı.
+    /// CanÄ± yeterli mi kontrol et â€” en az 1 tane Lv1+ baÅŸka perk olmalÄ±.
     /// </summary>
     public bool CanRevive()
     {
@@ -34,17 +32,17 @@ public class OuroborosPerk : BasePerk
     }
 
     /// <summary>
-    /// Diriliş: canı full yap, rastgele 1 perkin seviyesini 1 düşür, Lv1 ise yok et.
+    /// DiriliÅŸ: canÄ± full yap, rastgele 1 perkin seviyesini 1 dÃ¼ÅŸÃ¼r, Lv1 ise yok et.
     /// </summary>
     public void Revive()
     {
         if (RunManager.instance == null || TurnManager.instance == null) return;
 
-        // Canı full yap
+        // CanÄ± full yap
         var playerHealth = TurnManager.instance.player.health;
         playerHealth.Heal(playerHealth.maxHP);
 
-        // Tüm perklerden (active + inventory) Ouroboros hariç birini seç
+        // TÃ¼m perklerden (active + inventory) Ouroboros hariÃ§ birini seÃ§
         List<BasePerk> candidates = new List<BasePerk>();
 
         foreach (var p in RunManager.instance.activePerks)
@@ -71,7 +69,7 @@ public class OuroborosPerk : BasePerk
             target.currentLevel--;
         }
 
-        // UI'ı güncelle
+        // UI'Ä± gÃ¼ncelle
         if (PerkInventoryUI.instance != null)
             PerkInventoryUI.instance.RefreshUI();
         if (ActivePerkBar.instance != null)

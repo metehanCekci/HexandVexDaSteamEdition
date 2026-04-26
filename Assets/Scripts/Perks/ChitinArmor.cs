@@ -1,22 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class ChitinArmorPerk : BasePerk
 {
     private bool isEquipped = false;
 
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Gain {dodge} dodge chance.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "dodge", "+30%" }
+        { "dodge", GameKeywords.Status("dodge") }
     };
 
     public override void OnAcquire()

@@ -1,11 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
 /// <summary>
-/// Item Eater — Common. Itemleri bu perke "yedirerek" guclendirilir.
+/// Item Eater â€” Common. Itemleri bu perke "yedirerek" guclendirilir.
 /// Base 1x carpan, her yedirilen item basina +0.5x (level scale: L1 +0.5, L2 +0.65, L3 +0.8).
-/// Drag-drop UI henuz yok — UI eklendiginde FeedItem(BaseItem) public API'si kullanilir,
+/// Drag-drop UI henuz yok â€” UI eklendiginde FeedItem(BaseItem) public API'si kullanilir,
 /// item envanterden silinir + feedCount artar.
 /// Inspector flag feedOnItemUsed acilirsa kullanilan her item de besleme sayilir (fallback mod).
 /// </summary>
@@ -16,15 +16,6 @@ public class ItemEaterPerk : BasePerk
     public bool feedOnItemUsed = false;
 
     [System.NonSerialized] public int feedCount = 0;
-
-    void OnEnable()
-    {
-        maxLevel = 3;
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "Feed items to grow. Base {base}, each fed item adds {bonus}.";
-        RebuildDescription();
-    }
 
     public override void OnAcquire()
     {
@@ -47,7 +38,7 @@ public class ItemEaterPerk : BasePerk
 
     /// <summary>
     /// Drag-drop UI cagirir: bir item bu perke yedirildi. Item envanterden silinmis olmali (caller sorumlu).
-    /// Tek seferlik permanent stack — combat sonu reset edilmez.
+    /// Tek seferlik permanent stack â€” combat sonu reset edilmez.
     /// </summary>
     public void FeedItem(BaseItem item)
     {
@@ -65,10 +56,10 @@ public class ItemEaterPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "base", "X1" },
-        { "bonus", "X" + BonusPerFeed().ToString("0.##", CultureInfo.InvariantCulture) },
-        { "current", "X" + (1f + BonusPerFeed() * feedCount).ToString("0.##", CultureInfo.InvariantCulture) },
-        { "fed", feedCount.ToString() }
+        { "base", GameKeywords.Mult(1) },
+        { "bonus", GameKeywords.Mult(BonusPerFeed()) },
+        { "current", GameKeywords.Mult(1f + BonusPerFeed() * feedCount) },
+        { "fed", GameKeywords.Counter(feedCount.ToString()) }
     };
 
     public override void ModifyCombat(CombatPayload payload)

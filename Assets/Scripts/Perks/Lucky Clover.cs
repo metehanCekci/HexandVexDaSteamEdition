@@ -1,19 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 public class LuckyCloverPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Rare;
-        maxLevel = 3;
-        if (string.IsNullOrEmpty(description))
-            description = "Reroll {rerolls} low dice per combat.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "rerolls", $"+{currentLevel}" }
+        { "reroll", GameKeywords.Action("Reroll") },
+        { "rerolls", GameKeywords.Plus(currentLevel) }
     };
 
     public override bool CanBeOffered() { return false; }

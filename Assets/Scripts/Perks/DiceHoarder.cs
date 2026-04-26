@@ -1,28 +1,19 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
 /// Dice Hoarder (Legendary)
-/// Her campfire'da kalıcı +1 zar.
+/// Her campfire'da kalÄ±cÄ± +1 zar.
 /// </summary>
 public class DiceHoarderPerk : BasePerk
 {
     [HideInInspector] public int visitedLevels = 0;
 
-    void OnEnable()
-    {
-        rarity = PerkRarity.Legendary;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Each campfire visited grants a permanent {perFire}.\nCampfires: {count} ({total})";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "perFire", "+1 die" },
-        { "count",   $"+{visitedLevels}" },
-        { "total",   $"+{visitedLevels} dies" }
+        { "perFire", GameKeywords.Plus(1, "die") },
+        { "count",   GameKeywords.Counter(visitedLevels.ToString()) },
+        { "total",   GameKeywords.Plus(visitedLevels, "dice") }
     };
 
     public override void OnAcquire()
@@ -44,7 +35,7 @@ public class DiceHoarderPerk : BasePerk
 
     public override void OnLevelStart()
     {
-        // Sıfırlanmaz — run boyunca birikir
+        // SÄ±fÄ±rlanmaz â€” run boyunca birikir
         RebuildDescription();
     }
 }

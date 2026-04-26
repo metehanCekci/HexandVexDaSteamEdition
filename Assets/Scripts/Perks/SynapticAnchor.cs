@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.Tilemaps;
 
@@ -8,18 +8,16 @@ public class SynapticAnchorPerk : BasePerk
     private Vector3Int anchorCell;
     private GameObject anchorVisual;
 
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "First skip drops an anchor. Next skip teleports you back.";
-        RebuildDescription();
-    }
+        { "skip",     GameKeywords.Action("skip") },
+        { "anchor",   GameKeywords.Counter("anchor") },
+        { "teleport", GameKeywords.Action("teleports") }
+    };
 
     public override void OnEquip()
     {
-        // Anchor state yeni level'da sıfırlanacak zaten, sadece tracking resetle
+        // Anchor state yeni level'da sÄ±fÄ±rlanacak zaten, sadece tracking resetle
     }
 
     public override void OnUnequip()
@@ -37,7 +35,7 @@ public class SynapticAnchorPerk : BasePerk
 
     void Update()
     {
-        // Scaffold kırılırsa anchor da yok olsun
+        // Scaffold kÄ±rÄ±lÄ±rsa anchor da yok olsun
         if (hasAnchor && !IsAnchorCellValid())
         {
             hasAnchor = false;
@@ -51,7 +49,7 @@ public class SynapticAnchorPerk : BasePerk
         return TurnManager.instance.HasWalkableTile(anchorCell);
     }
 
-    /// <summary>true ise bu skip'te teleport yapılacak — TurnManager bekleyecek.</summary>
+    /// <summary>true ise bu skip'te teleport yapÄ±lacak â€” TurnManager bekleyecek.</summary>
     [System.NonSerialized] public bool teleportPending = false;
 
     public override void OnSkip()
@@ -68,13 +66,13 @@ public class SynapticAnchorPerk : BasePerk
         }
         else
         {
-            // Second skip: teleport'u hemen başlatma — HandleSkipPhase bekleyecek
+            // Second skip: teleport'u hemen baÅŸlatma â€” HandleSkipPhase bekleyecek
             teleportPending = true;
             TriggerVisualPop();
         }
     }
 
-    /// <summary>TurnManager tarafından çağrılır — teleport coroutine'ini çalıştırır.</summary>
+    /// <summary>TurnManager tarafÄ±ndan Ã§aÄŸrÄ±lÄ±r â€” teleport coroutine'ini Ã§alÄ±ÅŸtÄ±rÄ±r.</summary>
     public IEnumerator ExecuteTeleport()
     {
         teleportPending = false;
@@ -97,7 +95,7 @@ public class SynapticAnchorPerk : BasePerk
             }
         }
 
-        // Disappear VFX — player
+        // Disappear VFX â€” player
         SpriteRenderer sr = player.GetComponentInChildren<SpriteRenderer>();
         if (sr != null)
         {
@@ -113,7 +111,7 @@ public class SynapticAnchorPerk : BasePerk
             }
         }
 
-        // Disappear VFX — swap enemy (ayni anda fade)
+        // Disappear VFX â€” swap enemy (ayni anda fade)
         SpriteRenderer enemySR = null;
         Color enemyOrigColor = Color.white;
         if (swapEnemy != null)
@@ -149,7 +147,7 @@ public class SynapticAnchorPerk : BasePerk
             swapEnemy.ForceSetPosition(fromCell);
         }
 
-        // Reappear VFX — player
+        // Reappear VFX â€” player
         if (sr != null)
         {
             float dur = 0.2f;
@@ -167,7 +165,7 @@ public class SynapticAnchorPerk : BasePerk
             sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 1f);
         }
 
-        // Reappear VFX — swap enemy
+        // Reappear VFX â€” swap enemy
         if (swapEnemy != null && enemySR != null)
         {
             float dur = 0.2f;
@@ -185,7 +183,7 @@ public class SynapticAnchorPerk : BasePerk
         CameraController.ShakeLight();
         if (AudioManager.instance != null) AudioManager.instance.PlayTextEffect();
 
-        // Reset anchor — next skip will set new anchor
+        // Reset anchor â€” next skip will set new anchor
         hasAnchor = false;
         ClearAnchorVisual();
 

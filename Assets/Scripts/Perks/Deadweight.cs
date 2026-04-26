@@ -1,19 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class DeadweightPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Stunned enemies take {mult} damage.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult", $"X{1 + currentLevel}" }
+        { "stunned", GameKeywords.Status("Stunned") },
+        { "mult",    GameKeywords.Mult(1 + currentLevel) }
     };
 
     public float GetStunnedMultiplier()

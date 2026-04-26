@@ -1,22 +1,14 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class PressurePointPerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Full HP: {mult1}. Above half: {mult2}. Below half: {mult3}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult1", "X2" },
-        { "mult2", "X1.75" },
-        { "mult3", "X1.5" }
+        { "hpLabel", GameKeywords.HealthText("HP") },
+        { "mult1",   GameKeywords.Mult(2f) },
+        { "mult2",   GameKeywords.Mult(1.75f) },
+        { "mult3",   GameKeywords.Mult(1.5f) }
     };
 
     public float GetMultiplier(EnemyMovement enemy)

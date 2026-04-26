@@ -1,19 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class PassiveEnzymePerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "Skipping a turn grants {reward} per level. Does not work on bosses or the last enemy.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "reward", "4 gold" }
+        { "skip",   GameKeywords.Action("Skipping") },
+        { "reward", GameKeywords.Gold(4 * currentLevel) },
+        { "boss",   GameKeywords.Status("bosses") }
     };
 
     public override void Upgrade()

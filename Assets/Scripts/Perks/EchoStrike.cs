@@ -1,20 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class EchoStrikePerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 3;
-        rarity = PerkRarity.Epic;
-        if (string.IsNullOrEmpty(description))
-            description = "{chance}% chance to echo attack.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "chance", $"{currentLevel * 15}" }
+        { "chance", GameKeywords.Crit($"{currentLevel * 15}%") },
+        { "echo", GameKeywords.Retrigger("echo") },
+        { "attack", GameKeywords.Action("attack") }
     };
 
     public float GetEchoChance()

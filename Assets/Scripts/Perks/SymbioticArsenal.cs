@@ -1,20 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 
 public class SymbioticArsenalPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Rare;
-        processLast = true;
-        if (string.IsNullOrEmpty(description))
-            description = "Each filled item slot adds {bonus} multiplier.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", "X" + (0.25f + 0.25f * currentLevel).ToString("0.##", CultureInfo.InvariantCulture) }
+        { "bonus", GameKeywords.Mult(0.25f + 0.25f * currentLevel) }
     };
 
     public override void ModifyCombat(CombatPayload payload)

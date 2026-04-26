@@ -1,27 +1,16 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Leftmost Resonance — Legendary. En soldaki implantin efektini iki kez daha tetikler
+/// Leftmost Resonance â€” Legendary. En soldaki implantin efektini iki kez daha tetikler
 /// (toplamda o implant 3 kere islenir). Eger en soldaki bu perkin kendisiyse veya
 /// baska bir perk-retrigger implantiysa INCOMPATIBLE.
 /// </summary>
 public class LeftmostResonancePerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Legendary;
-        processLast = true;
-        isPerkRetrigger = true;
-        if (string.IsNullOrEmpty(description))
-            description = "The leftmost implant triggers {again}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "again", "2 additional times" }
+        { "again", GameKeywords.RetriggerN(2) }
     };
 
     public override bool IsIncompatible() => GetLeftmostTarget() == null;
@@ -53,7 +42,7 @@ public class LeftmostResonancePerk : BasePerk
 
         List<int> rolls = new List<int>(payload.diceRolls);
 
-        // Target pure dice-retrigger ise pre-pass zaten 2 ekstra uygulandi — perk pass'inde sessiz kal.
+        // Target pure dice-retrigger ise pre-pass zaten 2 ekstra uygulandi â€” perk pass'inde sessiz kal.
         for (int i = 0; i < 2; i++)
         {
             long before = payload.GetFinalDamage();

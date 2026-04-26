@@ -23,10 +23,11 @@ public class CoinDropService
                 coinDrop = Random.Range(10, 16) + rm.bonusGold;
             else
                 coinDrop = Random.Range(5, 11) + rm.bonusGold;
-            if (rm.doubleGoldNextKill)
+            if (rm.doubleGoldNextKillStacks > 0)
             {
+                // 1 stack = 1 kill icin 2x. Stack'ler tek tek tuketilir.
                 coinDrop *= 2;
-                rm.doubleGoldNextKill = false;
+                rm.doubleGoldNextKillStacks--;
             }
         }
 

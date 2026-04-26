@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -8,20 +8,11 @@ using System.Collections.Generic;
 /// </summary>
 public class TerminalFuryGlandPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity      = PerkRarity.Legendary;
-        maxLevel    = 1;
-        priority    = 15;
-        if (string.IsNullOrEmpty(description))
-            description = "Always deal {base} damage, get {per} mult per missing health.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "base", "X2" },
-        { "per",  "+1" }
+        { "base",    GameKeywords.Mult(2f) },
+        { "per",     GameKeywords.Mult(1f) },
+        { "missing", GameKeywords.HealthText("missing HP") }
     };
 
     public override void ModifyCombat(CombatPayload payload)
@@ -36,7 +27,7 @@ public class TerminalFuryGlandPerk : BasePerk
 
         float tfgMult = 2f + (maxHP - currentHP);
 
-        // Balatro model: her perk bagimsiz calisir. Eski GlassCanon coexistence hack'i kaldirildi —
+        // Balatro model: her perk bagimsiz calisir. Eski GlassCanon coexistence hack'i kaldirildi â€”
         // iki perk ayri ayri ApplyMult yapiyor, inspector sirasina gore ardisik uygulanir.
         payload.ApplyMult(tfgMult);
 

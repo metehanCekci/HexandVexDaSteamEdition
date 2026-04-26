@@ -7,9 +7,6 @@ public class PhaseShift : BaseItem
     void OnEnable()
     {
         itemName = "Phase-Shift";
-        if (string.IsNullOrEmpty(description))
-            description = "Select an enemy and {swap} with it.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>

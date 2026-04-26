@@ -1,19 +1,13 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 public class VolatileCellsPerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 3;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Killed enemies explode for {dmg} of their max HP to adjacent enemies.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "dmg", $"{currentLevel * 25}%" }
+        { "kill",    GameKeywords.Action("Killed") },
+        { "explode", GameKeywords.Action("explode") },
+        { "dmg",     GameKeywords.Plus(currentLevel * 25, "%") },
+        { "maxHp",   GameKeywords.HealthText("max HP") }
     };
 
     public override void ModifyCombat(CombatPayload payload)

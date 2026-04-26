@@ -1,21 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Linq;
 
 public class RiggedDicePerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "All dice are rerolled to match the highest rolled value.";
-        RebuildDescription();
-    }
-
-    public override void OnAcquire()
-    {
-        isRerollPerk = true; // Zar değerlerini değiştirdiği için
-        priority = 10;       // Diğer çarpanlardan önce çalışsın
-    }
+        { "reroll",  GameKeywords.Action("rerolled") },
+        { "highest", GameKeywords.Status("highest") }
+    };
 
     public override void ModifyCombat(CombatPayload payload)
     {
@@ -24,7 +16,7 @@ public class RiggedDicePerk : BasePerk
         int minVal = payload.diceRolls.Min();
         int maxVal = payload.diceRolls.Max();
 
-        if (minVal == maxVal) return; // Zaten aynıysa dokunma
+        if (minVal == maxVal) return; // Zaten aynÄ±ysa dokunma
 
         bool changed = false;
         for (int i = 0; i < payload.diceRolls.Count; i++)

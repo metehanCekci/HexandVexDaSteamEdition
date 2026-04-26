@@ -1,20 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class ApexPredatorPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Legendary;
-        if (string.IsNullOrEmpty(description))
-            description = "Deal {mult} damage, but lose {penalty} per die rolled.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "mult", "X5" },
-        { "penalty", "X1" }
+        { "mult",    GameKeywords.Mult(5) },
+        { "penalty", GameKeywords.Mult(1) }
     };
 
     public override void ModifyCombat(CombatPayload payload)

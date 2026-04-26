@@ -7,9 +7,6 @@ public class FragMine : BaseItem
     void OnEnable()
     {
         itemName = "Frag-Mine";
-        if (string.IsNullOrEmpty(description))
-            description = "Place a bomb on any hex. Rolls dice and deals {dmg} to all enemies within {radius} hex radius.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>

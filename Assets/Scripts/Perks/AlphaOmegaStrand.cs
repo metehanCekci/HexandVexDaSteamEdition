@@ -1,19 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class AlphaOmegaStrandPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "First and last die gain {bonus}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", $"+{2 * currentLevel}" }
+        { "bonus", GameKeywords.Plus(2 * currentLevel, "damage") }
     };
 
     public override void Upgrade()

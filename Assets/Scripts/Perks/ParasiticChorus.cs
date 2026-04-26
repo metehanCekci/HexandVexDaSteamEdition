@@ -1,27 +1,17 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Parasitic Chorus — Legendary. Aktif slottaki her common implant icin, o common'un
+/// Parasitic Chorus â€” Legendary. Aktif slottaki her common implant icin, o common'un
 /// sagindaki implantin efektini bir kez daha tetikler. Bir common en sagdaysa o atlanir.
 /// Retriggerlanan implant baska bir perk-retrigger ise (Mimetic/Leftmost/Chorus) atlanir.
 /// </summary>
 public class ParasiticChorusPerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Legendary;
-        processLast = true;
-        isPerkRetrigger = true;
-        if (string.IsNullOrEmpty(description))
-            description = "For each equipped {common} implant, retrigger the implant to its right.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "common", "common" }
+        { "common", GameKeywords.Status("common") },
+        { "retrig", GameKeywords.Retrigger("retriggers once") }
     };
 
     public override bool IsIncompatible() => CollectTargets().Count == 0;

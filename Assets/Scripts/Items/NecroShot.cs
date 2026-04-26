@@ -7,9 +7,6 @@ public class NecroShot : BaseItem
     void OnEnable()
     {
         itemName = "Necro-Shot";
-        if (string.IsNullOrEmpty(description))
-            description = "{kill} any non-boss enemy on the map.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>

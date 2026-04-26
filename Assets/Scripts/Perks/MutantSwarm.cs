@@ -1,20 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Globalization;
 
 public class MutantSwarmPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Each die rolled adds {bonus} multiplier.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", "X" + (0.5f * currentLevel).ToString("0.##", CultureInfo.InvariantCulture) }
+        { "bonus", GameKeywords.Mult(0.5f * currentLevel) }
     };
 
     public override void Upgrade()

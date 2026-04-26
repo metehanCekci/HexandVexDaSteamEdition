@@ -14,9 +14,12 @@ public static class UIColors
     // ── Gameplay semantic ──
     static Color _gold       = HexToColor("#FFD700");
     static Color _chips      = HexToColor("#4FC3F7"); // "+N" mavi
-    static Color _mult       = HexToColor("#FF5252"); // "xN" kirmizi
-    static Color _damage     = HexToColor("#FF8A65"); // flat damage — turuncu-kirmizi (mult'tan farkli)
+    static Color _mult       = HexToColor("#FF5252"); // "xN" kirmizi (crit de bu rengi kullanir)
+    static Color _damage     = HexToColor("#FF8A65"); // (deprecated — Plus/Mult helper'lari yeterli)
     static Color _heal       = HexToColor("#4CAF50");
+    static Color _retrigger  = HexToColor("#AB47BC"); // mor — retrigger / "triggers again" ifadeleri
+    static Color _action     = HexToColor("#FF9800"); // turuncu — skip/kill/attack/push/burn vb.
+    static Color _status     = HexToColor("#EEEEEE"); // beyaz-bold — shield/dodge/spike/stack/streak vb.
     static Color _cantAfford = HexToColor("#E53935");
 
     // ── Rarity ──
@@ -39,6 +42,9 @@ public static class UIColors
     public static string Mult       => ToHex(_mult);
     public static string Damage     => ToHex(_damage);
     public static string Heal       => ToHex(_heal);
+    public static string Retrigger  => ToHex(_retrigger);
+    public static string Action     => ToHex(_action);
+    public static string Status     => ToHex(_status);
     public static string CantAfford => ToHex(_cantAfford);
 
     // ── Gameplay semantic: COLOR (sprite/image icin) + setter'lar ──
@@ -47,6 +53,9 @@ public static class UIColors
     public static Color MultColor       { get => _mult;       set { _mult = value;       OnChanged?.Invoke(); } }
     public static Color DamageColor     { get => _damage;     set { _damage = value;     OnChanged?.Invoke(); } }
     public static Color HealColor       { get => _heal;       set { _heal = value;       OnChanged?.Invoke(); } }
+    public static Color RetriggerColor  { get => _retrigger;  set { _retrigger = value;  OnChanged?.Invoke(); } }
+    public static Color ActionColor     { get => _action;     set { _action = value;     OnChanged?.Invoke(); } }
+    public static Color StatusColor     { get => _status;     set { _status = value;     OnChanged?.Invoke(); } }
     public static Color CantAffordColor { get => _cantAfford; set { _cantAfford = value; OnChanged?.Invoke(); } }
 
     // ── Rarity (Color + Hex) ──

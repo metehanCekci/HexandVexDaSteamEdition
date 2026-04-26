@@ -948,6 +948,8 @@ public class MergedShopManager : MonoBehaviour
         if (item == null || InventoryManager.instance == null) return false;
         // Sadece consumable itemleri filtrele — instant itemler envanterde tutulmaz
         if (item.itemType != ItemType.Consumable) return false;
+        // Showman perki: ayni iteme tekrar sahip olmaya izin ver — duplicate filtresi devre disi
+        if (RunManager.instance != null && RunManager.instance.HasShowman()) return false;
         for (int i = 0; i < InventoryManager.instance.SlotCount; i++)
         {
             BaseItem slot = InventoryManager.instance.GetItem(i);

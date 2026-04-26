@@ -1,24 +1,15 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
-/// Extra Ammo — Rare. Her combat'ta itemleri 1 fazla kullanabilirsin.
+/// Extra Ammo â€” Rare. Her combat'ta itemleri 1 fazla kullanabilirsin.
 /// Combat basinda envanterdeki tum itemlere extraUses set eder.
 /// Combat sirasinda satin alinan itemlere de buff uygular.
 /// </summary>
 public class ExtraAmmoPerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Use your items {extra}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "extra", "1 extra time per combat" }
+        { "extra", GameKeywords.Status("1 extra time") }
     };
 
     public override void OnAcquire()
@@ -43,7 +34,7 @@ public class ExtraAmmoPerk : BasePerk
         for (int i = 0; i < InventoryManager.instance.SlotCount; i++)
         {
             var item = InventoryManager.instance.GetItem(i);
-            // Sadece henuz kullanilmamis itemlere ekstra hak ver — kullanildiktan sonra
+            // Sadece henuz kullanilmamis itemlere ekstra hak ver â€” kullanildiktan sonra
             // tekrar set edersek sonsuz dongu olur.
             if (item != null && !item.usedThisCombat) item.extraUses = 1;
         }

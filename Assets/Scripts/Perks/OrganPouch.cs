@@ -1,28 +1,22 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class OrganPouchPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "Gain {slots} item slot per level (cap 5).";
-        RebuildDescription();
-    }
-
     public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        { "slots", $"+{currentLevel}" }
+        { "slots", GameKeywords.Counter("+" + currentLevel) },
+        { "level", GameKeywords.Action("level") },
+        { "cap",   GameKeywords.Counter("5") }
     };
 
-    // İlk alındığında çalışır (1. Seviye)
+    // Ä°lk alÄ±ndÄ±ÄŸÄ±nda Ã§alÄ±ÅŸÄ±r (1. Seviye)
     public override void OnAcquire()
     {
         ExpandHotbar();
         TriggerVisualPop();
     }
 
-    // Kart tekrar seçilirse çalışır (2. ve 3. Seviyeler)
+    // Kart tekrar seÃ§ilirse Ã§alÄ±ÅŸÄ±r (2. ve 3. Seviyeler)
     public override void Upgrade()
     {
         base.Upgrade();
@@ -30,10 +24,10 @@ public class OrganPouchPerk : BasePerk
         TriggerVisualPop();
     }
 
-    // Stash'ten aktife taşındığında slotları tekrar aç
+    // Stash'ten aktife taÅŸÄ±ndÄ±ÄŸÄ±nda slotlarÄ± tekrar aÃ§
     public override void OnEquip()
     {
-        // OnAcquire ile çifte çağrı koruması: InventoryManager zaten doğru slot sayısındaysa açma
+        // OnAcquire ile Ã§ifte Ã§aÄŸrÄ± korumasÄ±: InventoryManager zaten doÄŸru slot sayÄ±sÄ±ndaysa aÃ§ma
         if (InventoryManager.instance == null) return;
         int target = 3 + currentLevel;
         int missing = target - InventoryManager.instance.maxSlots;
@@ -41,14 +35,14 @@ public class OrganPouchPerk : BasePerk
             ExpandHotbar();
     }
 
-    // Stash'e taşındığında slotları küçült
+    // Stash'e taÅŸÄ±ndÄ±ÄŸÄ±nda slotlarÄ± kÃ¼Ã§Ã¼lt
     public override void OnUnequip()
     {
         for (int i = 0; i < currentLevel; i++)
             ShrinkHotbar();
     }
 
-    // Fazla slotlarda item varsa çıkarmaya izin verme
+    // Fazla slotlarda item varsa Ã§Ä±karmaya izin verme
     public override bool CanUnequip()
     {
         if (InventoryManager.instance == null) return true;

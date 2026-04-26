@@ -47,9 +47,14 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Dormant Spore
-  description: "Each skip stores {die} for your next attack.\nStored dice: {stored}"
+  description: 'Each [s]skip[/s] stores {die} for your next [s]attack[/s].
+
+    [c]Stored
+    dice:[/c] {stored}'
   icon: {fileID: 8890502143960562090, guid: 7d9db08a35bcf674fbfea6fb5d1d3bc5, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 0
   storedExtraDices: 0

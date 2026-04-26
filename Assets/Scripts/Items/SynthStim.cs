@@ -7,9 +7,6 @@ public class SynthStim : BaseItem
     void OnEnable()
     {
         itemName = "Synth-Stim";
-        if (string.IsNullOrEmpty(description))
-            description = "Roll {bonus} extra die in the next combat.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>

@@ -42,12 +42,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 28153afa1c874374ba3bf5d8c1aa8889, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StelzerGambitPerk
   currentLevel: 1
   maxLevel: 1
   perkName: Stelzer's Gambit
-  description: Each die triggers {extra}. Decays after {rolls} rolls.
+  description: 'Each die {extra}.
+
+    Decays in {rolls} rolls.'
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

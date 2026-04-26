@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -7,18 +7,9 @@ using System.Collections.Generic;
 /// </summary>
 public class HostSyndromePerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity       = PerkRarity.Legendary;
-        maxLevel     = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Roll {bonus} for every enemy adjacent to you.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", "+1 die" }
+        { "bonus", GameKeywords.Plus(1, "die") }
     };
 
     /// <summary>Called by TurnManager before rolling dice. Returns extra dice count.</summary>

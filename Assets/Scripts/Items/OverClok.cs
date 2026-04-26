@@ -7,9 +7,6 @@ public class OverClok : BaseItem
     void OnEnable()
     {
         itemName = "Over-Clock";
-        if (string.IsNullOrEmpty(description))
-            description = "Deal {mult} damage on your next dice roll.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
@@ -21,7 +18,7 @@ public class OverClok : BaseItem
     {
         if (RunManager.instance == null) return false;
 
-        RunManager.instance.doubleDamageNextCombat = true;
+        RunManager.instance.doubleDamageNextCombatStacks++;
         return true;
     }
 }

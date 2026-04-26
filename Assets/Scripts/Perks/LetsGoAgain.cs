@@ -1,22 +1,12 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 public class LetsGoAgainPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Secret;
-        maxLevel = 1;
-        priority = 0;
-        if (string.IsNullOrEmpty(description))
-            description = "After all perks trigger, they all trigger {again}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "again", "1 more time" }
+        { "again", GameKeywords.RetriggerN(1) }
     };
-    // Bu perk ModifyCombat ile çalışmaz.
-    // TurnManager, nihai hasar hesabı bittikten sonra bu perkin varlığını kontrol eder
-    // ve tüm perkleri tekrar tetikler.
+    // Bu perk ModifyCombat ile Ã§alÄ±ÅŸmaz.
+    // TurnManager, nihai hasar hesabÄ± bittikten sonra bu perkin varlÄ±ÄŸÄ±nÄ± kontrol eder
+    // ve tÃ¼m perkleri tekrar tetikler.
 }

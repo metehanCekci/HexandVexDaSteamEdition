@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class PyrogenicGlandsPerk : BasePerk
@@ -11,18 +11,13 @@ public class PyrogenicGlandsPerk : BasePerk
     // Persistent fire orbit objects per enemy
     private Dictionary<int, GameObject> burnOrbitObjects = new Dictionary<int, GameObject>();
 
-    void OnEnable()
-    {
-        maxLevel = 3;
-        rarity = PerkRarity.Epic;
-        if (string.IsNullOrEmpty(description))
-            description = "Attacks burn enemies: {dmg} of max HP per turn for 5 turns.";
-        RebuildDescription();
-    }
-
     public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        { "dmg", $"{currentLevel * 5}%" }
+        { "attack", GameKeywords.Action("Attacks") },
+        { "burn",   GameKeywords.Action("burn") },
+        { "dmg",    GameKeywords.Plus(currentLevel * 5, "%") },
+        { "maxHp",  GameKeywords.HealthText("max HP") },
+        { "turns",  GameKeywords.Counter("5 turns") }
     };
 
     public override void ModifyCombat(CombatPayload payload)
@@ -67,13 +62,13 @@ public class PyrogenicGlandsPerk : BasePerk
             }
 
             long damage = System.Math.Max(1L, (long)System.Math.Round(enemy.health.maxHP * (double)damagePercent));
-            // Warlock'un burn hasarında ışınlanmaması için flag set et
+            // Warlock'un burn hasarÄ±nda Ä±ÅŸÄ±nlanmamasÄ± iÃ§in flag set et
             var warlock = enemy.GetComponent<WarlockEnemyAI>();
             if (warlock != null) warlock.isBurnDamage = true;
             enemy.health.TakeDamage(damage, false, false);
             ShowBurnVFX(enemy);
 
-            // Yanarak öldüyse kill reward ver ve perk callback'lerini tetikle
+            // Yanarak Ã¶ldÃ¼yse kill reward ver ve perk callback'lerini tetikle
             if (enemy.health.currentHP <= 0)
             {
                 toRemove.Add(enemyId);
@@ -178,7 +173,7 @@ public class PyrogenicGlandsPerk : BasePerk
         }
     }
 
-    /// <summary>Alev sayisini guncelle — fazla olanlari sil, eksikleri ekle.</summary>
+    /// <summary>Alev sayisini guncelle â€” fazla olanlari sil, eksikleri ekle.</summary>
     private void UpdateBurnOrbitCount(int enemyId, int newCount)
     {
         if (!burnOrbitObjects.TryGetValue(enemyId, out GameObject orbit)) return;

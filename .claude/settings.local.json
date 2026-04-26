@@ -97,7 +97,10 @@
       "Bash(grep -n \"surgeBootActive.*false\" Assets/Scripts/*.cs)",
       "Bash(xargs -I {} wc -l {})",
       "PowerShell(1..14 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })",
-      "PowerShell(1..7 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })"
+      "PowerShell(1..7 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })",
+      "Bash(awk '/commonPerks:/{flag=1; print; next} flag && /^  [a-z]/{flag=0} flag' \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/Ana Sahne.unity\")",
+      "Bash(grep -E '\\\\.cs$')",
+      "Bash(grep -v -E '^\\(BurnOrbitAnim|CystBreatheAnim\\)\\\\.cs$')"
     ]
   }
 }

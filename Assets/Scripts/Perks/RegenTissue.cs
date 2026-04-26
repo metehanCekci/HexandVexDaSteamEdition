@@ -1,18 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RegenTissuePerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "Heal {heal} after clearing a level.";
-        RebuildDescription();
-    }
-
     public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        { "heal", $"{currentLevel} HP" }
+        { "heal",  GameKeywords.Heal(currentLevel) },
+        { "clear", GameKeywords.Action("clearing") }
     };
 
     public override void OnAcquire()
@@ -20,11 +13,11 @@ public class RegenTissuePerk : BasePerk
         ApplyHealthBoost();
     }
 
-    // YENİ: Kart tekrar seçildiğinde (Upgrade) HEMEN ekstra canı bassın!
+    // YENÄ°: Kart tekrar seÃ§ildiÄŸinde (Upgrade) HEMEN ekstra canÄ± bassÄ±n!
     public override void Upgrade()
     {
-        base.Upgrade(); // Seviyeyi artır
-        ApplyHealthBoost(); // Seviye atladığı an canı ver!
+        base.Upgrade(); // Seviyeyi artÄ±r
+        ApplyHealthBoost(); // Seviye atladÄ±ÄŸÄ± an canÄ± ver!
     }
 
     public override void OnLevelClear()

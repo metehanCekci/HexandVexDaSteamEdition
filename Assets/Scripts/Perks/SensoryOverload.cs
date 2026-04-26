@@ -1,24 +1,15 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
-/// Sensory Overload — Rare. 5 veya 6 gelen her zar bir kez daha retriggerlanir.
+/// Sensory Overload â€” Rare. 5 veya 6 gelen her zar bir kez daha retriggerlanir.
 /// </summary>
 public class SensoryOverloadPerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Every {five} and {six} triggers {extra}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "five", "5" },
-        { "six", "6" },
-        { "extra", "1 more time" }
+        { "five",  GameKeywords.Status("5") },
+        { "six",   GameKeywords.Status("6") },
+        { "extra", GameKeywords.RetriggerN(1) }
     };
 
     public override int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload)

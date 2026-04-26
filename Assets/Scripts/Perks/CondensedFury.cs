@@ -1,21 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class CondensedFuryPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Epic;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Roll {diceDelta} die but each die value is {mult}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "diceDelta", "-1" },
-        { "mult", "X2" }
+        { "diceDelta", GameKeywords.Minus(1) },
+        { "mult",      GameKeywords.Mult(2) }
     };
 
     public int GetDiceReduction()

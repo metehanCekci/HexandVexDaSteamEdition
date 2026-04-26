@@ -1,24 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class CatalyticEnzymePerk : BasePerk
 {
     private int skipStacks = 0;
 
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Each skip grants {per} damage multiplier (stacks). Consumed on attack.\nStacks: {count} ({bonus})";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "per",   "X1.3" },
-        { "count", skipStacks },
-        { "bonus", $"+{Mathf.RoundToInt(skipStacks * 30)}%" }
+        { "skip",   GameKeywords.Action("skip") },
+        { "per",    GameKeywords.Mult(1.3f) },
+        { "attack", GameKeywords.Action("attack") },
+        { "count",  GameKeywords.Counter(skipStacks.ToString()) },
+        { "bonus",  GameKeywords.Mult(1f + (skipStacks * 0.3f)) }
     };
 
     public override void OnAcquire()

@@ -47,8 +47,13 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Retribution Splicer
-  description: "Each hit on the same target grants {bonus} damage against them. No stack limit.\nTargets: {targets} | Total hits: {hits}"
+  description: 'Each hit on the same target grants {bonus} against them.
+
+    [c]Targets:[/c]
+    {targets} | [c]Total hits:[/c] {hits}'
   icon: {fileID: -1752765643127241397, guid: a9be665cb8180c0488ecd08f1df59b9a, type: 3}
   priority: 1
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 0

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class IronWillPerk : BasePerk
@@ -7,20 +7,14 @@ public class IronWillPerk : BasePerk
     private bool tookDamageThisLevel = false;
     private bool subscribed = false;
 
-    void OnEnable()
-    {
-        rarity = PerkRarity.Rare;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Each level cleared without taking damage grants {per} damage multiplier. Resets on damage.\nStreak: {streak} ({bonus})";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "per",    "X1" },
-        { "streak", cleanLevelStreak },
-        { "bonus",  $"X{cleanLevelStreak}" }
+        { "clear",       GameKeywords.Action("level cleared") },
+        { "per",         GameKeywords.Mult(1) },
+        { "streakLabel", GameKeywords.Counter("Streak:") },
+        { "streak",      GameKeywords.Counter(cleanLevelStreak.ToString()) },
+        // Streak 0 iken "X0" kotuye gorunur â€” minimum X1 gosterelim (carpan etkisi olmasin).
+        { "bonus",       GameKeywords.Mult(Mathf.Max(1, cleanLevelStreak)) }
     };
 
     public override void OnAcquire()

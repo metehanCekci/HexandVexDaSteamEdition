@@ -1,39 +1,26 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class MomentumEnginePerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Each die gains {bonus} per hex walked this turn.";
-        RebuildDescription();
-    }
-
     public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        { "bonus", "+1" }
+        { "bonus", GameKeywords.Plus(1) }
     };
-
-    public override void OnAcquire()
-    {
-        priority = 5; // Hasar çarpanlarından önce, normal zar manipülasyonlarıyla aynı anda eklensin
-    }
 
     public override void ModifyCombat(CombatPayload payload)
     {
-        // Eğer TurnManager yoksa veya hiç yürümediysek boşuna yorma
+        // EÄŸer TurnManager yoksa veya hiÃ§ yÃ¼rÃ¼mediysek boÅŸuna yorma
         if (TurnManager.instance == null || TurnManager.instance.hexesMovedThisTurn <= 0) return;
 
         int stepsTaken = TurnManager.instance.hexesMovedThisTurn;
 
-        // Bütün zarlara atılan adım kadar değer ekle
+        // BÃ¼tÃ¼n zarlara atÄ±lan adÄ±m kadar deÄŸer ekle
         for (int i = 0; i < payload.diceRolls.Count; i++)
         {
             payload.diceRolls[i] += stepsTaken;
         }
 
-        // Çalıştığını belli etmek için hoplat
+        // Ã‡alÄ±ÅŸtÄ±ÄŸÄ±nÄ± belli etmek iÃ§in hoplat
         if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
             TriggerVisualPop();
     }

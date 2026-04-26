@@ -42,12 +42,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9e456e2492e57b14eaa0610644a7fc9a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParasiticChorusPerk
   currentLevel: 1
   maxLevel: 1
   perkName: Parasitic Chorus
-  description: For each equipped {common} implant, retrigger the implant to its right.
+  description: For each {common} implant, the right neighbor {retrig}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

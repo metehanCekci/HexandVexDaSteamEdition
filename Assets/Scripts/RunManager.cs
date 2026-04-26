@@ -59,11 +59,36 @@ public class RunManager : MonoBehaviour
 
     [Header("Item Buff'lari (Tek Kullanimlik)")]
     public int bonusDiceNextCombat = 0;
-    public bool doubleGoldNextKill = false;
-    public bool doubleDamageNextCombat = false;
-    public bool cleaveNextCombat = false;
+    // Stack'lenebilir item buff sayaclari — ayni iteme birden fazla sahip olundugunda
+    // (Showman / klonlama) her kullanim buradan +1 ekler, tetiklendiginde -1 yakar.
+    public int doubleGoldNextKillStacks = 0;
+    public int doubleDamageNextCombatStacks = 0;
+    public int cleaveNextCombatStacks = 0;
+    // Geriye uyumluluk: bool getter/setter — varsa (>0) true gibi davranir.
+    public bool doubleGoldNextKill
+    {
+        get => doubleGoldNextKillStacks > 0;
+        set { if (value) doubleGoldNextKillStacks++; else doubleGoldNextKillStacks = 0; }
+    }
+    public bool doubleDamageNextCombat
+    {
+        get => doubleDamageNextCombatStacks > 0;
+        set { if (value) doubleDamageNextCombatStacks++; else doubleDamageNextCombatStacks = 0; }
+    }
+    public bool cleaveNextCombat
+    {
+        get => cleaveNextCombatStacks > 0;
+        set { if (value) cleaveNextCombatStacks++; else cleaveNextCombatStacks = 0; }
+    }
     public bool surgeBootNextTurn = false;
-    [HideInInspector] public bool surgeBootActive = false;
+    // Hareket radius'unu kac kademe artirir (1 = +1 hex range, 2 = +2 hex range vb).
+    // Birden fazla SurgeBoot kullanildiginda her biri +1 stack ekler.
+    [HideInInspector] public int surgeBootStacks = 0;
+    public bool surgeBootActive
+    {
+        get => surgeBootStacks > 0;
+        set { if (value) surgeBootStacks++; else surgeBootStacks = 0; }
+    }
     public bool hasPerkReroll = false; // Perk reroll hakki (LevelUpManager)
     public bool hasLuckyClover = false; // Lucky Clover item -- sonraki perk seciminde esit rarity
     public bool pendingRerollReset = false; // Mutation Catalyst -- sonraki shop açılınca perk reroll counter'ı sıfırlanır

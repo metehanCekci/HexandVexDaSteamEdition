@@ -1,17 +1,14 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 public class GravitonCorePerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "On skip, pull enemies 2-3 hexes away closer to you.";
-        RebuildDescription();
-    }
+        { "skip", GameKeywords.Action("skip") },
+        { "pull", GameKeywords.Action("pull") }
+    };
 
     public override void OnSkip()
     {
@@ -52,7 +49,7 @@ public class GravitonCorePerk : BasePerk
 
             if (bestCell != enemyCell)
             {
-                // Sadece çek, hasar yok
+                // Sadece Ã§ek, hasar yok
                 enemy.StartKnockbackMovement(bestCell);
                 pulled.Add(enemy);
             }
@@ -60,7 +57,7 @@ public class GravitonCorePerk : BasePerk
 
         if (pulled.Count > 0)
         {
-            // Vacuum VFX + ses (BioMagnetism ile aynı)
+            // Vacuum VFX + ses (BioMagnetism ile aynÄ±)
             if (tm.vacuumVfxPrefab != null)
                 tm.StartCoroutine(VacuumVFX(tm.player.transform.position, tm.vacuumVfxPrefab));
             if (AudioManager.instance != null) AudioManager.instance.PlayVacuum();

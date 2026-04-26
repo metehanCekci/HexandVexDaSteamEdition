@@ -11,7 +11,25 @@ public enum ItemType
 public abstract class BaseItem : ScriptableObject
 {
     public string itemName;
-    [TextArea] public string description;
+
+    // ============================================================================
+    // DESCRIPTION TEMPLATE (Inspector'dan yazilir, kod karismaz)
+    // ============================================================================
+    // Bu field item'in aciklama sablonudur. Inspector'da diledigin gibi yaz.
+    //
+    // ── INLINE HIGHLIGHT TAG'LERI (sabit kelimeler icin) ──
+    //   [a]burn[/a]      -> TURUNCU+bold (SADECE burn/fire icin)
+    //   [s]heal[/s]      -> beyaz+bold STATUS (kill/attack/use/dodge/shield/stun/spike vb.)
+    //   [r]retriggers[/r]-> mor+bold RETRIGGER
+    //   [c]5/30[/c]      -> beyaz+bold COUNTER (sayaclar)
+    //   [m]X4[/m]        -> kirmizi MULT (sabit carpan)
+    //   [p]+5[/p]        -> mavi PLUS (sabit damage ekleme)
+    //   [g]5 gold[/g]    -> sari GOLD
+    //   [h]5 HP[/h]      -> yesil HP
+    //
+    // {token_adi} -> dinamik deger, GetDescValues() doldurur (GameKeywords helper'lari kullanin).
+    // ============================================================================
+    [TextArea(3, 6)] public string description;
     [System.NonSerialized] private string _descriptionTemplate;
     public int price;
     public Sprite icon;
@@ -42,20 +60,64 @@ public abstract class BaseItem : ScriptableObject
 
     public virtual void RebuildDescription()
     {
-        if (string.IsNullOrEmpty(_descriptionTemplate))
+        // Template'i her seferinde mevcut description'dan al — Inspector'da yeni token'li sablon
+        // varsa onu kabul et. Eger token'siz ise (zaten doldurulmus) cache'lenmis template'i kullan.
+        bool descLooksLikeTemplate = !string.IsNullOrEmpty(description) && description.Contains("{");
+        if (descLooksLikeTemplate)
+            _descriptionTemplate = description;
+        else if (string.IsNullOrEmpty(_descriptionTemplate))
         {
             if (string.IsNullOrEmpty(description)) return;
             _descriptionTemplate = description;
         }
 
         var values = GetDescValues();
+        string built;
         if (values == null || values.Count == 0)
-        {
-            description = _descriptionTemplate;
-            return;
-        }
+            built = _descriptionTemplate;
+        else
+            built = ApplyTokens(_descriptionTemplate, values);
 
-        description = ApplyTokens(_descriptionTemplate, values);
+        // Inline highlight tag'lerini renkli spans'e cevir.
+        description = ApplyInlineHighlights(built);
+    }
+
+    private static string ApplyInlineHighlights(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        text = ReplaceTag(text, "a", UIColors.Action,    bold: true);
+        text = ReplaceTag(text, "s", UIColors.Status,    bold: true);
+        text = ReplaceTag(text, "r", UIColors.Retrigger, bold: true);
+        text = ReplaceTag(text, "c", UIColors.Status,    bold: true);
+        text = ReplaceTag(text, "m", UIColors.Mult,      bold: false);
+        text = ReplaceTag(text, "p", UIColors.Chips,     bold: false);
+        text = ReplaceTag(text, "g", UIColors.Gold,      bold: false);
+        text = ReplaceTag(text, "h", UIColors.Heal,      bold: false);
+        return text;
+    }
+
+    private static string ReplaceTag(string s, string tag, string hex, bool bold)
+    {
+        string open = $"[{tag}]";
+        string close = $"[/{tag}]";
+        int idx = 0;
+        StringBuilder sb = null;
+        while (true)
+        {
+            int o = s.IndexOf(open, idx);
+            if (o < 0) break;
+            int c = s.IndexOf(close, o + open.Length);
+            if (c < 0) break;
+            sb ??= new StringBuilder(s.Length + 32);
+            sb.Append(s, idx, o - idx);
+            string inner = s.Substring(o + open.Length, c - o - open.Length);
+            string colored = bold ? $"<color=#{hex}><b>{inner}</b></color>" : $"<color=#{hex}>{inner}</color>";
+            sb.Append(colored);
+            idx = c + close.Length;
+        }
+        if (sb == null) return s;
+        sb.Append(s, idx, s.Length - idx);
+        return sb.ToString();
     }
 
     private static string ApplyTokens(string template, Dictionary<string, object> values)
@@ -91,24 +153,8 @@ public abstract class BaseItem : ScriptableObject
         string s = raw.ToString();
         if (s.Length == 0) return s;
 
-        string lower = s.ToLowerInvariant();
-        string hex = null;
-
-        // Renk kurali (BasePerk.Colorize ile ayni):
-        //   gold -> sari, hp/heal -> yesil, damage -> turuncu,
-        //   x prefix -> kirmizi (mult), +/- prefix -> mavi (chips), digerleri renksiz/beyaz.
-        if (lower.Contains("gold"))
-            hex = UIColors.Gold;
-        else if (lower.Contains("hp") || lower.Contains("heal"))
-            hex = UIColors.Heal;
-        else if (lower.Contains("damage"))
-            hex = UIColors.Damage;
-        else if (s[0] == 'x' || s[0] == 'X')
-            hex = UIColors.Mult;
-        else if (s[0] == '+' || s[0] == '-')
-            hex = UIColors.Chips;
-
-        if (hex == null) return s;
-        return $"<color=#{hex}>{s}</color>";
+        // YENI SISTEM: auto-detect KAPALI. Item'lar GameKeywords helper'lari ile renkli string uretir.
+        // Bu metod gelen string'i oldugu gibi gecirir.
+        return s;
     }
 }

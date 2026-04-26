@@ -1,13 +1,10 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RecoilSpringPerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "After attacking, bounce back and attack again if an enemy is adjacent.";
-        RebuildDescription();
-    }
+        { "attack", GameKeywords.Action("attacking") },
+        { "echo",   GameKeywords.Action("attack again") }
+    };
 }

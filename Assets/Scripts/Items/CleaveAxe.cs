@@ -7,20 +7,18 @@ public class CleaveAxe : BaseItem
     void OnEnable()
     {
         itemName = "Cleave-Axe";
-        if (string.IsNullOrEmpty(description))
-            description = "Next attack deals {full} to all adjacent enemies without splitting.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "full", "full damage" }
+        // Token kullanim ornegi: { "tokenName", GameKeywords.Mult(2) } gibi.
+        // Bu item'in dinamik degeri yok; suffix'leri inline tag'le Inspector'da yazilir.
     };
 
     public override bool Use()
     {
         if (RunManager.instance == null) return false;
-        RunManager.instance.cleaveNextCombat = true;
+        RunManager.instance.cleaveNextCombatStacks++;
         return true;
     }
 }

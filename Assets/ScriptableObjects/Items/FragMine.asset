@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: FragMine
   m_EditorClassIdentifier: Assembly-CSharp::FragMine
   itemName: Frag-Mine
-  description: Place a bomb on any hex. Rolls dice and deals {dmg} to all enemies within {radius} hex radius.
+  description: Place a [s]bomb[/s] on any hex. Rolls dice and deals damage to all
+    enemies within [c]1[/c] hex radius.
   price: 24
   icon: {fileID: -5966973863815126347, guid: c467d5c19838b6d4ebdcd9d36cb8db7f, type: 3}
+  itemType: 0

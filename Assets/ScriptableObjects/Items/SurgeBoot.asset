@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: SurgeBoot
   m_EditorClassIdentifier: Assembly-CSharp::SurgeBoot
   itemName: Surge-Boot
-  description: Next turn you can move up to {max} hexes instead of {base}.
+  description: Next turn you can move up to [c]2[/c] hexes instead of [c]1[/c].
   price: 12
   icon: {fileID: -6456725113734598319, guid: dd7042ab65b30164e81b1c4707b552af, type: 3}
+  itemType: 0

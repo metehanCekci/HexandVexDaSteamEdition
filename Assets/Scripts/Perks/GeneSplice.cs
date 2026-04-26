@@ -1,16 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 public class GeneSplicePerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Upgrade a random perk, then consume itself.";
-        RebuildDescription();
-    }
+        { "upgrade", GameKeywords.Action("Upgrades") }
+    };
 
     public override bool CanBeOffered()
     {
@@ -71,7 +68,7 @@ public class GeneSplicePerk : BasePerk
         if (targetPerk != null)
         {
             targetPerk.Upgrade();
-            Debug.Log($"Gene Splice: {targetPerk.perkName} güçlendirildi! (Yeni Seviye: {targetPerk.currentLevel})");
+            Debug.Log($"Gene Splice: {targetPerk.perkName} gÃ¼Ã§lendirildi! (Yeni Seviye: {targetPerk.currentLevel})");
 
             if (PerkListUI.instance != null)
                 PerkListUI.instance.TriggerLevelUpAnimForPerk(targetPerk);

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -10,22 +10,16 @@ public class ViralCystsPerk : BasePerk
 
     private Dictionary<int, GameObject> markedEnemies = new Dictionary<int, GameObject>();
 
-    void OnEnable()
-    {
-        maxLevel = 3;
-        rarity = PerkRarity.Epic;
-        if (string.IsNullOrEmpty(description))
-            description = "Attacks plant cysts. Skip to detonate: {perMark} per mark, damage split among marked.\nMarked: {count}";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues()
     {
         CleanDeadMarks();
         return new Dictionary<string, object>
         {
-            { "perMark", "+1 die" },
-            { "count",   $"+{markedEnemies.Count}" }
+            { "attack",  GameKeywords.Action("Attacks") },
+            { "cyst",    GameKeywords.Status("cysts") },
+            { "skip",    GameKeywords.Action("Skip") },
+            { "perMark", GameKeywords.Plus(1, "die") },
+            { "count",   GameKeywords.Counter(markedEnemies.Count.ToString()) }
         };
     }
 

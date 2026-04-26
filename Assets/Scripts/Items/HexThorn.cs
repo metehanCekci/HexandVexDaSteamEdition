@@ -7,9 +7,6 @@ public class HexThorn : BaseItem
     void OnEnable()
     {
         itemName = "Hex-Thorn";
-        if (string.IsNullOrEmpty(description))
-            description = "Place a spike trap on any empty hex tile. Breaks after {turns} turns (blinks on turn {warn}).";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>

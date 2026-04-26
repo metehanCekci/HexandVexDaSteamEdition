@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -9,24 +9,17 @@ public class CarrionFeederPerk : BasePerk
 
     private int MaxStacks => currentLevel; // lv1: 1, lv2: 2, lv3: 3
 
-    void OnEnable()
-    {
-        maxLevel = 3;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Each consecutive kill doubles your total damage (max {max}). Resets when an attack fails to kill.\nKill Streak: {streak} ({current} dmg)";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues()
     {
         float currentMultiplier = killStreak > 0 ? Mathf.Pow(2, killStreak) : 1;
         float maxMultiplier = Mathf.Pow(2, MaxStacks);
         return new Dictionary<string, object>
         {
-            { "max",     $"X{maxMultiplier}" },
-            { "streak",  $"{killStreak}/{MaxStacks}" },
-            { "current", $"X{currentMultiplier}" }
+            { "kill",    GameKeywords.Action("kill") },
+            { "kill2",   GameKeywords.Action("kill") },
+            { "max",     GameKeywords.Mult(maxMultiplier) },
+            { "streak",  GameKeywords.Counter($"{killStreak}/{MaxStacks}") },
+            { "current", GameKeywords.Mult(currentMultiplier) }
         };
     }
 

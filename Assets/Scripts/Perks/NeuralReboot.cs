@@ -1,24 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class NeuralRebootPerk : BasePerk
 {
-    void Awake()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Common;
-        isRerollPerk = true;
-    }
-
-    void OnEnable()
-    {
-        if (string.IsNullOrEmpty(description))
-            description = "Any die rolling {low} or lower is rerolled until above.";
-        RebuildDescription();
-    }
-
     public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        { "low", "3" }
+        { "low", GameKeywords.Counter("3") },
+        { "reroll", GameKeywords.Action("rerolled") }
     };
 
     public override void OnAcquire()
@@ -26,7 +13,7 @@ public class NeuralRebootPerk : BasePerk
         base.OnAcquire();
     }
 
-    // 3 veya altı gelen her zarı, 3'ün üstü gelene kadar tekrar tekrar atar
+    // 3 veya altÄ± gelen her zarÄ±, 3'Ã¼n Ã¼stÃ¼ gelene kadar tekrar tekrar atar
     public override void ModifyCombat(CombatPayload payload)
     {
         for (int i = 0; i < payload.diceRolls.Count; i++)

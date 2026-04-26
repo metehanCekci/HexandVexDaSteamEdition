@@ -316,34 +316,40 @@ public class StartingPerkSelectionUI : MonoBehaviour
 
     private List<GameObject> GetRandomCommonPerks(int count)
     {
-        List<GameObject> source = null;
-
-        Debug.Log($"[StartingPerkSelection] GetRandomCommonPerks: MergedShop={MergedShopManager.instance != null}");
+        List<GameObject> candidate = null;
 
         if (MergedShopManager.instance != null && MergedShopManager.instance.commonPerks != null && MergedShopManager.instance.commonPerks.Count > 0)
         {
-            source = MergedShopManager.instance.commonPerks;
-            Debug.Log($"[StartingPerkSelection] Source: MergedShopManager.commonPerks = {source.Count}");
+            candidate = MergedShopManager.instance.commonPerks;
         }
 
         // Fallback: scan all BasePerk prefabs
-        if (source == null || source.Count == 0)
+        if (candidate == null || candidate.Count == 0)
         {
-            Debug.Log("[StartingPerkSelection] Primary sources empty, scanning all BasePerk prefabs...");
-            source = new List<GameObject>();
+            candidate = new List<GameObject>();
             var allPerks = Resources.FindObjectsOfTypeAll<BasePerk>();
-            Debug.Log($"[StartingPerkSelection] FindObjectsOfTypeAll<BasePerk> found {allPerks.Length}");
             foreach (var perk in allPerks)
             {
                 if (perk == null) continue;
                 if (perk.gameObject.scene.name != null) continue; // skip scene instances
-                if (perk.rarity == PerkRarity.Common)
-                    source.Add(perk.gameObject);
+                candidate.Add(perk.gameObject);
             }
-            Debug.Log($"[StartingPerkSelection] Fallback common perks found: {source.Count}");
         }
 
-        if (source == null || source.Count == 0) return new List<GameObject>();
+        if (candidate == null || candidate.Count == 0) return new List<GameObject>();
+
+        // Sadece prefab Inspector'daki rarity Common olanlari al.
+        // (Kod artik OnEnable/Awake/OnAcquire'da rarity set etmiyor — prefab dogruluk kaynagi.)
+        List<GameObject> source = new List<GameObject>();
+        foreach (var go in candidate)
+        {
+            if (go == null) continue;
+            BasePerk bp = go.GetComponent<BasePerk>();
+            if (bp != null && bp.rarity == PerkRarity.Common)
+                source.Add(go);
+        }
+
+        if (source.Count == 0) return new List<GameObject>();
 
         // Shuffle and pick 'count'
         List<GameObject> shuffled = new List<GameObject>(source);

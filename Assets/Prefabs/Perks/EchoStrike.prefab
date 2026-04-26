@@ -47,8 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Echo Strike
-  description: '{chance}% chance to echo attack.'
+  description: '{chance}% chance to [s]echo attack[/s].'
   icon: {fileID: 5881832836993228770, guid: e7b6328a9c0d892479c0f310dc70f450, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 2

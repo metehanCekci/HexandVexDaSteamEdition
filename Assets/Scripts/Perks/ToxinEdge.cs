@@ -1,19 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class ToxinEdgePerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "Each die gains {bonus}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", $"+{currentLevel}" }
+        { "bonus", GameKeywords.Plus(currentLevel) }
     };
 
     public override void Upgrade()

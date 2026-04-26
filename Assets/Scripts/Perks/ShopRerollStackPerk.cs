@@ -1,25 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class ShopRerollStackPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Epic;
-        if (string.IsNullOrEmpty(description))
-            description = "Each shop reroll grants a permanent {bonus} to all your dice. Stack: {stack}";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", "+1" },
-        { "stack", RunManager.instance != null ? RunManager.instance.shopRerollStack : 0 }
+        { "reroll", GameKeywords.Action("shop reroll") },
+        { "bonus",  GameKeywords.Plus(1) },
+        { "stack",  GameKeywords.Counter((RunManager.instance != null ? RunManager.instance.shopRerollStack : 0).ToString()) }
     };
 
     public override void OnAcquire()
     {
-        priority = 30;
         RebuildDescription();
     }
 
@@ -31,6 +23,6 @@ public class ShopRerollStackPerk : BasePerk
 
     public override void ModifyCombat(CombatPayload payload)
     {
-        // Reroll stack bonusu artık doğrudan zar atılırken ekleniyor (TurnManager)
+        // Reroll stack bonusu artÄ±k doÄŸrudan zar atÄ±lÄ±rken ekleniyor (TurnManager)
     }
 }

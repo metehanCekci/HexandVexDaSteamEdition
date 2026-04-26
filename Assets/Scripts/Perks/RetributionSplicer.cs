@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -11,16 +11,6 @@ public class RetributionSplicerPerk : BasePerk
 {
     private readonly Dictionary<int, int> hitCounts = new Dictionary<int, int>();
 
-    void OnEnable()
-    {
-        rarity      = PerkRarity.Common;
-        maxLevel    = 3;
-        priority    = 20; // Apply after other bonuses
-        if (string.IsNullOrEmpty(description))
-            description = "Each hit on the same target grants {bonus} damage against them. No stack limit.\nTargets: {targets} | Total hits: {hits}";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues()
     {
         int bonusPerHit = 1 + currentLevel;
@@ -28,9 +18,9 @@ public class RetributionSplicerPerk : BasePerk
         foreach (var kv in hitCounts) totalHits += kv.Value;
         return new Dictionary<string, object>
         {
-            { "bonus",   $"+{bonusPerHit} flat damage" },
-            { "targets", hitCounts.Count },
-            { "hits",    totalHits }
+            { "bonus",   GameKeywords.Plus(bonusPerHit, "damage") },
+            { "targets", GameKeywords.Counter(hitCounts.Count.ToString()) },
+            { "hits",    GameKeywords.Counter(totalHits.ToString()) }
         };
     }
 

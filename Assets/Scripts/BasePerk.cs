@@ -11,9 +11,75 @@ public abstract class BasePerk : MonoBehaviour
     public int currentLevel = 1;
     public int maxLevel = 3;
     public string perkName;
-    [TextArea] public string description;
-    // Inspector'da girilen orijinal template (token'li). Runtime'da `description` overwrite edilse bile
-    // token'lar korunur ki RebuildDescription tekrar cagrilabilsin.
+
+    // ============================================================================
+    // DESCRIPTION TEMPLATE (Inspector'dan yazilir, kod karismaz)
+    // ============================================================================
+    // Bu field perk'in aciklama sablonudur. Inspector'da diledigin gibi yaz, kod ezmez.
+    //
+    // ── INLINE HIGHLIGHT TAG'LERI (sabit kelimeler icin, hizli yontem) ──
+    //   [a]burn[/a]      -> TURUNCU+bold (SADECE burn/fire icin rezerve)
+    //   [s]skip[/s]      -> beyaz+bold STATUS (skip/kill/attack/push/level/shop/dodge/shield/stun
+    //                       /spike/first die/leftmost/etc — onemli highlight kelimeleri)
+    //   [r]retriggers[/r]-> mor+bold RETRIGGER (sadece "retrigger" kelimesi mor olsun, etrafi degil)
+    //   [c]5/30[/c]      -> beyaz+bold COUNTER (sayaclar)
+    //   [m]X4[/m]        -> kirmizi MULT (sabit carpan)
+    //   [p]+5[/p]        -> mavi PLUS (sabit damage ekleme)
+    //   [g]5 gold[/g]    -> sari GOLD
+    //   [h]5 HP[/h]      -> yesil HP
+    //
+    // Ornek inline kullanim (Inspector'a yaz):
+    //   "Each consecutive [s]kill[/s] doubles damage. [c]Streak:[/c] {streak}"
+    //   "Attacks [a]burn[/a] enemies for {dmg} per turn."
+    //
+    // ── TOKEN'lar (dinamik degerler icin, GetDescValues doldurur) ──
+    // Icine TOKEN'lar koyabilirsin: { token_adi } seklinde. Token'lari perk'in
+    // GetDescValues() metodu doldurur ve renkleri otomatik gelir.
+    //
+    // ----------------- HAZIR HELPER'LAR (perkin GetDescValues icinde kullanilir) -----------------
+    // RENK KURALI: sadece SAYI/DEGER renkli, suffix beyaz. Bazi helper'lar tum kelimeyi renkler.
+    //
+    // MAVI (zara/damage'a EKLEME):
+    //   GameKeywords.Plus(5, "damage")        -> "+5 damage" (sadece +5 mavi)
+    //   GameKeywords.PlusF(1.5f, "damage")    -> "+1.5 damage"
+    //   GameKeywords.Minus(3)                 -> "-3"
+    //
+    // KIRMIZI (carpan / kritik):
+    //   GameKeywords.Mult(2, "damage")        -> "X2 damage" (sadece X2 kirmizi)
+    //   GameKeywords.Mult(1.5f)               -> "X1.5"
+    //   GameKeywords.Crit("Critical Hit")     -> "Critical Hit" (tum kelime kirmizi)
+    //   GameKeywords.CritPlus(25, "crit chance") -> "+25% crit chance" (sadece +25% kirmizi)
+    //
+    // SARI (gold):
+    //   GameKeywords.Gold(5)                  -> "5 gold"
+    //   GameKeywords.PlusGold(2)              -> "+2 gold"
+    //   GameKeywords.GoldText("free")         -> "free" (tum kelime sari)
+    //
+    // YESIL (HP / heal):
+    //   GameKeywords.Hp(5)                    -> "5 HP"
+    //   GameKeywords.Heal(5)                  -> "heal 5 HP"
+    //   GameKeywords.HealthText("max HP")     -> "max HP" (tum kelime yesil)
+    //
+    // MOR + bold (RETRIGGER mekanigi — Hanging Nerve, Mimetic gibi):
+    //   GameKeywords.Retrigger("retriggers twice")  -> mor+bold serbest text
+    //   GameKeywords.RetriggerN(2)            -> "retriggers 2 more times"
+    //
+    // TURUNCU + bold (ACTION keyword'leri — skip/kill/attack/push/level cleared/burn):
+    //   GameKeywords.Action("skip")           -> "skip" (turuncu+bold)
+    //
+    // BEYAZ + bold (STATUS / sayaclar — shield/dodge/spike/stun/stack):
+    //   GameKeywords.Status("dodge")          -> "dodge" (beyaz+bold)
+    //   GameKeywords.Counter("5/30")          -> "5/30" (beyaz+bold sayac)
+    //
+    // ORNEK DESCRIPTION (Inspector'a yaz):
+    //   "Each {kill} grants {gold} per {level}."
+    // GetDescValues() icinde:
+    //   { "kill",  GameKeywords.Action("kill") }
+    //   { "gold",  GameKeywords.PlusGold(2) }
+    //   { "level", GameKeywords.Action("level") }
+    // ============================================================================
+    [TextArea(3, 6)] public string description;
+    // Cache (RebuildDescription token'li ham template'i hatirlasin diye).
     [System.NonSerialized] private string _descriptionTemplate;
     public Sprite icon;
     public int priority = 0;
@@ -146,21 +212,83 @@ public abstract class BasePerk : MonoBehaviour
     // Description'i yeniden insa eder (seviye atlayinca veya GameKeywords renk/deger degisince cagrilir)
     public virtual void RebuildDescription()
     {
-        if (string.IsNullOrEmpty(_descriptionTemplate))
+        // Template'i her seferinde mevcut description'dan al — token'siz duz string ise
+        // direkt onu template kabul ederiz, token doldurma sirasinda tekrar yazilir.
+        // Eger description daha onceden token'lar dolduruldugu icin token icermiyorsa,
+        // _descriptionTemplate cached degerini kullaniriz.
+        bool descLooksLikeTemplate = !string.IsNullOrEmpty(description) && description.Contains("{");
+        if (descLooksLikeTemplate)
         {
+            // Yeni bir template set edildi (OnEnable veya manuel) — cache'i guncelle.
+            _descriptionTemplate = description;
+        }
+        else if (string.IsNullOrEmpty(_descriptionTemplate))
+        {
+            // Henuz hic template yok ve description'da token da yok — yapacak bir sey yok.
             if (string.IsNullOrEmpty(description)) return;
             _descriptionTemplate = description;
         }
 
         var values = GetDescValues();
+        string built;
         if (values == null || values.Count == 0)
-        {
-            // Token yoksa template'i oldugu gibi biraktir.
-            description = _descriptionTemplate;
-            return;
-        }
+            built = _descriptionTemplate;
+        else
+            built = ApplyTokens(_descriptionTemplate, values);
 
-        description = ApplyTokens(_descriptionTemplate, values);
+        // Sabit highlight'lar icin inline tag sistemi: [a]...[/a], [s]...[/s], [r]...[/r] vs.
+        description = ApplyInlineHighlights(built);
+    }
+
+    /// <summary>
+    /// Inspector'da yazilan inline highlight tag'lerini hex renkli + bold spans'e cevirir.
+    /// Tag'ler:
+    ///   [a]text[/a]  -> ACTION turuncu+bold (skip/kill/attack/push/level/burn)
+    ///   [s]text[/s]  -> STATUS beyaz+bold (shield/dodge/spike/stun)
+    ///   [r]text[/r]  -> RETRIGGER mor+bold (retriggers/triggers again)
+    ///   [c]text[/c]  -> COUNTER beyaz+bold (sayaclar)
+    ///   [m]text[/m]  -> MULT kirmizi (X2, x4, sabit carpan ifadeleri)
+    ///   [p]text[/p]  -> PLUS mavi (+5 sabit damage ifadeleri)
+    ///   [g]text[/g]  -> GOLD sari
+    ///   [h]text[/h]  -> HP yesil
+    /// Dinamik degerler icin token sistemi (GetDescValues) kullan; sabit highlight'lar icin bunlar.
+    /// </summary>
+    private static string ApplyInlineHighlights(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        text = ReplaceTag(text, "a", UIColors.Action,    bold: true);
+        text = ReplaceTag(text, "s", UIColors.Status,    bold: true);
+        text = ReplaceTag(text, "r", UIColors.Retrigger, bold: true);
+        text = ReplaceTag(text, "c", UIColors.Status,    bold: true);
+        text = ReplaceTag(text, "m", UIColors.Mult,      bold: false);
+        text = ReplaceTag(text, "p", UIColors.Chips,     bold: false);
+        text = ReplaceTag(text, "g", UIColors.Gold,      bold: false);
+        text = ReplaceTag(text, "h", UIColors.Heal,      bold: false);
+        return text;
+    }
+
+    private static string ReplaceTag(string s, string tag, string hex, bool bold)
+    {
+        string open = $"[{tag}]";
+        string close = $"[/{tag}]";
+        int idx = 0;
+        StringBuilder sb = null;
+        while (true)
+        {
+            int o = s.IndexOf(open, idx);
+            if (o < 0) break;
+            int c = s.IndexOf(close, o + open.Length);
+            if (c < 0) break;
+            sb ??= new StringBuilder(s.Length + 32);
+            sb.Append(s, idx, o - idx);
+            string inner = s.Substring(o + open.Length, c - o - open.Length);
+            string colored = bold ? $"<color=#{hex}><b>{inner}</b></color>" : $"<color=#{hex}>{inner}</color>";
+            sb.Append(colored);
+            idx = c + close.Length;
+        }
+        if (sb == null) return s;
+        sb.Append(s, idx, s.Length - idx);
+        return sb.ToString();
     }
 
     private static string ApplyTokens(string template, Dictionary<string, object> values)
@@ -196,32 +324,11 @@ public abstract class BasePerk : MonoBehaviour
         string s = raw.ToString();
         if (s.Length == 0) return s;
 
-        string lower = s.ToLowerInvariant();
-        string hex = null;
-
-        // ----------------------------------------------------------------
-        // RENK KURALI:
-        //   gold ifadesi   -> sari    (HER ZAMAN, oncelikli)
-        //   hp / heal      -> yesil
-        //   damage kelimesi -> turuncu/damage rengi
-        //   "x" prefix      -> kirmizi (mult, sadece zar carpani)
-        //   "+/-" prefix    -> mavi (chips, zar degerine ekleme/cikarma)
-        //   diger her sey   -> renksiz / beyaz (retrigger sayisi, kalan kullanim, stack...)
-        // ----------------------------------------------------------------
-        if (lower.Contains("gold"))
-            hex = UIColors.Gold;
-        else if (lower.Contains("hp") || lower.Contains("heal"))
-            hex = UIColors.Heal;
-        else if (lower.Contains("damage"))
-            hex = UIColors.Damage;
-        else if (s[0] == 'x' || s[0] == 'X')
-            hex = UIColors.Mult;
-        else if (s[0] == '+' || s[0] == '-')
-            hex = UIColors.Chips;
-        // else: beyaz/renksiz birak — token'i ham olarak don.
-
-        if (hex == null) return s;
-        return $"<color=#{hex}>{s}</color>";
+        // YENI SISTEM: auto-detect KAPALI. Perkler GameKeywords helper'lari (Plus/Mult/Gold/Heal/
+        // Retrigger/Action/Status/Crit) ile renkli string uretir. Bu metod gelen string'i oldugu
+        // gibi gecirir — helper string'leri zaten <color> tag iceriyor, plain string'ler beyaz kalir.
+        // Eski perkler helper'a cevrilince renkli gozukur, henuz cevrilmemis olanlar beyaz olur.
+        return s;
     }
 
     public virtual void Upgrade()

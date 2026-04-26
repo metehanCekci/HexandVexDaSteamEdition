@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
@@ -10,19 +10,13 @@ public class PhantomAssaultPerk : BasePerk
 
     private bool subscribed = false;
 
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Legendary;
-        if (string.IsNullOrEmpty(description))
-            description = "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, {attack} at each.\nGhosts: {count}";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "attack", "attacking damage" },
-        { "count",  $"+{ghostCells.Count}" }
+        { "push",   GameKeywords.Action("Knockback") },
+        { "ghost",  GameKeywords.Status("ghost") },
+        { "skip",   GameKeywords.Action("Skip") },
+        { "attack", GameKeywords.Action("attacking") },
+        { "count",  GameKeywords.Counter(ghostCells.Count.ToString()) }
     };
 
     public override void OnAcquire()

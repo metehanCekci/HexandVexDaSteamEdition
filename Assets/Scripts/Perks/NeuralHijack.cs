@@ -1,19 +1,15 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// Neural Hijack (Legendary)
-/// Düşmanı başka bir düşmana ittiğinde, itilen düşman taraf değiştirir.
-/// Dost düşman: 3 HP, oyuncunun zarlarıyla hasar verir, ölene kadar yaşar.
-/// Bir kez dost olan düşman bir daha düşman olamaz.
+/// DÃ¼ÅŸmanÄ± baÅŸka bir dÃ¼ÅŸmana ittiÄŸinde, itilen dÃ¼ÅŸman taraf deÄŸiÅŸtirir.
+/// Dost dÃ¼ÅŸman: 3 HP, oyuncunun zarlarÄ±yla hasar verir, Ã¶lene kadar yaÅŸar.
+/// Bir kez dost olan dÃ¼ÅŸman bir daha dÃ¼ÅŸman olamaz.
 /// </summary>
 public class NeuralHijackPerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        rarity = PerkRarity.Legendary;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Push an enemy into another to convert it to your side.";
-        RebuildDescription();
-    }
+        { "push", GameKeywords.Action("Push") }
+    };
 }

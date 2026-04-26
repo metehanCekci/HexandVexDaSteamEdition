@@ -1,27 +1,16 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Mimetic Growth — Epic. Sagindaki implantin ozelliklerini taklit eder:
+/// Mimetic Growth â€” Epic. Sagindaki implantin ozelliklerini taklit eder:
 /// her saldirida sagindaki implantin ModifyCombat'ini bir kez daha tetikler.
 /// En sagda ise veya sagindaki implant da bir retrigger implantiysa INCOMPATIBLE.
 /// </summary>
 public class MimeticGrowthPerk : BasePerk
 {
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Epic;
-        processLast = true;
-        isPerkRetrigger = true;
-        if (string.IsNullOrEmpty(description))
-            description = "Mimics the implant to its right, triggering its effect {again}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "again", "1 more time" }
+        { "trigger", GameKeywords.Retrigger("triggering once more") }
     };
 
     public override bool IsIncompatible()
@@ -51,7 +40,7 @@ public class MimeticGrowthPerk : BasePerk
         if (neighbor == null) yield break;
 
         // Komsu perki tek basina yeniden calistir. ModifyCombat bir sey yaparsa (damage degisirse)
-        // kendimizi de pop et; yapmazsa (ornegin komsu pure dice-retrigger perkiyse — o is pre-pass'te
+        // kendimizi de pop et; yapmazsa (ornegin komsu pure dice-retrigger perkiyse â€” o is pre-pass'te
         // zaten hallediliyor) sessiz kal, fazla pop gorulmesin.
         var processor = TurnManager.instance != null ? TurnManager.instance.PerkProcessor : null;
         if (processor == null) yield break;

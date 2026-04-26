@@ -1,11 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Pent-Up Strike (Epic)
-/// Normal saldırıda 0 hasar verir (knockback kalır), zar toplamını biriktirir.
-/// Skip ile saldırdığında biriken tüm hasarı tek seferde verir.
+/// Normal saldÄ±rÄ±da 0 hasar verir (knockback kalÄ±r), zar toplamÄ±nÄ± biriktirir.
+/// Skip ile saldÄ±rdÄ±ÄŸÄ±nda biriken tÃ¼m hasarÄ± tek seferde verir.
 /// </summary>
 public class PentUpStrikePerk : BasePerk
 {
@@ -13,23 +13,15 @@ public class PentUpStrikePerk : BasePerk
     [HideInInspector] public long storedStacks = 0;
     [HideInInspector] public bool isReleasing = false;
 
-    void OnEnable()
-    {
-        rarity = PerkRarity.Epic;
-        // Balatro modelinde bu perk ardisik pipeline'in EN SONUNDA calismali,
-        // cunku runningDamage'i sifirlayip kendi bonusunu uyguluyor.
-        processLast = true;
-        if (string.IsNullOrEmpty(description))
-            description = "Attacks deal {zero} but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}.\nStored: {stored} ({stacks} stacks)";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "zero",    "0 damage" },
-        { "percent", $"+{50 + currentLevel * 50}%" },
-        { "stored",  $"{storedDamage} damage" },
-        { "stacks",  storedStacks }
+        { "attack",  GameKeywords.Action("Attacks") },
+        { "zero",    GameKeywords.Plus(0, "damage") },
+        { "push",    GameKeywords.Action("knockback") },
+        { "skip",    GameKeywords.Action("Skip") },
+        { "percent", GameKeywords.Plus(50 + currentLevel * 50, "%") },
+        { "stored",  GameKeywords.Counter($"{storedDamage} damage") },
+        { "stacks",  GameKeywords.Counter(storedStacks.ToString()) }
     };
 
     public override void OnAcquire()

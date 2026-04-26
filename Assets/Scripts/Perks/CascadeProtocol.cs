@@ -1,31 +1,24 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Cascade Protocol (Legendary)
-/// Her saldırının zar toplamı (kritik/multiplier HARİÇ) bir sonraki saldırıya flat bonus olarak eklenir.
-/// Lv1: %100, Lv2: %125, Lv3: %150 birikim oranı.
-/// Oda bitince VEYA hasar alınca sıfırlanır.
+/// Her saldÄ±rÄ±nÄ±n zar toplamÄ± (kritik/multiplier HARÄ°Ã‡) bir sonraki saldÄ±rÄ±ya flat bonus olarak eklenir.
+/// Lv1: %100, Lv2: %125, Lv3: %150 birikim oranÄ±.
+/// Oda bitince VEYA hasar alÄ±nca sÄ±fÄ±rlanÄ±r.
 /// </summary>
 public class CascadeProtocolPerk : BasePerk
 {
     private long accumulatedDamage = 0;
     private bool subscribed = false;
 
-    void OnEnable()
-    {
-        rarity = PerkRarity.Legendary;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Each attack's dice sum carries forward as flat bonus to the next attack ({percent}). Resets on damage taken or level clear.\nAccumulated: {accumulated}";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
+        { "attack",      GameKeywords.Action("attack") },
         { "percent",     $"{100 + (currentLevel - 1) * 25}%" },
-        { "accumulated", $"{accumulatedDamage} damage" }
+        { "cleared",     GameKeywords.Action("level cleared") },
+        { "accumulated", GameKeywords.Counter($"{accumulatedDamage} damage") }
     };
 
     public override void OnAcquire()
@@ -55,7 +48,7 @@ public class CascadeProtocolPerk : BasePerk
             TriggerVisualPop();
         }
 
-        // Bu saldırının zar toplamını birikime ekle (kritik/mult hariç, sadece raw dice)
+        // Bu saldÄ±rÄ±nÄ±n zar toplamÄ±nÄ± birikime ekle (kritik/mult hariÃ§, sadece raw dice)
         long diceSum = payload.diceRolls.Sum();
         accumulatedDamage += diceSum;
         RebuildDescription();

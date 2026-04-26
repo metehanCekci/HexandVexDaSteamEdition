@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -8,19 +8,11 @@ public class PerkLeechPerk : BasePerk
     private const int FRAGMENTS_NEEDED = 3;
     private bool isMerging = false;
 
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Earn a implant fragment when you kill an elite enemy. {needed} fragments = random implant.\nFragments: {current}";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "needed",  $"+{FRAGMENTS_NEEDED}" },
-        { "current", $"+{fragments}/{FRAGMENTS_NEEDED}" }
+        { "kill",    GameKeywords.Action("kill") },
+        { "needed",  GameKeywords.Counter(FRAGMENTS_NEEDED.ToString()) },
+        { "current", GameKeywords.Counter($"{fragments}/{FRAGMENTS_NEEDED}") }
     };
 
     public override void OnAcquire()
@@ -83,7 +75,7 @@ public class PerkLeechPerk : BasePerk
             yield return null;
         }
 
-        // 3 fragment — ucgen formasyonda
+        // 3 fragment â€” ucgen formasyonda
         float radius = 0.5f;
         float fragScale = 0.2f;
         List<Transform> frags = new List<Transform>();

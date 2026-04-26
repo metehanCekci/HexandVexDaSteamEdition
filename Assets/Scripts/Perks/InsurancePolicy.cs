@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class InsurancePolicyPerk : BasePerk
@@ -6,18 +6,10 @@ public class InsurancePolicyPerk : BasePerk
     private bool subscribed = false;
     private long previousHP;
 
-    void OnEnable()
-    {
-        maxLevel = 3;
-        rarity = PerkRarity.Rare;
-        if (string.IsNullOrEmpty(description))
-            description = "Gain gold when you take damage. {amount} per missing HP.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "amount", $"+{(currentLevel + 1) * 2} gold" }
+        { "amount", GameKeywords.PlusGold((currentLevel + 1) * 2) },
+        { "missing", GameKeywords.HealthText("missing HP") }
     };
 
     public override void OnAcquire()

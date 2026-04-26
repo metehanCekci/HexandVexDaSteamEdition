@@ -1,17 +1,10 @@
-public class SymbioticFuryPerk : BasePerk
+﻿public class SymbioticFuryPerk : BasePerk
 {
-    private void Awake()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        priority = 99;
-        rarity = PerkRarity.Secret;
-    }
-
-    void OnEnable()
-    {
-        if (string.IsNullOrEmpty(description))
-            description = "All die bonuses multiply damage instead of adding to it.";
-        RebuildDescription();
-    }
+        { "mult", GameKeywords.Crit("multiply") },
+        { "add",  GameKeywords.Status("adding") }
+    };
 
     public override void ModifyCombat(CombatPayload payload)
     {

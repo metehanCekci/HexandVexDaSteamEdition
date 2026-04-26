@@ -1,13 +1,10 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class BribePerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Epic;
-        if (string.IsNullOrEmpty(description))
-            description = "Shop reroll is free.";
-        RebuildDescription();
-    }
+        { "free", GameKeywords.GoldText("free") }
+    };
 }

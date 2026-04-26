@@ -1,12 +1,12 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Invisible Joker — Epic. Balatro adaptasyonu.
+/// Invisible Joker â€” Epic. Balatro adaptasyonu.
 /// 2 combat boyunca pasif olarak bekler (armed degil). 2. combat temizlendiginde "armed" olur.
 /// Armed'ken oyuncu BASKA bir perki sattiginda: sahip oldugu (active + inventory) tum perkler
-/// arasindan rastgele birinin kopyasini ekler ve kendini yok eder. Showman gerekmez —
+/// arasindan rastgele birinin kopyasini ekler ve kendini yok eder. Showman gerekmez â€”
 /// duplicate iznini kendisi forceler (allowDuplicatePerk flag).
 /// </summary>
 public class InvisibleJokerPerk : BasePerk
@@ -15,19 +15,10 @@ public class InvisibleJokerPerk : BasePerk
     public int combatsPassed = 0;
     public bool armed = false;
 
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Epic;
-        if (string.IsNullOrEmpty(description))
-            description = "After {wait}, sell another implant to {effect}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "wait", armed ? "armed" : (CombatsRequired - combatsPassed) + " combats" },
-        { "effect", "copy a random implant you own" }
+        { "wait", armed ? GameKeywords.Counter("armed") : GameKeywords.Counter((CombatsRequired - combatsPassed) + " combats") },
+        { "effect", GameKeywords.Retrigger("copy a random implant you own") }
     };
 
     public override void OnAcquire()

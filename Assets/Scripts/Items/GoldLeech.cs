@@ -7,9 +7,6 @@ public class GoldLeech : BaseItem
     void OnEnable()
     {
         itemName = "Gold-Leech";
-        if (string.IsNullOrEmpty(description))
-            description = "Next enemy drops {mult} {gold}.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
@@ -22,7 +19,7 @@ public class GoldLeech : BaseItem
     {
         if (RunManager.instance == null) return false;
 
-        RunManager.instance.doubleGoldNextKill = true;
+        RunManager.instance.doubleGoldNextKillStacks++;
         return true;
     }
 }

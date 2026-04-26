@@ -97,6 +97,19 @@ public class CreateNewPerkPrefabs
         CreatePerk<PhantomAssaultPerk>("PhantomAssault", "Phantom Assault",
             "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each.");
 
+        // ── Item-synergy perks (geçici metinler — sonra düzenlenecek) ──
+        CreatePerk<ItemEaterPerk>("ItemEater", "Item Eater",
+            "Feed items to this implant. Starts at x1. Each fed item adds +0.5x damage. (Drag-drop)");
+
+        CreatePerk<ExtraAmmoPerk>("ExtraAmmo", "Extra Ammo",
+            "You may use each item one extra time per combat.");
+
+        CreatePerk<InvisibleJokerPerk>("InvisibleJoker", "Invisible Joker",
+            "After 2 combats, becomes armed. Sell another implant while armed to add a copy of a random implant you own.");
+
+        CreatePerk<ShowmanPerk>("Showman", "Showman",
+            "You may have multiple copies of the same perk and item.");
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("Perk prefab'ları oluşturuldu: Assets/Prefabs/Perks/");

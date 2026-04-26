@@ -47,8 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Neural Hijack
-  description: Knock an enemy into another to make it an ally.
+  description: '[s]Push[/s] an enemy into another to convert it to your side.'
   icon: {fileID: -5502985240677432108, guid: cdbdf0c35a5b84f42ad5df1025a513f2, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 3

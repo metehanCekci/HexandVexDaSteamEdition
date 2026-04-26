@@ -42,12 +42,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b1de439a23d79c847bd5e0963d1401ef, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LeftmostResonancePerk
   currentLevel: 1
   maxLevel: 1
   perkName: Leftmost Resonance
-  description: The leftmost implant triggers {again}.
+  description: The [s]leftmost[/s] implant {again}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

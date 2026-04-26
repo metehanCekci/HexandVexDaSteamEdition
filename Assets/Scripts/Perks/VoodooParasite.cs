@@ -1,13 +1,10 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class VoodooParasitePerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        maxLevel = 4;
-        rarity = PerkRarity.Legendary;
-        if (string.IsNullOrEmpty(description))
-            description = "Damage dealt to enemies is also dealt to nearby enemies (voodoo curse).";
-        RebuildDescription();
-    }
+        { "nearby", GameKeywords.Status("nearby") },
+        { "curse",  GameKeywords.Action("voodoo curse") }
+    };
 }

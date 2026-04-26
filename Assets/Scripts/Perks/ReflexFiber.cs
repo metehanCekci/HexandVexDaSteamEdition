@@ -1,18 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 public class ReflexFiberPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Epic;
-        if (string.IsNullOrEmpty(description))
-            description = "Gain {moves} extra move per turn.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "moves", $"+{currentLevel}" }
+        { "moves", GameKeywords.Plus(currentLevel) }
     };
 
     public override void OnAcquire()

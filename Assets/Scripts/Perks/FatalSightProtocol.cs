@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -8,20 +8,12 @@ using System.Collections.Generic;
 /// </summary>
 public class FatalSightProtocolPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity      = PerkRarity.Legendary;
-        maxLevel    = 1;
-        priority    = 1; // Önce çalışsın, sonraki perkler critHit=true üzerine eklensin
-        if (string.IsNullOrEmpty(description))
-            description = "All attacks are Critical Hits. Each {chance} Crit Chance converts to {dmg}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "chance", "+1%" },
-        { "dmg",    "+1% Crit Damage" }
+        { "attacks", GameKeywords.Action("attacks") },
+        { "crit",    GameKeywords.Crit("Critical Hits") },
+        { "chance",  GameKeywords.CritPlus(1, "crit chance") },
+        { "dmg",     GameKeywords.CritPlus(1, "crit damage") }
     };
 
     public override void ModifyCombat(CombatPayload payload)
@@ -29,10 +21,10 @@ public class FatalSightProtocolPerk : BasePerk
         var rm = RunManager.instance;
         if (rm == null) return;
 
-        // Her saldırıda: birikmiş critChance varsa dönüştür
+        // Her saldÄ±rÄ±da: birikmiÅŸ critChance varsa dÃ¶nÃ¼ÅŸtÃ¼r
         if (rm.criticalChance > 0f)
         {
-            // critChance → critDamage: 1:1 dönüşüm (0.10 critChance = +0.10 critDamage)
+            // critChance â†’ critDamage: 1:1 dÃ¶nÃ¼ÅŸÃ¼m (0.10 critChance = +0.10 critDamage)
             rm.criticalDamageMultiplier += rm.criticalChance;
             rm.criticalChance = 0f;
         }

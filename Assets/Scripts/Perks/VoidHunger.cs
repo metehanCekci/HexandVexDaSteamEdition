@@ -1,33 +1,25 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
 /// Void Hunger (Common)
-/// Çöken her tile (scaffold + seismic) başına kalıcı +0.25x damage multiplier.
-/// Run boyunca birikir, sıfırlanmaz.
+/// Ã‡Ã¶ken her tile (scaffold + seismic) baÅŸÄ±na kalÄ±cÄ± +0.25x damage multiplier.
+/// Run boyunca birikir, sÄ±fÄ±rlanmaz.
 /// </summary>
 public class VoidHungerPerk : BasePerk
 {
     private int collapsedCount = 0;
     private bool subscribed = false;
 
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-        maxLevel = 1;
-        if (string.IsNullOrEmpty(description))
-            description = "Each collapsed tile grants permanent {per} damage multiplier.\nCollapsed: {count} ({total})";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues()
     {
         float totalBonus = collapsedCount * 0.25f;
         return new Dictionary<string, object>
         {
-            { "per",   "+0.25X" },
-            { "count", collapsedCount },
-            { "total", $"+{totalBonus:F1}X" }
+            { "collapse", GameKeywords.Action("collapsed tile") },
+            { "per",     GameKeywords.Mult(0.25f) },
+            { "count",   GameKeywords.Counter(collapsedCount.ToString()) },
+            { "total",   GameKeywords.Mult(totalBonus) }
         };
     }
 

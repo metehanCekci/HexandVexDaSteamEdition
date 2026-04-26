@@ -1,8 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// Stelzer's Gambit — Common. Her zar bir kez daha islenir (retrigger).
+/// Stelzer's Gambit â€” Common. Her zar bir kez daha islenir (retrigger).
 /// 30 roll (saldiri) sonra implant yok olur.
 /// </summary>
 public class StelzerGambitPerk : BasePerk
@@ -10,19 +10,10 @@ public class StelzerGambitPerk : BasePerk
     private const int MaxRolls = 30;
     public int rollsRemaining = MaxRolls;
 
-    void OnEnable()
-    {
-        maxLevel = 1;
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "Each die triggers {extra}. Decays in {rolls}.";
-        RebuildDescription();
-    }
-
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "extra", "1 more time" },
-        { "rolls", rollsRemaining + " rolls" }
+        { "extra", GameKeywords.RetriggerN(1) },
+        { "rolls", GameKeywords.Counter(rollsRemaining.ToString()) }
     };
 
     public override int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload)

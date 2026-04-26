@@ -515,14 +515,14 @@ public class TurnManager : MonoBehaviour
             int moves = RunManager.instance.extraMovesPerTurn;
             RunManager.instance.remainingMoves = moves;
 
-            // Surge Boot: her tur başında sıfırla (Use() anında aktifleştirir)
-            RunManager.instance.surgeBootActive = false;
+            // Surge Boot: her tur başında sıfırla (Use() anında stack ekler)
+            RunManager.instance.surgeBootStacks = 0;
             RunManager.instance.surgeBootNextTurn = false;
 
             // Blue Magic Tile: activate surge boot (range-2 movement) while standing on it
             if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType blueCheck) && blueCheck == MagicTileType.Blue)
             {
-                RunManager.instance.surgeBootActive = true;
+                RunManager.instance.surgeBootStacks = 1;
                 MagicTileManager.instance.MarkBlueTileActive(player.GetCurrentCellPosition());
             }
 
@@ -591,11 +591,11 @@ public class TurnManager : MonoBehaviour
             rm.bonusGoldPerKill = 0;
             rm.skipBonusGold = 0;
             rm.bonusDiceNextCombat = 0;
-            rm.doubleGoldNextKill = false;
-            rm.doubleDamageNextCombat = false;
-            rm.cleaveNextCombat = false;
+            rm.doubleGoldNextKillStacks = 0;
+            rm.doubleDamageNextCombatStacks = 0;
+            rm.cleaveNextCombatStacks = 0;
             rm.surgeBootNextTurn = false;
-            rm.surgeBootActive = false;
+            rm.surgeBootStacks = 0;
             rm.hasPerkReroll = false;
             rm.hasLuckyClover = false;
             rm.pendingRerollReset = false;
@@ -1780,9 +1780,9 @@ public class TurnManager : MonoBehaviour
         // Notify listeners (ShopDealer uses this to detect player stepping on its tile)
         GameEvents.PlayerMoved(playerCell);
 
-        // Surge Boot: hareketten sonra kapat
+        // Surge Boot: hareketten sonra kapat (tum stack'leri yak)
         if (RunManager.instance != null)
-            RunManager.instance.surgeBootActive = false;
+            RunManager.instance.surgeBootStacks = 0;
 
         // Blue Magic Tile: 2+ hex hareket edildiyse tüket
         if (MagicTileManager.instance != null)
@@ -2392,10 +2392,10 @@ public class TurnManager : MonoBehaviour
 
         // OverClok: zar gizlenmeden önce 2x hasarı göster
         long finalDamage = payload.GetFinalDamage();
-        if (RunManager.instance.doubleDamageNextCombat)
+        if (RunManager.instance.doubleDamageNextCombatStacks > 0)
         {
             finalDamage *= 2;
-            RunManager.instance.doubleDamageNextCombat = false;
+            RunManager.instance.doubleDamageNextCombatStacks--;
             if (!skipDiceVisuals)
             {
                 UpdateTotalDamageDisplay(finalDamage);
@@ -2427,7 +2427,7 @@ public class TurnManager : MonoBehaviour
         long damagePerEnemy = 0;
         if (targets.Count > 0)
         {
-            if (RunManager.instance.cleaveNextCombat) { damagePerEnemy = finalDamage; RunManager.instance.cleaveNextCombat = false; }
+            if (RunManager.instance.cleaveNextCombatStacks > 0) { damagePerEnemy = finalDamage; RunManager.instance.cleaveNextCombatStacks--; }
             else { damagePerEnemy = finalDamage / targets.Count; }
         }
 

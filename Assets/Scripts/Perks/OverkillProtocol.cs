@@ -1,16 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class OverkillProtocolPerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Common;
-        if (string.IsNullOrEmpty(description))
-            description = "Overkill damage carries over to a random living enemy.";
-        RebuildDescription();
-    }
+        { "overkill", GameKeywords.Action("Overkill") },
+        { "carry",    GameKeywords.Status("carries over") }
+    };
 
     /// <summary>
     /// Called by TurnManager after an enemy dies from combat damage.

@@ -7,9 +7,6 @@ public class MutaGen : BaseItem
     void OnEnable()
     {
         itemName = "Muta-Gen";
-        if (string.IsNullOrEmpty(description))
-            description = "Restore {heal}.";
-        RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
