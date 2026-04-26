@@ -61,9 +61,12 @@ public class InventoryManager : MonoBehaviour
     /// </summary>
     public void ResetForNewRun()
     {
-        // Clear cooldowns before wiping slots
+        // Klonlanan instance'lari yok et ki scene leak olmasin
         for (int i = 0; i < slots.Length; i++)
-            if (slots[i] != null) slots[i].usedThisCombat = false;
+        {
+            if (slots[i] != null) Destroy(slots[i]);
+            slots[i] = null;
+        }
         slots = new BaseItem[maxSlots];
         GameEvents.InventoryChanged();
     }
@@ -92,6 +95,8 @@ public class InventoryManager : MonoBehaviour
 
     /// <summary>
     /// Try to add an item to the first empty slot. Returns true on success.
+    /// Item ScriptableObject klonlanir — paylasilan asset state'i (usedThisCombat vb.)
+    /// ayni iki itemi tutmayi bozmasin diye her slot kendi instance'ini tasir.
     /// </summary>
     public bool TryAddItem(BaseItem item)
     {
@@ -99,12 +104,24 @@ public class InventoryManager : MonoBehaviour
         {
             if (slots[i] == null)
             {
-                slots[i] = item;
+                slots[i] = CloneItem(item);
                 GameEvents.InventoryChanged();
                 return true;
             }
         }
         return false;
+    }
+
+    private static BaseItem CloneItem(BaseItem source)
+    {
+        if (source == null) return null;
+        var copy = ScriptableObject.Instantiate(source);
+        // Instantiate "(Clone)" ekler — orijinal ad item logic'inde kullaniliyor
+        copy.name = source.name;
+        copy.itemName = source.itemName;
+        copy.usedThisCombat = false;
+        copy.extraUses = 0;
+        return copy;
     }
 
     /// <summary>
@@ -118,8 +135,8 @@ public class InventoryManager : MonoBehaviour
         BaseItem item = slots[slotIndex];
         if (item == null) return false;
 
-        // Already used this combat — block
-        if (item.usedThisCombat) return false;
+        // Already used this combat — extraUses (ExtraAmmo perki) varsa onu yak.
+        if (item.usedThisCombat && item.extraUses <= 0) return false;
 
         bool used = item.Use();
         if (used)
@@ -130,8 +147,10 @@ public class InventoryManager : MonoBehaviour
 
             GameEvents.ItemUsed(item, slotIndex);
 
-            // Per-combat cooldown: mark as used, do NOT remove from slot
-            item.usedThisCombat = true;
+            // Per-combat cooldown: ilk kullanim usedThisCombat'i set eder.
+            // Sonraki kullanimlarda extraUses tuketilir.
+            if (!item.usedThisCombat) item.usedThisCombat = true;
+            else item.extraUses--;
             GameEvents.InventoryChanged();
 
             if (AudioManager.instance != null)
@@ -148,7 +167,10 @@ public class InventoryManager : MonoBehaviour
         for (int i = 0; i < slots.Length; i++)
         {
             if (slots[i] != null)
+            {
                 slots[i].usedThisCombat = false;
+                slots[i].extraUses = 0;
+            }
         }
         GameEvents.InventoryChanged();
     }
@@ -204,6 +226,7 @@ public class InventoryManager : MonoBehaviour
     public void RemoveItem(int slotIndex)
     {
         if (slotIndex < 0 || slotIndex >= slots.Length) return;
+        if (slots[slotIndex] != null) Destroy(slots[slotIndex]);
         slots[slotIndex] = null;
         GameEvents.InventoryChanged();
     }

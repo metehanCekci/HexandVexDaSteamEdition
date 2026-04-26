@@ -17,7 +17,7 @@ public class HangingNervePerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "extra", "X2 more times" }
+        { "extra", "2 more times" }
     };
 
     public override int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload)

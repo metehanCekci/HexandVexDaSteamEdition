@@ -14,7 +14,7 @@ public class LetsGoAgainPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "again", "X2 once more" }
+        { "again", "1 more time" }
     };
     // Bu perk ModifyCombat ile çalışmaz.
     // TurnManager, nihai hasar hesabı bittikten sonra bu perkin varlığını kontrol eder

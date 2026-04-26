@@ -27,6 +27,13 @@ public abstract class BaseItem : ScriptableObject
     [System.NonSerialized] public bool usedThisCombat;
 
     /// <summary>
+    /// Bu combat'ta usedThisCombat=true olduktan sonra ekstra kullanim hakki.
+    /// ExtraAmmo perki tarafindan combat basinda set edilir.
+    /// 0 = ek hak yok (varsayilan).
+    /// </summary>
+    [System.NonSerialized] public int extraUses;
+
+    /// <summary>
     /// Item kullanıldığında çağrılır. true dönerse item tüketilmiş demektir.
     /// </summary>
     public abstract bool Use();
@@ -85,21 +92,23 @@ public abstract class BaseItem : ScriptableObject
         if (s.Length == 0) return s;
 
         string lower = s.ToLowerInvariant();
-        string hex;
+        string hex = null;
 
+        // Renk kurali (BasePerk.Colorize ile ayni):
+        //   gold -> sari, hp/heal -> yesil, damage -> turuncu,
+        //   x prefix -> kirmizi (mult), +/- prefix -> mavi (chips), digerleri renksiz/beyaz.
         if (lower.Contains("gold"))
             hex = UIColors.Gold;
-        else if (s[0] == 'x' || s[0] == 'X')
-            hex = UIColors.Mult;
-        else if (s[0] == '+' || s[0] == '-')
-            hex = UIColors.Chips;
         else if (lower.Contains("hp") || lower.Contains("heal"))
             hex = UIColors.Heal;
         else if (lower.Contains("damage"))
             hex = UIColors.Damage;
-        else
+        else if (s[0] == 'x' || s[0] == 'X')
+            hex = UIColors.Mult;
+        else if (s[0] == '+' || s[0] == '-')
             hex = UIColors.Chips;
 
+        if (hex == null) return s;
         return $"<color=#{hex}>{s}</color>";
     }
 }

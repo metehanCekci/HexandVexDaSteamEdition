@@ -152,6 +152,7 @@ public class SellBoxController : MonoBehaviour
             if (!perk.CanUnequip()) return false;
             perk.OnUnequip();
             rm.activePerks.RemoveAt(pendingPerkIndex);
+            GameEvents.PerkSold(perk);
             Destroy(perk.gameObject);
         }
         else
@@ -159,6 +160,7 @@ public class SellBoxController : MonoBehaviour
             if (pendingPerkIndex >= rm.inventoryPerks.Count) return false;
             BasePerk perk = rm.inventoryPerks[pendingPerkIndex];
             rm.inventoryPerks.RemoveAt(pendingPerkIndex);
+            GameEvents.PerkSold(perk);
             Destroy(perk.gameObject);
         }
 

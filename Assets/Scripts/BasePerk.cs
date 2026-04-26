@@ -197,27 +197,30 @@ public abstract class BasePerk : MonoBehaviour
         if (s.Length == 0) return s;
 
         string lower = s.ToLowerInvariant();
-        string hex;
+        string hex = null;
 
-        // Gold ifadesi varsa sari (oncelikli, "+N gold" dahil)
+        // ----------------------------------------------------------------
+        // RENK KURALI:
+        //   gold ifadesi   -> sari    (HER ZAMAN, oncelikli)
+        //   hp / heal      -> yesil
+        //   damage kelimesi -> turuncu/damage rengi
+        //   "x" prefix      -> kirmizi (mult, sadece zar carpani)
+        //   "+/-" prefix    -> mavi (chips, zar degerine ekleme/cikarma)
+        //   diger her sey   -> renksiz / beyaz (retrigger sayisi, kalan kullanim, stack...)
+        // ----------------------------------------------------------------
         if (lower.Contains("gold"))
             hex = UIColors.Gold;
-        // "x2", "x1.5" gibi mult ifadeleri -> kirmizi
-        else if (s[0] == 'x' || s[0] == 'X')
-            hex = UIColors.Mult;
-        // "+3", "-1" gibi chips -> mavi
-        else if (s[0] == '+' || s[0] == '-')
-            hex = UIColors.Chips;
-        // "N HP", "heal" -> yesil
         else if (lower.Contains("hp") || lower.Contains("heal"))
             hex = UIColors.Heal;
-        // "N damage" -> damage rengi
         else if (lower.Contains("damage"))
             hex = UIColors.Damage;
-        // ciplak sayi / % degeri -> chips mavi
-        else
+        else if (s[0] == 'x' || s[0] == 'X')
+            hex = UIColors.Mult;
+        else if (s[0] == '+' || s[0] == '-')
             hex = UIColors.Chips;
+        // else: beyaz/renksiz birak — token'i ham olarak don.
 
+        if (hex == null) return s;
         return $"<color=#{hex}>{s}</color>";
     }
 

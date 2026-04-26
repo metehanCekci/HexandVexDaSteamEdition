@@ -18,7 +18,7 @@ public class SensoryOverloadPerk : BasePerk
     {
         { "five", "5" },
         { "six", "6" },
-        { "extra", "X1 more time" }
+        { "extra", "1 more time" }
     };
 
     public override int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload)

@@ -165,6 +165,9 @@ public class RunManager : MonoBehaviour
         bool forceDuplicate = allowDuplicatePerk;
         allowDuplicatePerk = false; // consume the flag — one-shot override
 
+        // Showman perki: envanterde varsa duplicate perkler her zaman kabul edilir.
+        if (HasShowman()) forceDuplicate = true;
+
         if (!isStackable && !forceDuplicate)
         {
             // Hem activePerks hem inventoryPerks'te bu perk tipinden var mi kontrol et
@@ -229,6 +232,16 @@ public class RunManager : MonoBehaviour
         }
 
         RefreshPerkUI();
+    }
+
+    /// <summary>Envanterde (active veya stash) Showman perki var mi?</summary>
+    public bool HasShowman()
+    {
+        for (int i = 0; i < activePerks.Count; i++)
+            if (activePerks[i] is ShowmanPerk) return true;
+        for (int i = 0; i < inventoryPerks.Count; i++)
+            if (inventoryPerks[i] is ShowmanPerk) return true;
+        return false;
     }
 
     /// <summary>Aktif slot ile envanter slotunu yer degistirir.</summary>

@@ -15,14 +15,14 @@ public class StelzerGambitPerk : BasePerk
         maxLevel = 1;
         rarity = PerkRarity.Common;
         if (string.IsNullOrEmpty(description))
-            description = "Each die triggers {extra}. Decays after {rolls} rolls.";
+            description = "Each die triggers {extra}. Decays in {rolls}.";
         RebuildDescription();
     }
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "extra", "X1 more time" },
-        { "rolls", rollsRemaining.ToString() }
+        { "extra", "1 more time" },
+        { "rolls", rollsRemaining + " rolls" }
     };
 
     public override int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload)

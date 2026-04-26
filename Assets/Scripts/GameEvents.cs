@@ -98,6 +98,13 @@ public static class GameEvents
     public static event Action<string> OnPerkAcquired;
     public static void PerkAcquired(string perkTypeName) => OnPerkAcquired?.Invoke(perkTypeName);
 
+    /// <summary>
+    /// Fired when a perk is sold (sell box). Subscribers receive the perk instance BEFORE Destroy() runs,
+    /// so they can read its type/level. Invisible Joker listens to this.
+    /// </summary>
+    public static event Action<BasePerk> OnPerkSold;
+    public static void PerkSold(BasePerk perk) => OnPerkSold?.Invoke(perk);
+
     /// <summary>Fired when a new perk is unlocked in the collection.</summary>
     public static event Action<string> OnPerkUnlocked;
     public static void PerkUnlocked(string perkId) => OnPerkUnlocked?.Invoke(perkId);

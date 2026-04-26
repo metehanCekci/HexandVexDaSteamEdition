@@ -21,7 +21,7 @@ public class MimeticGrowthPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "again", "X1 more time" }
+        { "again", "1 more time" }
     };
 
     public override bool IsIncompatible()

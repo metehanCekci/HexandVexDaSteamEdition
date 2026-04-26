@@ -21,7 +21,7 @@ public class LeftmostResonancePerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "again", "X2 additional times" }
+        { "again", "2 additional times" }
     };
 
     public override bool IsIncompatible() => GetLeftmostTarget() == null;
