@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Volatile Roll
-  description: Dice only roll [s]1[/s] or [s]6[/s]. Every {six} rerolls a chain die.
+  description: Dice only roll [white]1[/white] or [white]6[/white]. Every {six} rerolls
+    a chain die.
   icon: {fileID: -4363507172755077261, guid: 89ebaf46365c7c840a712eae6c2490d1, type: 3}
   priority: 0
   isRerollPerk: 0

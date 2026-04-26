@@ -17,15 +17,14 @@ public abstract class BaseItem : ScriptableObject
     // ============================================================================
     // Bu field item'in aciklama sablonudur. Inspector'da diledigin gibi yaz.
     //
-    // ── INLINE HIGHLIGHT TAG'LERI (sabit kelimeler icin) ──
-    //   [a]burn[/a]      -> TURUNCU+bold (SADECE burn/fire icin)
-    //   [s]heal[/s]      -> beyaz+bold STATUS (kill/attack/use/dodge/shield/stun/spike vb.)
-    //   [r]retriggers[/r]-> mor+bold RETRIGGER
-    //   [c]5/30[/c]      -> beyaz+bold COUNTER (sayaclar)
-    //   [m]X4[/m]        -> kirmizi MULT (sabit carpan)
-    //   [p]+5[/p]        -> mavi PLUS (sabit damage ekleme)
-    //   [g]5 gold[/g]    -> sari GOLD
-    //   [h]5 HP[/h]      -> yesil HP
+    // ── INLINE HIGHLIGHT TAG'LERI (RENK ADI ile) ──
+    //   [white]heal[/white]         -> beyaz+bold (kill/attack/use/dodge/shield/stun/spike vb.)
+    //   [orange]burn[/orange]       -> turuncu+bold (SADECE burn/fire)
+    //   [purple]retriggers[/purple] -> mor+bold (sadece "retriggers" kelimesi)
+    //   [red]X4[/red]               -> kirmizi (mult, X carpan)
+    //   [blue]+5 damage[/blue]      -> mavi (chips, +damage)
+    //   [yellow]5 gold[/yellow]     -> sari (gold)
+    //   [green]5 HP[/green]         -> yesil (HP/heal)
     //
     // {token_adi} -> dinamik deger, GetDescValues() doldurur (GameKeywords helper'lari kullanin).
     // ============================================================================
@@ -85,6 +84,16 @@ public abstract class BaseItem : ScriptableObject
     private static string ApplyInlineHighlights(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
+        // Renk-isimli tag'ler:
+        text = ReplaceTag(text, "white",  UIColors.Status,    bold: true);
+        text = ReplaceTag(text, "orange", UIColors.Action,    bold: true);
+        text = ReplaceTag(text, "purple", UIColors.Retrigger, bold: true);
+        text = ReplaceTag(text, "red",    UIColors.Mult,      bold: false);
+        text = ReplaceTag(text, "blue",   UIColors.Chips,     bold: false);
+        text = ReplaceTag(text, "yellow", UIColors.Gold,      bold: false);
+        text = ReplaceTag(text, "green",  UIColors.Heal,      bold: false);
+
+        // Eski tek-harf tag'ler (geri uyumluluk):
         text = ReplaceTag(text, "a", UIColors.Action,    bold: true);
         text = ReplaceTag(text, "s", UIColors.Status,    bold: true);
         text = ReplaceTag(text, "r", UIColors.Retrigger, bold: true);

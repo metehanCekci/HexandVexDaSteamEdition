@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Photovoltaic Pulse
-  description: Multiplies damage by the [s]first die[/s] value. Re-applies each time
-    the first die {retrig}.
+  description: Multiplies damage by the [white]first die[/white] value. Re-applies
+    each time the first die {retrig}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: OverClok
   m_EditorClassIdentifier: Assembly-CSharp::OverClok
   itemName: Over-Clock
-  description: Deal [m]X2[/m] damage on your next dice roll.
+  description: Deal [red]X2[/red] damage on your next dice roll.
   price: 21
   icon: {fileID: -9164013207837993937, guid: d707fa2f81d2ad644b8e49cc4cc9d45c, type: 3}
   itemType: 0

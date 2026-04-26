@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PhaseShift
   m_EditorClassIdentifier: Assembly-CSharp::PhaseShift
   itemName: Phase-Shift
-  description: Select an enemy and [s]swap positions[/s] with it.
+  description: Select an enemy and [white]swap positions[/white] with it.
   price: 18
   icon: {fileID: 4403203449512686609, guid: eb47033b1443e8640a76a405bd37cde6, type: 3}
   itemType: 0

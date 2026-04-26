@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Overkill Protocol
-  description: '[s]Overkill[/s] damage carries to a random living enemy.'
+  description: '[white]Overkill[/white] damage carries to a random living enemy.'
   icon: {fileID: -2606550597215305628, guid: 4bd23cabd30cc6345a1eec8a5a398766, type: 3}
   priority: 0
   isRerollPerk: 0

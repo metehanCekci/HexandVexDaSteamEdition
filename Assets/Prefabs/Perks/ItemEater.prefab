@@ -49,7 +49,7 @@ MonoBehaviour:
   perkName: Item Eater
   description: 'Feed items to grow. Base {base}, each fed item adds {bonus}.
 
-    [c]Fed:[/c]
+    [white]Fed:[/white]
     {fed} ({current})'
   icon: {fileID: 0}
   priority: 0

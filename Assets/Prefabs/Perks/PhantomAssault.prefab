@@ -47,10 +47,11 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Phantom Assault
-  description: '[s]Knockback[/s] leaves a [s]ghost[/s] where the enemy stood. [s]Skip[/s]
-    to teleport through all ghosts, {attack} at each.
+  description: '[white]Knockback[/white] leaves a [white]ghost[/white] where the
+    enemy stood. [white]Skip[/white] to teleport through all ghosts, {attack} at
+    each.
 
-    [c]Ghosts:[/c] {count}'
+    [white]Ghosts:[/white] {count}'
   icon: {fileID: -8311660539121137023, guid: 962e29b65ef655143bedc14f599a75f9, type: 3}
   priority: 0
   isRerollPerk: 0

@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Loot Gland
-  description: Gain {bonus} per [s]kill[/s] for each [s]level[/s].
+  description: Gain {bonus} per [white]kill[/white] for each [white]level[/white].
   icon: {fileID: 8045863270625670295, guid: 22de378e37ad57443ac683e37a78de95, type: 3}
   priority: 0
   isRerollPerk: 0

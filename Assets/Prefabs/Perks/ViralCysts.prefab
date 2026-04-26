@@ -47,10 +47,11 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Viral Cysts
-  description: '[s]Attacks[/s] plant [s]cysts[/s]. [s]Skip[/s] to detonate: {perMark}
-    per mark, damage split among marked.
+  description: '[white]Attacks[/white] plant [white]cysts[/white]. [white]Skip[/white]
+    to detonate: {perMark} per mark, damage split among marked.
 
-    [c]Marked:[/c] {count}'
+    [white]Marked:[/white]
+    {count}'
   icon: {fileID: -2643283406517580152, guid: f2b2dd1d74c2c364186081cd5f873735, type: 3}
   priority: 0
   isRerollPerk: 0

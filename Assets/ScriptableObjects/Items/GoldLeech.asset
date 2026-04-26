@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GoldLeech
   m_EditorClassIdentifier: Assembly-CSharp::GoldLeech
   itemName: Gold-Leech
-  description: Next enemy drops [m]X2[/m] [g]gold[/g].
+  description: Next enemy drops [red]X2[/red] [yellow]gold[/yellow].
   price: 12
   icon: {fileID: -7793842298176169276, guid: bf7dc8d27f4de174b94e6ef05d88563f, type: 3}
   itemType: 0

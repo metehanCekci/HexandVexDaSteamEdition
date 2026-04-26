@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Kill Chain
-  description: '[s]Killing[/s] an enemy grants {moves} extra move.'
+  description: '[white]Killing[/white] an enemy grants {moves} extra move.'
   icon: {fileID: -5809632006269741919, guid: e6d69a0e0fc2e424fb4e04c353f11a90, type: 3}
   priority: 0
   isRerollPerk: 0

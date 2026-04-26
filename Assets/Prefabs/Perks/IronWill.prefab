@@ -47,10 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Iron Will
-  description: 'Each [s]level cleared[/s] without damage grants {per}. Resets on
-    damage.
+  description: 'Each [white]level cleared[/white] without damage grants {per}. Resets
+    on damage.
 
-    [c]Streak:[/c] {streak} ({bonus})'
+    [white]Streak:[/white] {streak} ({bonus})'
   icon: {fileID: -378382919798162192, guid: a4d8aaef9f4e2a546a002486ae8ce803, type: 3}
   priority: 0
   isRerollPerk: 0

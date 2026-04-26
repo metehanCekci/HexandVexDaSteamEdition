@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Volatile Cells
-  description: Killed enemies explode for {dmg} of max [h]HP[/h] to adjacent enemies.
+  description: Killed enemies explode for {dmg} of max [green]HP[/green] to adjacent
+    enemies.
   icon: {fileID: 5924252578520605724, guid: a97a0cdfdcad3f442abb5abac12f5e21, type: 3}
   priority: 0
   isRerollPerk: 0

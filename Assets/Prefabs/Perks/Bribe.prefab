@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Bribe
-  description: '[s]Shop reroll[/s] is [g]free[/g].'
+  description: '[white]Shop reroll[/white] is [yellow]free[/yellow].'
   icon: {fileID: -3208392794392601858, guid: 67306c4e8928bae429a2b2d466dc2c65, type: 3}
   priority: 1
   isRerollPerk: 0

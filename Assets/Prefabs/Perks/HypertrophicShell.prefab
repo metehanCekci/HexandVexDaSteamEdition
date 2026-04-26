@@ -47,7 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Hypertrophic Shell
-  description: Gain {bonusHP} max [h]HP[/h] per [s]level[/s] (cap [c]10[/c]).
+  description: Gain {bonusHP} max [green]HP[/green] per [white]level[/white] (cap
+    [white]10[/white]).
   icon: {fileID: -4811080509247167860, guid: ff9b5df22a94626438f8bdde5dbff19b, type: 3}
   priority: 0
   isRerollPerk: 0

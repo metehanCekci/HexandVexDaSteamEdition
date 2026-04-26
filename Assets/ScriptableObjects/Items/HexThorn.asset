@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: HexThorn
   m_EditorClassIdentifier: Assembly-CSharp::HexThorn
   itemName: Hex-Thorn
-  description: Place a [s]spike trap[/s] on any empty hex. Breaks after [c]3 turns[/c]
-    (blinks on turn [c]2[/c]).
+  description: Place a [white]spike trap[/white] on any empty hex. Breaks after [white]3
+    turns[/white] (blinks on turn [white]2[/white]).
   price: 15
   icon: {fileID: -6242459698676535975, guid: 7181871ca736cd74b8cc273a168af673, type: 3}
   itemType: 0

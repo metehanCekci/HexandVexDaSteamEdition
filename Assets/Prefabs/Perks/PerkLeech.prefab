@@ -47,10 +47,11 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Perk Leech
-  description: 'Earn an [s]implant fragment[/s] when you [s]kill[/s] an elite enemy.
-    {needed} fragments = random implant.
+  description: 'Earn an [white]implant fragment[/white] when you [white]kill[/white]
+    an elite enemy. {needed} fragments = random implant.
 
-    [c]Fragments:[/c] {current}'
+    [white]Fragments:[/white]
+    {current}'
   icon: {fileID: 5597838034089175020, guid: e139a6143fb3c3448bbb3a403e70e26d, type: 3}
   priority: 0
   isRerollPerk: 0

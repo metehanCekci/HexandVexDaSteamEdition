@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Hydraulic Impact
-  description: '[s]Pushing[/s] an enemy into a wall deals {wallDmg} of their max
-    [h]HP[/h].'
+  description: '[white]Pushing[/white] an enemy into a wall deals {wallDmg} of their
+    max [green]HP[/green].'
   icon: {fileID: 1285743474836564925, guid: af7022d079a62134697efbc3739b04ea, type: 3}
   priority: 0
   isRerollPerk: 0

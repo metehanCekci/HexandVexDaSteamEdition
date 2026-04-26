@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Symbiotic Fury
-  description: All die bonuses [m]multiply[/m] damage instead of adding to it.
+  description: All die bonuses [red]multiply[/red] damage instead of adding to it.
   icon: {fileID: -5660792714676904651, guid: 51ec8d856d61127458239d265f84c093, type: 3}
   priority: 3
   isRerollPerk: 0

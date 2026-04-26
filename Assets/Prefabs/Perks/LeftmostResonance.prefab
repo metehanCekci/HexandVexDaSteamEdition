@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Leftmost Resonance
-  description: The [s]leftmost[/s] implant {again}.
+  description: The [white]leftmost[/white] implant {again}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

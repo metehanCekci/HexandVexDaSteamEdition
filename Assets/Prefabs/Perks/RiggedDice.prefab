@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Rigged Dice
-  description: All dice are [s]rerolled[/s] to match the highest rolled value.
+  description: All dice are [white]rerolled[/white] to match the highest rolled value.
   icon: {fileID: -3491094715024217226, guid: 54b1d49883b189b4e84d3dfd13cb56f1, type: 3}
   priority: 1
   isRerollPerk: 0

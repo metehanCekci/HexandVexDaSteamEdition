@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Graviton Core
-  description: On [s]skip[/s], [s]pull[/s] enemies 2-3 hexes closer.
+  description: On [white]skip[/white], [white]pull[/white] enemies 2-3 hexes closer.
   icon: {fileID: 4557775558309134271, guid: 11124347f0585de479e4d1d65aad9372, type: 3}
   priority: 0
   isRerollPerk: 0

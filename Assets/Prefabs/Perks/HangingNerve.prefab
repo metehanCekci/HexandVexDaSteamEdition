@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Hanging Nerve
-  description: The [s]first die[/s] {retrigger}.
+  description: The [white]first die[/white] {retrigger}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

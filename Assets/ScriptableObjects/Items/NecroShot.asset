@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: NecroShot
   m_EditorClassIdentifier: Assembly-CSharp::NecroShot
   itemName: Necro-Shot
-  description: '[s]Instantly kill[/s] any non-boss enemy on the map.'
+  description: '[white]Instantly kill[/white] any non-boss enemy on the map.'
   price: 30
   icon: {fileID: -6027147872081531190, guid: 8cb80f02fc4ec0d4d9a8f82f5745a01c, type: 3}
   itemType: 0

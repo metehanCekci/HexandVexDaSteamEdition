@@ -17,20 +17,18 @@ public abstract class BasePerk : MonoBehaviour
     // ============================================================================
     // Bu field perk'in aciklama sablonudur. Inspector'da diledigin gibi yaz, kod ezmez.
     //
-    // ── INLINE HIGHLIGHT TAG'LERI (sabit kelimeler icin, hizli yontem) ──
-    //   [a]burn[/a]      -> TURUNCU+bold (SADECE burn/fire icin rezerve)
-    //   [s]skip[/s]      -> beyaz+bold STATUS (skip/kill/attack/push/level/shop/dodge/shield/stun
-    //                       /spike/first die/leftmost/etc — onemli highlight kelimeleri)
-    //   [r]retriggers[/r]-> mor+bold RETRIGGER (sadece "retrigger" kelimesi mor olsun, etrafi degil)
-    //   [c]5/30[/c]      -> beyaz+bold COUNTER (sayaclar)
-    //   [m]X4[/m]        -> kirmizi MULT (sabit carpan)
-    //   [p]+5[/p]        -> mavi PLUS (sabit damage ekleme)
-    //   [g]5 gold[/g]    -> sari GOLD
-    //   [h]5 HP[/h]      -> yesil HP
+    // ── INLINE HIGHLIGHT TAG'LERI (RENK ADI ile, kolay okunur) ──
+    //   [white]skip[/white]         -> beyaz+bold (skip/kill/attack/push/level/dodge/shield/stun/spike/etc)
+    //   [orange]burn[/orange]       -> turuncu+bold (SADECE burn/fire)
+    //   [purple]retriggers[/purple] -> mor+bold (sadece "retriggers" kelimesi)
+    //   [red]X4[/red]               -> kirmizi (mult, X carpan)
+    //   [blue]+5 damage[/blue]      -> mavi (chips, +damage)
+    //   [yellow]5 gold[/yellow]     -> sari (gold)
+    //   [green]5 HP[/green]         -> yesil (HP/heal)
     //
     // Ornek inline kullanim (Inspector'a yaz):
-    //   "Each consecutive [s]kill[/s] doubles damage. [c]Streak:[/c] {streak}"
-    //   "Attacks [a]burn[/a] enemies for {dmg} per turn."
+    //   "Each consecutive [white]kill[/white] doubles damage. Streak: {streak}"
+    //   "Attacks [orange]burn[/orange] enemies for {dmg} per turn."
     //
     // ── TOKEN'lar (dinamik degerler icin, GetDescValues doldurur) ──
     // Icine TOKEN'lar koyabilirsin: { token_adi } seklinde. Token'lari perk'in
@@ -256,6 +254,23 @@ public abstract class BasePerk : MonoBehaviour
     private static string ApplyInlineHighlights(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
+        // Renk-isimli tag'ler (insan-okunur, Inspector'da kolay yazilir):
+        //   [white]...[/white]   -> beyaz+bold (status: shield/dodge/skip/kill/level vb.)
+        //   [orange]...[/orange] -> turuncu+bold (action: burn)
+        //   [purple]...[/purple] -> mor+bold (retrigger)
+        //   [red]...[/red]       -> kirmizi (mult, X carpan)
+        //   [blue]...[/blue]     -> mavi (chips, +damage)
+        //   [yellow]...[/yellow] -> sari (gold)
+        //   [green]...[/green]   -> yesil (HP/heal)
+        text = ReplaceTag(text, "white",  UIColors.Status,    bold: true);
+        text = ReplaceTag(text, "orange", UIColors.Action,    bold: true);
+        text = ReplaceTag(text, "purple", UIColors.Retrigger, bold: true);
+        text = ReplaceTag(text, "red",    UIColors.Mult,      bold: false);
+        text = ReplaceTag(text, "blue",   UIColors.Chips,     bold: false);
+        text = ReplaceTag(text, "yellow", UIColors.Gold,      bold: false);
+        text = ReplaceTag(text, "green",  UIColors.Heal,      bold: false);
+
+        // Eski tek-harf tag'ler (geri uyumluluk):
         text = ReplaceTag(text, "a", UIColors.Action,    bold: true);
         text = ReplaceTag(text, "s", UIColors.Status,    bold: true);
         text = ReplaceTag(text, "r", UIColors.Retrigger, bold: true);

@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Seismic Step
-  description: '[s]Skip[/s] makes your tile collapse after you leave it. Enemies
-    on it fall and take {dmg}.'
+  description: '[white]Skip[/white] makes your tile collapse after you leave it.
+    Enemies on it fall and take {dmg}.'
   icon: {fileID: 2968922446593118486, guid: 1c844646e75eddb4fb69d2ef1074f4ee, type: 3}
   priority: 0
   isRerollPerk: 0
