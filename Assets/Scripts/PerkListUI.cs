@@ -413,12 +413,12 @@ public class PerkListUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
         // ── Açıklama satırı ──
         perk.RebuildDescription();
-        if (!string.IsNullOrEmpty(perk.description))
+        if (!string.IsNullOrEmpty(perk.renderedDescription))
         {
             GameObject descObj = new GameObject("Description", typeof(RectTransform), typeof(TextMeshProUGUI));
             descObj.transform.SetParent(row.transform, false);
             TextMeshProUGUI descTmp = descObj.GetComponent<TextMeshProUGUI>();
-            descTmp.text = perk.description;
+            descTmp.text = perk.renderedDescription;
             descTmp.fontSize = 10;
             // Açıklama rengi rarity'e göre (biraz soluk versiyon)
             Color rarityCol;

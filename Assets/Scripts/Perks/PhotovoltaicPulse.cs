@@ -41,6 +41,10 @@ public class PhotovoltaicPulsePerk : BasePerk
         if (diceIndex != 0) return;
         if (diceValue <= 0) return;
         payload.ApplyMult(diceValue);
+
+        TriggerVisualPop();
+        if (PerkListUI.instance != null)
+            PerkListUI.instance.TriggerShakeForPerk(this);
     }
 
     public override IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI)

@@ -262,7 +262,7 @@ public class HotbarUI : MonoBehaviour
                 {
                     item.RebuildDescription();
                     tt.itemName = item.itemName ?? "";
-                    tt.itemDesc = item.description ?? "";
+                    tt.itemDesc = item.renderedDescription ?? "";
                     tt.hasItem = true;
                 }
             }

@@ -1384,7 +1384,7 @@ public class PerkInventoryUI : MonoBehaviour
 
         perk.RebuildDescription();
         if (tooltipDescText != null)
-            tooltipDescText.text = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
+            tooltipDescText.text = string.IsNullOrEmpty(perk.renderedDescription) ? "" : perk.renderedDescription;
 
         tooltipObj.SetActive(true);
         tooltipObj.transform.SetAsLastSibling();

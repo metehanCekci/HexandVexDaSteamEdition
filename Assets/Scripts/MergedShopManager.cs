@@ -1229,7 +1229,7 @@ public class MergedShopPerkSlot
 
         if (nameText        != null) nameText.text        = perk.perkName.ToUpperInvariant();
         perk.RebuildDescription();
-        if (descriptionText != null) descriptionText.text = perk.description;
+        if (descriptionText != null) descriptionText.text = perk.renderedDescription;
 
         // Rarity rengi
         Color col = GetRarityColor(perk.rarity);
@@ -1310,7 +1310,7 @@ public class MergedShopItemSlot
 
         if (nameText        != null) nameText.text        = item.itemName.ToUpperInvariant();
         item.RebuildDescription();
-        if (descriptionText != null) descriptionText.text = item.description;
+        if (descriptionText != null) descriptionText.text = item.renderedDescription;
         if (priceText       != null) priceText.text       = item.price.ToString();
 
         if (iconImage != null)

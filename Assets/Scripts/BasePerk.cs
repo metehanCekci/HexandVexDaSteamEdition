@@ -79,6 +79,12 @@ public abstract class BasePerk : MonoBehaviour
     [TextArea(3, 6)] public string description;
     // Cache (RebuildDescription token'li ham template'i hatirlasin diye).
     [System.NonSerialized] private string _descriptionTemplate;
+
+    /// <summary>
+    /// Runtime'da uretilen, renkli/highlight'li description (UI bunu okur).
+    /// `description` field'i ASLA dokunulmaz — Inspector'da temiz kalir.
+    /// </summary>
+    [System.NonSerialized] public string renderedDescription;
     public Sprite icon;
     public int priority = 0;
     public bool isRerollPerk = false;
@@ -207,35 +213,23 @@ public abstract class BasePerk : MonoBehaviour
     // Public wrapper so UI code can reuse the same colorization pipeline for diff values.
     public static string ColorizeValue(object raw) => Colorize(raw);
 
-    // Description'i yeniden insa eder (seviye atlayinca veya GameKeywords renk/deger degisince cagrilir)
+    // Description'i yeniden insa eder (seviye atlayinca veya GameKeywords renk/deger degisince cagrilir).
+    // SONUC: `renderedDescription` (runtime-only) field'ina yazilir. `description` field'ina ASLA DOKUNULMAZ.
     public virtual void RebuildDescription()
     {
-        // Template'i her seferinde mevcut description'dan al — token'siz duz string ise
-        // direkt onu template kabul ederiz, token doldurma sirasinda tekrar yazilir.
-        // Eger description daha onceden token'lar dolduruldugu icin token icermiyorsa,
-        // _descriptionTemplate cached degerini kullaniriz.
-        bool descLooksLikeTemplate = !string.IsNullOrEmpty(description) && description.Contains("{");
-        if (descLooksLikeTemplate)
+        // Template her zaman Inspector'daki description field'idir (saf, dokunulmamis).
+        if (string.IsNullOrEmpty(description))
         {
-            // Yeni bir template set edildi (OnEnable veya manuel) — cache'i guncelle.
-            _descriptionTemplate = description;
-        }
-        else if (string.IsNullOrEmpty(_descriptionTemplate))
-        {
-            // Henuz hic template yok ve description'da token da yok — yapacak bir sey yok.
-            if (string.IsNullOrEmpty(description)) return;
-            _descriptionTemplate = description;
+            renderedDescription = "";
+            return;
         }
 
         var values = GetDescValues();
-        string built;
-        if (values == null || values.Count == 0)
-            built = _descriptionTemplate;
-        else
-            built = ApplyTokens(_descriptionTemplate, values);
+        string built = (values == null || values.Count == 0)
+            ? description
+            : ApplyTokens(description, values);
 
-        // Sabit highlight'lar icin inline tag sistemi: [a]...[/a], [s]...[/s], [r]...[/r] vs.
-        description = ApplyInlineHighlights(built);
+        renderedDescription = ApplyInlineHighlights(built);
     }
 
     /// <summary>

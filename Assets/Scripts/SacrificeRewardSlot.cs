@@ -50,7 +50,7 @@ public class SacrificeRewardSlot : MonoBehaviour, IPointerEnterHandler, IPointer
             {
                 bp.RebuildDescription();
                 if (nameText != null) nameText.text = bp.perkName;
-                if (descText != null) descText.text = bp.description;
+                if (descText != null) descText.text = bp.renderedDescription;
                 if (iconImage != null && bp.icon != null)
                 {
                     iconImage.sprite = bp.icon;

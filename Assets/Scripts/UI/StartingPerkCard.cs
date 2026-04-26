@@ -65,7 +65,7 @@ public class StartingPerkCard : MonoBehaviour
         // Description
         perk.RebuildDescription();
         if (descriptionText != null)
-            descriptionText.text = perk.description;
+            descriptionText.text = perk.renderedDescription;
 
         // Selection border off
         if (selectionBorder != null)

@@ -100,7 +100,8 @@
       "PowerShell(1..7 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })",
       "Bash(awk '/commonPerks:/{flag=1; print; next} flag && /^  [a-z]/{flag=0} flag' \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/Ana Sahne.unity\")",
       "Bash(grep -E '\\\\.cs$')",
-      "Bash(grep -v -E '^\\(BurnOrbitAnim|CystBreatheAnim\\)\\\\.cs$')"
+      "Bash(grep -v -E '^\\(BurnOrbitAnim|CystBreatheAnim\\)\\\\.cs$')",
+      "PowerShell([guid]::NewGuid\\(\\).ToString\\(\"N\"\\); [guid]::NewGuid\\(\\).ToString\\(\"N\"\\); [guid]::NewGuid\\(\\).ToString\\(\"N\"\\))"
     ]
   }
 }

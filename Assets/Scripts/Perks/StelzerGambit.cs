@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// Stelzer's Gambit â€” Common. Her zar bir kez daha islenir (retrigger).
+/// Stelzer's Gambit â€” Common. SADECE tek-yuzlu (1, 3, 5) zarlar bir kez daha islenir.
 /// 30 roll (saldiri) sonra implant yok olur.
 /// </summary>
 public class StelzerGambitPerk : BasePerk
@@ -12,13 +12,16 @@ public class StelzerGambitPerk : BasePerk
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
+        { "odd",   GameKeywords.Status("odd dice") },
         { "extra", GameKeywords.RetriggerN(1) },
         { "rolls", GameKeywords.Counter(rollsRemaining.ToString()) }
     };
 
     public override int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload)
     {
-        return rollsRemaining > 0 ? 1 : 0;
+        if (rollsRemaining <= 0) return 0;
+        // Sadece tek-yuzlu zarlar (1, 3, 5) retrigger olur — mekanik nerf
+        return (diceValue % 2 == 1) ? 1 : 0;
     }
 
     public override void ModifyCombat(CombatPayload payload)

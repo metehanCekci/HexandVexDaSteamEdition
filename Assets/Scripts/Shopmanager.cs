@@ -401,7 +401,7 @@ public class Shopmanager : MonoBehaviour
             else { card.iconImage.sprite = null; card.iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); }
         }
         item.RebuildDescription();
-        if (card.descriptionText != null) card.descriptionText.text = item.description;
+        if (card.descriptionText != null) card.descriptionText.text = item.renderedDescription;
         if (card.priceText != null) card.priceText.text = item.price.ToString();
     }
 

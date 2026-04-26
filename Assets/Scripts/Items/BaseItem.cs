@@ -30,6 +30,12 @@ public abstract class BaseItem : ScriptableObject
     // ============================================================================
     [TextArea(3, 6)] public string description;
     [System.NonSerialized] private string _descriptionTemplate;
+
+    /// <summary>
+    /// Runtime'da uretilen, renkli/highlight'li description (UI bunu okur).
+    /// `description` field'i ASLA dokunulmaz — Inspector'da temiz kalir.
+    /// </summary>
+    [System.NonSerialized] public string renderedDescription;
     public int price;
     public Sprite icon;
 
@@ -57,28 +63,21 @@ public abstract class BaseItem : ScriptableObject
 
     public virtual Dictionary<string, object> GetDescValues() { return null; }
 
+    // SONUC: `renderedDescription` (runtime-only) field'ina yazilir. `description` ASLA dokunulmaz.
     public virtual void RebuildDescription()
     {
-        // Template'i her seferinde mevcut description'dan al — Inspector'da yeni token'li sablon
-        // varsa onu kabul et. Eger token'siz ise (zaten doldurulmus) cache'lenmis template'i kullan.
-        bool descLooksLikeTemplate = !string.IsNullOrEmpty(description) && description.Contains("{");
-        if (descLooksLikeTemplate)
-            _descriptionTemplate = description;
-        else if (string.IsNullOrEmpty(_descriptionTemplate))
+        if (string.IsNullOrEmpty(description))
         {
-            if (string.IsNullOrEmpty(description)) return;
-            _descriptionTemplate = description;
+            renderedDescription = "";
+            return;
         }
 
         var values = GetDescValues();
-        string built;
-        if (values == null || values.Count == 0)
-            built = _descriptionTemplate;
-        else
-            built = ApplyTokens(_descriptionTemplate, values);
+        string built = (values == null || values.Count == 0)
+            ? description
+            : ApplyTokens(description, values);
 
-        // Inline highlight tag'lerini renkli spans'e cevir.
-        description = ApplyInlineHighlights(built);
+        renderedDescription = ApplyInlineHighlights(built);
     }
 
     private static string ApplyInlineHighlights(string text)

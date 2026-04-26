@@ -693,7 +693,7 @@ public class ActivePerkBar : MonoBehaviour
         perk.RebuildDescription();
         if (tooltipDescText != null)
         {
-            string body = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
+            string body = string.IsNullOrEmpty(perk.renderedDescription) ? "" : perk.renderedDescription;
             if (perk.IsIncompatible())
             {
                 string reason = perk.GetIncompatibleReason();

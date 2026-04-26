@@ -389,7 +389,7 @@ public class CollectionUI : MonoBehaviour
         {
             if (tooltipName != null) { tooltipName.text = perk.perkName; tooltipName.color = rarityColor; }
             perk.RebuildDescription();
-            if (tooltipDescription != null) { tooltipDescription.text = perk.description; tooltipDescription.gameObject.SetActive(true); }
+            if (tooltipDescription != null) { tooltipDescription.text = perk.renderedDescription; tooltipDescription.gameObject.SetActive(true); }
             if (tooltipLore != null)
             {
                 tooltipLore.text = !string.IsNullOrEmpty(entry.loreText) ? $"<i>{entry.loreText}</i>" : "";
