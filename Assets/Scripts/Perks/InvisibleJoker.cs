@@ -1,12 +1,11 @@
-﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Invisible Joker â€” Epic. Balatro adaptasyonu.
+/// Invisible Joker — Epic. Balatro adaptasyonu.
 /// 2 combat boyunca pasif olarak bekler (armed degil). 2. combat temizlendiginde "armed" olur.
-/// Armed'ken oyuncu BASKA bir perki sattiginda: sahip oldugu (active + inventory) tum perkler
-/// arasindan rastgele birinin kopyasini ekler ve kendini yok eder. Showman gerekmez â€”
+/// Armed'ken oyuncu BU perki sattiginda: sahip oldugu (active + inventory) tum diger perkler
+/// arasindan rastgele birinin kopyasini ekler. Showman gerekmez —
 /// duplicate iznini kendisi forceler (allowDuplicatePerk flag).
 /// </summary>
 public class InvisibleJokerPerk : BasePerk
@@ -15,11 +14,16 @@ public class InvisibleJokerPerk : BasePerk
     public int combatsPassed = 0;
     public bool armed = false;
 
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    public override Dictionary<string, object> GetDescValues()
     {
-        { "wait", armed ? GameKeywords.Counter("armed") : GameKeywords.Counter((CombatsRequired - combatsPassed) + " combats") },
-        { "effect", GameKeywords.Retrigger("copy a random implant you own") }
-    };
+        int remaining = Mathf.Max(0, CombatsRequired - combatsPassed);
+        string waitText = remaining == 1 ? "1 combat" : remaining + " combats";
+        return new Dictionary<string, object>
+        {
+            { "wait", GameKeywords.Counter(waitText) },
+            { "effect", GameKeywords.Retrigger("copy a random implant you own") }
+        };
+    }
 
     public override void OnAcquire()
     {
@@ -46,25 +50,23 @@ public class InvisibleJokerPerk : BasePerk
     private void HandlePerkSold(BasePerk soldPerk)
     {
         if (!armed) return;
-        if (soldPerk == this) return; // kendini satarsa tetikleme
-        StartCoroutine(CopyRoutine());
+        if (soldPerk != this) return; // sadece KENDISI satilinca tetiklenir
+        CopyRandomOwnedPerk();
     }
 
-    private IEnumerator CopyRoutine()
+    private void CopyRandomOwnedPerk()
     {
-        // 1 frame bekle ki sell akisi tamamen bitsin (Destroy + listeden cikar)
-        yield return null;
-        if (RunManager.instance == null) yield break;
-        if (MergedShopManager.instance == null) yield break;
+        if (RunManager.instance == null) return;
+        if (MergedShopManager.instance == null) return;
 
-        // Sahip oldugumuz tum perk tipleri (kendimiz haric)
+        // Sahip oldugumuz tum perk tipleri (kendimiz haric — zaten listeden cikarildik ama guvenlik icin filtreliyoruz)
         HashSet<System.Type> ownedTypes = new HashSet<System.Type>();
         foreach (var p in RunManager.instance.activePerks)
             if (p != null && p != this) ownedTypes.Add(p.GetType());
         foreach (var p in RunManager.instance.inventoryPerks)
             if (p != null && p != this) ownedTypes.Add(p.GetType());
 
-        if (ownedTypes.Count == 0) { SelfDestruct(); yield break; }
+        if (ownedTypes.Count == 0) return;
 
         // Bu tiplerin prefab'larini havuzlardan bul
         List<GameObject> candidatePrefabs = new List<GameObject>();
@@ -74,16 +76,13 @@ public class InvisibleJokerPerk : BasePerk
         AddMatchingPrefabs(ms.epicPerks, ownedTypes, candidatePrefabs);
         AddMatchingPrefabs(ms.legendaryPerks, ownedTypes, candidatePrefabs);
 
-        if (candidatePrefabs.Count == 0) { SelfDestruct(); yield break; }
+        if (candidatePrefabs.Count == 0) return;
 
         var chosen = candidatePrefabs[Random.Range(0, candidatePrefabs.Count)];
 
         // Showman olmadan da duplicate olarak eklensin diye one-shot flag
         RunManager.instance.allowDuplicatePerk = true;
         RunManager.instance.AddPerk(chosen);
-
-        TriggerVisualPop();
-        SelfDestruct();
     }
 
     private static void AddMatchingPrefabs(List<GameObject> pool, HashSet<System.Type> types, List<GameObject> output)
@@ -95,15 +94,5 @@ public class InvisibleJokerPerk : BasePerk
             var script = prefab.GetComponent<BasePerk>();
             if (script != null && types.Contains(script.GetType())) output.Add(prefab);
         }
-    }
-
-    private void SelfDestruct()
-    {
-        if (RunManager.instance == null) return;
-        RunManager.instance.activePerks.Remove(this);
-        RunManager.instance.inventoryPerks.Remove(this);
-        OnUnequip();
-        RunManager.instance.RefreshPerkUI();
-        Destroy(gameObject);
     }
 }

@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Invisible Joker
-  description: After {wait}, sell another implant to {effect}.
+  description: After clearing {wait} sell this perk to {effect}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

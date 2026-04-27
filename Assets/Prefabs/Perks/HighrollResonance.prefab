@@ -42,12 +42,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41c614d0116b41b18798e854b527eb5e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HighrollResonancePerk
   currentLevel: 1
   maxLevel: 1
   perkName: Highroll Resonance
-  description: 'Each {five} or {six} rolled grants {mult}.'
+  description: Each {five} or {six} roll triggered grants {mult}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

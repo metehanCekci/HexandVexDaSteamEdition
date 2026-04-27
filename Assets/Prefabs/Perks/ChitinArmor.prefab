@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Chitin Armor
-  description: Gain [red]+30%[/red] [white]dodge[/white] chance.
+  description: Gain +30% chance to [white]evade[/white] incoming attack.
   icon: {fileID: 3394840567205637898, guid: 12b239a60ad68104f82e6ebe6d38a836, type: 3}
   priority: 0
   isRerollPerk: 0

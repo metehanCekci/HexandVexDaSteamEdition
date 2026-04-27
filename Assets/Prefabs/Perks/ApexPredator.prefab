@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Apex Predator
-  description: Deal {mult}, but lose {penalty} per die rolled.
+  description: 'Deal {mult}, but lose {penalty} per die rolled. (Currently: {current})'
   icon: {fileID: 2870332851842103812, guid: 211b1e9ec1eda1c4eaa9e429739dddef, type: 3}
   priority: 2
   isRerollPerk: 0

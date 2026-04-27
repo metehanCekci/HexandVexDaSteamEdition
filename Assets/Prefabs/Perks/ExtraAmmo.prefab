@@ -45,9 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExtraAmmoPerk
   currentLevel: 1
-  maxLevel: 3
+  maxLevel: 1
   perkName: Extra Ammo
-  description: Use your items {extra}.
+  description: Use your items one extra time.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

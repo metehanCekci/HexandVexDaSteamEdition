@@ -47,10 +47,11 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Carrion Feeder
-  description: 'Each consecutive [white]kill[/white] doubles damage (max {max}).
-    Resets on failed [white]kill[/white].
+  description: 'Each consecutive [white]kill[/white] doubles damage. [white]Resets[/white]
+    when you fail to [white]kill[/white] the enemy in one blow.
 
-    [white]Streak:[/white] {streak} ({current})'
+    [white]Currently:[/white]
+    {streak} ({current})'
   icon: {fileID: -7440351437230719341, guid: 718947759eda4fe4b9f4614dd55e542e, type: 3}
   priority: 0
   isRerollPerk: 0

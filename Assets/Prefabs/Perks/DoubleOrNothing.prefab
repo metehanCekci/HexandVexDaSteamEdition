@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Double or Nothing
-  description: If dice sum is even, deal {mult}.
+  description: If rolled dice total before calculations is even, deal {mult}.
   icon: {fileID: -209639563458556150, guid: 7c07dc4ef2d57874b94297396d84983e, type: 3}
   priority: 2
   isRerollPerk: 0

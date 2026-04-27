@@ -2304,10 +2304,19 @@ public class TurnManager : MonoBehaviour
             extraDices += 1;
             MagicTileManager.instance.ConsumePlayerTile();
         }
-        // Condensed Fury: roll 1 fewer die (minimum 1 die always)
-        int diceReduction = 0;
-        foreach (var p in RunManager.instance.activePerks) if (p is CondensedFuryPerk cfPerk) { diceReduction += cfPerk.GetDiceReduction(); }
-        int totalDice = Mathf.Max(1, diceCount + extraDices - diceReduction);
+        // Condensed Fury: tek zar at, kaybedilen zar sayisi kadar o zari retriggerla
+        int intendedDice = Mathf.Max(1, diceCount + extraDices);
+        int totalDice = intendedDice;
+        CondensedFuryPerk condensedFury = RunManager.instance.activePerks.Find(p => p is CondensedFuryPerk) as CondensedFuryPerk;
+        if (condensedFury != null && intendedDice > 1)
+        {
+            condensedFury.pendingRetriggerCount = intendedDice - 1;
+            totalDice = 1;
+        }
+        else if (condensedFury != null)
+        {
+            condensedFury.pendingRetriggerCount = 0;
+        }
         for (int i = 0; i < totalDice; i++) currentRolls.Add(Random.Range(1, 7));
         // Reroll stack: her zara kalıcı bonus ekle (AMA SADECE PERK VARSA)
         if (RunManager.instance != null && RunManager.instance.shopRerollStack > 0)
