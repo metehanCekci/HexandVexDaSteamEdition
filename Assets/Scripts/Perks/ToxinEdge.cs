@@ -16,10 +16,13 @@ public class ToxinEdgePerk : BasePerk
 
     public override void ModifyCombat(CombatPayload payload)
     {
+        int delta = 0;
         for (int i = 0; i < payload.diceRolls.Count; i++)
         {
             payload.diceRolls[i] += currentLevel;
+            delta += currentLevel;
         }
+        payload.ApplyAdd(delta);
         if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
             TriggerVisualPop();
     }

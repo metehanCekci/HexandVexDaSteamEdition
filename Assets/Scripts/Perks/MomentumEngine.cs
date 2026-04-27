@@ -19,6 +19,7 @@ public class MomentumEnginePerk : BasePerk
         {
             payload.diceRolls[i] += stepsTaken;
         }
+        payload.ApplyAdd(stepsTaken * payload.diceRolls.Count);
 
         // Ã‡alÄ±ÅŸtÄ±ÄŸÄ±nÄ± belli etmek iÃ§in hoplat
         if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)

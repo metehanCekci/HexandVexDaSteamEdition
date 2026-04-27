@@ -1087,6 +1087,8 @@ public class TurnManager : MonoBehaviour
             volatilePerkBomb.ApplyToBaseRolls(rolls);
 
         CombatPayload payload = new CombatPayload(rolls);
+        if (RunManager.instance != null && RunManager.instance.activePerks.Exists(p => p.GetType().Name == "SymbioticFuryPerk"))
+            payload.multiplyInsteadOfAdd = true;
 
         diceUI.BeginDiceAnim();
         if (!skipDiceVisuals)
@@ -2337,6 +2339,7 @@ public class TurnManager : MonoBehaviour
             volatilePerk.ApplyToBaseRolls(currentRolls);
 
         CombatPayload payload = new CombatPayload(currentRolls);
+        if (RunManager.instance != null && RunManager.instance.activePerks.Exists(p => p.GetType().Name == "SymbioticFuryPerk")) payload.multiplyInsteadOfAdd = true;
         if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.ForceOpen();
         diceUI.BeginDiceAnim();
         if (!skipDiceVisuals)

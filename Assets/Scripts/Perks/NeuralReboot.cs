@@ -16,6 +16,7 @@ public class NeuralRebootPerk : BasePerk
     // 3 veya altÄ± gelen her zarÄ±, 3'Ã¼n Ã¼stÃ¼ gelene kadar tekrar tekrar atar
     public override void ModifyCombat(CombatPayload payload)
     {
+        int delta = 0;
         for (int i = 0; i < payload.diceRolls.Count; i++)
         {
             if (payload.diceRolls[i] <= 3)
@@ -27,8 +28,10 @@ public class NeuralRebootPerk : BasePerk
                     payload.diceRolls[i] = Random.Range(1, 7);
                     safety++;
                 }
+                delta += payload.diceRolls[i] - oldVal;
                 Debug.Log($"NeuralReboot: Zar {i + 1} yeniden atildi: {oldVal} -> {payload.diceRolls[i]}");
             }
         }
+        payload.ApplyAdd(delta);
     }
 }
