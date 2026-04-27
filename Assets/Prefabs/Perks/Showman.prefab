@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShowmanPerk
   currentLevel: 1
   maxLevel: 3
-  perkName: Showman
+  perkName: Black Market
   description: Shop can offer {target}s you already own.
   icon: {fileID: 0}
   priority: 0
