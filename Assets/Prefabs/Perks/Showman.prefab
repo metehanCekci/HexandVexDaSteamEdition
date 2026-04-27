@@ -48,7 +48,7 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Black Market
   description: Shop can offer {target}s you already own.
-  icon: {fileID: 0}
+  icon: {fileID: -4225448389596990121, guid: 6c897a44219811e4694a35c4a10fd1cf, type: 3}
   priority: 0
   isRerollPerk: 0
   processLast: 0

@@ -48,7 +48,7 @@ MonoBehaviour:
   maxLevel: 1
   perkName: Twitch Reflex
   description: The [white]first die[/white] {retrigger}.
-  icon: {fileID: 0}
+  icon: {fileID: -8269201057580942797, guid: 2a86ec49d8335fc4cb9732257efe8187, type: 3}
   priority: 0
   isRerollPerk: 0
   processLast: 0
