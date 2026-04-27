@@ -18,12 +18,19 @@ public class AlphaOmegaStrandPerk : BasePerk
     {
         if (payload.diceRolls.Count > 0)
         {
-            payload.diceRolls[0] += (2 * currentLevel);
+            int bonus = 2 * currentLevel;
+            int delta = 0;
+
+            payload.diceRolls[0] += bonus;
+            delta += bonus;
 
             if (payload.diceRolls.Count > 1)
             {
-                payload.diceRolls[payload.diceRolls.Count - 1] += (2 * currentLevel);
+                payload.diceRolls[payload.diceRolls.Count - 1] += bonus;
+                delta += bonus;
             }
+            payload.ApplyAdd(delta);
+
             if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
                 TriggerVisualPop();
         }

@@ -19,14 +19,17 @@ public class RiggedDicePerk : BasePerk
         if (minVal == maxVal) return; // Zaten aynÄ±ysa dokunma
 
         bool changed = false;
+        int delta = 0;
         for (int i = 0; i < payload.diceRolls.Count; i++)
         {
             if (payload.diceRolls[i] != maxVal)
             {
+                delta += maxVal - payload.diceRolls[i];
                 payload.diceRolls[i] = maxVal;
                 changed = true;
             }
         }
+        payload.ApplyAdd(delta);
 
         if (changed) TriggerVisualPop();
     }
