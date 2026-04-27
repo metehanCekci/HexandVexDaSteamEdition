@@ -48,7 +48,7 @@ MonoBehaviour:
   maxLevel: 1
   perkName: Mimetic Growth
   description: Copies the implant to its right.
-  icon: {fileID: 0}
+  icon: {fileID: 23171542035535054, guid: 8cea7d015ac2fda46911d14c8264db6c, type: 3}
   priority: 0
   isRerollPerk: 0
   processLast: 1

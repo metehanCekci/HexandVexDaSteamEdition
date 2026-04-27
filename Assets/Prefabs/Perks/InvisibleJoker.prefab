@@ -46,9 +46,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InvisibleJokerPerk
   currentLevel: 1
   maxLevel: 3
-  perkName: Invisible Joker
+  perkName: Sleeper Cell
   description: After clearing {wait} sell this perk to {effect}.
-  icon: {fileID: 0}
+  icon: {fileID: -2845008023332632119, guid: f62588b9600ce0e41ab3f4c6b3bb643e, type: 3}
   priority: 0
   isRerollPerk: 0
   processLast: 0

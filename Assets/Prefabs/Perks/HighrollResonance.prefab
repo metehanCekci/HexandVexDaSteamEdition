@@ -48,7 +48,7 @@ MonoBehaviour:
   maxLevel: 1
   perkName: Highroll Resonance
   description: Each {five} or {six} roll triggered grants {mult}.
-  icon: {fileID: 0}
+  icon: {fileID: 7154390639611252439, guid: 63c0a49b6111de345afefb7822729b4f, type: 3}
   priority: 0
   isRerollPerk: 0
   processLast: 0
