@@ -48,9 +48,9 @@ MonoBehaviour:
   maxLevel: 1
   perkName: Dice Hoarder
   description: 'Each [white]campfire[/white] visited grants a permanent {perFire}.
-
+    [stack]
     [white]Currently:[/white]
-    {count} ({total})'
+    {count} ({total})[/stack]'
   icon: {fileID: -85115335567304150, guid: de005610044509e4f9725c7f92c9fb73, type: 3}
   priority: 0
   isRerollPerk: 0

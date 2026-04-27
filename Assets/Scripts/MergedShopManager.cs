@@ -1228,7 +1228,8 @@ public class MergedShopPerkSlot
         }
 
         if (nameText        != null) nameText.text        = perk.perkName.ToUpperInvariant();
-        perk.RebuildDescription();
+        // Shop'ta runtime sayaclari (Currently: X) gizle — oyuncu henuz sahip degil
+        perk.RebuildDescription(includeStack: false);
         if (descriptionText != null) descriptionText.text = perk.renderedDescription;
 
         // Rarity rengi

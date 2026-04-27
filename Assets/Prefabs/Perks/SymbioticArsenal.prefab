@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Symbiotic Arsenal
-  description: Each filled item slot adds {bonus}.
+  description: Each ready item adds {bonus}. Used items don't count.
   icon: {fileID: -1287039010249613666, guid: 56f81d08a4edee04da089a17df07114e, type: 3}
   priority: 0
   isRerollPerk: 0

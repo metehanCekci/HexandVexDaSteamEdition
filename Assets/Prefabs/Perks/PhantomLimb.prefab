@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Fatal Mine
-  description: Leave a [white]proximity mine[/white] on tiles you leave.
+  description: Leave a {mine} on [white]skip[/white]. (deals {damage})
   icon: {fileID: 1049648278431873775, guid: ce80817fbabf2694da60f7a7d7f37716, type: 3}
   priority: 0
   isRerollPerk: 0

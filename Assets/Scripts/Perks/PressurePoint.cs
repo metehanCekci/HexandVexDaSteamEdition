@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class PressurePointPerk : BasePerk
@@ -6,9 +6,8 @@ public class PressurePointPerk : BasePerk
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
         { "hpLabel", GameKeywords.HealthText("HP") },
-        { "mult1",   GameKeywords.Mult(2f) },
-        { "mult2",   GameKeywords.Mult(1.75f) },
-        { "mult3",   GameKeywords.Mult(1.5f) }
+        { "full",    GameKeywords.HealthText("full HP") },
+        { "mult",    GameKeywords.Mult(2f) }
     };
 
     public float GetMultiplier(EnemyMovement enemy)

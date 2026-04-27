@@ -48,9 +48,9 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Item Eater
   description: 'Feed items to grow. Base {base}, each fed item adds {bonus}.
-
+    [stack]
     [white]Currently:[/white]
-    {fed} ({current})'
+    {fed} ({current})[/stack]'
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

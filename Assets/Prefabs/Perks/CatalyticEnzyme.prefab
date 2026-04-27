@@ -48,9 +48,9 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Catalytic Enzyme
   description: 'Each [white]skip[/white] grants {per} (stacks). Consumed on [white]attack[/white].
-
+    [stack]
     [white]Currently:[/white]
-    {count} ({bonus})'
+    {count} ({bonus})[/stack]'
   icon: {fileID: 5998632753068527544, guid: 359c96a0a3f381541b28c31aafe4d56b, type: 3}
   priority: 0
   isRerollPerk: 0

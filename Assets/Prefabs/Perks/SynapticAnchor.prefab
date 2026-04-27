@@ -47,8 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Synaptic Anchor
-  description: First [white]skip[/white] drops an [white]anchor[/white]. Next [white]skip[/white]
-    teleports you back.
+  description: '[white]Skip[/white] to drop an [white]anchor[/white]. Next [white]skip[/white]
+    teleports you there.'
   icon: {fileID: -3422037730721896359, guid: 11f104670e5e1f24d84b6e99366d3349, type: 3}
   priority: 0
   isRerollPerk: 0

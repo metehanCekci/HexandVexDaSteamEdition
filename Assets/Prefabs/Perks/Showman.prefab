@@ -47,10 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Showman
-  description: You can stack multiple copies of the same {target}.
+  description: Shop can offer {target}s you already own.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0
   processLast: 0
   isPerkRetrigger: 0
-  rarity: 0
+  rarity: 2

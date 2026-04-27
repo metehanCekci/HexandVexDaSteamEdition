@@ -1,75 +1,80 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
 /// Ouroboros (Secret)
-/// Ã–ldÃ¼ÄŸÃ¼nde canÄ±n full dolar ve tÃ¼m perklerinin seviyesi 1 dÃ¼ÅŸer.
-/// Lv1'deki perkler yok olur. Perk kalmayÄ±nca gerÃ§ekten Ã¶lÃ¼rsÃ¼n.
-/// maxLevel = 1, kendisi hiÃ§ yok olmaz (level dÃ¼ÅŸÃ¼rmeye dahil deÄŸil).
+/// Oldugunde canin full dolar ve N adet rastgele perk YOK olur.
+/// N her revive'da artar: ilk revive 1 perk, ikinci 2, ucuncu 3...
+/// Yetecek kadar perk yoksa (kalan perk sayisi < N) revive olmaz, gercekten olursun.
+/// Ouroboros kendisi kurban listesine dahil degil.
 /// </summary>
 public class OuroborosPerk : BasePerk
 {
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    // Bir sonraki revive'in maliyeti. Her basarili revive'dan sonra +1.
+    [System.NonSerialized] public int nextCost = 1;
+
+    public override Dictionary<string, object> GetDescValues()
     {
-        { "death", GameKeywords.Action("death") },
-        { "full",  GameKeywords.HealthText("full HP") },
-        { "loss",  GameKeywords.Status("1 level") }
-    };
+        string lossText = nextCost == 1 ? "1 random implant" : nextCost + " random implants";
+        return new Dictionary<string, object>
+        {
+            { "death", GameKeywords.Action("death") },
+            { "full",  GameKeywords.HealthText("full HP") },
+            { "loss",  GameKeywords.Status(lossText) }
+        };
+    }
 
     /// <summary>
-    /// CanÄ± yeterli mi kontrol et â€” en az 1 tane Lv1+ baÅŸka perk olmalÄ±.
+    /// Yeterli kurban perk var mi? (kendisi haric, en az nextCost adet)
     /// </summary>
     public bool CanRevive()
     {
         if (RunManager.instance == null) return false;
+        return CountSacrificeCandidates() >= nextCost;
+    }
 
+    private int CountSacrificeCandidates()
+    {
+        int count = 0;
         foreach (var p in RunManager.instance.activePerks)
-        {
-            if (p == this) continue;
-            if (p.currentLevel >= 1) return true;
-        }
-        return false;
+            if (p != null && p != this) count++;
+        foreach (var p in RunManager.instance.inventoryPerks)
+            if (p != null && p != this) count++;
+        return count;
     }
 
     /// <summary>
-    /// DiriliÅŸ: canÄ± full yap, rastgele 1 perkin seviyesini 1 dÃ¼ÅŸÃ¼r, Lv1 ise yok et.
+    /// Dirilis: cani full yap, nextCost kadar rastgele perki yok et, sonra maliyeti +1 arttir.
     /// </summary>
     public void Revive()
     {
         if (RunManager.instance == null || TurnManager.instance == null) return;
 
-        // CanÄ± full yap
         var playerHealth = TurnManager.instance.player.health;
         playerHealth.Heal(playerHealth.maxHP);
 
-        // TÃ¼m perklerden (active + inventory) Ouroboros hariÃ§ birini seÃ§
         List<BasePerk> candidates = new List<BasePerk>();
-
         foreach (var p in RunManager.instance.activePerks)
-        {
-            if (p != this && p.currentLevel >= 1) candidates.Add(p);
-        }
+            if (p != null && p != this) candidates.Add(p);
         foreach (var p in RunManager.instance.inventoryPerks)
+            if (p != null && p != this) candidates.Add(p);
+
+        int toDestroy = Mathf.Min(nextCost, candidates.Count);
+        for (int i = 0; i < toDestroy; i++)
         {
-            if (p != this && p.currentLevel >= 1) candidates.Add(p);
-        }
+            int idx = Random.Range(0, candidates.Count);
+            BasePerk target = candidates[idx];
+            candidates.RemoveAt(idx);
 
-        if (candidates.Count == 0) return;
-
-        BasePerk target = candidates[Random.Range(0, candidates.Count)];
-
-        if (target.currentLevel <= 1)
-        {
             RunManager.instance.activePerks.Remove(target);
             RunManager.instance.inventoryPerks.Remove(target);
+            target.OnUnequip();
             Object.Destroy(target.gameObject);
         }
-        else
-        {
-            target.currentLevel--;
-        }
 
-        // UI'Ä± gÃ¼ncelle
+        nextCost++;
+        RebuildDescription();
+
         if (PerkInventoryUI.instance != null)
             PerkInventoryUI.instance.RefreshUI();
         if (ActivePerkBar.instance != null)

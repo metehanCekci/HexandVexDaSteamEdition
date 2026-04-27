@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Sensory Overload
-  description: Every {five} and {six} {extra}.
+  description: Every rolled {five} and {six} {extra}.
   icon: {fileID: 0}
   priority: 0
   isRerollPerk: 0

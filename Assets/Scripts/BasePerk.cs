@@ -215,21 +215,74 @@ public abstract class BasePerk : MonoBehaviour
 
     // Description'i yeniden insa eder (seviye atlayinca veya GameKeywords renk/deger degisince cagrilir).
     // SONUC: `renderedDescription` (runtime-only) field'ina yazilir. `description` field'ina ASLA DOKUNULMAZ.
-    public virtual void RebuildDescription()
+    public virtual void RebuildDescription() => RebuildDescription(includeStack: true);
+
+    /// <summary>
+    /// includeStack=false ise [stack]...[/stack] icindeki "Currently: X" gibi runtime sayaclari
+    /// SILINIR. Shop'ta perk satin alirken kullanilir (oyuncu henuz sahip degil, sayac anlamsiz).
+    /// includeStack=true varsayilan — sahip olunan perk tooltip'leri bunu gosterir.
+    /// </summary>
+    public virtual void RebuildDescription(bool includeStack)
     {
-        // Template her zaman Inspector'daki description field'idir (saf, dokunulmamis).
         if (string.IsNullOrEmpty(description))
         {
             renderedDescription = "";
             return;
         }
 
+        string template = includeStack ? StripStackTags(description, keepContent: true)
+                                       : StripStackTags(description, keepContent: false);
+
         var values = GetDescValues();
         string built = (values == null || values.Count == 0)
-            ? description
-            : ApplyTokens(description, values);
+            ? template
+            : ApplyTokens(template, values);
 
         renderedDescription = ApplyInlineHighlights(built);
+    }
+
+    /// <summary>
+    /// [stack]...[/stack] aralarini ya korur (sadece tag'leri silip iceriği bırakır)
+    /// ya da iceriği ile birlikte komple siler. Cevreleyen newline'lari da temizler ki
+    /// bos satir kalmasin.
+    /// </summary>
+    private static string StripStackTags(string s, bool keepContent)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        const string open = "[stack]";
+        const string close = "[/stack]";
+
+        int idx = 0;
+        var sb = new System.Text.StringBuilder(s.Length);
+        while (true)
+        {
+            int o = s.IndexOf(open, idx, System.StringComparison.Ordinal);
+            if (o < 0) { sb.Append(s, idx, s.Length - idx); break; }
+            int c = s.IndexOf(close, o + open.Length, System.StringComparison.Ordinal);
+            if (c < 0) { sb.Append(s, idx, s.Length - idx); break; }
+
+            int chunkStart = idx;
+            int chunkEnd = o;
+
+            if (keepContent)
+            {
+                sb.Append(s, chunkStart, chunkEnd - chunkStart);
+                sb.Append(s, o + open.Length, c - (o + open.Length));
+                idx = c + close.Length;
+            }
+            else
+            {
+                // Iceriği komple sil. Once'ki newline ve close'tan sonraki newline'i da topla.
+                while (chunkEnd > chunkStart && (s[chunkEnd - 1] == '\n' || s[chunkEnd - 1] == '\r' || s[chunkEnd - 1] == ' '))
+                    chunkEnd--;
+                sb.Append(s, chunkStart, chunkEnd - chunkStart);
+                int after = c + close.Length;
+                while (after < s.Length && (s[after] == '\n' || s[after] == '\r' || s[after] == ' '))
+                    after++;
+                idx = after;
+            }
+        }
+        return sb.ToString();
     }
 
     /// <summary>

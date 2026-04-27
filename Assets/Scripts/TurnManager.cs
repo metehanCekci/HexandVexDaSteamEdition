@@ -1087,8 +1087,6 @@ public class TurnManager : MonoBehaviour
             volatilePerkBomb.ApplyToBaseRolls(rolls);
 
         CombatPayload payload = new CombatPayload(rolls);
-        if (RunManager.instance != null && RunManager.instance.activePerks.Exists(p => p.GetType().Name == "SymbioticFuryPerk"))
-            payload.multiplyInsteadOfAdd = true;
 
         diceUI.BeginDiceAnim();
         if (!skipDiceVisuals)
@@ -1220,8 +1218,8 @@ public class TurnManager : MonoBehaviour
         if (activeMineCell.y != -999 && target.GetCurrentCellPosition() == activeMineCell)
         {
             yield return new WaitForSeconds(0.1f);
-            var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
-            float mineDamagePercent = phantomPerk != null ? phantomPerk.currentLevel * 0.25f : 0.25f;
+            var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk) as PhantomLimbPerk;
+            float mineDamagePercent = phantomPerk != null ? phantomPerk.GetMineDamagePercent() : 0.25f;
             TriggerExplosion(activeMineCell, mineDamagePercent);
 
             if (target != null && target.health.currentHP > 0)
@@ -2035,8 +2033,8 @@ public class TurnManager : MonoBehaviour
 
             if (victim != null && victim.health.currentHP > 0)
             {
-                var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
-                float mineDamagePercent = phantomPerk != null ? phantomPerk.currentLevel * 0.25f : 0.25f;
+                var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk) as PhantomLimbPerk;
+                float mineDamagePercent = phantomPerk != null ? phantomPerk.GetMineDamagePercent() : 0.25f;
                 TriggerExplosion(activeMineCell, mineDamagePercent);
 
                 if (victim != null && victim.health.currentHP > 0)
@@ -2247,8 +2245,8 @@ public class TurnManager : MonoBehaviour
                     EnemyMovement mineVictim = GetEnemyAtCell(activeMineCell);
                     if (mineVictim != null && mineVictim.health.currentHP > 0)
                     {
-                        var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
-                        float mineDmgPct = phantomPerk != null ? phantomPerk.currentLevel * 0.25f : 0.25f;
+                        var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk) as PhantomLimbPerk;
+                        float mineDmgPct = phantomPerk != null ? phantomPerk.GetMineDamagePercent() : 0.25f;
                         TriggerExplosion(activeMineCell, mineDmgPct);
 
                         if (mineVictim != null && mineVictim.health.currentHP > 0)
@@ -2339,7 +2337,6 @@ public class TurnManager : MonoBehaviour
             volatilePerk.ApplyToBaseRolls(currentRolls);
 
         CombatPayload payload = new CombatPayload(currentRolls);
-        if (RunManager.instance != null && RunManager.instance.activePerks.Exists(p => p.GetType().Name == "SymbioticFuryPerk")) payload.multiplyInsteadOfAdd = true;
         if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.ForceOpen();
         diceUI.BeginDiceAnim();
         if (!skipDiceVisuals)

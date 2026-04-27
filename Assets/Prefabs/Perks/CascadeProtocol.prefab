@@ -49,9 +49,9 @@ MonoBehaviour:
   perkName: Cascade Protocol
   description: 'Each [white]attack[/white]''s flat damage carries to the next as
     flat bonus ({percent}). [white]Resets[/white] on damage taken or combat cleared.
-
+    [stack]
     [white]Currently:[/white]
-    {accumulated}'
+    {accumulated}[/stack]'
   icon: {fileID: -6089804444313813029, guid: 4874656e737f2054095ccfdd9bef0d9b, type: 3}
   priority: 0
   isRerollPerk: 0
