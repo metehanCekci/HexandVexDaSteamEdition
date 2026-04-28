@@ -1,37 +1,36 @@
-﻿using UnityEngine;
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class NeuralRebootPerk : BasePerk
 {
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
         { "low", GameKeywords.Counter("3") },
         { "reroll", GameKeywords.Action("rerolled") }
     };
 
-    public override void OnAcquire()
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        base.OnAcquire();
-    }
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
 
-    // 3 veya altÄ± gelen her zarÄ±, 3'Ã¼n Ã¼stÃ¼ gelene kadar tekrar tekrar atar
-    public override void ModifyCombat(CombatPayload payload)
-    {
         int delta = 0;
-        for (int i = 0; i < payload.diceRolls.Count; i++)
+        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
         {
-            if (payload.diceRolls[i] <= 3)
+            if (ctx.payload.diceRolls[i] <= 3)
             {
-                int oldVal = payload.diceRolls[i];
+                int oldVal = ctx.payload.diceRolls[i];
                 int safety = 0;
-                while (payload.diceRolls[i] <= 3 && safety < 100)
+                while (ctx.payload.diceRolls[i] <= 3 && safety < 100)
                 {
-                    payload.diceRolls[i] = Random.Range(1, 7);
+                    ctx.payload.diceRolls[i] = Random.Range(1, 7);
                     safety++;
                 }
-                delta += payload.diceRolls[i] - oldVal;
-                Debug.Log($"NeuralReboot: Zar {i + 1} yeniden atildi: {oldVal} -> {payload.diceRolls[i]}");
+                delta += ctx.payload.diceRolls[i] - oldVal;
             }
         }
-        payload.ApplyAdd(delta);
+        ctx.payload.ApplyAdd(delta);
+        if (delta != 0) ctx.AnimatePop(this);
     }
 }

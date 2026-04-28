@@ -1,10 +1,16 @@
-﻿using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
-/// Sensory Overload â€” Rare. 5 veya 6 gelen her zar bir kez daha retriggerlanir.
+/// Sensory Overload — Rare. 5 veya 6 gelen her zar bir kez daha retriggerlanir.
+/// Mimetic ile replay olunca: 1 + replayCount ekstra retrigger.
 /// </summary>
 public class SensoryOverloadPerk : BasePerk
 {
+    private int replayCount = 0;
+
+    public override bool CanBeRetriggeredByPerks => true;
+
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
         { "five",  GameKeywords.Status("5") },
@@ -12,8 +18,24 @@ public class SensoryOverloadPerk : BasePerk
         { "extra", GameKeywords.RetriggerN(1) }
     };
 
-    public override int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        return (diceValue == 5 || diceValue == 6) ? 1 : 0;
+        switch (ctx.eventType)
+        {
+            case CombatEventType.BeforeCombat:
+                replayCount = 0;
+                break;
+
+            case CombatEventType.OnAttack:
+                if (ctx.currentPerk != this) yield break;
+                if (ctx.isReplay) replayCount++;
+                break;
+
+            case CombatEventType.OnDiceScored:
+                if (ctx.retrigCountSoFar != 0) yield break;
+                if (ctx.diceValue != 5 && ctx.diceValue != 6) yield break;
+                ctx.RequestExtraDicePass(ctx.diceIndex, 1 + replayCount);
+                break;
+        }
     }
 }

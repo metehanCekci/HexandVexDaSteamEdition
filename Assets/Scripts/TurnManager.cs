@@ -2379,7 +2379,7 @@ public class TurnManager : MonoBehaviour
 
         if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.ForceClose();
 
-        // Fatal Sight Protocol: isCriticalHit may already be set by a perk in ModifyCombat
+        // Fatal Sight Protocol: isCriticalHit may already be set by a perk in OnEvent(OnAttack)
         if (payload.isCriticalHit)
         {
             if (!skipDiceVisuals)
@@ -2770,7 +2770,7 @@ public class TurnManager : MonoBehaviour
             foreach (var s in spikedEnemies) { StartCoroutine(FlashHazardTileCoroutine(s.GetCurrentCellPosition())); s.health.TakeDamage(System.Math.Max(1L, s.health.maxHP / 2)); }
 
             var acidPerk = RunManager.instance.activePerks.Find(p => p is AcidBloodPerk) as AcidBloodPerk;
-            if (acidPerk != null) { player.health.Heal(spikedEnemies.Count * acidPerk.currentLevel); acidPerk.TriggerVisualPop(); }
+            if (acidPerk != null) RunManager.instance.GrantHeal(acidPerk, spikedEnemies.Count * acidPerk.currentLevel);
 
             yield return new WaitForSeconds(0.2f);
             foreach (var s in spikedEnemies) if (s != null && s.health.currentHP > 0) { Vector3Int randomBounceCell = GetRandomSafeNeighbor(s.GetCurrentCellPosition()); s.StartKnockbackMovement(randomBounceCell); anyoneBounced = true; }

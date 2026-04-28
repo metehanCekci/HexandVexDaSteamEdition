@@ -1,6 +1,6 @@
-﻿using UnityEngine;
-using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 public class DoubleOrNothingPerk : BasePerk
 {
@@ -9,15 +9,15 @@ public class DoubleOrNothingPerk : BasePerk
         { "mult", GameKeywords.Mult(2) }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        int total = payload.diceRolls.Sum();
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
 
-        if (total % 2 == 0)
-        {
-            payload.ApplyMult(2f);
-            if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-                TriggerVisualPop();
-        }
+        int total = ctx.payload.diceRolls.Sum();
+        if (total % 2 != 0) yield break;
+
+        ctx.payload.ApplyMult(2f);
+        ctx.AnimatePop(this);
     }
 }

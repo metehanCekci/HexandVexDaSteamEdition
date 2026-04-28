@@ -1,6 +1,5 @@
-﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 
 public class MutantSwarmPerk : BasePerk
 {
@@ -15,12 +14,15 @@ public class MutantSwarmPerk : BasePerk
         TriggerVisualPop();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        float bonusPerDie = 0.5f * currentLevel;
-        float extraMult = 1.0f + (payload.diceRolls.Count * bonusPerDie);
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
 
-        payload.ApplyMult(extraMult);
-        TriggerVisualPop();
+        float bonusPerDie = 0.5f * currentLevel;
+        float extraMult = 1.0f + (ctx.payload.diceRolls.Count * bonusPerDie);
+
+        ctx.payload.ApplyMult(extraMult);
+        ctx.AnimatePop(this);
     }
 }

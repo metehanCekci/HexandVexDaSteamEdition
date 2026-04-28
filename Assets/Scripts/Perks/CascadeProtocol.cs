@@ -1,17 +1,22 @@
-﻿using UnityEngine;
+using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Cascade Protocol (Legendary)
-/// Her saldÄ±rÄ±nÄ±n zar toplamÄ± (kritik/multiplier HARÄ°Ã‡) bir sonraki saldÄ±rÄ±ya flat bonus olarak eklenir.
-/// Lv1: %100, Lv2: %125, Lv3: %150 birikim oranÄ±.
-/// Oda bitince VEYA hasar alÄ±nca sÄ±fÄ±rlanÄ±r.
+/// Her saldirinin zar toplami bir sonraki saldiriya flat bonus olarak eklenir.
+/// Lv1: %100, Lv2: %125, Lv3: %150 birikim orani.
+/// Oda bitince VEYA hasar alinca sifirlanir.
+/// Mimetic ile replay olunca: bonus 2x uygulanir, ama birikim sadece orijinalde 1 kez yapilir.
 /// </summary>
 public class CascadeProtocolPerk : BasePerk
 {
     private long accumulatedDamage = 0;
     private bool subscribed = false;
+
+    // Replay aktif — sadece bonus 2x, birikim 1x.
+    public override bool CanBeRetriggeredByPerks => true;
 
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
@@ -39,19 +44,25 @@ public class CascadeProtocolPerk : BasePerk
         RebuildDescription();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
         if (accumulatedDamage > 0)
         {
             double bonus = accumulatedDamage * (1.0 + (currentLevel - 1) * 0.25);
-            payload.ApplyAdd(bonus);
-            TriggerVisualPop();
+            ctx.payload.ApplyAdd(bonus);
+            ctx.AnimatePop(this);
         }
 
-        // Bu saldÄ±rÄ±nÄ±n zar toplamÄ±nÄ± birikime ekle (kritik/mult hariÃ§, sadece raw dice)
-        long diceSum = payload.diceRolls.Sum();
-        accumulatedDamage += diceSum;
-        RebuildDescription();
+        // Birikim sadece orijinalde — replay birikime eklemez.
+        if (!ctx.isReplay)
+        {
+            long diceSum = ctx.payload.diceRolls.Sum();
+            accumulatedDamage += diceSum;
+            RebuildDescription();
+        }
     }
 
     public override void OnLevelStart()

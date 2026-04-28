@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class ShopRerollStackPerk : BasePerk
@@ -21,8 +21,9 @@ public class ShopRerollStackPerk : BasePerk
         TriggerVisualPop();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    // Reroll stack bonusu zar atilirken TurnManager tarafindan eklenir; OnEvent'te is yok.
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        // Reroll stack bonusu artÄ±k doÄŸrudan zar atÄ±lÄ±rken ekleniyor (TurnManager)
+        yield break;
     }
 }

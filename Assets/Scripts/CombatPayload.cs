@@ -30,10 +30,8 @@ public class CombatPayload
 {
     public List<int> diceRolls = new List<int>();
 
-    // Her zar icin kac kez retriggerlandigini tutar (pre-pass tarafindan doldurulur).
-    // Index = zarin diceRolls icindeki orijinal konumu. Deger = ekstra retrigger sayisi (0 = retrigger yok).
-    // Per-die bagimli perkler (Photovoltaic Pulse, Triboulet-clone vb.) bu listeyi ek olarak okuyabilir,
-    // ama ESAS entegrasyon OnDiceRetriggerEvent abonelik pattern'i uzerinden olur (bkz. BasePerk).
+    // Her zar icin kac kez retriggerlandigini tutar (CombatPipeline tarafindan doldurulur).
+    // Per-die bagimli perkler bu listeyi okuyabilir; esas entegrasyon OnEvent(OnDiceScored)'den.
     public List<int> diceRetriggerCounts = new List<int>();
 
     // Ardisik damage kovasi. Perkler ApplyAdd/ApplyMult ile bunu dogrudan gunceller.
@@ -95,16 +93,6 @@ public class CombatPayload
     {
         if (value == 1.0) return;
         runningDamage *= value;
-    }
-
-    // =========================================================================
-    // Per-die retrigger event'i. PerkCombatProcessor her retrigger icin yayinlar.
-    // Aboneler: Photovoltaic gibi belirli zara bagli perkler (BasePerk.OnDiceRetriggerEvent).
-    // =========================================================================
-    public event Action<int, int, CombatPayload> DiceRetriggerEvent;
-    public void DispatchDiceRetrigger(int diceIndex, int diceValue)
-    {
-        DiceRetriggerEvent?.Invoke(diceIndex, diceValue, this);
     }
 
     public CombatPayload(List<int> rolls)

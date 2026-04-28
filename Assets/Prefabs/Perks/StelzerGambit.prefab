@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Borrowed Time
-  description: 'Each die {extra}.
+  description: 'Each odd die {extra}.
 
     Decays in {rolls} rolls.'
   icon: {fileID: -4374595124726060507, guid: 69f4774a61f8ef547820ae33a01f61ed, type: 3}

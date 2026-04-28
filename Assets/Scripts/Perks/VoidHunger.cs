@@ -1,10 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Void Hunger (Common)
-/// Ã‡Ã¶ken her tile (scaffold + seismic) baÅŸÄ±na kalÄ±cÄ± +0.25x damage multiplier.
-/// Run boyunca birikir, sÄ±fÄ±rlanmaz.
+/// Void Hunger (Common). Cöken her tile basina kalici +0.25x damage.
 /// </summary>
 public class VoidHungerPerk : BasePerk
 {
@@ -72,12 +71,13 @@ public class VoidHungerPerk : BasePerk
         RebuildDescription();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (collapsedCount <= 0) return;
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (collapsedCount <= 0) yield break;
 
-        // Eski model: multiplier += X -> efektif (1+X). Balatro modelinde ApplyMult(1+X).
-        payload.ApplyMult(1f + collapsedCount * 0.25f);
-        TriggerVisualPop();
+        ctx.payload.ApplyMult(1f + collapsedCount * 0.25f);
+        ctx.AnimatePop(this);
     }
 }

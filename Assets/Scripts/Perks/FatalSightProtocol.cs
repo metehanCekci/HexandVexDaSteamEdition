@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
@@ -8,6 +8,9 @@ using System.Collections.Generic;
 /// </summary>
 public class FatalSightProtocolPerk : BasePerk
 {
+    // Replay edilirse criticalChance->criticalDamageMultiplier transferini iki kez yapardi.
+    public override bool CanBeRetriggeredByPerks => false;
+
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
         { "attacks", GameKeywords.Action("attacks") },
@@ -16,19 +19,20 @@ public class FatalSightProtocolPerk : BasePerk
         { "dmg",     GameKeywords.CritPlus(1, "crit damage") }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        var rm = RunManager.instance;
-        if (rm == null) return;
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
 
-        // Her saldÄ±rÄ±da: birikmiÅŸ critChance varsa dÃ¶nÃ¼ÅŸtÃ¼r
+        var rm = RunManager.instance;
+        if (rm == null) yield break;
+
         if (rm.criticalChance > 0f)
         {
-            // critChance â†’ critDamage: 1:1 dÃ¶nÃ¼ÅŸÃ¼m (0.10 critChance = +0.10 critDamage)
             rm.criticalDamageMultiplier += rm.criticalChance;
             rm.criticalChance = 0f;
         }
 
-        payload.isCriticalHit = true;
+        ctx.payload.isCriticalHit = true;
     }
 }
