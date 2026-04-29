@@ -29,39 +29,13 @@ public class PerkCombatProcessor : MonoBehaviour
         yield return StartCoroutine(pipeline.RunBaseCombat(payload, rolls));
     }
 
+    // Lets Go Again now retriggers each perk inline (right after that perk fires) inside
+    // CombatPipeline.RunPerkAttack — Balatro-style. This pass used to run a full second
+    // pipeline pass; that's superseded, so this method is a no-op kept so the existing
+    // TurnManager call sites stay valid until they're cleaned up.
     public IEnumerator ProcessLetsGoAgainPass(CombatPayload payload, List<int> rolls)
     {
-        if (pipeline == null) yield break;
-        if (RunManager.instance == null) yield break;
-        if (!RunManager.instance.activePerks.Exists(p => p is LetsGoAgainPerk)) yield break;
-
-        var lgaPerk = RunManager.instance.activePerks.Find(p => p is LetsGoAgainPerk);
-        if (lgaPerk != null && diceUI != null && !diceUI.skipDiceVisuals)
-        {
-            lgaPerk.TriggerVisualPop();
-            if (PerkListUI.instance != null)
-                PerkListUI.instance.TriggerShakeForPerk(lgaPerk);
-            yield return StartCoroutine(diceUI.SkippableWait(0.8f));
-        }
-
-        // Pass reset — runningDamage'i zar tabanindan yeniden baslat.
-        payload.RebaseRunningDamage();
-        for (int i = 0; i < payload.diceRetriggerCounts.Count; i++)
-            payload.diceRetriggerCounts[i] = 0;
-        while (payload.diceRetriggerCounts.Count < rolls.Count)
-            payload.diceRetriggerCounts.Add(0);
-
-        yield return StartCoroutine(pipeline.RunLetsGoAgain(payload, rolls));
-
-        var sfPerk = RunManager.instance.activePerks.Find(p => p is SymbioticFuryPerk);
-        if (sfPerk != null && diceUI != null && !diceUI.skipDiceVisuals)
-        {
-            sfPerk.TriggerVisualPop();
-            if (PerkListUI.instance != null)
-                PerkListUI.instance.TriggerShakeForPerk(sfPerk);
-            diceUI.UpdateTotalDamageDisplay(payload.GetFinalDamage());
-            yield return StartCoroutine(diceUI.SkippableWait(0.6f));
-        }
+        yield break;
     }
 
 }

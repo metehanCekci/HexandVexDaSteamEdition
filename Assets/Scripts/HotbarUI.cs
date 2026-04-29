@@ -41,7 +41,9 @@ public class HotbarUI : MonoBehaviour
 
     [Header("Style")]
     public float slotSize = 60f;
-    public float slotSpacing = 6f;
+    public float slotSpacing = 16f;
+    [Tooltip("Icon padding inside the slot (fraction of slot size). 0 = icon fills the entire slot.")]
+    [Range(0f, 0.45f)] public float iconInset = 0f;
     public Color occupiedSlotColor = new Color(0.25f, 0.25f, 0.25f, 0.9f);
 
     // ── Item Drag-to-Sell state ──
@@ -86,7 +88,25 @@ public class HotbarUI : MonoBehaviour
             maxVisibleSlots = Mathf.Min(InventoryManager.instance.SlotCount, slots.Count);
 
         ApplySlotVisibility();
+        ApplyIconInsets();
         RefreshSlots();
+    }
+
+    // Push the inspector iconInset onto every slot's icon RectTransform.
+    // Lets us tweak icon size without re-running the editor setup tool.
+    private void ApplyIconInsets()
+    {
+        float min = Mathf.Clamp(iconInset, 0f, 0.45f);
+        float max = 1f - min;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] == null || slots[i].iconImage == null) continue;
+            RectTransform iconRT = slots[i].iconImage.rectTransform;
+            iconRT.anchorMin = new Vector2(min, min);
+            iconRT.anchorMax = new Vector2(max, max);
+            iconRT.offsetMin = Vector2.zero;
+            iconRT.offsetMax = Vector2.zero;
+        }
     }
 
     void OnEnable()

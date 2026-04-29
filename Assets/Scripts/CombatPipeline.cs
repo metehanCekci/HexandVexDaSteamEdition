@@ -128,6 +128,26 @@ public class CombatPipeline
         yield return SyncDiceVisualsForPerk(perk, payload, rolls, beforeTotal);
 
         yield return DrainPerkReplayQueue(payload, rolls);
+
+        // Lets Go Again — Balatro retrigger style: each perk fires, then immediately fires again.
+        // Skip if this attack was already a replay (don't recurse), or if the perk being run IS LetsGoAgain
+        // (it doesn't retrigger itself), or if the perk opts out via CanBeRetriggeredByPerks.
+        if (!isReplay && perk != null && !(perk is LetsGoAgainPerk) && perk.CanBeRetriggeredByPerks
+            && RunManager.instance != null
+            && RunManager.instance.activePerks.Exists(p => p is LetsGoAgainPerk))
+        {
+            var lga = RunManager.instance.activePerks.Find(p => p is LetsGoAgainPerk);
+            if (lga != null && !lga.IsIncompatible())
+            {
+                if (diceUI != null && !diceUI.skipDiceVisuals)
+                {
+                    lga.TriggerVisualPop();
+                    if (PerkListUI.instance != null) PerkListUI.instance.TriggerShakeForPerk(lga);
+                    yield return diceUI.SkippableWait(0.25f);
+                }
+                yield return RunPerkAttack(perk, payload, rolls, isReplay: true);
+            }
+        }
     }
 
     private IEnumerator DrainPerkReplayQueue(CombatPayload payload, List<int> rolls)
