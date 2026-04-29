@@ -1,28 +1,24 @@
-﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class MomentumEnginePerk : BasePerk
 {
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
         { "bonus", GameKeywords.Plus(1) }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        // EÄŸer TurnManager yoksa veya hiÃ§ yÃ¼rÃ¼mediysek boÅŸuna yorma
-        if (TurnManager.instance == null || TurnManager.instance.hexesMovedThisTurn <= 0) return;
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (TurnManager.instance == null || TurnManager.instance.hexesMovedThisTurn <= 0) yield break;
 
         int stepsTaken = TurnManager.instance.hexesMovedThisTurn;
 
-        // BÃ¼tÃ¼n zarlara atÄ±lan adÄ±m kadar deÄŸer ekle
-        for (int i = 0; i < payload.diceRolls.Count; i++)
-        {
-            payload.diceRolls[i] += stepsTaken;
-        }
-        payload.ApplyAdd(stepsTaken * payload.diceRolls.Count);
-
-        // Ã‡alÄ±ÅŸtÄ±ÄŸÄ±nÄ± belli etmek iÃ§in hoplat
-        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-            TriggerVisualPop();
+        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
+            ctx.payload.diceRolls[i] += stepsTaken;
+        ctx.payload.ApplyAdd(stepsTaken * ctx.payload.diceRolls.Count);
+        ctx.AnimatePop(this);
     }
 }

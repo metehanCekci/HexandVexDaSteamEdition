@@ -361,4 +361,138 @@ public class RunManager : MonoBehaviour
         return sb.ToString().TrimEnd();
     }
 
+    // =========================================================================
+    // GRANT API — Balatro-style (gold/heal event'leri)
+    // =========================================================================
+    // Bir perk gold/HP verecekse currentGold +=' veya .Heal() yerine bunlari cagirir.
+    // Sebep: Mimetic / Leftmost / Parasitic gibi "perk kopyalayici" perkler komsu
+    // perkin verdiklerini de aynen verir. Bu metodlar o yansitmayi otomatik yapar.
+    //
+    // Kombat icinde veya disinda her yerden cagirilabilir (OnDamaged, OnSkip, spike push, vs.).
+    // =========================================================================
+
+    /// <summary>
+    /// Bir perkten gold ver. Aktif Mimetic/Leftmost/Parasitic perkler source'u kopyaliyorsa
+    /// otomatik olarak ek gold uygular.
+    /// </summary>
+    public void GrantGold(BasePerk source, int amount)
+    {
+        if (amount <= 0 || source == null) return;
+
+        currentGold += amount;
+        if (TurnManager.instance != null) TurnManager.instance.UpdateCoinUI();
+        GameEvents.GoldChanged(currentGold);
+        source.TriggerVisualPop();
+
+        ApplyPerkMirrors(source, copy => GrantGoldNoMirror(copy, amount));
+    }
+
+    /// <summary>
+    /// Bir perkten HP ver. Aktif Mimetic/Leftmost/Parasitic perkler source'u kopyaliyorsa
+    /// otomatik olarak ek heal uygular.
+    /// </summary>
+    public void GrantHeal(BasePerk source, int amount)
+    {
+        if (amount <= 0 || source == null) return;
+
+        ApplyHealNoMirror(amount);
+        source.TriggerVisualPop();
+
+        ApplyPerkMirrors(source, copy => ApplyHealForMirror(copy, amount));
+    }
+
+    private void GrantGoldNoMirror(BasePerk source, int amount)
+    {
+        currentGold += amount;
+        if (TurnManager.instance != null) TurnManager.instance.UpdateCoinUI();
+        GameEvents.GoldChanged(currentGold);
+        if (source != null) source.TriggerVisualPop();
+    }
+
+    private void ApplyHealNoMirror(int amount)
+    {
+        // playerCurrentHealth + scene player.health senkron tutulur.
+        playerCurrentHealth = System.Math.Min(playerCurrentHealth + amount, playerMaxHealth);
+        if (TurnManager.instance != null && TurnManager.instance.player != null
+            && TurnManager.instance.player.health != null)
+        {
+            TurnManager.instance.player.health.Heal(amount);
+        }
+    }
+
+    private void ApplyHealForMirror(BasePerk source, int amount)
+    {
+        ApplyHealNoMirror(amount);
+        if (source != null) source.TriggerVisualPop();
+    }
+
+    /// <summary>
+    /// Mimetic / Leftmost / Parasitic varsa source perki kopyaliyorlarsa, mirror'i uygular.
+    /// mirrorAction = source rolune giren kopyalayici perk ile cagrilir (visual pop icin).
+    /// Retrigger-perkleri (Mimetic/Leftmost/Parasitic) source olarak gelirse hicbir mirror yok
+    /// (perk dosyalarinin kendi IsIncompatible/target kurallariyla ayni).
+    /// </summary>
+    private void ApplyPerkMirrors(BasePerk source, System.Action<BasePerk> mirrorAction)
+    {
+        if (activePerks == null) return;
+        if (IsRetriggerPerk(source)) return; // perk-retrigger perkleri kopyalanmaz
+
+        int sourceIdx = activePerks.IndexOf(source);
+
+        // Mimetic: source'un solunda hemen Mimetic varsa → 1 mirror.
+        if (sourceIdx > 0)
+        {
+            var leftNeighbor = activePerks[sourceIdx - 1];
+            if (leftNeighbor is MimeticGrowthPerk && !leftNeighbor.IsIncompatible())
+                mirrorAction(leftNeighbor);
+        }
+
+        // Leftmost: source en soldaki "valid" hedefse → 2 mirror.
+        foreach (var p in activePerks)
+        {
+            if (p is LeftmostResonancePerk leftmost && !leftmost.IsIncompatible())
+            {
+                if (GetLeftmostResonanceTarget(leftmost) == source)
+                {
+                    mirrorAction(leftmost);
+                    mirrorAction(leftmost);
+                }
+            }
+        }
+
+        // Parasitic: source'un solunda common perk var ve Parasitic Chorus aktifse → 1 mirror.
+        if (sourceIdx > 0)
+        {
+            var leftNeighbor = activePerks[sourceIdx - 1];
+            if (leftNeighbor != null && leftNeighbor.rarity == PerkRarity.Common && !IsRetriggerPerk(leftNeighbor))
+            {
+                foreach (var p in activePerks)
+                {
+                    if (p is ParasiticChorusPerk parasitic && !parasitic.IsIncompatible())
+                    {
+                        mirrorAction(parasitic);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private static bool IsRetriggerPerk(BasePerk p)
+    {
+        return p is MimeticGrowthPerk || p is LeftmostResonancePerk || p is ParasiticChorusPerk;
+    }
+
+    private BasePerk GetLeftmostResonanceTarget(LeftmostResonancePerk leftmost)
+    {
+        for (int i = 0; i < activePerks.Count; i++)
+        {
+            var c = activePerks[i];
+            if (c == null) continue;
+            if (c == leftmost) return null;
+            if (IsRetriggerPerk(c)) return null;
+            return c;
+        }
+        return null;
+    }
 }

@@ -1,10 +1,9 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Parasitic Chorus â€” Legendary. Aktif slottaki her common implant icin, o common'un
-/// sagindaki implantin efektini bir kez daha tetikler. Bir common en sagdaysa o atlanir.
-/// Retriggerlanan implant baska bir perk-retrigger ise (Mimetic/Leftmost/Chorus) atlanir.
+/// Parasitic Chorus — Legendary. Aktif slottaki her common implant icin, o common'un
+/// sagindaki implantin OnAttack'ini bir kez daha tetikler.
 /// </summary>
 public class ParasiticChorusPerk : BasePerk
 {
@@ -15,7 +14,6 @@ public class ParasiticChorusPerk : BasePerk
     };
 
     public override bool IsIncompatible() => CollectTargets().Count == 0;
-
     public override string GetIncompatibleReason() => "No common implants with a right neighbor";
 
     private List<BasePerk> CollectTargets()
@@ -29,39 +27,29 @@ public class ParasiticChorusPerk : BasePerk
             var common = list[i];
             if (common == null) continue;
             if (common.rarity != PerkRarity.Common) continue;
-            if (i + 1 >= list.Count) continue; // En sagdaki common'un sagi yok
+            if (i + 1 >= list.Count) continue;
 
             var rightOfCommon = list[i + 1];
             if (rightOfCommon == null) continue;
-            if (rightOfCommon == this) continue;          // Kendini retriggerlama
-            if (rightOfCommon.isPerkRetrigger) continue;  // Baska perk-retrigger'i cagirma
+            if (rightOfCommon == this) continue;
+            if (rightOfCommon is MimeticGrowthPerk || rightOfCommon is LeftmostResonancePerk || rightOfCommon is ParasiticChorusPerk)
+                continue;
             targets.Add(rightOfCommon);
         }
         return targets;
     }
 
-    public override IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
         var targets = CollectTargets();
         if (targets.Count == 0) yield break;
 
-        var processor = TurnManager.instance != null ? TurnManager.instance.PerkProcessor : null;
-        if (processor == null) yield break;
-
-        List<int> rolls = new List<int>(payload.diceRolls);
-
         foreach (var target in targets)
-        {
-            long before = payload.GetFinalDamage();
-            yield return processor.RetriggerPerk(target, payload, rolls);
-            long after = payload.GetFinalDamage();
+            ctx.RequestPerkReplay(target);
 
-            if (after != before)
-            {
-                TriggerVisualPop();
-                if (PerkListUI.instance != null)
-                    PerkListUI.instance.TriggerShakeForPerk(this);
-            }
-        }
+        ctx.AnimatePop(this);
     }
 }

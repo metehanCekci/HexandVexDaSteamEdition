@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class ToxinEdgePerk : BasePerk
@@ -14,16 +14,18 @@ public class ToxinEdgePerk : BasePerk
         TriggerVisualPop();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
         int delta = 0;
-        for (int i = 0; i < payload.diceRolls.Count; i++)
+        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
         {
-            payload.diceRolls[i] += currentLevel;
+            ctx.payload.diceRolls[i] += currentLevel;
             delta += currentLevel;
         }
-        payload.ApplyAdd(delta);
-        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-            TriggerVisualPop();
+        ctx.payload.ApplyAdd(delta);
+        ctx.AnimatePop(this);
     }
 }

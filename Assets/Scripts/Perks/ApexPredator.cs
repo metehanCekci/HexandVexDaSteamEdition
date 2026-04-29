@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class ApexPredatorPerk : BasePerk
@@ -16,38 +17,31 @@ public class ApexPredatorPerk : BasePerk
         };
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        // Balatro model: net carpan = max(5 - zarSayisi, 1). Tek bir ApplyMult cagrisi.
-        float penalty = payload.diceRolls.Count * 1.0f;
-        float netMult = Mathf.Max(5.0f - penalty, 1.0f);
-        payload.ApplyMult(netMult);
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
 
-        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-            TriggerVisualPop();
+        float penalty = ctx.payload.diceRolls.Count * 1.0f;
+        float netMult = Mathf.Max(5.0f - penalty, 1.0f);
+        ctx.payload.ApplyMult(netMult);
+        ctx.AnimatePop(this);
     }
 
-    // Tooltip "Currently: X?" degeri icin kalici/ongorulebilir zar sayisini hesaplar.
-    // Kombat-ani dinamikleri (DormantSpore stored, green tile, HostSyndrome komsu sayaci) atlanir.
     int GetCurrentDiceCount()
     {
         var rm = RunManager.instance;
         if (rm == null) return 2;
 
-        // Condensed Fury aktifse her zaman 1 zar atilir (kalanlar retrigger olur).
         if (rm.activePerks.Exists(p => p is CondensedFuryPerk)) return 1;
 
         int count = rm.baseDiceCount;
         count += rm.bonusDiceNextCombat;
 
         foreach (var p in rm.activePerks)
-        {
             if (p is DiceHoarderPerk hoardPerk) count += hoardPerk.visitedLevels;
-        }
         foreach (var p in rm.inventoryPerks)
-        {
             if (p is DiceHoarderPerk hoardPerk) count += hoardPerk.visitedLevels;
-        }
 
         return Mathf.Max(1, count);
     }

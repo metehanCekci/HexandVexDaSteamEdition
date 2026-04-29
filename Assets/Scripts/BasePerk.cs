@@ -88,15 +88,25 @@ public abstract class BasePerk : MonoBehaviour
     public Sprite icon;
     public int priority = 0;
     public bool isRerollPerk = false;
-    /// <summary>true ise bu perk diger perklerin ModifyCombat'i bittikten sonra islenir.</summary>
+    /// <summary>true ise bu perk diger perklerin OnAttack'i bittikten sonra islenir (PentUp tarzi).</summary>
     public bool processLast = false;
 
     /// <summary>
-    /// true ise bu perk baska perklerin efektlerini tekrar tetikler (Mimetic Growth, Leftmost Resonance, Parasitic Chorus...).
-    /// Retrigger perkleri diger retrigger perklerini retriggerlayamaz (infinite loop korumasi).
-    /// Dice retrigger perkleri (Stelzer, Hanging Nerve, Sensory Overload) bunu ISARETLEMEZ — onlar zarlari retriggerlar, perkleri degil.
+    /// DEPRECATED — yeni event-driven pipeline'da kullanilmiyor.
+    /// Geri uyumluluk icin field korunuyor (prefab serialization). Mimetic/Leftmost/Parasitic
+    /// artik perk-retrigger isteklerini ctx.RequestPerkReplay() ile yapar.
     /// </summary>
     public bool isPerkRetrigger = false;
+
+    /// <summary>
+    /// Bu perk Mimetic/Leftmost/Parasitic tarafindan replay edilebilir mi?
+    /// Default true — basit "+X / xY" perkler replayde dogru calisir.
+    /// false dondurmek istisna durumlarda gerekir:
+    ///   - Perk state tuketiyorsa (PentUpStrike: storedDamage release; CascadeProtocol: accumulatedDamage rotate)
+    ///   - Perk runtime resource'a yaziyorsa (FatalSightProtocol: criticalChance -> criticalDamageMultiplier)
+    /// Bu perkler kendileri Mimetic/Leftmost ile retriggerlanmaz, ama BAGIMSIZ olarak yine calisir.
+    /// </summary>
+    public virtual bool CanBeRetriggeredByPerks => true;
 
     [Header("Rarity")]
     public PerkRarity rarity = PerkRarity.Common;
@@ -106,7 +116,7 @@ public abstract class BasePerk : MonoBehaviour
 
     /// <summary>
     /// Perk su an calisabilir durumda mi? (Ornegin en sagdaki Mimetic Growth'un kopyalayacagi komsusu yok)
-    /// false donerse UI "INCOMPATIBLE" etiketi gosterir ve perk ModifyCombat'a skip edilir.
+    /// false donerse UI "INCOMPATIBLE" etiketi gosterir ve perk OnEvent'e skip edilir.
     /// </summary>
     public virtual bool IsIncompatible() { return false; }
 
@@ -115,48 +125,21 @@ public abstract class BasePerk : MonoBehaviour
     /// </summary>
     public virtual string GetIncompatibleReason() { return "Incompatible"; }
 
-    /// <summary>
-    /// Tek bir zar islendikten sonra cagrilir. Dice retrigger perkleri burada zarin tekrar
-    /// islenip islenmeyecegine karar verir. Geri donus degeri: bu zar icin kac ekstra retrigger
-    /// yapilacak (0 = retrigger yok).
-    /// </summary>
-    public virtual int GetDiceRetriggerCount(int diceIndex, int diceValue, CombatPayload payload) { return 0; }
-
-    // ======================================================
-    // PER-DIE BAGIMLI PERK PATTERN'I (Photovoltaic Pulse, ilerideki Triboulet-clone vb.)
-    // ======================================================
-    // Eger perkin efekti belirli bir zara bagliysa (ilk zar, en yuksek zar, belirli deger vs.) ve
-    // o zar retriggerlandiginda efektin de bir kez daha ARDISIK uygulanmasi gerekiyorsa:
-    //
-    // 1. ModifyCombat icinde taban uygulamayi yap (ornek: ilk zar icin payload.ApplyMult(first)).
-    // 2. OnDiceRetriggerEvent'i override et — PerkCombatProcessor her retrigger icin
-    //    (diceIndex, diceValue, payload) ile bunu cagirir.
-    // 3. OnDiceRetriggerEvent icinde perkin ilgili oldugu zar index'i ise efekti yine uygula.
-    //
-    // Bu, Balatro'daki "joker her kart oynaninca tekrar tetiklenir" davranisini verir ve
-    // runningDamage modelinde +3 x3 +3 x3 +3 x3 gibi ARDISIK zincir kurar.
-    //
-    // Ornek (Photovoltaic):
-    //   ModifyCombat:          payload.ApplyMult(diceRolls[0]);       // base x3
-    //   OnDiceRetriggerEvent:  if (diceIndex == 0) payload.ApplyMult(diceValue); // her retrigger x3
-    // ======================================================
-
-    /// <summary>
-    /// Bir zar retriggerlandiginda (pre-pass/post-pass icindeki retrigger event'i) her abone perke cagrilir.
-    /// Retrigger event'i sirasi: PerkCombatProcessor once runningDamage'a zar degerini ekler, sonra
-    /// bu metod tum aktif perklere yayinlanir — per-die bagimli perkler kendi efektlerini burada uygular.
-    /// Ornek: Photovoltaic Pulse, diceIndex == 0 ise payload.ApplyMult(diceValue) yapar.
-    /// </summary>
-    public virtual void OnDiceRetriggerEvent(int diceIndex, int diceValue, CombatPayload payload) { }
-
     // 1. Perk satın alındığında / seçildiğinde 1 kez çalışır
     public virtual void OnAcquire() { }
 
-    // 2. Her saldırı yapıldığında, hasar hesaplanırken çalışır
-    public virtual void ModifyCombat(CombatPayload payload) { }
-
-    // 2b. ModifyCombat sonrası adım adım animasyonlu efekt (CarrionFeeder gibi perkler için)
-    public virtual IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI) { yield break; }
+    // ======================================================
+    // EVENT-DRIVEN PIPELINE ENTRY POINT (Balatro-style)
+    // ======================================================
+    // Tum combat event'leri bu metoddan akar. Perk ctx.eventType'a bakarak
+    // ne yapacagina kendi karar verir. Animasyon icin yield return ctx.WaitFor(saniye)
+    // ve ctx.AnimatePop(this) cagir. Retrigger istegi:
+    //   ctx.RequestExtraDicePass(diceIndex, count)  -> dice retrigger
+    //   ctx.RequestPerkReplay(targetPerk)           -> perk retrigger
+    //
+    // OnAttack event'inde ctx.currentPerk == this kontrol et — yoksa her perkin
+    // OnAttack'inda senin perk de tetiklenir. Diger event'lerde gereksiz.
+    public virtual IEnumerator OnEvent(CombatContext ctx) { yield break; }
 
     // 3. Tur geçildiğinde (Skip) çalışır
     public virtual void OnSkip() { }
@@ -172,9 +155,6 @@ public abstract class BasePerk : MonoBehaviour
 
     // Shop reroll yapıldığında çalışır
     public virtual void OnShopReroll() { }
-
-    // LetsGoAgain perki tetiklendiğinde çalışır (ModifyCombat dışı ekstra efektler)
-    public virtual void OnLetsGoAgain() { }
 
     // Perk aktif slotlara taşındığında çalışır
     public virtual void OnEquip() { }

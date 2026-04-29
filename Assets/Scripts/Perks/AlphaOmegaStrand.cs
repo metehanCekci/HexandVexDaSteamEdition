@@ -1,11 +1,11 @@
-﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class AlphaOmegaStrandPerk : BasePerk
 {
     public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        { "bonus", GameKeywords.Plus(2 * currentLevel, "damage") }
+        { "bonus", GameKeywords.Plus(2 * currentLevel) }
     };
 
     public override void Upgrade()
@@ -14,25 +14,24 @@ public class AlphaOmegaStrandPerk : BasePerk
         TriggerVisualPop();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (payload.diceRolls.Count > 0)
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (ctx.payload.diceRolls.Count == 0) yield break;
+
+        int bonus = 2 * currentLevel;
+        int delta = 0;
+
+        ctx.payload.diceRolls[0] += bonus;
+        delta += bonus;
+
+        if (ctx.payload.diceRolls.Count > 1)
         {
-            int bonus = 2 * currentLevel;
-            int delta = 0;
-
-            payload.diceRolls[0] += bonus;
+            ctx.payload.diceRolls[ctx.payload.diceRolls.Count - 1] += bonus;
             delta += bonus;
-
-            if (payload.diceRolls.Count > 1)
-            {
-                payload.diceRolls[payload.diceRolls.Count - 1] += bonus;
-                delta += bonus;
-            }
-            payload.ApplyAdd(delta);
-
-            if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-                TriggerVisualPop();
         }
+        ctx.payload.ApplyAdd(delta);
+        ctx.AnimatePop(this);
     }
 }

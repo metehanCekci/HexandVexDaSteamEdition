@@ -28,8 +28,6 @@ public class PassiveEnzymePerk : BasePerk
             if (alive <= 1) return;
         }
 
-        RunManager.instance.currentGold += (4 * currentLevel);
-        GameEvents.GoldChanged(RunManager.instance.currentGold);
-        TriggerVisualPop();
+        RunManager.instance.GrantGold(this, 4 * currentLevel);
     }
 }

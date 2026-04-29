@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class IronWillPerk : BasePerk
@@ -13,7 +14,6 @@ public class IronWillPerk : BasePerk
         { "per",         GameKeywords.Mult(1) },
         { "streakLabel", GameKeywords.Counter("Streak:") },
         { "streak",      GameKeywords.Counter(cleanLevelStreak.ToString()) },
-        // Streak 0 iken "X0" kotuye gorunur â€” minimum X1 gosterelim (carpan etkisi olmasin).
         { "bonus",       GameKeywords.Mult(Mathf.Max(1, cleanLevelStreak)) }
     };
 
@@ -54,9 +54,7 @@ public class IronWillPerk : BasePerk
         }
 
         if (!tookDamageThisLevel)
-        {
             cleanLevelStreak++;
-        }
         RebuildDescription();
     }
 
@@ -93,12 +91,13 @@ public class IronWillPerk : BasePerk
         RebuildDescription();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (cleanLevelStreak <= 0) return;
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (cleanLevelStreak <= 0) yield break;
 
-        // Eski model: multiplier += X -> efektif (1+X). Balatro modelinde ApplyMult(1+X).
-        payload.ApplyMult(1f + cleanLevelStreak);
-        TriggerVisualPop();
+        ctx.payload.ApplyMult(1f + cleanLevelStreak);
+        ctx.AnimatePop(this);
     }
 }

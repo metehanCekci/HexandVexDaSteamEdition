@@ -77,12 +77,8 @@ public class InsurancePolicyPerk : BasePerk
         long goldGain = goldPerMissing * missingHP;
 
         if (RunManager.instance != null)
-        {
-            RunManager.instance.currentGold += (int)System.Math.Min(goldGain, int.MaxValue);
-            if (TurnManager.instance != null) TurnManager.instance.UpdateCoinUI();
-        }
+            RunManager.instance.GrantGold(this, (int)System.Math.Min(goldGain, int.MaxValue));
 
         previousHP = remainingHP;
-        TriggerVisualPop();
     }
 }

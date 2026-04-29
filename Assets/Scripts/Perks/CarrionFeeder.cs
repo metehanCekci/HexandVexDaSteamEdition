@@ -1,13 +1,19 @@
-﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class CarrionFeederPerk : BasePerk
 {
     private int killStreak = 0;
     private bool pendingReset = false;
 
-    private int MaxStacks => currentLevel; // lv1: 1, lv2: 2, lv3: 3
+    // Snapshot orijinal pass'te dondurulur, replay'de ayni streak'i uygular.
+    private int streakSnapshot = 0;
+
+    private int MaxStacks => currentLevel;
+
+    // Replay aktif — Mimetic ile her replay killStreak kadar x2 uygulanir.
+    public override bool CanBeRetriggeredByPerks => true;
 
     public override Dictionary<string, object> GetDescValues()
     {
@@ -28,34 +34,33 @@ public class CarrionFeederPerk : BasePerk
         RebuildDescription();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (pendingReset)
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
+        if (!ctx.isReplay)
         {
-            killStreak = 0;
+            // Reset/snapshot mantigi sadece orijinalde
+            if (pendingReset)
+                killStreak = 0;
+            pendingReset = true;
+            streakSnapshot = killStreak;
+            RebuildDescription();
         }
 
-        pendingReset = true;
-        RebuildDescription();
-    }
+        if (streakSnapshot <= 0) yield break;
 
-    public override IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI)
-    {
-        if (killStreak <= 0) yield break;
-
-        for (int i = 0; i < killStreak; i++)
+        for (int i = 0; i < streakSnapshot; i++)
         {
-            payload.ApplyMult(2f);
-            TriggerVisualPop();
-            if (PerkListUI.instance != null)
-                PerkListUI.instance.TriggerShakeForPerk(this);
-            if (diceUI != null && !diceUI.skipDiceVisuals)
-            {
-                diceUI.UpdateTotalDamageDisplay(payload.GetFinalDamage());
-                yield return StartCoroutine(diceUI.SkippableWait(0.3f));
-            }
+            ctx.payload.ApplyMult(2f);
+            ctx.AnimatePop(this);
+            ctx.RefreshTotal();
+            yield return ctx.WaitFor(0.3f);
         }
-        RebuildDescription();
+
+        if (!ctx.isReplay)
+            RebuildDescription();
     }
 
     public override void OnEnemyKilled(EnemyMovement enemy)

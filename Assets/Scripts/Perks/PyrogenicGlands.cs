@@ -20,10 +20,7 @@ public class PyrogenicGlandsPerk : BasePerk
         { "turns",  GameKeywords.Counter("5 turns") }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
-    {
-        // Burn is applied after attack in TurnManager via ApplyBurn
-    }
+    // Burn TurnManager tarafindan ApplyBurn ile uygulanir, OnEvent'te is yok.
 
     public void ApplyBurn(EnemyMovement enemy)
     {
