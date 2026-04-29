@@ -45,9 +45,12 @@ public class PiggyBankUI : MonoBehaviour
     public float flyDuration = 0.35f;
 
     [Header("Flying coin visual")]
-    [Tooltip("Sprite used for each flying coin. If null, falls back to the piggy icon sprite.")]
+    [Tooltip("Prefab spawned for each flying coin. Must have an Image component on the root. " +
+             "If assigned, flyingCoinSprite/flyingCoinSize below are ignored — the prefab's settings are used.")]
+    public GameObject flyingCoinPrefab;
+    [Tooltip("Sprite used when no prefab is assigned. Leave empty to fall back to a solid yellow square.")]
     public Sprite flyingCoinSprite;
-    [Tooltip("Size of each spawned flying coin.")]
+    [Tooltip("Size of the flying coin when no prefab is assigned.")]
     public Vector2 flyingCoinSize = new Vector2(18f, 18f);
 
     private PiggyBankConfig config;
@@ -112,19 +115,20 @@ public class PiggyBankUI : MonoBehaviour
         if (coinLandingTarget == null)
             Debug.LogWarning("[PiggyBankUI] coinLandingTarget not set and PersistentHUD.goldText unavailable; flying coins will not render.");
 
-        // Flying coin sprite fallback: PersistentHUD.coinIconImage -> PIGGYRow icon -> null (solid yellow sqr)
+        // Flying coin sprite fallback: PersistentHUD.coinIconImage -> solid yellow square.
+        // Never fall back to piggyIcon — that's the piggy bank, not a coin.
         if (flyingCoinSprite == null)
-        {
-            if (PersistentHUD.instance != null && PersistentHUD.instance.coinIconImage != null
-                && PersistentHUD.instance.coinIconImage.sprite != null)
-                flyingCoinSprite = PersistentHUD.instance.coinIconImage.sprite;
-            else if (piggyIcon != null && piggyIcon.sprite != null)
-                flyingCoinSprite = piggyIcon.sprite;
-        }
+            flyingCoinSprite = ResolveCoinSprite();
+    }
 
-        Debug.Log($"[PiggyBankUI] wired. piggyIcon={(piggyIcon!=null)} landing={(coinLandingTarget!=null)} " +
-                  $"flyingSprite={(flyingCoinSprite!=null?flyingCoinSprite.name:"<null, will use yellow square>")} " +
-                  $"canvas={(piggyIcon!=null && piggyIcon.canvas!=null ? piggyIcon.canvas.name : "<none>")}");
+    // Try to get the real coin sprite from the HUD. Returns null if it can't be resolved
+    // (caller falls back to a solid yellow square — anything but the piggy).
+    private Sprite ResolveCoinSprite()
+    {
+        if (PersistentHUD.instance != null && PersistentHUD.instance.coinIconImage != null
+            && PersistentHUD.instance.coinIconImage.sprite != null)
+            return PersistentHUD.instance.coinIconImage.sprite;
+        return null;
     }
 
     private void ApplyArt()
@@ -250,6 +254,10 @@ public class PiggyBankUI : MonoBehaviour
         if (coinLandingTarget == null && PersistentHUD.instance != null && PersistentHUD.instance.goldText != null)
             coinLandingTarget = PersistentHUD.instance.goldText.rectTransform;
 
+        // Lazy-resolve coin sprite for the same reason. Without this, an empty inspector slot
+        // + a HUD that wires up after Start() would leave us with no coin art at all.
+        if (flyingCoinSprite == null) flyingCoinSprite = ResolveCoinSprite();
+
         if (piggyIcon == null || coinLandingTarget == null)
         {
             Debug.LogWarning($"[PiggyBankUI] SpawnFlyingCoin fail-safe. piggyIcon={(piggyIcon!=null)} landing={(coinLandingTarget!=null)}");
@@ -271,26 +279,51 @@ public class PiggyBankUI : MonoBehaviour
         Canvas rootCanvas = canvas.rootCanvas != null ? canvas.rootCanvas : canvas;
         RectTransform parent = rootCanvas.transform as RectTransform;
 
-        var coinGO = new GameObject("FlyingCoin", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        coinGO.transform.SetParent(parent, false);
-        coinGO.transform.SetAsLastSibling(); // hersey ustunde olsun
-        var rt = (RectTransform)coinGO.transform;
-        rt.sizeDelta = flyingCoinSize;
-        var img = coinGO.GetComponent<Image>();
+        GameObject coinGO;
+        RectTransform rt;
+        Image img;
 
-        // Sprite yoksa parlak sari solid kare - goster ki varligi fark edelim
-        if (flyingCoinSprite != null)
+        if (flyingCoinPrefab != null)
         {
-            img.sprite = flyingCoinSprite;
-            img.color = Color.white;
+            // Clone the template (prefab asset OR a hidden scene GameObject) and keep its art/size/color.
+            coinGO = Instantiate(flyingCoinPrefab, parent, false);
+            coinGO.name = "FlyingCoin"; // strip the "(Clone)" suffix for a clean Hierarchy
+            coinGO.SetActive(true); // template can be inactive in the scene — clone must be visible
+            rt = coinGO.transform as RectTransform;
+            if (rt == null)
+            {
+                Debug.LogWarning("[PiggyBankUI] flyingCoinPrefab root has no RectTransform — replacing with a UI default.");
+                Destroy(coinGO);
+                coinGO = new GameObject("FlyingCoin", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                coinGO.transform.SetParent(parent, false);
+                rt = (RectTransform)coinGO.transform;
+            }
+            img = coinGO.GetComponent<Image>();
+            if (img == null) img = coinGO.AddComponent<Image>();
         }
         else
         {
-            img.sprite = null;
-            img.color = new Color(1f, 0.85f, 0.2f, 1f); // solid gold
+            coinGO = new GameObject("FlyingCoin", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            coinGO.transform.SetParent(parent, false);
+            rt = (RectTransform)coinGO.transform;
+            rt.sizeDelta = flyingCoinSize;
+            img = coinGO.GetComponent<Image>();
+
+            // Sprite yoksa parlak sari solid kare - goster ki varligi fark edelim
+            if (flyingCoinSprite != null)
+            {
+                img.sprite = flyingCoinSprite;
+                img.color = Color.white;
+            }
+            else
+            {
+                img.sprite = null;
+                img.color = new Color(1f, 0.85f, 0.2f, 1f); // solid gold
+            }
+            img.raycastTarget = false;
+            img.preserveAspect = true;
         }
-        img.raycastTarget = false;
-        img.preserveAspect = true;
+        coinGO.transform.SetAsLastSibling(); // hersey ustunde olsun
 
         Vector3 startWorld = piggyIcon.rectTransform.position;
         Vector3 endWorld = coinLandingTarget.position;
