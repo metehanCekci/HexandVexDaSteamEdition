@@ -1,8 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
 
 public class SymbioticArsenalPerk : BasePerk
 {
-    // Lvl1 = +0.50 per ready item, Lvl2 = +0.75, Lvl3 = +1.00. Joker perkler scale edebilir.
     private ScaledValue _bonusPerItem = new ScaledValue(baseValue: 0.5f, perLevel: 0.25f);
     public ScaledValue BonusPerItemValue => _bonusPerItem;
 
@@ -13,15 +13,17 @@ public class SymbioticArsenalPerk : BasePerk
         { "bonus", GameKeywords.Mult(GetBonusPerItem()) }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (InventoryManager.instance == null) return;
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (InventoryManager.instance == null) yield break;
 
         int readyItems = CountReadyItems();
-        if (readyItems <= 0) return;
+        if (readyItems <= 0) yield break;
 
-        payload.ApplyMult(1f + GetBonusPerItem() * readyItems);
-        TriggerVisualPop();
+        ctx.payload.ApplyMult(1f + GetBonusPerItem() * readyItems);
+        ctx.AnimatePop(this);
     }
 
     private static int CountReadyItems()

@@ -1,10 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Mimetic Growth â€” Epic. Sagindaki implantin ozelliklerini taklit eder:
-/// her saldirida sagindaki implantin ModifyCombat'ini bir kez daha tetikler.
-/// En sagda ise veya sagindaki implant da bir retrigger implantiysa INCOMPATIBLE.
+/// Mimetic Growth — Epic. Sagindaki implantin OnAttack'ini bir kez daha tetikler.
 /// </summary>
 public class MimeticGrowthPerk : BasePerk
 {
@@ -13,11 +11,7 @@ public class MimeticGrowthPerk : BasePerk
         { "trigger", GameKeywords.Retrigger("triggering once more") }
     };
 
-    public override bool IsIncompatible()
-    {
-        return GetRightNeighbor() == null;
-    }
-
+    public override bool IsIncompatible() => GetRightNeighbor() == null;
     public override string GetIncompatibleReason() => "Nothing to the right";
 
     private BasePerk GetRightNeighbor()
@@ -29,32 +23,20 @@ public class MimeticGrowthPerk : BasePerk
 
         var neighbor = list[myIndex + 1];
         if (neighbor == null) return null;
-        // Diger perk-retrigger implantlarini kopyalayamaz (infinite loop koruma).
-        if (neighbor.isPerkRetrigger) return null;
+        if (neighbor is MimeticGrowthPerk || neighbor is LeftmostResonancePerk || neighbor is ParasiticChorusPerk)
+            return null;
         return neighbor;
     }
 
-    public override IEnumerator AnimatedCombatEffect(CombatPayload payload, DiceUIController diceUI)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
         var neighbor = GetRightNeighbor();
         if (neighbor == null) yield break;
 
-        // Komsu perki tek basina yeniden calistir. ModifyCombat bir sey yaparsa (damage degisirse)
-        // kendimizi de pop et; yapmazsa (ornegin komsu pure dice-retrigger perkiyse â€” o is pre-pass'te
-        // zaten hallediliyor) sessiz kal, fazla pop gorulmesin.
-        var processor = TurnManager.instance != null ? TurnManager.instance.PerkProcessor : null;
-        if (processor == null) yield break;
-
-        long before = payload.GetFinalDamage();
-        List<int> rolls = new List<int>(payload.diceRolls);
-        yield return processor.RetriggerPerk(neighbor, payload, rolls);
-        long after = payload.GetFinalDamage();
-
-        if (after != before)
-        {
-            TriggerVisualPop();
-            if (PerkListUI.instance != null)
-                PerkListUI.instance.TriggerShakeForPerk(this);
-        }
+        ctx.RequestPerkReplay(neighbor);
+        ctx.AnimatePop(this);
     }
 }

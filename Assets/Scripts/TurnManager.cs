@@ -1205,6 +1205,10 @@ public class TurnManager : MonoBehaviour
         player.ForceSetPosition(enemyCell);
         target.ForceSetPosition(playerCell);
 
+        // Phase Shift bir teleport — normal hareket akışına girmediği için HandlePlayerPhase'in
+        // tile efektlerini elle uygulamamız gerekiyor (yoksa yellow gold/orange move/red 2x kaybolur).
+        ApplyTeleportTileEffects(enemyCell);
+
         // Oyuncu büyür
         elapsed = 0f;
         while (elapsed < shrinkDur)
@@ -1256,6 +1260,32 @@ public class TurnManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
             StartCoroutine(EnemyPhase());
         }
+    }
+
+    // Apply enchanted tile step-on effects after a teleport (Phase Shift, etc.).
+    // Mirrors the yellow/orange handling in HandlePlayerPhase but skips movement-only logic
+    // (hex counters, blue tile distance check, hazard knockback) since this isn't a step.
+    private void ApplyTeleportTileEffects(Vector3Int playerCell)
+    {
+        if (MagicTileManager.instance == null || RunManager.instance == null) return;
+
+        // Yellow: stepping on grants +10 gold, then the tile is consumed (single-use).
+        if (MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType yellowStep) && yellowStep == MagicTileType.Yellow)
+        {
+            RunManager.instance.currentGold += 10;
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
+            UpdateCoinUI();
+            MagicTileManager.instance.ConsumePlayerTile();
+        }
+
+        // Orange: consume the previous orange tile if we left it, mark the new one as the active orange.
+        // We don't grant the +1 move bonus here because Phase Shift ends the player turn immediately
+        // afterwards (remainingMoves = 0), so the bonus would just be wiped out.
+        MagicTileManager.instance.CheckOrangeTileConsumption(playerCell);
+        if (MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType orangeStep) && orangeStep == MagicTileType.Orange)
+            MagicTileManager.instance.MarkOrangeTileActive(playerCell);
+        // Red is intentionally NOT handled here — MultiAttack already detects it via IsPlayerOnMagicTile
+        // when the post-teleport adjacent attack fires, and consumes it on hit.
     }
 
     public void StartThornPlacement()
@@ -2379,7 +2409,7 @@ public class TurnManager : MonoBehaviour
 
         if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.ForceClose();
 
-        // Fatal Sight Protocol: isCriticalHit may already be set by a perk in ModifyCombat
+        // Fatal Sight Protocol: isCriticalHit may already be set by a perk in OnEvent(OnAttack)
         if (payload.isCriticalHit)
         {
             if (!skipDiceVisuals)
@@ -2770,7 +2800,7 @@ public class TurnManager : MonoBehaviour
             foreach (var s in spikedEnemies) { StartCoroutine(FlashHazardTileCoroutine(s.GetCurrentCellPosition())); s.health.TakeDamage(System.Math.Max(1L, s.health.maxHP / 2)); }
 
             var acidPerk = RunManager.instance.activePerks.Find(p => p is AcidBloodPerk) as AcidBloodPerk;
-            if (acidPerk != null) { player.health.Heal(spikedEnemies.Count * acidPerk.currentLevel); acidPerk.TriggerVisualPop(); }
+            if (acidPerk != null) RunManager.instance.GrantHeal(acidPerk, spikedEnemies.Count * acidPerk.currentLevel);
 
             yield return new WaitForSeconds(0.2f);
             foreach (var s in spikedEnemies) if (s != null && s.health.currentHP > 0) { Vector3Int randomBounceCell = GetRandomSafeNeighbor(s.GetCurrentCellPosition()); s.StartKnockbackMovement(randomBounceCell); anyoneBounced = true; }

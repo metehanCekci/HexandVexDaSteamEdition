@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Generic;
 
 public class AdrenalSurgePerk : BasePerk
 {
@@ -8,10 +9,11 @@ public class AdrenalSurgePerk : BasePerk
         { "mult",   GameKeywords.Mult(2) }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        payload.ApplyMult(2.0f);
-        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-            TriggerVisualPop();
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        ctx.payload.ApplyMult(2.0f);
+        ctx.AnimatePop(this);
     }
 }

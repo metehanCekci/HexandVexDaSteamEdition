@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class RegenTissuePerk : BasePerk
 {
-    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
         { "heal",  GameKeywords.Heal(currentLevel) },
         { "clear", GameKeywords.Action("clearing") }
@@ -13,11 +15,10 @@ public class RegenTissuePerk : BasePerk
         ApplyHealthBoost();
     }
 
-    // YENÄ°: Kart tekrar seÃ§ildiÄŸinde (Upgrade) HEMEN ekstra canÄ± bassÄ±n!
     public override void Upgrade()
     {
-        base.Upgrade(); // Seviyeyi artÄ±r
-        ApplyHealthBoost(); // Seviye atladÄ±ÄŸÄ± an canÄ± ver!
+        base.Upgrade();
+        ApplyHealthBoost();
     }
 
     public override void OnLevelClear()
@@ -25,27 +26,15 @@ public class RegenTissuePerk : BasePerk
         ApplyHealthBoost();
     }
 
-    public override void OnLetsGoAgain()
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
+        if (ctx.eventType != CombatEventType.OnLetsGoAgain) yield break;
         ApplyHealthBoost();
     }
 
     private void ApplyHealthBoost()
     {
         if (RunManager.instance == null) return;
-
-        // Seviyesi ne kadarsa o kadar can versin (Lv 1 = 1 Can, Lv 3 = 3 Can)
-        int healAmount = currentLevel;
-
-        RunManager.instance.playerCurrentHealth = System.Math.Min(
-            RunManager.instance.playerCurrentHealth + healAmount,
-            RunManager.instance.playerMaxHealth
-        );
-
-        HexMovement player = TurnManager.instance != null ? TurnManager.instance.player : null;
-        if (player != null && player.health != null)
-            player.health.Heal(healAmount);
-
-        TriggerVisualPop();
+        RunManager.instance.GrantHeal(this, currentLevel);
     }
 }

@@ -45,7 +45,10 @@ public class NecroShotCursor : MonoBehaviour
 
     private void DeactivateCursor()
     {
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        if (CursorManager.instance != null)
+            CursorManager.instance.SetDefault();
+        else
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
         isCustomCursorActive = false;
     }
 

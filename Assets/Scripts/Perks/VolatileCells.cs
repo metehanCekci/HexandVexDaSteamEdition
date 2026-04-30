@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Generic;
 
 public class VolatileCellsPerk : BasePerk
 {
@@ -10,11 +11,12 @@ public class VolatileCellsPerk : BasePerk
         { "maxHp",   GameKeywords.HealthText("max HP") }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        payload.triggerExplosion = true;
-        payload.explosionDamagePercent = currentLevel * 0.25f;
-        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-            TriggerVisualPop();
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        ctx.payload.triggerExplosion = true;
+        ctx.payload.explosionDamagePercent = currentLevel * 0.25f;
+        ctx.AnimatePop(this);
     }
 }

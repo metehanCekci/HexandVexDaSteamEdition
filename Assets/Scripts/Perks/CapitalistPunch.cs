@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class CapitalistPunchPerk : BasePerk
@@ -9,18 +9,18 @@ public class CapitalistPunchPerk : BasePerk
         { "bonus", GameKeywords.Plus(1, "damage") }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (RunManager.instance == null) return;
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (RunManager.instance == null) yield break;
 
-        int bonus = RunManager.instance.currentGold / 5; // Her 5 altÄ±n iÃ§in +1 hasar
-        if (bonus > 0)
-        {
-            for (int i = 0; i < payload.diceRolls.Count; i++)
-                payload.diceRolls[i] += bonus;
-            payload.ApplyAdd(bonus * payload.diceRolls.Count);
-            if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-                TriggerVisualPop();
-        }
+        int bonus = RunManager.instance.currentGold / 5;
+        if (bonus <= 0) yield break;
+
+        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
+            ctx.payload.diceRolls[i] += bonus;
+        ctx.payload.ApplyAdd(bonus * ctx.payload.diceRolls.Count);
+        ctx.AnimatePop(this);
     }
 }

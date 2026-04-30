@@ -1,14 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
-/// <summary>
-/// Item Eater â€” Common. Itemleri bu perke "yedirerek" guclendirilir.
-/// Base 1x carpan, her yedirilen item basina +0.5x (level scale: L1 +0.5, L2 +0.65, L3 +0.8).
-/// Drag-drop UI henuz yok â€” UI eklendiginde FeedItem(BaseItem) public API'si kullanilir,
-/// item envanterden silinir + feedCount artar.
-/// Inspector flag feedOnItemUsed acilirsa kullanilan her item de besleme sayilir (fallback mod).
-/// </summary>
 public class ItemEaterPerk : BasePerk
 {
     [Header("Item Eater")]
@@ -36,10 +29,6 @@ public class ItemEaterPerk : BasePerk
         TriggerVisualPop();
     }
 
-    /// <summary>
-    /// Drag-drop UI cagirir: bir item bu perke yedirildi. Item envanterden silinmis olmali (caller sorumlu).
-    /// Tek seferlik permanent stack â€” combat sonu reset edilmez.
-    /// </summary>
     public void FeedItem(BaseItem item)
     {
         if (item == null) return;
@@ -50,7 +39,6 @@ public class ItemEaterPerk : BasePerk
 
     private float BonusPerFeed()
     {
-        // L1 +0.5, L2 +0.65, L3 +0.8
         return 0.5f + 0.15f * (currentLevel - 1);
     }
 
@@ -62,11 +50,14 @@ public class ItemEaterPerk : BasePerk
         { "fed", GameKeywords.Counter(feedCount.ToString()) }
     };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
         float mult = 1f + BonusPerFeed() * feedCount;
-        if (mult <= 1f) return;
-        payload.ApplyMult(mult);
-        TriggerVisualPop();
+        if (mult <= 1f) yield break;
+        ctx.payload.ApplyMult(mult);
+        ctx.AnimatePop(this);
     }
 }
