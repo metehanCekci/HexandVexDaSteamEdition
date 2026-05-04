@@ -11,8 +11,8 @@ public class CameraController : MonoBehaviour
     public float maxZoomZ = -25f;
 
     [Header("Kamera Sınırları")]
-    public Vector2 minBounds = new Vector2(-60f, -60f); 
-    public Vector2 maxBounds = new Vector2(60f, 60f);   
+    public Vector2 minBounds = new Vector2(-120f, -120f);
+    public Vector2 maxBounds = new Vector2(120f, 120f);
 
     [Header("Mobil Hassasiyet Ayarları")]
     public float touchPanSpeed = 0.05f;

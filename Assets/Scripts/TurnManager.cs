@@ -2581,9 +2581,12 @@ public class TurnManager : MonoBehaviour
             // ========================================================
             if (voodooPerk != null && enemies.Count > 1)
             {
-                // Hayatta olanları candan (büyükten küçüğe) sıralayıp liste haline getir
+                // Hayatta olanları candan (büyükten küçüğe) sıralayıp liste haline getir.
+                // Boss ve totemleri hariç tut — totem ölünce TotemDestroySequence devreye girer
+                // ve summonedMinions hayatlarını anında sıfırlıyor; aynı anda voodoo bu minion'lara
+                // vuruyorsa sprite haritada asılı kalabiliyor (ölüm akışları çakışıyor).
                 var others = enemies.Where(e => e != null && e != enemy && e.health.currentHP > 0
-                                            && !e.IsBoss)
+                                            && !e.IsBoss && !e.IsTotem)
                                     .OrderByDescending(e => e.health.currentHP)
                                     .ToList();
 

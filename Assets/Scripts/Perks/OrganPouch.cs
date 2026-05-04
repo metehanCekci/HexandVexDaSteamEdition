@@ -9,25 +9,26 @@ public class OrganPouchPerk : BasePerk
         { "cap",   GameKeywords.Counter("5") }
     };
 
-    // Ä°lk alÄ±ndÄ±ÄŸÄ±nda Ã§alÄ±ÅŸÄ±r (1. Seviye)
+    // Slot grant is handled entirely by OnEquip / OnUnequip — OnAcquire intentionally does
+    // nothing extra so a perk that lands directly in stash does NOT grant slots until equipped.
     public override void OnAcquire()
     {
-        ExpandHotbar();
         TriggerVisualPop();
     }
 
-    // Kart tekrar seÃ§ilirse Ã§alÄ±ÅŸÄ±r (2. ve 3. Seviyeler)
+    // Kart tekrar secilirse calisir — only re-apply if currently equipped (active).
     public override void Upgrade()
     {
         base.Upgrade();
-        ExpandHotbar();
+        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
+            ExpandHotbar();
         TriggerVisualPop();
     }
 
-    // Stash'ten aktife taÅŸÄ±ndÄ±ÄŸÄ±nda slotlarÄ± tekrar aÃ§
+    // Stash'ten aktife tasindiginda (veya direk aktife edinildiginde) slotlari ac.
+    // Idempotent — InventoryManager zaten dogru slot sayisindaysa hicbir sey yapmaz.
     public override void OnEquip()
     {
-        // OnAcquire ile Ã§ifte Ã§aÄŸrÄ± korumasÄ±: InventoryManager zaten doÄŸru slot sayÄ±sÄ±ndaysa aÃ§ma
         if (InventoryManager.instance == null) return;
         int target = 3 + currentLevel;
         int missing = target - InventoryManager.instance.maxSlots;
@@ -35,20 +36,25 @@ public class OrganPouchPerk : BasePerk
             ExpandHotbar();
     }
 
-    // Stash'e taÅŸÄ±ndÄ±ÄŸÄ±nda slotlarÄ± kÃ¼Ã§Ã¼lt
+    // Stash'e tasindiginda (veya satildiginda) slotlari kuculsun.
+    // Always shrinks to base 3 — both stashing and selling drop the bonus slots, since
+    // a stashed perk's bonuses don't apply. CanUnequip gates this from being destructive.
     public override void OnUnequip()
     {
-        for (int i = 0; i < currentLevel; i++)
+        if (InventoryManager.instance == null) return;
+        int excess = InventoryManager.instance.maxSlots - 3;
+        for (int i = 0; i < excess; i++)
             ShrinkHotbar();
     }
 
-    // Fazla slotlarda item varsa Ã§Ä±karmaya izin verme
+    // Refuse unequip whenever any bonus slot (slot 3+) currently holds an item — those
+    // slots are about to be torn down and the items would silently disappear.
     public override bool CanUnequip()
     {
         if (InventoryManager.instance == null) return true;
         int currentMax = InventoryManager.instance.maxSlots;
-        int baseSlots = 3;
-        int slotsToRemove = Mathf.Min(currentLevel, currentMax - baseSlots);
+        int slotsToRemove = currentMax - 3;
+        if (slotsToRemove <= 0) return true;
 
         for (int i = 0; i < slotsToRemove; i++)
         {

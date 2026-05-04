@@ -801,6 +801,16 @@ public class LevelGenerator : MonoBehaviour
 
         TurnManager.instance.hasAttackedThisTurn = false;
 
+        // Reset remainingMoves for the new boss arena so perks like ReflexFiber start fresh
+        // on the very first boss-arena turn (the regular level path does this in GenerateNextLevel,
+        // but boss arenas branched out before reaching that block).
+        if (RunManager.instance != null)
+        {
+            RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
+            RunManager.instance.surgeBootStacks = 0;
+            RunManager.instance.surgeBootNextTurn = false;
+        }
+
         if (spawnedBossAI != null && BossIntroSequence.instance != null)
         {
             // Boss intro önce oynasın, bitince magic tile'lar spawn olsun

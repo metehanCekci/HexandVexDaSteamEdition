@@ -48,9 +48,7 @@ MonoBehaviour:
   maxLevel: 3
   perkName: Iron Will
   description: 'Each [white]combat cleared[/white] without taking damage grants {per}.
-    Resets on damage.
-    [stack]
-    [white]Currently:[/white] {streak} ({bonus})[/stack]'
+    Resets on damage. [stack] [white]Currently:[/white] {streak} ({bonus})[/stack]'
   icon: {fileID: -378382919798162192, guid: a4d8aaef9f4e2a546a002486ae8ce803, type: 3}
   priority: 0
   isRerollPerk: 0

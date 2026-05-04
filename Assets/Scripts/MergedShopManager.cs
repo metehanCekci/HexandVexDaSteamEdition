@@ -835,7 +835,10 @@ public class MergedShopManager : MonoBehaviour
         // Havuz tükenirse shownItemNames sıfırla
         int available = 0;
         foreach (var item in itemPool)
+        {
+            if (item == null || string.IsNullOrEmpty(item.itemName)) continue;
             if (!shownItemNames.Contains(item.itemName) && !IsItemInInventory(item)) available++;
+        }
         if (available < 3) shownItemNames.Clear();
 
         List<int> used = new List<int>();
@@ -851,7 +854,9 @@ public class MergedShopManager : MonoBehaviour
                 picked = itemPool[idx];
                 if (++safety > 100) break;
             }
-            while (used.Contains(itemPool.IndexOf(picked))
+            while (picked == null
+                || string.IsNullOrEmpty(picked.itemName)
+                || used.Contains(itemPool.IndexOf(picked))
                 || shownItemNames.Contains(picked.itemName)
                 || (secretItem != null && picked.itemName == secretItem.itemName)
                 || picked is LuckyClover

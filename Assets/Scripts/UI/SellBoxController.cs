@@ -159,6 +159,13 @@ public class SellBoxController : MonoBehaviour
         {
             if (pendingPerkIndex >= rm.inventoryPerks.Count) return false;
             BasePerk perk = rm.inventoryPerks[pendingPerkIndex];
+            // CanUnequip blocks selling when teardown would corrupt state — e.g. OrganPouch
+            // can't shrink the hotbar past slots that still hold items. Applies to stash too.
+            if (!perk.CanUnequip()) return false;
+            // Stash perks never had OnEquip called, but call OnUnequip anyway as a safety net
+            // for perks that ran any setup in OnAcquire (e.g. legacy slot grants). Idempotent
+            // perks are safe; well-behaved perks gate their work on activePerks.Contains(this).
+            perk.OnUnequip();
             rm.inventoryPerks.RemoveAt(pendingPerkIndex);
             GameEvents.PerkSold(perk);
             Destroy(perk.gameObject);

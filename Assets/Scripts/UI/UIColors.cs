@@ -33,7 +33,7 @@ public static class UIColors
     static Color _hpFull  = HexToColor("#4CAF50");
     static Color _hpMid   = HexToColor("#FFEB3B");
     static Color _hpLow   = HexToColor("#E53935");
-    static Color _hpElite = HexToColor("#FF9800");
+    static Color _hpElite = HexToColor("#9C27B0");
     static Color _hpBoss  = HexToColor("#B71C1C");
 
     // ── Gameplay semantic: HEX (default, rich-text icin) ──
