@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: be3d73756914b8d45bf0aadd97d2dda9
+guid: 317d4528239c89e40a350a6230417f23
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: hewNewAttack
+  - name: BaslikKapsulu
     originalName: 
-    pivot: {x: 0.5, y: 0}
+    pivot: {x: 0.52133197, y: 0.01826484}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 128
-      height: 128
-    spriteID: 68b9302c10293dd438a09c57176922eb
+      width: 961
+      height: 438
+    spriteID: 9159a5fa441fc654dafedf4bc04e0fbb
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3211657676
+      value0: 1020596023
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: hewNewAttack
+    name: BaslikKapsulu
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: hewNewAttack
+    - name: BaslikKapsulu
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 0
-        y: 0
-        width: 128
-        height: 128
-      spriteId: 68b9302c10293dd438a09c57176922eb
+        x: -41
+        y: -8
+        width: 961
+        height: 438
+      spriteId: 9159a5fa441fc654dafedf4bc04e0fbb
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 128, y: 128}
-  previousTextureSize: {x: 256, y: 256}
+  canvasSize: {x: 920, y: 430}
+  previousTextureSize: {x: 1024, y: 512}
