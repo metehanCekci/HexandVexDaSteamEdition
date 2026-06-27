@@ -91,17 +91,7 @@
       "Bash(grep -n \"^\\\\s*//.*[a-zA-Z]\" Assets/Scripts/UI/SellBoxDropZone.cs Assets/Scripts/UI/UIVignette.cs Assets/Scripts/UI/SimpleScrollArea.cs Assets/Scripts/UI/UIHoverEffect.cs)",
       "Bash(find /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/Perks -type f -name \"*.cs\" ! -name \"*Anim.cs\" ! -name \"*ShopReroll*\" -exec basename {} .cs \\\\;)",
       "Bash(grep -l \"Shopmanager\\\\|ShopDealer\\\\|MergedShopManager\" Assets/Scripts/*.cs Assets/Scripts/**/*.cs)",
-      "Bash(grep -l \"BombPlacementCursor\\\\|NecroShotCursor\\\\|PhaseShiftCursor\\\\|ThornPlacementCursor\" \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/\"*.unity)",
-      "Bash(grep -n \"StartKnockback\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
-      "Bash(grep -n \"OnPlayerLeftCell\\\\|CheckMucusSlide\\\\|GetEnemyPushedIntoSpike\" /c/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
-      "Bash(grep -n \"surgeBootActive.*false\" Assets/Scripts/*.cs)",
-      "Bash(xargs -I {} wc -l {})",
-      "PowerShell(1..14 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })",
-      "PowerShell(1..7 | ForEach-Object { [guid]::NewGuid\\(\\).ToString\\('N'\\) })",
-      "Bash(awk '/commonPerks:/{flag=1; print; next} flag && /^  [a-z]/{flag=0} flag' \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/Ana Sahne.unity\")",
-      "Bash(grep -E '\\\\.cs$')",
-      "Bash(grep -v -E '^\\(BurnOrbitAnim|CystBreatheAnim\\)\\\\.cs$')",
-      "PowerShell([guid]::NewGuid\\(\\).ToString\\(\"N\"\\); [guid]::NewGuid\\(\\).ToString\\(\"N\"\\); [guid]::NewGuid\\(\\).ToString\\(\"N\"\\))"
+      "Bash(grep -l \"BombPlacementCursor\\\\|NecroShotCursor\\\\|PhaseShiftCursor\\\\|ThornPlacementCursor\" \"c:/Users/kutus/Desktop/GithubRepo/HexandVexDaSteamEdition/Assets/Scenes/\"*.unity)"
     ]
   }
 }

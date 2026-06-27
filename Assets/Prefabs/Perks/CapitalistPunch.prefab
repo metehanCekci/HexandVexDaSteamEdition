@@ -47,7 +47,7 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Capitalist Punch
-  description: Every {cost} you have grants {bonus} to all dice.
+  description: Every 10 gold you carry adds +1 to all dice.
   icon: {fileID: -5272344780757727663, guid: 1bd04005f98421042be2b4afac192120, type: 3}
   priority: 1
   isRerollPerk: 0

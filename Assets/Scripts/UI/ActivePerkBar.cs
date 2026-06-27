@@ -176,7 +176,7 @@ public class ActivePerkBar : MonoBehaviour
         tooltipNameText.fontSize = 16;
         tooltipNameText.color = Color.white;
         tooltipNameText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipNameText.textWrappingMode = TextWrappingModes.NoWrap;
+        tooltipNameText.enableWordWrapping = false;
         tooltipNameText.richText = true;
         tooltipNameText.raycastTarget = false;
 
@@ -193,7 +193,7 @@ public class ActivePerkBar : MonoBehaviour
         tooltipLevelText.fontSize = 16;
         tooltipLevelText.color = new Color(0.8f, 0.8f, 0.8f);
         tooltipLevelText.alignment = TextAlignmentOptions.TopRight;
-        tooltipLevelText.textWrappingMode = TextWrappingModes.NoWrap;
+        tooltipLevelText.enableWordWrapping = false;
         tooltipLevelText.raycastTarget = false;
 
         // Açıklama — alt kısım (üst satırın altından başlar, aşağı uzar)
@@ -209,7 +209,7 @@ public class ActivePerkBar : MonoBehaviour
         tooltipDescText.fontSize = 16;
         tooltipDescText.color = new Color(0.67f, 0.67f, 0.67f);
         tooltipDescText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipDescText.enableWordWrapping = true;
         tooltipDescText.richText = true;
         tooltipDescText.raycastTarget = false;
 
@@ -690,7 +690,6 @@ public class ActivePerkBar : MonoBehaviour
         if (tooltipLevelText != null)
             tooltipLevelText.text = $"Lv {perk.currentLevel}";
 
-        perk.RebuildDescription();
         if (tooltipDescText != null)
         {
             string body = string.IsNullOrEmpty(perk.renderedDescription) ? "" : perk.renderedDescription;

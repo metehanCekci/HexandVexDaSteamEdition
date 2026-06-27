@@ -1,39 +1,38 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 using System.Linq;
 
 public class RiggedDicePerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "reroll",  GameKeywords.Action("rerolled") },
-        { "highest", GameKeywords.Status("highest") }
-    };
+        rarity = PerkRarity.Common;
+    }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void OnAcquire()
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-        if (ctx.payload.diceRolls.Count < 2) yield break;
+        isRerollPerk = true; // Zar değerlerini değiştirdiği için
+        priority = 10;       // Diğer çarpanlardan önce çalışsın
+    }
 
-        int minVal = ctx.payload.diceRolls.Min();
-        int maxVal = ctx.payload.diceRolls.Max();
+    public override void ModifyCombat(CombatPayload payload)
+    {
+        if (payload.diceRolls.Count < 2) return;
 
-        if (minVal == maxVal) yield break;
+        int minVal = payload.diceRolls.Min();
+        int maxVal = payload.diceRolls.Max();
+
+        if (minVal == maxVal) return; // Zaten aynıysa dokunma
 
         bool changed = false;
-        int delta = 0;
-        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
+        for (int i = 0; i < payload.diceRolls.Count; i++)
         {
-            if (ctx.payload.diceRolls[i] != maxVal)
+            if (payload.diceRolls[i] != maxVal)
             {
-                delta += maxVal - ctx.payload.diceRolls[i];
-                ctx.payload.diceRolls[i] = maxVal;
+                payload.diceRolls[i] = maxVal;
                 changed = true;
             }
         }
-        ctx.payload.ApplyAdd(delta);
 
-        if (changed) ctx.AnimatePop(this);
+        if (changed) TriggerVisualPop();
     }
 }

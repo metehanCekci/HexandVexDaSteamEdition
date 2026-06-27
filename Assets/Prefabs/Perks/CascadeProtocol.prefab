@@ -45,14 +45,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CascadeProtocolPerk
   currentLevel: 1
-  maxLevel: 1
+  maxLevel: 3
   perkName: Cascade Protocol
-  description: 'Each [white]attack[/white]''s flat damage carries to the next as
-    flat bonus ({percent}). [white]Resets[/white] on damage taken or combat cleared.
-    [stack] [white]Currently:[/white] {accumulated}[/stack]'
+  description: Each attack's dice total carries over to the next as bonus damage.
+    Resets each level or when you take damage.
   icon: {fileID: -6089804444313813029, guid: 4874656e737f2054095ccfdd9bef0d9b, type: 3}
   priority: 0
   isRerollPerk: 0
-  processLast: 0
-  isPerkRetrigger: 0
   rarity: 3

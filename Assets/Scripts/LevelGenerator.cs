@@ -103,42 +103,20 @@ public class LevelGenerator : MonoBehaviour
         // ─── Starting Perk Selection (play'e basınca ilk göreceği şey) ───
         if (StartingPerkSelectionUI.instance != null)
         {
-            // Keep the screen fully black while we bring up the perk panel so the placeholder
-            // scene behind it (character, tiles, etc.) never flashes. We'll fade from black to
-            // the panel once it's shown.
-            CanvasGroup fader = ScreenFader.instance?.faderGroup;
+            // ScreenFader'ı kapat — perk seçim ekranının üstünü kapatmasın
             if (ScreenFader.instance != null)
             {
                 ScreenFader.instance.StopAllCoroutines();
-                if (fader != null)
+                if (ScreenFader.instance.faderGroup != null)
                 {
-                    fader.alpha = 1f;
-                    fader.blocksRaycasts = true;
+                    ScreenFader.instance.faderGroup.alpha = 0f;
+                    ScreenFader.instance.faderGroup.blocksRaycasts = false;
                 }
             }
 
             Debug.Log("[LEVEL-DEBUG] Starting perk selection screen showing...");
             bool selectionDone = false;
             StartingPerkSelectionUI.instance.Show(() => { selectionDone = true; });
-
-            // Let the panel render one frame so it's fully laid out before we fade it in.
-            yield return null;
-
-            // Fade the black away to reveal the perk panel (placeholder scene stays hidden behind the panel's full-screen BG).
-            if (fader != null)
-            {
-                float dur = 0.5f;
-                float elapsed = 0f;
-                float startAlpha = fader.alpha;
-                while (elapsed < dur)
-                {
-                    elapsed += Time.unscaledDeltaTime;
-                    fader.alpha = Mathf.Lerp(startAlpha, 0f, Mathf.Clamp01(elapsed / dur));
-                    yield return null;
-                }
-                fader.alpha = 0f;
-                fader.blocksRaycasts = false;
-            }
 
             // Wait until player confirms their 3 picks
             while (!selectionDone)
@@ -151,10 +129,9 @@ public class LevelGenerator : MonoBehaviour
         Debug.Log($"[LEVEL-DEBUG] LevelBaslatmaSırası: MapManager.instance={MapManager.instance}, null={MapManager.instance == null}");
         if (MapManager.instance != null)
         {
-            // NOTE: previously we stopped ScreenFader's coroutines here so MapManager could control
-            // the transition. But after the starting-perk screen the fader is mid fade-out/fade-in
-            // (to avoid the character popping in), and stopping it would strand the screen black.
-            // Let ScreenFader finish its transition naturally.
+            // ScreenFader'ın otomatik fade'lerini durdur — MapManager kontrol edecek
+            if (ScreenFader.instance != null)
+                ScreenFader.instance.StopAllCoroutines();
 
             MapManager.instance.StartNewRun();
             Debug.Log("Map sistemi aktif — harita gösteriliyor.");
@@ -164,34 +141,11 @@ public class LevelGenerator : MonoBehaviour
             // Legacy flow: direkt level üret
             GenerateNextLevel();
 
-            // Perk screen left the fader at black so the character wouldn't pop in.
-            // Now the level is built, fade it back up to reveal the world.
-            if (ScreenFader.instance != null && ScreenFader.instance.faderGroup != null)
+            if (ScreenFader.instance != null)
             {
-                ScreenFader.instance.StopAllCoroutines();
-                yield return StartCoroutine(FadeScreenFromBlack(0.5f));
-                Debug.Log("Harita çizildi, ekran aydınlatıldı.");
+                Debug.Log("Harita çizildi. Ekran karartması (veya aydınlanması) arka planda çalışıyor.");
             }
         }
-    }
-
-    private System.Collections.IEnumerator FadeScreenFromBlack(float duration)
-    {
-        CanvasGroup fader = ScreenFader.instance?.faderGroup;
-        if (fader == null) yield break;
-
-        float startAlpha = fader.alpha;
-        if (startAlpha <= 0.01f) yield break; // already visible
-
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            fader.alpha = Mathf.Lerp(startAlpha, 0f, Mathf.Clamp01(elapsed / duration));
-            yield return null;
-        }
-        fader.alpha = 0f;
-        fader.blocksRaycasts = false;
     }
 
     public void GenerateNextLevel()
@@ -561,9 +515,6 @@ public class LevelGenerator : MonoBehaviour
         if (RunManager.instance != null)
         {
             RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
-            // Clear blue tile extended range from previous level
-            RunManager.instance.surgeBootStacks = 0;
-            RunManager.instance.surgeBootNextTurn = false;
         }
 
         TurnManager.instance.player.UpdateHighlights();
@@ -800,16 +751,6 @@ public class LevelGenerator : MonoBehaviour
         KillUnreachableEnemies(playerStartCell);
 
         TurnManager.instance.hasAttackedThisTurn = false;
-
-        // Reset remainingMoves for the new boss arena so perks like ReflexFiber start fresh
-        // on the very first boss-arena turn (the regular level path does this in GenerateNextLevel,
-        // but boss arenas branched out before reaching that block).
-        if (RunManager.instance != null)
-        {
-            RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
-            RunManager.instance.surgeBootStacks = 0;
-            RunManager.instance.surgeBootNextTurn = false;
-        }
 
         if (spawnedBossAI != null && BossIntroSequence.instance != null)
         {

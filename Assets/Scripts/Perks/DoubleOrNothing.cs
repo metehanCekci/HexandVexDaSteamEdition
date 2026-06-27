@@ -1,23 +1,29 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 using System.Linq;
 
 public class DoubleOrNothingPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "mult", GameKeywords.Mult(2) }
-    };
+        rarity = PerkRarity.Rare;
+    }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void OnAcquire()
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
+        priority = 50; // En son hasar hesaplanırken baksın
+    }
 
-        int total = ctx.payload.diceRolls.Sum();
-        if (total % 2 != 0) yield break;
+    public override void ModifyCombat(CombatPayload payload)
+    {
+        int total = payload.diceRolls.Sum();
 
-        ctx.payload.ApplyMult(2f);
-        ctx.AnimatePop(this);
+        if (total % 2 == 0)
+        {
+            // Çiftse ikiye katla
+            payload.multiplier *= 2f;
+            if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
+                TriggerVisualPop();
+        }
+
     }
 }

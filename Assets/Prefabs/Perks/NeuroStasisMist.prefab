@@ -47,10 +47,8 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Neuro-Stasis Mist
-  description: '{stun} you apply last {turns} longer.'
+  description: Stuns you apply last one extra turn.
   icon: {fileID: 159327667356957607, guid: 0d2cdf2b63c2e284993847cbf550b7ab, type: 3}
   priority: 0
   isRerollPerk: 0
-  processLast: 0
-  isPerkRetrigger: 0
   rarity: 0

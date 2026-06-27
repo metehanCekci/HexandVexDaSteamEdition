@@ -1,20 +1,18 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 
 public class BioBarrierPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "level",  GameKeywords.Action("level") },
-        { "shield", GameKeywords.Status("shield") }
-    };
+        rarity = PerkRarity.Common;
+    }
 
-    [Header("Obje AyarlarÄ±")]
+    [Header("Obje Ayarları")]
     public GameObject shieldPrefab; // Kalkan objen
     
     // ========================================================
-    // YENÄ°: KalkanÄ±n Y eksenindeki yÃ¼ksekliÄŸi (Inspector'dan ayarla)
+    // YENİ: Kalkanın Y eksenindeki yüksekliği (Inspector'dan ayarla)
     // ========================================================
     public float shieldOffsetY = 0.07f; 
     
@@ -55,18 +53,18 @@ public class BioBarrierPerk : BasePerk
     {
         if (currentShieldInstance != null) Destroy(currentShieldInstance);
         
-        // KalkanÄ± OYUNCUNUN Ã¼stÃ¼ne ekliyoruz
+        // Kalkanı OYUNCUNUN üstüne ekliyoruz
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
             Transform playerTransform = TurnManager.instance.player.transform;
             currentShieldInstance = Instantiate(shieldPrefab, playerTransform.position, Quaternion.identity, playerTransform);
             
             // ========================================================
-            // DÃœZELTME: KalkanÄ± karakterin merkezinden offset deÄŸeri kadar yukarÄ± taÅŸÄ±yoruz
+            // DÜZELTME: Kalkanı karakterin merkezinden offset değeri kadar yukarı taşıyoruz
             // ========================================================
             currentShieldInstance.transform.localPosition = new Vector3(0f, shieldOffsetY, 0f); 
             
-            // PrefabÄ±n alpha deÄŸerini koru, hard code etme
+            // Prefabın alpha değerini koru, hard code etme
         }
     }
 
@@ -107,7 +105,7 @@ public class BioBarrierPerk : BasePerk
             yield return null;
         }
         
-        // Animasyon bitince kalkanÄ± tamamen sil
+        // Animasyon bitince kalkanı tamamen sil
         Destroy(currentShieldInstance);
         currentShieldInstance = null;
     }

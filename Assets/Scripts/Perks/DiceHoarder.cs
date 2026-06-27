@@ -1,30 +1,32 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine;
 
 /// <summary>
 /// Dice Hoarder (Legendary)
-/// Her campfire'da kalÄ±cÄ± +1 zar.
+/// Her campfire'da kalıcı +1 zar.
+/// GetExtraDice() ile TurnManager'a entegre edilir.
 /// </summary>
 public class DiceHoarderPerk : BasePerk
 {
     [HideInInspector] public int visitedLevels = 0;
 
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "perFire", GameKeywords.Plus(1, "die") },
-        { "count",   GameKeywords.Counter(visitedLevels.ToString()) },
-        { "total",   GameKeywords.Plus(visitedLevels, "dice") }
-    };
+        rarity = PerkRarity.Legendary;
+        maxLevel = 1;
+    }
 
+    /// <summary>
+    /// Her perk/shop leveline girildiğinde TurnManager veya MapManager tarafından çağrılır.
+    /// </summary>
     public override void OnAcquire()
     {
-        RebuildDescription();
+        description = GetDescription();
     }
 
     public void OnCampfireVisited()
     {
         visitedLevels++;
-        RebuildDescription();
+        description = GetDescription();
     }
 
     public int GetExtraDice()
@@ -35,7 +37,12 @@ public class DiceHoarderPerk : BasePerk
 
     public override void OnLevelStart()
     {
-        // SÄ±fÄ±rlanmaz â€” run boyunca birikir
-        RebuildDescription();
+        // Sıfırlanmaz — run boyunca birikir
+        description = GetDescription();
+    }
+
+    private string GetDescription()
+    {
+        return $"Each campfire visited grants a permanent +1 die.\nCampfires: {visitedLevels} (+{visitedLevels} dice)";
     }
 }

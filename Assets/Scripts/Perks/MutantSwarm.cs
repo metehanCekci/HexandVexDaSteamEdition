@@ -1,28 +1,25 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEngine;
 
 public class MutantSwarmPerk : BasePerk
 {
-    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    void OnEnable()
     {
-        { "bonus", GameKeywords.Mult(0.5f * currentLevel) }
-    };
+        rarity = PerkRarity.Rare;
+    }
 
+    // YENİ: Kart tekrar seçilirse seviye artsın
     public override void Upgrade()
     {
         base.Upgrade();
         TriggerVisualPop();
     }
 
-    public override IEnumerator OnEvent(CombatContext ctx)
+    public override void ModifyCombat(CombatPayload payload)
     {
-        if (ctx.eventType != CombatEventType.OnAttack) yield break;
-        if (ctx.currentPerk != this) yield break;
-
         float bonusPerDie = 0.5f * currentLevel;
-        float extraMult = 1.0f + (ctx.payload.diceRolls.Count * bonusPerDie);
-
-        ctx.payload.ApplyMult(extraMult);
-        ctx.AnimatePop(this);
+        float extraMult = 1.0f + (payload.diceRolls.Count * bonusPerDie);
+        
+        payload.multiplier *= extraMult;
+        TriggerVisualPop();
     }
 }
