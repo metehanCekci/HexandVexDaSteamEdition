@@ -44895,7 +44895,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 377144456676575921, guid: 5240a9081f270534a978d0729793271d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.068
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 377144456676575921, guid: 5240a9081f270534a978d0729793271d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 377144456676575921, guid: 5240a9081f270534a978d0729793271d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 377144456676575921, guid: 5240a9081f270534a978d0729793271d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
       objectReference: {fileID: 0}
     - target: {fileID: 1210666129484737756, guid: 5240a9081f270534a978d0729793271d, type: 3}
       propertyPath: m_Name
@@ -44940,6 +44952,10 @@ PrefabInstance:
     - target: {fileID: 3198726807193854377, guid: 5240a9081f270534a978d0729793271d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3438212721828476058, guid: 5240a9081f270534a978d0729793271d, type: 3}
+      propertyPath: m_FlipX
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4506777465803296374, guid: 5240a9081f270534a978d0729793271d, type: 3}
       propertyPath: maxHP
