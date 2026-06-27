@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/SynthStim", fileName = "SynthStim")]
 public class SynthStim : BaseItem
@@ -6,9 +7,12 @@ public class SynthStim : BaseItem
     void OnEnable()
     {
         itemName = "Synth-Stim";
-        description = "Roll +1 extra die in the next combat";
-        price = 6;
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "bonus", "+1" }
+    };
 
     public override bool Use()
     {

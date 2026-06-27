@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -10,15 +10,22 @@ public class ViralCystsPerk : BasePerk
 
     private Dictionary<int, GameObject> markedEnemies = new Dictionary<int, GameObject>();
 
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues()
     {
-        maxLevel = 3;
-        rarity = PerkRarity.Epic;
+        CleanDeadMarks();
+        return new Dictionary<string, object>
+        {
+            { "attack",  GameKeywords.Action("Attacks") },
+            { "cyst",    GameKeywords.Status("cysts") },
+            { "skip",    GameKeywords.Action("Skip") },
+            { "perMark", GameKeywords.Plus(1, "die") },
+            { "count",   GameKeywords.Counter(markedEnemies.Count.ToString()) }
+        };
     }
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public void PlantCyst(EnemyMovement enemy)
@@ -29,39 +36,26 @@ public class ViralCystsPerk : BasePerk
 
         GameObject marker = CreateCystMarker(enemy);
         markedEnemies.Add(id, marker);
-        description = GetDescription();
+        RebuildDescription();
     }
 
-    /// <summary>Returns extra dice count equal to marked enemy count. Called by TurnManager before rolling.</summary>
-    public int GetExtraDice()
+    public List<EnemyMovement> ConsumeMarkedTargets()
     {
         CleanDeadMarks();
-        int count = markedEnemies.Count;
-        if (count > 0) TriggerVisualPop();
-        return count;
-    }
-
-    public override void OnSkip()
-    {
-        if (TurnManager.instance == null) return;
-
-        CleanDeadMarks();
-
-        int markedCount = markedEnemies.Count;
-        if (markedCount == 0) return;
+        if (markedEnemies.Count == 0) return new List<EnemyMovement>();
 
         TriggerVisualPop();
 
-        float damagePercent = GetDamagePercent();
-
         List<EnemyMovement> targets = new List<EnemyMovement>();
-        foreach (var enemy in TurnManager.instance.enemies)
+        if (TurnManager.instance != null)
         {
-            if (enemy != null && enemy.health.currentHP > 0 && markedEnemies.ContainsKey(enemy.GetInstanceID()))
-                targets.Add(enemy);
+            foreach (var enemy in TurnManager.instance.enemies)
+            {
+                if (enemy != null && enemy.health.currentHP > 0 && markedEnemies.ContainsKey(enemy.GetInstanceID()))
+                    targets.Add(enemy);
+            }
         }
 
-        // Pop ile marker'lari yok et, sonra hasar ver
         foreach (var kvp in markedEnemies)
         {
             if (kvp.Value != null && kvp.Value.activeInHierarchy)
@@ -74,42 +68,27 @@ public class ViralCystsPerk : BasePerk
             }
         }
 
-        foreach (var enemy in targets)
-        {
-            int damage = Mathf.CeilToInt(enemy.health.maxHP * damagePercent * markedCount);
-            damage = Mathf.Max(1, damage);
-            enemy.health.TakeDamage(damage);
-            ShowDetonateVFX(enemy);
-
-            // Cyst patlamasıyla öldüyse kill reward ver (PerkLeech stack vs.)
-            if (enemy.health.currentHP <= 0 && TurnManager.instance.coinService != null)
-                TurnManager.instance.coinService.ProcessKillRewards(enemy);
-        }
-
         markedEnemies.Clear();
-        description = GetDescription();
+        RebuildDescription();
+        return targets;
+    }
+
+    public int GetMarkedCount()
+    {
+        CleanDeadMarks();
+        return markedEnemies.Count;
     }
 
     public override void OnLevelStart()
     {
         ClearAllMarkers();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnEnemyKilled(EnemyMovement enemy)
     {
         if (enemy != null) RemoveMarker(enemy.GetInstanceID());
-        description = GetDescription();
-    }
-
-    private float GetDamagePercent()
-    {
-        switch (currentLevel)
-        {
-            case 1: return 0.15f;
-            case 2: return 0.20f;
-            default: return 0.25f;
-        }
+        RebuildDescription();
     }
 
     private void CleanDeadMarks()
@@ -131,15 +110,6 @@ public class ViralCystsPerk : BasePerk
         foreach (var id in toRemove) RemoveMarker(id);
     }
 
-    private string GetDescription()
-    {
-        int percent = currentLevel == 1 ? 15 : currentLevel == 2 ? 20 : 25;
-        CleanDeadMarks();
-        return $"Attacks plant cysts. +1 die per marked enemy. Skip to detonate.\n{percent}% max HP damage per marked enemy.\nMarked: {markedEnemies.Count}";
-    }
-
-    // --- Persistent Visual Marker (MarkEffect prefab + breathe anim) ---
-
     private GameObject CreateCystMarker(EnemyMovement enemy)
     {
         GameObject marker;
@@ -159,25 +129,21 @@ public class ViralCystsPerk : BasePerk
 
         marker.transform.localPosition = markOffset;
 
-        // Prefab varsa kendi scale'ini koru, yoksa fallback
         if (markEffectPrefab == null)
             marker.transform.localScale = Vector3.one * 0.3f;
 
-        // Breathe animasyonu ekle — prefab'in mevcut scale'ini baz al
         CystBreatheAnim breathe = marker.AddComponent<CystBreatheAnim>();
         breathe.baseScale = marker.transform.localScale.x;
 
         return marker;
     }
 
-    /// <summary>Skip basinca marker pop ile buyuyup kaybolur.</summary>
     private IEnumerator PopAndDestroy(GameObject marker)
     {
         if (marker == null) yield break;
         Transform t = marker.transform;
         Vector3 startScale = t.localScale;
 
-        // Pop buyume
         float dur = 0.15f;
         float elapsed = 0f;
         while (elapsed < dur)
@@ -189,7 +155,6 @@ public class ViralCystsPerk : BasePerk
             yield return null;
         }
 
-        // Hizli kucul + fade
         SpriteRenderer sr = marker.GetComponentInChildren<SpriteRenderer>();
         Color origColor = sr != null ? sr.color : Color.white;
         dur = 0.1f;
@@ -229,37 +194,6 @@ public class ViralCystsPerk : BasePerk
     {
         ClearAllMarkers();
     }
-
-    // --- VFX ---
-
-    private void ShowDetonateVFX(EnemyMovement enemy)
-    {
-        if (enemy == null || !enemy.gameObject.activeInHierarchy) return;
-        SpriteRenderer sr = enemy.GetComponentInChildren<SpriteRenderer>();
-        if (sr != null)
-            enemy.StartCoroutine(DetonateFlash(sr));
-        CameraController.ShakeLighter();
-    }
-
-    private IEnumerator DetonateFlash(SpriteRenderer sr)
-    {
-        if (sr == null) yield break;
-        Color original = sr.color;
-        Color blastColor = new Color(0.8f, 1f, 0.2f, original.a);
-        sr.color = blastColor;
-        float dur = 0.4f;
-        float elapsed = 0f;
-        while (elapsed < dur)
-        {
-            elapsed += Time.deltaTime;
-            if (sr == null) yield break;
-            sr.color = Color.Lerp(blastColor, original, elapsed / dur);
-            yield return null;
-        }
-        if (sr != null) sr.color = original;
-    }
-
-    // --- Placeholder circle sprite ---
 
     private static Sprite cachedCircle;
     private static Sprite CreateCircleSprite()

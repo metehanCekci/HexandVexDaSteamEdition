@@ -61,6 +61,12 @@ public class InventoryManager : MonoBehaviour
     /// </summary>
     public void ResetForNewRun()
     {
+        // Klonlanan instance'lari yok et ki scene leak olmasin
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] != null) Destroy(slots[i]);
+            slots[i] = null;
+        }
         slots = new BaseItem[maxSlots];
         GameEvents.InventoryChanged();
     }
@@ -89,6 +95,8 @@ public class InventoryManager : MonoBehaviour
 
     /// <summary>
     /// Try to add an item to the first empty slot. Returns true on success.
+    /// Item ScriptableObject klonlanir — paylasilan asset state'i (usedThisCombat vb.)
+    /// ayni iki itemi tutmayi bozmasin diye her slot kendi instance'ini tasir.
     /// </summary>
     public bool TryAddItem(BaseItem item)
     {
@@ -96,7 +104,7 @@ public class InventoryManager : MonoBehaviour
         {
             if (slots[i] == null)
             {
-                slots[i] = item;
+                slots[i] = CloneItem(item);
                 GameEvents.InventoryChanged();
                 return true;
             }
@@ -104,8 +112,21 @@ public class InventoryManager : MonoBehaviour
         return false;
     }
 
+    private static BaseItem CloneItem(BaseItem source)
+    {
+        if (source == null) return null;
+        var copy = ScriptableObject.Instantiate(source);
+        // Instantiate "(Clone)" ekler — orijinal ad item logic'inde kullaniliyor
+        copy.name = source.name;
+        copy.itemName = source.itemName;
+        copy.usedThisCombat = false;
+        copy.extraUses = 0;
+        return copy;
+    }
+
     /// <summary>
-    /// Use the item in the given slot. Returns true if item was consumed.
+    /// Use the item in the given slot. Returns true if item was used.
+    /// Item stays in the slot but is marked as used for this combat (per-combat cooldown).
     /// </summary>
     public bool UseItem(int slotIndex)
     {
@@ -113,6 +134,9 @@ public class InventoryManager : MonoBehaviour
 
         BaseItem item = slots[slotIndex];
         if (item == null) return false;
+
+        // Already used this combat — extraUses (ExtraAmmo perki) varsa onu yak.
+        if (item.usedThisCombat && item.extraUses <= 0) return false;
 
         bool used = item.Use();
         if (used)
@@ -122,13 +146,33 @@ public class InventoryManager : MonoBehaviour
                 TurnManager.instance.SetTargetingItemCache(item, slotIndex);
 
             GameEvents.ItemUsed(item, slotIndex);
-            slots[slotIndex] = null;
+
+            // Per-combat cooldown: ilk kullanim usedThisCombat'i set eder.
+            // Sonraki kullanimlarda extraUses tuketilir.
+            if (!item.usedThisCombat) item.usedThisCombat = true;
+            else item.extraUses--;
             GameEvents.InventoryChanged();
 
             if (AudioManager.instance != null)
-                AudioManager.instance.PlayPurchase(); // Reuse the purchase SFX for item use
+                AudioManager.instance.PlayPurchase();
         }
         return used;
+    }
+
+    /// <summary>
+    /// Reset all item cooldowns. Called when combat/level ends.
+    /// </summary>
+    public void ResetAllItemCooldowns()
+    {
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] != null)
+            {
+                slots[i].usedThisCombat = false;
+                slots[i].extraUses = 0;
+            }
+        }
+        GameEvents.InventoryChanged();
     }
 
     /// <summary>
@@ -182,6 +226,7 @@ public class InventoryManager : MonoBehaviour
     public void RemoveItem(int slotIndex)
     {
         if (slotIndex < 0 || slotIndex >= slots.Length) return;
+        if (slots[slotIndex] != null) Destroy(slots[slotIndex]);
         slots[slotIndex] = null;
         GameEvents.InventoryChanged();
     }

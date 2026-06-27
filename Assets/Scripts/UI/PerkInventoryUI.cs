@@ -53,6 +53,10 @@ public class PerkInventoryUI : MonoBehaviour
     private Coroutine tooltipFadeCoroutine;
     private bool stashWasOpen;
 
+    // Campfire upgrade mode — tıklanan perk upgrade olur
+    private System.Action<BasePerk> upgradeCallback;
+    public bool IsUpgradeMode => upgradeCallback != null;
+
     // Fly animasyonu state — perk taşınırken eski pozisyondan yenisine uçar
     private BasePerk flyingPerk;
     private Vector3 flyStartWorldPos;
@@ -187,9 +191,25 @@ public class PerkInventoryUI : MonoBehaviour
     {
         CancelDrag();
         HideTooltip();
+        ExitUpgradeMode();
         if (canvasGO == null) return;
 
         canvasGO.SetActive(false);
+    }
+
+    /// <summary>
+    /// Campfire upgrade modu — tiklanan perk upgrade olur.
+    /// Sadece upgradeable (currentLevel < maxLevel) perkler tiklanabilir.
+    /// </summary>
+    public void EnterUpgradeMode(System.Action<BasePerk> callback)
+    {
+        upgradeCallback = callback;
+        RefreshUI();
+    }
+
+    public void ExitUpgradeMode()
+    {
+        upgradeCallback = null;
     }
 
     // PanelSlideIn / PanelSlideOut kaldırıldı — panel artık animasyonsuz açılıp kapanıyor.
@@ -542,20 +562,21 @@ public class PerkInventoryUI : MonoBehaviour
         float dur = STASH_EXPAND_DURATION * 0.8f;
         while (elapsed < dur)
         {
+            if (cg == null || stashSection == null) yield break;
             float t = elapsed / dur;
             float ease = t * t; // EaseInQuad
             sle.preferredHeight = Mathf.Lerp(startH, 0f, ease);
             cg.alpha = 1f - t;
-            LayoutRebuilder.MarkLayoutForRebuild(panelRoot.GetComponent<RectTransform>());
+            if (panelRoot != null) LayoutRebuilder.MarkLayoutForRebuild(panelRoot.GetComponent<RectTransform>());
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
         // Animasyon bitti — temizle
         ClearSlots(spawnedStashSlots);
-        sle.preferredHeight = -1f;
-        stashSection.SetActive(false);
-        cg.alpha = 1f;
+        if (sle != null) sle.preferredHeight = -1f;
+        if (stashSection != null) stashSection.SetActive(false);
+        if (cg != null) cg.alpha = 1f;
         LayoutRebuilder.ForceRebuildLayoutImmediate(panelRoot.GetComponent<RectTransform>());
     }
 
@@ -571,6 +592,10 @@ public class PerkInventoryUI : MonoBehaviour
         isDragging = true;
         dragIsActiveSlot = isActiveSlot;
         dragIndex = index;
+
+        // SellBox'ı aç
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.ShowForPerk(perk, isActiveSlot, index);
 
         dragGhost = new GameObject("DragGhost", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         dragGhost.transform.SetParent(canvasGO.transform, false);
@@ -648,6 +673,49 @@ public class PerkInventoryUI : MonoBehaviour
                 break;
             }
         }
+
+        // Check for Sacrifice Tube drop zone
+        if (!handled)
+        {
+            foreach (var result in results)
+            {
+                SacrificeTubeDropZone tubeZone = result.gameObject.GetComponent<SacrificeTubeDropZone>();
+                if (tubeZone == null) tubeZone = result.gameObject.GetComponentInParent<SacrificeTubeDropZone>();
+                if (tubeZone != null && SacrificeNodeManager.instance != null)
+                {
+                    var rm = RunManager.instance;
+                    BasePerk perk = dragIsActiveSlot
+                        ? (dragIndex < rm.activePerks.Count ? rm.activePerks[dragIndex] : null)
+                        : (dragIndex < rm.inventoryPerks.Count ? rm.inventoryPerks[dragIndex] : null);
+                    if (perk != null)
+                    {
+                        SacrificeNodeManager.instance.AddPerkToTube(perk);
+                        handled = true;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Check for SellBox drop zone
+        if (!handled)
+        {
+            foreach (var result in results)
+            {
+                SellBoxDropZone sellZone = result.gameObject.GetComponent<SellBoxDropZone>();
+                if (sellZone == null) sellZone = result.gameObject.GetComponentInParent<SellBoxDropZone>();
+                if (sellZone != null && SellBoxController.instance != null)
+                {
+                    if (!SellBoxController.instance.IsAcceptingDrops) continue;
+                    handled = SellBoxController.instance.TrySell();
+                    break;
+                }
+            }
+        }
+
+        // SellBox'ı kapat (satış olsun olmasın)
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.HideSellBox();
 
         if (!handled && dragIsActiveSlot && RunManager.instance != null)
         {
@@ -746,6 +814,10 @@ public class PerkInventoryUI : MonoBehaviour
         if (dragGhost != null) Destroy(dragGhost);
         dragGhost = null;
         isDragging = false;
+
+        // SellBox'ı kapat
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.HideSellBox();
     }
 
     private void HighlightSourceSlot(bool dim)
@@ -769,10 +841,11 @@ public class PerkInventoryUI : MonoBehaviour
         canvasGO.transform.SetParent(transform, false);
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 91;
+        canvas.sortingOrder = 100;
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
         panelRoot = new GameObject("SidePanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -860,7 +933,12 @@ public class PerkInventoryUI : MonoBehaviour
             RebuildStashSection();
 
         if (activeTitleText != null)
-            activeTitleText.text = $"ACTIVE ({RunManager.instance.activePerks.Count}/{RunManager.MAX_ACTIVE_PERKS})";
+        {
+            if (IsUpgradeMode)
+                activeTitleText.text = "<color=#00FF00>CHOOSE A PERK TO UPGRADE</color>";
+            else
+                activeTitleText.text = $"ACTIVE ({RunManager.instance.activePerks.Count}/{RunManager.MAX_ACTIVE_PERKS})";
+        }
 
         int stashCount = RunManager.instance.inventoryPerks.Count;
 
@@ -908,7 +986,7 @@ public class PerkInventoryUI : MonoBehaviour
             if (stashSection != null)
             {
                 if (stashTitleText != null)
-                    stashTitleText.text = $"STASH ({stashCount})";
+                    stashTitleText.text = $"STASH ({stashCount}/{RunManager.MAX_INVENTORY_PERKS})";
 
                 if (shouldShowStash != stashIsShowing)
                 {
@@ -1077,19 +1155,41 @@ public class PerkInventoryUI : MonoBehaviour
             }
 
 
+            // Upgrade modunda max level perkleri soluk goster
+            bool canUpgrade = perk.currentLevel < perk.maxLevel;
+            if (IsUpgradeMode && !canUpgrade)
+            {
+                iconImg.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+            }
+
             // Event'ler
             EventTrigger trigger = iconGO.AddComponent<EventTrigger>();
             int ci = index;
             bool cia = isActiveSlot;
             BasePerk cp = perk;
 
+            // Sol tık — upgrade modunda perk upgrade et
             // Sağ tık — fly animasyonu ile taşı
             var clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
             clickEntry.callback.AddListener((data) =>
             {
                 PointerEventData ped = (PointerEventData)data;
+
+                // Upgrade mode: sol tikla upgrade
+                if (IsUpgradeMode && ped.button == PointerEventData.InputButton.Left)
+                {
+                    if (cp != null && cp.currentLevel < cp.maxLevel && upgradeCallback != null)
+                    {
+                        var cb = upgradeCallback;
+                        ExitUpgradeMode();
+                        cb.Invoke(cp);
+                    }
+                    return;
+                }
+
                 if (ped.button == PointerEventData.InputButton.Right)
                 {
+                    if (IsUpgradeMode) return; // Upgrade modunda sag tik engelle
                     if (cia)
                     {
                         if (RunManager.instance != null && ci < RunManager.instance.activePerks.Count)
@@ -1115,9 +1215,9 @@ public class PerkInventoryUI : MonoBehaviour
             });
             trigger.triggers.Add(clickEntry);
 
-            // Drag
+            // Drag (upgrade modunda devre disi)
             var beginEntry = new EventTrigger.Entry { eventID = EventTriggerType.BeginDrag };
-            beginEntry.callback.AddListener((data) => BeginDrag(cia, ci, cp, (PointerEventData)data));
+            beginEntry.callback.AddListener((data) => { if (!IsUpgradeMode) BeginDrag(cia, ci, cp, (PointerEventData)data); });
             trigger.triggers.Add(beginEntry);
 
             var dragEntry = new EventTrigger.Entry { eventID = EventTriggerType.Drag };
@@ -1222,7 +1322,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipNameText.fontSize = 16;
         tooltipNameText.color = Color.white;
         tooltipNameText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipNameText.enableWordWrapping = false;
+        tooltipNameText.textWrappingMode = TextWrappingModes.NoWrap;
         tooltipNameText.richText = true;
         tooltipNameText.raycastTarget = false;
 
@@ -1239,7 +1339,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipLevelText.fontSize = 16;
         tooltipLevelText.color = new Color(0.8f, 0.8f, 0.8f);
         tooltipLevelText.alignment = TextAlignmentOptions.TopRight;
-        tooltipLevelText.enableWordWrapping = false;
+        tooltipLevelText.textWrappingMode = TextWrappingModes.NoWrap;
         tooltipLevelText.raycastTarget = false;
 
         // Açıklama
@@ -1255,7 +1355,7 @@ public class PerkInventoryUI : MonoBehaviour
         tooltipDescText.fontSize = 16;
         tooltipDescText.color = new Color(0.67f, 0.67f, 0.67f);
         tooltipDescText.alignment = TextAlignmentOptions.TopLeft;
-        tooltipDescText.enableWordWrapping = true;
+        tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
         tooltipDescText.richText = true;
         tooltipDescText.raycastTarget = false;
 
@@ -1282,8 +1382,9 @@ public class PerkInventoryUI : MonoBehaviour
         if (tooltipLevelText != null)
             tooltipLevelText.text = $"Lv {perk.currentLevel}/{perk.maxLevel}";
 
+        perk.RebuildDescription();
         if (tooltipDescText != null)
-            tooltipDescText.text = string.IsNullOrEmpty(perk.description) ? "" : perk.description;
+            tooltipDescText.text = string.IsNullOrEmpty(perk.renderedDescription) ? "" : perk.renderedDescription;
 
         tooltipObj.SetActive(true);
         tooltipObj.transform.SetAsLastSibling();

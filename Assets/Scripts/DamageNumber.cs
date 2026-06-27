@@ -8,11 +8,14 @@ public class DamageNumber : MonoBehaviour
     private Color textColor;
     private Vector3 moveVector;
 
-    public void Setup(int damageAmount)
+    public void Setup(long damageAmount)
     {
         textMesh = GetComponent<TextMeshPro>();
-        textMesh.text = damageAmount.ToString();
+        textMesh.text = NumberFormatter.Format(damageAmount);
         textColor = textMesh.color;
+
+        // Tilemap'in önünde görünsün
+        textMesh.sortingOrder = 500;
 
         // --- DAİRESEL FIRLAMA MANTIĞI ---
         // Rastgele bir açı seçiyoruz (0 ile 360 derece arası)

@@ -47,11 +47,13 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Viral Cysts
-  description: Attacks plant cysts. +1 die per marked enemy. Skip to attack all marked
-    enemies.
+  description: '{attack} plant {cyst}. {skip} to detonate all cysts. Roll dice to
+    calculate damage. Each cyst planted adds {perMark} to detonation. '
   icon: {fileID: -2643283406517580152, guid: f2b2dd1d74c2c364186081cd5f873735, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 2
   markEffectPrefab: {fileID: 7210318156181294382, guid: c5789a9e52a23ab41a2a872eb072e904, type: 3}
   markOffset: {x: 0, y: 0.05, z: 0}

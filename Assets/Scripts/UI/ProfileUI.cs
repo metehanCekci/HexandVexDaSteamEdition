@@ -36,6 +36,7 @@ public class ProfileUI : MonoBehaviour
     void Awake()
     {
         instance = this;
+        if (!isBuilt) WireOrBuildUI();
         if (panelRoot != null) panelRoot.SetActive(false);
     }
 
@@ -71,7 +72,7 @@ public class ProfileUI : MonoBehaviour
         panelRoot.SetActive(true);
         if (panelCanvasGroup != null) panelCanvasGroup.alpha = 0f;
 
-        if (!isBuilt) BuildUI();
+        if (!isBuilt) WireOrBuildUI();
         RefreshAllCards();
 
         PlaySound(openClip);
@@ -211,8 +212,26 @@ public class ProfileUI : MonoBehaviour
         if (cards == null || cards[id] == null) return;
 
         string newName = cards[id].GetRenameText();
-        if (!string.IsNullOrEmpty(newName) && ProfileManager.instance != null)
-            ProfileManager.instance.SetProfileName(id, newName);
+        string oldName = ProfileManager.instance != null
+            ? ProfileManager.instance.GetProfileName(id) : "";
+
+        // Boş veya değişmemiş → sessizce iptal
+        if (!string.IsNullOrWhiteSpace(newName) &&
+            !string.Equals(newName, oldName, System.StringComparison.Ordinal) &&
+            ProfileManager.instance != null)
+        {
+            bool ok = ProfileManager.instance.SetProfileName(id, newName);
+            if (!ok)
+            {
+                // Çakışma veya geçersiz — kullanıcıya bildir, input'u açık tut
+                Debug.LogWarning($"[ProfileUI] Rename reddedildi (boş veya çakışan isim): '{newName}'");
+                // Input'u açık bırak, sadece refresh yap
+                return;
+            }
+            // Aktif profil yeniden adlandırıldıysa değişikliği diske zorla
+            if (id == ProfileManager.instance.ActiveProfileId)
+                ProfileManager.instance.SaveCurrentProfile();
+        }
 
         cards[id].HideRenameInput();
         renamingProfileId = -1;
@@ -220,7 +239,100 @@ public class ProfileUI : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    // RUNTIME BUILD (çağrılır ilk Open'da)
+    // WIRE OR BUILD
+    // ═══════════════════════════════════════════
+
+    private void WireOrBuildUI()
+    {
+        if (panelRoot == null) return;
+
+        // Tool hierarchy'yi önceden oluşturduysa → wire et
+        Transform firstCard = panelRoot.transform.Find("ProfileCard_0");
+        if (firstCard != null)
+        {
+            WireExistingUI();
+            return;
+        }
+
+        // Yoksa eski yöntemle runtime'da oluştur
+        BuildUI();
+    }
+
+    private void WireExistingUI()
+    {
+        isBuilt = true;
+        cards = new ProfileCardUI[ProfileManager.MAX_PROFILES];
+
+        // Close button
+        Transform closeT = panelRoot.transform.Find("CloseButton");
+        if (closeT != null)
+        {
+            Button closeBtn = closeT.GetComponent<Button>();
+            if (closeBtn != null)
+            {
+                closeBtn.onClick.RemoveAllListeners();
+                closeBtn.onClick.AddListener(Close);
+            }
+        }
+
+        for (int i = 0; i < ProfileManager.MAX_PROFILES; i++)
+        {
+            Transform cardT = panelRoot.transform.Find($"ProfileCard_{i}");
+            if (cardT == null) continue;
+
+            ProfileCardUI card = cardT.GetComponent<ProfileCardUI>();
+            if (card == null) card = cardT.gameObject.AddComponent<ProfileCardUI>();
+            card.profileId = i;
+
+            // Wire text references
+            Transform t;
+            t = cardT.Find("NameText");   if (t != null) card.nameText = t.GetComponent<TMP_Text>();
+            t = cardT.Find("StatusText"); if (t != null) card.statusText = t.GetComponent<TMP_Text>();
+            t = cardT.Find("PercentText"); if (t != null) card.percentText = t.GetComponent<TMP_Text>();
+
+            // Wire buttons + listeners
+            int id = i;
+            card.selectBtn = WireButton(cardT, "Btn_Select", () => OnSelectProfile(id));
+            card.renameBtn = WireButton(cardT, "Btn_Rename", () => OnStartRename(id));
+            card.resetBtn  = WireButton(cardT, "Btn_Reset",  () => OnResetProfile(id));
+            card.unlockBtn = WireButton(cardT, "Btn_Unlock All", () => OnUnlockAll(id));
+            card.deleteBtn = WireButton(cardT, "Btn_Delete", () => OnDeleteProfile(id));
+
+            // Rename panel
+            Transform renameT = cardT.Find("RenamePanel");
+            if (renameT != null)
+            {
+                card.renameInput = renameT.GetComponentInChildren<TMP_InputField>(true);
+                if (card.renameInput != null)
+                {
+                    card.renameInput.onSubmit.RemoveAllListeners();
+                    card.renameInput.onSubmit.AddListener((_) => FinishRename(id));
+                }
+                renameT.gameObject.SetActive(false);
+            }
+
+            cards[i] = card;
+        }
+
+        ApplyFontToAll();
+        Debug.Log("[ProfileUI] Wired pre-built hierarchy");
+    }
+
+    private Button WireButton(Transform parent, string name, UnityEngine.Events.UnityAction action)
+    {
+        Transform t = parent.Find(name);
+        if (t == null) return null;
+        Button btn = t.GetComponent<Button>();
+        if (btn != null)
+        {
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(action);
+        }
+        return btn;
+    }
+
+    // ═══════════════════════════════════════════
+    // RUNTIME BUILD (fallback — tool çalıştırılmadıysa)
     // ═══════════════════════════════════════════
 
     private void BuildUI()

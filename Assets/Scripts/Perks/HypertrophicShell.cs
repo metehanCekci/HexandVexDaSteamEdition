@@ -1,31 +1,36 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class HypertrophicShellPerk : BasePerk
 {
     private const int HP_CAP = 10;
 
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        maxLevel = 5;
-        rarity = PerkRarity.Common;
-    }
+        { "bonusHP", GameKeywords.HealthText($"+{currentLevel} HP") },
+        { "maxHp", GameKeywords.HealthText("max HP") },
+        { "cap", GameKeywords.Hp(HP_CAP) }
+    };
 
     public override void OnAcquire()
     {
-        ApplyHPBonus(1);
+        // Sadece aktif slottaysa HP bonusu uygula
+        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
+            ApplyHPBonus(1);
     }
 
     public override void Upgrade()
     {
         base.Upgrade();
-        ApplyHPBonus(1);
+        // Sadece aktif slottaysa HP bonusu uygula
+        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
+            ApplyHPBonus(1);
     }
 
     public override void OnEquip()
     {
         // Re-apply full bonus when moved to active slots
         // (currentLevel includes upgrades already applied)
-        // Don't re-add — just ensure max HP reflects shell level
+        // Don't re-add â€” just ensure max HP reflects shell level
         RecalculateMaxHP();
     }
 
@@ -40,15 +45,15 @@ public class HypertrophicShellPerk : BasePerk
         var rm = RunManager.instance;
         if (rm == null) return;
 
-        // Glass Canon aktifse max HP'yi değiştirme
+        // Glass Canon aktifse max HP'yi deÄŸiÅŸtirme
         if (rm.activePerks.Exists(p => p is GlassCanonPerk)) return;
 
-        int newMax = Mathf.Min(rm.playerMaxHealth + amount, HP_CAP);
+        long newMax = System.Math.Min(rm.playerMaxHealth + amount, HP_CAP);
         if (newMax == rm.playerMaxHealth) return;
 
         rm.playerMaxHealth = newMax;
-        // Yeni HP'yi de artır (can bonusu olarak)
-        rm.playerCurrentHealth = Mathf.Min(rm.playerCurrentHealth + amount, newMax);
+        // Yeni HP'yi de artÄ±r (can bonusu olarak)
+        rm.playerCurrentHealth = System.Math.Min(rm.playerCurrentHealth + amount, newMax);
 
         SyncHealthToScene();
         TriggerVisualPop();
@@ -59,24 +64,22 @@ public class HypertrophicShellPerk : BasePerk
         var rm = RunManager.instance;
         if (rm == null) return;
 
-        // Glass Canon aktifse shell hiç etki etmez
+        // Glass Canon aktifse shell hiÃ§ etki etmez
         if (rm.activePerks.Exists(p => p is GlassCanonPerk)) return;
 
-        int baseHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
+        long baseHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
 
         // Check if shell is currently active (equipped)
         bool isActive = rm.activePerks.Contains(this);
-        int shellBonus = isActive ? currentLevel : 0;
+        long shellBonus = isActive ? currentLevel : 0;
 
-        int newMax = Mathf.Min(baseHP + shellBonus, HP_CAP);
-        int oldMax = rm.playerMaxHealth;
+        long newMax = System.Math.Min(baseHP + shellBonus, HP_CAP);
+        long oldMax = rm.playerMaxHealth;
 
         if (newMax != oldMax)
         {
-            // Proportional HP adjustment
-            float ratio = oldMax > 0 ? (float)rm.playerCurrentHealth / oldMax : 1f;
             rm.playerMaxHealth = newMax;
-            rm.playerCurrentHealth = Mathf.Clamp(Mathf.RoundToInt(ratio * newMax), 1, newMax);
+            rm.playerCurrentHealth = System.Math.Min(rm.playerCurrentHealth, newMax);
             SyncHealthToScene();
         }
     }

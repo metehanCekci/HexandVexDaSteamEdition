@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -9,16 +9,24 @@ using System.Collections.Generic;
 /// </summary>
 public class RetributionSplicerPerk : BasePerk
 {
-    // enemyInstanceID → hit count
     private readonly Dictionary<int, int> hitCounts = new Dictionary<int, int>();
 
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues()
     {
-        perkName    = "Retribution Splicer";
-        description = "Each time you hit the same target, gain +2 flat damage against them. No stack limit. +1 more per level.";
-        rarity      = PerkRarity.Common;
-        maxLevel    = 3;
-        priority    = 20; // Apply after other bonuses
+        int bonusPerHit = 1 + currentLevel;
+        int totalHits = 0;
+        foreach (var kv in hitCounts) totalHits += kv.Value;
+        return new Dictionary<string, object>
+        {
+            { "bonus",   GameKeywords.Plus(bonusPerHit, "damage") },
+            { "targets", GameKeywords.Counter(hitCounts.Count.ToString()) },
+            { "hits",    GameKeywords.Counter(totalHits.ToString()) }
+        };
+    }
+
+    public override void OnAcquire()
+    {
+        RebuildDescription();
     }
 
     /// <summary>Called by TurnManager after each hit to register the target.</summary>
@@ -28,15 +36,16 @@ public class RetributionSplicerPerk : BasePerk
         int id = target.GetInstanceID();
         if (!hitCounts.ContainsKey(id)) hitCounts[id] = 0;
         hitCounts[id]++;
+        RebuildDescription();
     }
 
     /// <summary>Returns the flat damage bonus against this target (based on previous hits).</summary>
-    public int GetBonusFor(EnemyMovement target)
+    public long GetBonusFor(EnemyMovement target)
     {
         if (target == null) return 0;
         int id = target.GetInstanceID();
         if (!hitCounts.ContainsKey(id)) return 0;
-        int bonusPerHit = 1 + currentLevel; // lv1=+2, lv2=+3, lv3=+4
+        long bonusPerHit = 1 + currentLevel; // lv1=+2, lv2=+3, lv3=+4
         return hitCounts[id] * bonusPerHit;
     }
 
@@ -44,10 +53,12 @@ public class RetributionSplicerPerk : BasePerk
     {
         if (enemy == null) return;
         hitCounts.Remove(enemy.GetInstanceID());
+        RebuildDescription();
     }
 
     public override void OnLevelStart()
     {
         hitCounts.Clear();
+        RebuildDescription();
     }
 }

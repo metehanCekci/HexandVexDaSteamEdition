@@ -47,8 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Hypertrophic Shell
-  description: 'Permanently increase max HP by +1 per level. (Max: 10 HP)'
+  description: Gain {bonusHP} max [green]HP[/green].
   icon: {fileID: -4811080509247167860, guid: ff9b5df22a94626438f8bdde5dbff19b, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 0

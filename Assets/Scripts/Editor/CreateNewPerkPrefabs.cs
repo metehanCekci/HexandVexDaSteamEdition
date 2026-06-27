@@ -17,10 +17,10 @@ public class CreateNewPerkPrefabs
             "Killing an elite enemy drops a perk fragment. Collect 3 fragments for a random perk.");
 
         CreatePerk<PyrogenicGlandsPerk>("PyrogenicGlands", "Pyrogenic Glands",
-            "Your attacks set enemies on fire. Burns deal damage over 3 turns.");
+            "Attacks set enemies on fire for 5 turns. Burns deal 5%/10%/15% of max HP per turn.");
 
         CreatePerk<HydraulicImpactPerk>("HydraulicImpact", "Hydraulic Impact",
-            "Enemies knocked into walls take 50% of their max HP as damage.");
+            "Enemies knocked into walls take bonus damage. Lv1: 25%, Lv2: 40%, Lv3: 50% of max HP.");
 
         CreatePerk<SlipperySecretionPerk>("SlipperySecretion", "Slippery Secretion",
             "Leave a mucus trail on tiles you walk over. Enemies slide an extra hex in their movement direction.");
@@ -35,29 +35,84 @@ public class CreateNewPerkPrefabs
             "First Skip places an anchor. Second Skip teleports you to it.");
 
         CreatePerk<PressurePointPerk>("PressurePoint", "Pressure Point",
-            "Deal more damage to healthier enemies. Full HP: 3x, 75%+: 2x, 50%-: 1.5x.");
+            "Deal more damage to healthier enemies. 100% HP: 2x, 99-50%: 1.75x, below 50%: 1.5x.");
 
         CreatePerk<OverkillProtocolPerk>("OverkillProtocol", "Overkill Protocol",
             "Excess damage from a kill transfers to a random living enemy.");
 
         CreatePerk<CarrionFeederPerk>("CarrionFeeder", "Carrion Feeder",
-            "Killing an enemy heals 1 HP and grants +2 flat damage to your next attack. Stacks per kill.");
+            "Each consecutive kill doubles your total damage. Resets when an attack fails to kill. Max stacks per level.");
 
         CreatePerk<EchoStrikePerk>("EchoStrike", "Echo Strike",
-            "Your attacks have a chance to strike the same target again. Lv1: 25%, Lv2: 50%, Lv3: 75%.");
+            "Attacks have a chance to strike again. Lv1: 15%, Lv2: 30%, Lv3: 45%.");
 
         CreatePerk<CatalyticEnzymePerk>("CatalyticEnzyme", "Catalytic Enzyme",
             "Each skip grants +30% damage to your next attack. Stacks multiply, consumed on attack.");
 
         CreatePerk<GravitonCorePerk>("GravitonCore", "Graviton Core",
-            "When an enemy is knocked back, pull adjacent enemies 1 hex toward the knockback origin.");
+            "When you skip, pull enemies within 2-3 hex range 1 hex closer to you.");
 
         CreatePerk<NecroticTouchPerk>("NecroticTouch", "Necrotic Touch",
-            "Enemies below 25% HP take 2x damage from all sources.");
+            "Enemies at or below 50% HP take 2X damage.");
+
+        CreatePerk<CondensedFuryPerk>("CondensedFury", "Condensed Fury",
+            "Roll 1 fewer die, but each remaining die deals double its rolled value.");
+
+        CreatePerk<SymbioticArsenalPerk>("SymbioticArsenal", "Symbiotic Arsenal",
+            "Gain damage multiplier per filled item slot. Lv1: +0.5X, Lv2: +0.75X, Lv3: +1.0X per slot.");
+
+        CreatePerk<IronWillPerk>("IronWill", "Iron Will",
+            "Each combat level cleared without taking damage grants +1X damage multiplier. Resets on damage.");
+
+        CreatePerk<NeuralHijackPerk>("NeuralHijack", "Neural Hijack",
+            "Knocking an enemy into another enemy converts the hit enemy to your side. Allies attack adjacent enemies each turn.");
+
+        CreatePerk<SeismicStepPerk>("SeismicStep", "Seismic Step",
+            "Skipping makes your tile unstable. When you leave, it collapses. Enemies on it take damage.");
+
+        CreatePerk<CascadeProtocolPerk>("CascadeProtocol", "Cascade Protocol",
+            "Each attack's dice total carries over to the next as bonus damage. Resets each room.");
+
+        CreatePerk<DiceHoarderPerk>("DiceHoarder", "Dice Hoarder",
+            "Each campfire visited grants a permanent +1 die.");
+
+        CreatePerk<PentUpStrikePerk>("PentUpStrike", "Pent-Up Strike",
+            "Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at once.");
+
+        CreatePerk<VoidHungerPerk>("VoidHunger", "Void Hunger",
+            "Each collapsed tile grants permanent +0.25X damage multiplier.");
+
+        CreatePerk<DeadweightPerk>("Deadweight", "Deadweight",
+            "Stunned enemies take 2X damage. +1X per level.");
+
+        CreatePerk<KillChainPerk>("KillChain", "Kill Chain",
+            "Killing an enemy grants +1 extra move this turn. +1 per level.");
+
+        CreatePerk<OuroborosPerk>("Ouroboros", "Ouroboros",
+            "Cheat death. All perks lose 1 level. Lv1 perks are destroyed. No perks left = true death.");
+
+        CreatePerk<InsurancePolicyPerk>("InsurancePolicy", "Insurance Policy",
+            "Gain gold when you take damage. +4 gold per missing HP at Lv1, +6 at Lv2, +8 at Lv3.");
+
+        CreatePerk<PhantomAssaultPerk>("PhantomAssault", "Phantom Assault",
+            "Knockback leaves a ghost where the enemy stood. Skip to teleport through all ghosts, attacking at each.");
+
+        // ── Item-synergy perks (geçici metinler — sonra düzenlenecek) ──
+        CreatePerk<ItemEaterPerk>("ItemEater", "Item Eater",
+            "Feed items to this implant. Starts at x1. Each fed item adds +0.5x damage. (Drag-drop)");
+
+        CreatePerk<ExtraAmmoPerk>("ExtraAmmo", "Extra Ammo",
+            "You may use each item one extra time per combat.");
+
+        CreatePerk<InvisibleJokerPerk>("InvisibleJoker", "Invisible Joker",
+            "After 2 combats, becomes armed. Sell another implant while armed to add a copy of a random implant you own.");
+
+        CreatePerk<ShowmanPerk>("Showman", "Showman",
+            "You may have multiple copies of the same perk and item.");
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("16 yeni perk prefab'ı oluşturuldu: Assets/Prefabs/Perks/");
+        Debug.Log("Perk prefab'ları oluşturuldu: Assets/Prefabs/Perks/");
     }
 
     [MenuItem("HexAndVex/Create New Perk Collection Entries")]
@@ -85,7 +140,7 @@ public class CreateNewPerkPrefabs
 
         int added = 0;
 
-        added += CreateEntry(db, existingIds, "VolatileRoll", "Volatile Roll", PerkRarity.Rare,
+        added += CreateEntry(db, existingIds, "VolatileRoll", "Volatile Roll", PerkRarity.Legendary,
             "Dice that defy probability — each face is either salvation or doom. The organism's neural pathways have been rewired to embrace chaos.",
             UnlockCondition.Default, 1, "", "Unlocked by default.");
 
@@ -148,6 +203,62 @@ public class CreateNewPerkPrefabs
         added += CreateEntry(db, existingIds, "NecroticTouch", "Necrotic Touch", PerkRarity.Rare,
             "A necrotizing agent that accelerates cellular decay in weakened organisms. The closer to death, the faster the rot spreads.",
             UnlockCondition.KillEnemiesSingleRun, 15, "", "Kill 15 enemies in a single run.");
+
+        added += CreateEntry(db, existingIds, "CondensedFury", "Condensed Fury", PerkRarity.Epic,
+            "A volatile compression organ that sacrifices quantity for devastating potency. Fewer strikes, but each one hits like a freight train.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "SymbioticArsenal", "Symbiotic Arsenal", PerkRarity.Rare,
+            "A symbiotic organism that feeds on equipped tools, converting their presence into raw combat power.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "IronWill", "Iron Will", PerkRarity.Rare,
+            "An indomitable survival instinct. Each flawless victory fuels a devastating surge of power in the next encounter.",
+            UnlockCondition.ClearLevels, 10, "", "Clear 10 levels in total.");
+
+        added += CreateEntry(db, existingIds, "NeuralHijack", "Neural Hijack", PerkRarity.Legendary,
+            "A parasitic neural implant that hijacks enemy nervous systems on impact. The converted host fights alongside you until the implant burns out.",
+            UnlockCondition.PushEnemyIntoSpike, 20, "", "Push 20 enemies into spikes.");
+
+        added += CreateEntry(db, existingIds, "SeismicStep", "Seismic Step", PerkRarity.Legendary,
+            "Your very presence destabilizes the ground beneath you. Each moment of stillness sends tremors through the earth, and when you leave, the ground crumbles.",
+            UnlockCondition.SkipTurns, 100, "", "Skip 100 turns in total.");
+
+        added += CreateEntry(db, existingIds, "CascadeProtocol", "Cascade Protocol", PerkRarity.Legendary,
+            "A neural feedback loop that amplifies combat data with each strike. Every attack feeds the next, building toward an unstoppable crescendo of destruction.",
+            UnlockCondition.ClearLevels, 50, "", "Clear 50 levels in total.");
+
+        added += CreateEntry(db, existingIds, "DiceHoarder", "Dice Hoarder", PerkRarity.Legendary,
+            "A parasitic growth that feeds on choice itself. Every crossroads strengthens it, every decision adds another weapon to the arsenal.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "PentUpStrike", "Pent-Up Strike", PerkRarity.Legendary,
+            "A kinetic absorption organ that converts failed impacts into stored potential energy. The longer you wait, the more devastating the release.",
+            UnlockCondition.SkipTurns, 75, "", "Skip 75 turns in total.");
+
+        added += CreateEntry(db, existingIds, "VoidHunger", "Void Hunger", PerkRarity.Common,
+            "A parasitic void that feeds on structural collapse. Each crumbling tile strengthens its hunger, converting destruction into raw power.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "Deadweight", "Deadweight", PerkRarity.Rare,
+            "A neurotoxin that exploits paralyzed nervous systems. Immobilized prey becomes fragile, their frozen muscles offering no resistance to the killing blow.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "KillChain", "Kill Chain", PerkRarity.Epic,
+            "A predatory adrenaline response that accelerates with each kill. The hunt feeds itself — every death fuels the next strike.",
+            UnlockCondition.KillEnemiesSingleRun, 10, "", "Kill 10 enemies in a single run.");
+
+        added += CreateEntry(db, existingIds, "Ouroboros", "Ouroboros", PerkRarity.Secret,
+            "The serpent devours its own tail. Death is not the end — it is merely a shedding of skin. Each rebirth costs a piece of what you were, until nothing remains.",
+            UnlockCondition.CompleteRuns, 5, "", "Complete 5 runs.");
+
+        added += CreateEntry(db, existingIds, "InsurancePolicy", "Insurance Policy", PerkRarity.Rare,
+            "A parasitic actuary that monetizes suffering. Every wound becomes a transaction, every scar a deposit. Pain is just another currency.",
+            UnlockCondition.Default, 1, "", "Unlocked by default.");
+
+        added += CreateEntry(db, existingIds, "PhantomAssault", "Phantom Assault", PerkRarity.Legendary,
+            "Quantum echoes of your killing intent linger where you struck. When you pause, every phantom remembers, and every phantom strikes as one.",
+            UnlockCondition.KillEnemies, 300, "", "Kill 300 enemies in total.");
 
         EditorUtility.SetDirty(db);
         AssetDatabase.SaveAssets();

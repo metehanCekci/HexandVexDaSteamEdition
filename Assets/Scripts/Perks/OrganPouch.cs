@@ -1,31 +1,34 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class OrganPouchPerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        rarity = PerkRarity.Common;
-    }
+        { "slots", GameKeywords.Counter("+" + currentLevel) },
+        { "level", GameKeywords.Action("level") },
+        { "cap",   GameKeywords.Counter("5") }
+    };
 
-    // İlk alındığında çalışır (1. Seviye)
+    // Slot grant is handled entirely by OnEquip / OnUnequip — OnAcquire intentionally does
+    // nothing extra so a perk that lands directly in stash does NOT grant slots until equipped.
     public override void OnAcquire()
     {
-        ExpandHotbar();
         TriggerVisualPop();
     }
 
-    // Kart tekrar seçilirse çalışır (2. ve 3. Seviyeler)
+    // Kart tekrar secilirse calisir — only re-apply if currently equipped (active).
     public override void Upgrade()
     {
         base.Upgrade();
-        ExpandHotbar();
+        if (RunManager.instance != null && RunManager.instance.activePerks.Contains(this))
+            ExpandHotbar();
         TriggerVisualPop();
     }
 
-    // Stash'ten aktife taşındığında slotları tekrar aç
+    // Stash'ten aktife tasindiginda (veya direk aktife edinildiginde) slotlari ac.
+    // Idempotent — InventoryManager zaten dogru slot sayisindaysa hicbir sey yapmaz.
     public override void OnEquip()
     {
-        // OnAcquire ile çifte çağrı koruması: InventoryManager zaten doğru slot sayısındaysa açma
         if (InventoryManager.instance == null) return;
         int target = 3 + currentLevel;
         int missing = target - InventoryManager.instance.maxSlots;
@@ -33,20 +36,25 @@ public class OrganPouchPerk : BasePerk
             ExpandHotbar();
     }
 
-    // Stash'e taşındığında slotları küçült
+    // Stash'e tasindiginda (veya satildiginda) slotlari kuculsun.
+    // Always shrinks to base 3 — both stashing and selling drop the bonus slots, since
+    // a stashed perk's bonuses don't apply. CanUnequip gates this from being destructive.
     public override void OnUnequip()
     {
-        for (int i = 0; i < currentLevel; i++)
+        if (InventoryManager.instance == null) return;
+        int excess = InventoryManager.instance.maxSlots - 3;
+        for (int i = 0; i < excess; i++)
             ShrinkHotbar();
     }
 
-    // Fazla slotlarda item varsa çıkarmaya izin verme
+    // Refuse unequip whenever any bonus slot (slot 3+) currently holds an item — those
+    // slots are about to be torn down and the items would silently disappear.
     public override bool CanUnequip()
     {
         if (InventoryManager.instance == null) return true;
         int currentMax = InventoryManager.instance.maxSlots;
-        int baseSlots = 3;
-        int slotsToRemove = Mathf.Min(currentLevel, currentMax - baseSlots);
+        int slotsToRemove = currentMax - 3;
+        if (slotsToRemove <= 0) return true;
 
         for (int i = 0; i < slotsToRemove; i++)
         {

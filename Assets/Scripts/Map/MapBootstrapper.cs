@@ -12,11 +12,12 @@ public class MapBootstrapper : MonoBehaviour
     [Header("Opsiyonel: Node İkonları (boş bırakabilirsin)")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite shopIcon;
-    public Sprite perkIcon;
-    public Sprite restIcon;
-    public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite restIcon;
+    public Sprite shopIcon;
+    public Sprite sacrificeIcon;
+    public Sprite enchantIcon;
+    public Sprite treasureIcon;
 
     [Header("Layer Config (opsiyonel)")]
     public MapLayerData[] layerConfigs;
@@ -54,11 +55,9 @@ public class MapBootstrapper : MonoBehaviour
             defaultConfig.totalRows = 8;
             defaultConfig.minNodesPerRow = 2;
             defaultConfig.maxNodesPerRow = 4;
-            defaultConfig.shopChance = 0.12f;
-            defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
             defaultConfig.eliteChance = 0.10f;
-            defaultConfig.eventChance = 0.08f;
+            defaultConfig.enchantChance = 0.08f;
             mm.layerConfigs = new MapLayerData[] { defaultConfig };
         }
     }
@@ -73,8 +72,10 @@ public class MapBootstrapper : MonoBehaviour
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 90; // Diğer UI'ların üstünde ama fader'ın altında
-        canvasGO.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasGO.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
+        var mapScaler = canvasGO.AddComponent<CanvasScaler>();
+        mapScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        mapScaler.referenceResolution = new Vector2(1920, 1080);
+        mapScaler.matchWidthOrHeight = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
         // ─── Map Panel (arka plan) ───
@@ -144,11 +145,12 @@ public class MapBootstrapper : MonoBehaviour
         // İkonları ata
         mapUI.combatIcon = combatIcon;
         mapUI.eliteIcon = eliteIcon;
-        mapUI.shopIcon = shopIcon;
-        mapUI.perkIcon = perkIcon;
-        mapUI.restIcon = restIcon;
-        mapUI.eventIcon = eventIcon;
         mapUI.bossIcon = bossIcon;
+        mapUI.restIcon = restIcon;
+        mapUI.shopIcon = shopIcon;
+        mapUI.sacrificeIcon = sacrificeIcon;
+        mapUI.enchantIcon = enchantIcon;
+        mapUI.treasureIcon = treasureIcon;
 
         // MapManager'a bağla
         if (MapManager.instance != null)
@@ -244,8 +246,10 @@ public class MapBootstrapper : MonoBehaviour
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 95;
-        canvasGO.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasGO.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
+        var restScaler = canvasGO.AddComponent<CanvasScaler>();
+        restScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        restScaler.referenceResolution = new Vector2(1920, 1080);
+        restScaler.matchWidthOrHeight = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
         // ─── Panel ───

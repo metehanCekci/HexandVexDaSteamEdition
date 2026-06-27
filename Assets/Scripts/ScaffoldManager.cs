@@ -97,9 +97,9 @@ public class ScaffoldManager : MonoBehaviour
     /// </summary>
     private IEnumerator ShakeCoroutine(Vector3Int cell)
     {
-        Tilemap scaffoldMap = LevelGenerator.instance.scaffoldMap;
-        Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
-        if (scaffoldMap == null) yield break;
+        Tilemap fgB = LevelGenerator.instance.foreGroundB;
+        Tilemap colMap = LevelGenerator.instance.columnMap;
+        if (fgB == null) yield break;
 
         float elapsed = 0f;
         float intensity = 0.005f;
@@ -118,11 +118,11 @@ public class ScaffoldManager : MonoBehaviour
             Matrix4x4 shakeMatrix = Matrix4x4.TRS(
                 new Vector3(ox, oy, 0f), Quaternion.identity, Vector3.one);
 
-            if (scaffoldMap.HasTile(cell))
-                scaffoldMap.SetTransformMatrix(cell, shakeMatrix);
+            if (fgB.HasTile(cell))
+                fgB.SetTransformMatrix(cell, shakeMatrix);
 
-            if (backgroundMap != null && backgroundMap.HasTile(cell))
-                backgroundMap.SetTransformMatrix(cell, shakeMatrix);
+            if (colMap != null && colMap.HasTile(cell))
+                colMap.SetTransformMatrix(cell, shakeMatrix);
 
             yield return null;
         }
@@ -140,8 +140,8 @@ public class ScaffoldManager : MonoBehaviour
 
         TrapTileEvents.FireTileCollapsing(cell);
 
-        Tilemap scaffoldMap = LevelGenerator.instance.scaffoldMap;
-        Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
+        Tilemap fgB = LevelGenerator.instance.foreGroundB;
+        Tilemap colMap = LevelGenerator.instance.columnMap;
 
         if (AudioManager.instance != null) AudioManager.instance.PlayWall();
 
@@ -157,22 +157,22 @@ public class ScaffoldManager : MonoBehaviour
             Matrix4x4 matrix = Matrix4x4.TRS(
                 new Vector3(0f, yOff, 0f), Quaternion.identity, new Vector3(scale, scale, 1f));
 
-            if (scaffoldMap != null && scaffoldMap.HasTile(cell))
+            if (fgB != null && fgB.HasTile(cell))
             {
-                scaffoldMap.SetTransformMatrix(cell, matrix);
-                scaffoldMap.SetColor(cell, fadeColor);
+                fgB.SetTransformMatrix(cell, matrix);
+                fgB.SetColor(cell, fadeColor);
             }
-            if (backgroundMap != null && backgroundMap.HasTile(cell))
+            if (colMap != null && colMap.HasTile(cell))
             {
-                backgroundMap.SetTransformMatrix(cell, matrix);
-                backgroundMap.SetColor(cell, fadeColor);
+                colMap.SetTransformMatrix(cell, matrix);
+                colMap.SetColor(cell, fadeColor);
             }
 
             yield return null;
         }
 
-        RemoveTile(scaffoldMap, cell);
-        RemoveTile(backgroundMap, cell);
+        RemoveTile(fgB, cell);
+        RemoveTile(colMap, cell);
 
         if (LevelGenerator.instance != null)
             LevelGenerator.instance.scaffoldCells.Remove(cell);
@@ -212,13 +212,13 @@ public class ScaffoldManager : MonoBehaviour
 
     private void ResetTileTransform(Vector3Int cell)
     {
-        Tilemap scaffoldMap = LevelGenerator.instance.scaffoldMap;
-        if (scaffoldMap != null && scaffoldMap.HasTile(cell))
-            scaffoldMap.SetTransformMatrix(cell, Matrix4x4.identity);
+        Tilemap fgB = LevelGenerator.instance.foreGroundB;
+        if (fgB != null && fgB.HasTile(cell))
+            fgB.SetTransformMatrix(cell, Matrix4x4.identity);
 
-        Tilemap backgroundMap = LevelGenerator.instance.backgroundMap;
-        if (backgroundMap != null && backgroundMap.HasTile(cell))
-            backgroundMap.SetTransformMatrix(cell, Matrix4x4.identity);
+        Tilemap colMap = LevelGenerator.instance.columnMap;
+        if (colMap != null && colMap.HasTile(cell))
+            colMap.SetTransformMatrix(cell, Matrix4x4.identity);
     }
 
     private void RemoveTile(Tilemap map, Vector3Int cell)

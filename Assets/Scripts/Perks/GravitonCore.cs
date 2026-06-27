@@ -1,63 +1,89 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class GravitonCorePerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Common;
-    }
+        { "skip", GameKeywords.Action("skip") },
+        { "pull", GameKeywords.Action("pull") }
+    };
 
-    /// <summary>
-    /// Called by TurnManager after an enemy is knocked back.
-    /// Pulls adjacent enemies 1 hex toward the knockback origin cell.
-    /// Returns the list of pulled enemies so TurnManager can check spike/scaffold.
-    /// </summary>
-    public List<EnemyMovement> PullAdjacentEnemies(Vector3Int originCell, EnemyMovement knockedEnemy)
+    public override void OnSkip()
     {
-        List<EnemyMovement> pulled = new List<EnemyMovement>();
-        if (TurnManager.instance == null) return pulled;
+        if (TurnManager.instance == null || TurnManager.instance.player == null) return;
 
         var tm = TurnManager.instance;
-        Vector3Int[] offsets = (originCell.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
+        Vector3Int playerCell = tm.player.GetCurrentCellPosition();
 
-        foreach (var off in offsets)
+        List<EnemyMovement> pulled = new List<EnemyMovement>();
+
+        foreach (var enemy in tm.enemies)
         {
-            Vector3Int neighborCell = originCell + off;
-            EnemyMovement neighbor = tm.GetEnemyAtCell(neighborCell);
-            if (neighbor == null || neighbor == knockedEnemy || neighbor.health.currentHP <= 0) continue;
-            if (neighbor.IsBoss) continue;
+            if (enemy == null || enemy.health.currentHP <= 0 || enemy.isAllied || enemy.IsBoss) continue;
 
-            // Pull toward origin: find the neighbor hex of this enemy that is closest to origin
-            Vector3 originWorld = tm.groundMap.GetCellCenterWorld(originCell);
-            Vector3Int bestCell = neighborCell;
-            float bestDist = float.MaxValue;
+            Vector3Int enemyCell = enemy.GetCurrentCellPosition();
+            float dist = HexGridUtils.DistanceCube(enemyCell, playerCell);
+            if (dist < 1.5f || dist > 3.5f) continue; // 2-3 hex range
 
-            Vector3Int[] nOffsets = (neighborCell.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
-            foreach (var nOff in nOffsets)
+            // Find neighbor hex closest to player
+            Vector3Int[] offsets = (enemyCell.y % 2 != 0) ? EnemyMovement.evenOffsets : EnemyMovement.oddOffsets;
+            Vector3Int bestCell = enemyCell;
+            float bestDist = dist;
+
+            foreach (var off in offsets)
             {
-                Vector3Int candidate = neighborCell + nOff;
+                Vector3Int candidate = enemyCell + off;
                 if (!tm.HasWalkableTile(candidate)) continue;
                 if (tm.IsEnemyAtCell(candidate)) continue;
-                if (tm.player != null && tm.player.GetCurrentCellPosition() == candidate) continue;
+                if (tm.player.GetCurrentCellPosition() == candidate) continue;
 
-                float dist = Vector3.Distance(tm.groundMap.GetCellCenterWorld(candidate), originWorld);
-                if (dist < bestDist)
+                float d = HexGridUtils.DistanceCube(candidate, playerCell);
+                if (d < bestDist)
                 {
-                    bestDist = dist;
+                    bestDist = d;
                     bestCell = candidate;
                 }
             }
 
-            if (bestCell != neighborCell)
+            if (bestCell != enemyCell)
             {
-                neighbor.StartKnockbackMovement(bestCell);
-                pulled.Add(neighbor);
+                // Sadece Ã§ek, hasar yok
+                enemy.StartKnockbackMovement(bestCell);
+                pulled.Add(enemy);
             }
         }
 
-        if (pulled.Count > 0) TriggerVisualPop();
-        return pulled;
+        if (pulled.Count > 0)
+        {
+            // Vacuum VFX + ses (BioMagnetism ile aynÄ±)
+            if (tm.vacuumVfxPrefab != null)
+                tm.StartCoroutine(VacuumVFX(tm.player.transform.position, tm.vacuumVfxPrefab));
+            if (AudioManager.instance != null) AudioManager.instance.PlayVacuum();
+
+            TriggerVisualPop();
+            CameraController.ShakeLight();
+        }
+    }
+
+    private IEnumerator VacuumVFX(Vector3 pos, GameObject prefab)
+    {
+        GameObject vfx = Instantiate(prefab, pos, Quaternion.identity);
+        SpriteRenderer[] renderers = vfx.GetComponentsInChildren<SpriteRenderer>();
+        float duration = 0.4f;
+        float elapsed = 0f;
+        Vector3 startScale = Vector3.one * 12f;
+        Vector3 endScale = Vector3.one * 1.2f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            float alpha = t < 0.2f ? Mathf.Lerp(0f, 0.4f, t / 0.2f) : Mathf.Lerp(0.4f, 0f, (t - 0.2f) / 0.8f);
+            vfx.transform.localScale = Vector3.Lerp(startScale, endScale, t);
+            foreach (var sr in renderers) { if (sr != null) { Color c = sr.color; c.a = alpha; sr.color = c; } }
+            yield return null;
+        }
+        Destroy(vfx);
     }
 }

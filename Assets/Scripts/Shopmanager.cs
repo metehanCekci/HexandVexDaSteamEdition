@@ -89,16 +89,19 @@ public class Shopmanager : MonoBehaviour
         // HIDE legacy scene UI so it doesn't overlap
         HideLegacyUI();
 
-        // Wire button listeners
-        if (rerollButtonRef != null)
+        // MergedShopManager varsa buton bağlamayı ona bırak
+        if (MergedShopManager.instance == null)
         {
-            rerollButtonRef.onClick.RemoveAllListeners();
-            rerollButtonRef.onClick.AddListener(TryReroll);
-        }
-        if (continueButtonRef != null)
-        {
-            continueButtonRef.onClick.RemoveAllListeners();
-            continueButtonRef.onClick.AddListener(CloseMapNodeShop);
+            if (rerollButtonRef != null)
+            {
+                rerollButtonRef.onClick.RemoveAllListeners();
+                rerollButtonRef.onClick.AddListener(TryReroll);
+            }
+            if (continueButtonRef != null)
+            {
+                continueButtonRef.onClick.RemoveAllListeners();
+                continueButtonRef.onClick.AddListener(CloseMapNodeShop);
+            }
         }
 
         // Wire card buy buttons + hover
@@ -146,25 +149,6 @@ public class Shopmanager : MonoBehaviour
     // ═══════════════════════════════════════════
     // SHOP OPEN / CLOSE
     // ═══════════════════════════════════════════
-
-    public void OpenAsMapNode()
-    {
-        rerollCount = 0;
-        currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
-        shownItemNames.Clear();
-        GenerateShopItems();
-        RefreshCoinDisplay();
-
-        if (shopCanvasObject != null)
-            shopCanvasObject.SetActive(true);
-
-        isShopOpen = true;
-        hoveredCardIndex = -1;
-
-        StopAllCoroutines();
-        StartCoroutine(ShopOpenAnimation());
-        GameEvents.ShopOpened();
-    }
 
     private void CloseMapNodeShop()
     {
@@ -277,8 +261,8 @@ public class Shopmanager : MonoBehaviour
     {
         RefreshCoinDisplay();
         if (MapManager.instance != null) { MapManager.instance.OnNodeComplete(); return; }
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
-        else { RunManager.instance.currentLevel++; LevelGenerator.instance.GenerateNextLevel(); }
+        RunManager.instance.currentLevel++;
+        LevelGenerator.instance.GenerateNextLevel();
     }
 
     public void OnBossCleared()
@@ -287,8 +271,8 @@ public class Shopmanager : MonoBehaviour
         currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
         RefreshCoinDisplay();
         if (MapManager.instance != null) { MapManager.instance.OnNodeComplete(); return; }
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
-        else { RunManager.instance.currentLevel++; LevelGenerator.instance.GenerateNextLevel(); }
+        RunManager.instance.currentLevel++;
+        LevelGenerator.instance.GenerateNextLevel();
     }
 
     // ═══════════════════════════════════════════
@@ -297,6 +281,13 @@ public class Shopmanager : MonoBehaviour
 
     public void TryReroll()
     {
+        // MergedShopManager aktifse eski Shopmanager reroll'u çalışmasın
+        if (MergedShopManager.instance != null)
+        {
+            Debug.Log("[Shopmanager] TryReroll BLOCKED — MergedShopManager active");
+            return;
+        }
+        Debug.Log($"[Shopmanager] >>> TryReroll CALLED on OLD Shopmanager! gold={RunManager.instance?.currentGold}");
         if (RunManager.instance == null) return;
         if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive) return;
         if (SecretPerkCinematic.instance != null && SecretPerkCinematic.instance.IsPlaying) return;
@@ -338,9 +329,12 @@ public class Shopmanager : MonoBehaviour
         if (itemPool.Count == 0) return;
 
         int secretSlotIndex = -1;
+        bool secretAvailable = false;
+        if (secretItem != null && secretItem is SecretPerkOrb orbCheck)
+            secretAvailable = orbCheck.HasAvailableSecrets();
         bool guaranteeSecret = (RunManager.instance != null && RunManager.instance.currentLevel >= 6
                                 && !hasBoughtSecretItem && rerollCount == 0);
-        if (secretItem != null && !hasBoughtSecretItem && (guaranteeSecret || Random.value < secretItemChance))
+        if (secretItem != null && !hasBoughtSecretItem && secretAvailable && (guaranteeSecret || Random.value < secretItemChance))
             secretSlotIndex = Random.Range(0, shopSlotCount);
 
         int availableCount = 0;
@@ -370,7 +364,7 @@ public class Shopmanager : MonoBehaviour
                 while (usedIndices.Contains(poolIdx) ||
                        (selectedItem != null && shownItemNames.Contains(selectedItem.itemName)) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
-                       (RunManager.instance != null && RunManager.instance.hasPerkReroll && selectedItem is MutationCatalyst));
+                       selectedItem is LuckyClover);
                 usedIndices.Add(poolIdx);
             }
             if (selectedItem == null) continue;
@@ -397,13 +391,17 @@ public class Shopmanager : MonoBehaviour
 
     private void PopulateCard(ShopCardSlot card, BaseItem item)
     {
+        // Tüm visual state'i temizle (sold-out gri kalıntısını önle)
+        if (card.background != null) card.background.color = Color.white;
+
         if (card.nameText != null) card.nameText.text = item.itemName.ToUpperInvariant();
         if (card.iconImage != null)
         {
             if (item.icon != null) { card.iconImage.sprite = item.icon; card.iconImage.color = Color.white; card.iconImage.enabled = true; }
             else { card.iconImage.sprite = null; card.iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); }
         }
-        if (card.descriptionText != null) card.descriptionText.text = item.description;
+        item.RebuildDescription();
+        if (card.descriptionText != null) card.descriptionText.text = item.renderedDescription;
         if (card.priceText != null) card.priceText.text = item.price.ToString();
     }
 
@@ -432,6 +430,9 @@ public class Shopmanager : MonoBehaviour
 
         if (item.itemType == ItemType.Instant)
         {
+            if (secretItem != null && item.itemName == secretItem.itemName)
+                hasBoughtSecretItem = true;
+
             if (!item.Use()) { RunManager.instance.currentGold += item.price; RefreshCoinDisplay(); return; }
         }
         else
@@ -472,19 +473,23 @@ public class Shopmanager : MonoBehaviour
         {
             if (purchased.Count > i && purchased[i]) continue;
             if (cardSlots[i].button == null) continue;
-            bool canAfford = currentItems[i] != null && RunManager.instance.currentGold >= currentItems[i].price;
+            bool canAffordRaw = currentItems[i] != null && RunManager.instance.currentGold >= currentItems[i].price;
+            bool canAfford = canAffordRaw;
             if (canAfford && currentItems[i].itemType == ItemType.Consumable && InventoryManager.instance != null && !InventoryManager.instance.HasEmptySlot())
                 canAfford = false;
             cardSlots[i].button.interactable = canAfford;
+            if (cardSlots[i].priceText != null)
+                cardSlots[i].priceText.color = UIColors.GetAffordabilityColor(canAffordRaw);
         }
     }
 
     private void RefreshRerollButton()
     {
+        bool canAfford = RunManager.instance != null && RunManager.instance.currentGold >= currentRerollCost;
         if (rerollPriceTextRef != null)
-            rerollPriceTextRef.text = "REROLL  <color=#FFD933>" + currentRerollCost + "</color>";
-        if (rerollButtonRef != null && RunManager.instance != null)
-            rerollButtonRef.interactable = RunManager.instance.currentGold >= currentRerollCost;
+            rerollPriceTextRef.text = $"REROLL  <color=#{UIColors.GetAffordabilityHex(canAfford)}>{currentRerollCost}</color>";
+        if (rerollButtonRef != null)
+            rerollButtonRef.interactable = canAfford;
     }
 
     // ═══════════════════════════════════════════
@@ -526,7 +531,7 @@ public class Shopmanager : MonoBehaviour
     {
         if (t == null) yield break;
         Color orig = t.color;
-        t.color = Color.red;
+        t.color = UIColors.CantAffordColor;
         yield return new WaitForSecondsRealtime(0.3f);
         t.color = orig;
     }

@@ -79,11 +79,31 @@ public class EnemyVisuals : MonoBehaviour
             movement.health.SetStunnedAlpha(movement.skipTurns > 0);
         }
 
-        // Sprite flip toward player
-        if (TurnManager.instance != null && TurnManager.instance.player != null && visualRenderer != null)
+        // Sprite flip: allied düşmanlar en yakın hostile düşmana, normal düşmanlar player'a bakar
+        if (visualRenderer != null && movement != null)
         {
-            Vector3 dirToPlayer = TurnManager.instance.player.transform.position - transform.position;
-            visualRenderer.flipX = dirToPlayer.x < 0;
+            if (movement.isAllied && TurnManager.instance != null)
+            {
+                // En yakın hostile düşmana doğru bak
+                Transform closestEnemy = null;
+                float closestDist = float.MaxValue;
+                foreach (var e in TurnManager.instance.enemies)
+                {
+                    if (e == null || e.isAllied || e.health.currentHP <= 0) continue;
+                    float dist = Vector3.Distance(transform.position, e.transform.position);
+                    if (dist < closestDist) { closestDist = dist; closestEnemy = e.transform; }
+                }
+                if (closestEnemy != null)
+                {
+                    float dx = closestEnemy.position.x - transform.position.x;
+                    visualRenderer.flipX = dx < 0;
+                }
+            }
+            else if (TurnManager.instance != null && TurnManager.instance.player != null)
+            {
+                Vector3 dirToPlayer = TurnManager.instance.player.transform.position - transform.position;
+                visualRenderer.flipX = dirToPlayer.x < 0;
+            }
         }
 
         UpdateSortingOrder();

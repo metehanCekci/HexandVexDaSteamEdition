@@ -81,9 +81,12 @@ public class MobilePerkHover : MonoBehaviour
                 }
                 else
                 {
-                    // Kısa tıklandıysa: Önce hover kapat, sonra SEÇME işlemini gerçekleştir
+                    // Kısa tıklandıysa: Önce hover kapat
                     ExecuteEvents.Execute(dokunulanObje, new PointerEventData(EventSystem.current), ExecuteEvents.pointerExitHandler);
-                    ExecuteEvents.Execute(dokunulanObje, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
+                    // NOT: Ekstra pointerClickHandler göndermiyoruz — Unity'nin EventSystem'i
+                    // zaten kısa tıklamayı otomatik olarak click event'i olarak işler.
+                    // Burada tekrar göndermek butonların (reroll, continue vb.) iki kere
+                    // tetiklenmesine neden oluyordu.
                 }
             }
 

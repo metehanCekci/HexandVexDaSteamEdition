@@ -12,11 +12,19 @@ public class RunManager : MonoBehaviour
     public int currentLayerIndex = 0;
     public MapNodeType currentNodeType = MapNodeType.Combat;
 
+    [Header("Sacrifice")]
+    // Number of sacrifice nodes completed (lever pulled + perk received) this run.
+    // Reset to 0 at run start. Drives SacrificeNodeManager tier unlocks.
+    public int sacrificeNodesVisited = 0;
+    // When true, the next AddPerk() call bypasses the "upgrade existing" path and
+    // always creates a duplicate instance. Only set by the sacrifice reward flow.
+    [System.NonSerialized] public bool allowDuplicatePerk = false;
+
     [Header("Run Stats")]
 
     public int currentGold = 0;
-    public int playerMaxHealth = 5;
-    public int playerCurrentHealth = 5;
+    public long playerMaxHealth = 5;
+    public long playerCurrentHealth = 5;
     public int baseDiceCount = 2;
     public int maxTurns = 1;
     public int collectibleSlots = 3;
@@ -37,22 +45,53 @@ public class RunManager : MonoBehaviour
     public float criticalChance = 0.10f; // 0.0 to 1.0
     public float criticalDamageMultiplier = 2.0f;
 
+    [Header("Magic Tiles")]
+    public List<MagicTileType> acquiredMagicTiles = new List<MagicTileType>();
+
     [Header("Active Perks")]
     public const int MAX_ACTIVE_PERKS = 6;
     public Transform perkUIContainer; // Assign a Horizontal Layout Group UI panel here!
     public List<BasePerk> activePerks = new List<BasePerk>();
 
     [Header("Inventory Perks (Stash)")]
+    public const int MAX_INVENTORY_PERKS = 9;
     public List<BasePerk> inventoryPerks = new List<BasePerk>();
 
     [Header("Item Buff'lari (Tek Kullanimlik)")]
     public int bonusDiceNextCombat = 0;
-    public bool doubleGoldNextKill = false;
-    public bool doubleDamageNextCombat = false;
-    public bool cleaveNextCombat = false;
+    // Stack'lenebilir item buff sayaclari — ayni iteme birden fazla sahip olundugunda
+    // (Showman / klonlama) her kullanim buradan +1 ekler, tetiklendiginde -1 yakar.
+    public int doubleGoldNextKillStacks = 0;
+    public int doubleDamageNextCombatStacks = 0;
+    public int cleaveNextCombatStacks = 0;
+    // Geriye uyumluluk: bool getter/setter — varsa (>0) true gibi davranir.
+    public bool doubleGoldNextKill
+    {
+        get => doubleGoldNextKillStacks > 0;
+        set { if (value) doubleGoldNextKillStacks++; else doubleGoldNextKillStacks = 0; }
+    }
+    public bool doubleDamageNextCombat
+    {
+        get => doubleDamageNextCombatStacks > 0;
+        set { if (value) doubleDamageNextCombatStacks++; else doubleDamageNextCombatStacks = 0; }
+    }
+    public bool cleaveNextCombat
+    {
+        get => cleaveNextCombatStacks > 0;
+        set { if (value) cleaveNextCombatStacks++; else cleaveNextCombatStacks = 0; }
+    }
     public bool surgeBootNextTurn = false;
-    [HideInInspector] public bool surgeBootActive = false;
-    public bool hasPerkReroll = false; // Bu tur 2 hex hareket edebilir mi?
+    // Hareket radius'unu kac kademe artirir (1 = +1 hex range, 2 = +2 hex range vb).
+    // Birden fazla SurgeBoot kullanildiginda her biri +1 stack ekler.
+    [HideInInspector] public int surgeBootStacks = 0;
+    public bool surgeBootActive
+    {
+        get => surgeBootStacks > 0;
+        set { if (value) surgeBootStacks++; else surgeBootStacks = 0; }
+    }
+    public bool hasPerkReroll = false; // Perk reroll hakki (LevelUpManager)
+    public bool hasLuckyClover = false; // Lucky Clover item -- sonraki perk seciminde esit rarity
+    public bool pendingRerollReset = false; // Mutation Catalyst -- sonraki shop açılınca perk reroll counter'ı sıfırlanır
 
     [Header("Silah Seçimi")]
     public WeaponType selectedWeapon = WeaponType.Greatsword;
@@ -66,29 +105,37 @@ public class RunManager : MonoBehaviour
 
     [Header("Run Statistics")]
     public int totalEnemiesKilled = 0;
-    public int totalDamageDealt = 0;
-    public int totalDamageReceived = 0;
+    public long totalDamageDealt = 0;
+    public long totalDamageReceived = 0;
     public int totalTurnsPlayed = 0;
     public int totalDiceRolled = 0;
     public int totalGoldEarned = 0;
     public int totalLevelsPlayed = 0;
 
-    // Best run (PlayerPrefs ile kalici)
-    public static int BestKills      => PlayerPrefs.GetInt("best_kills", 0);
-    public static int BestDamage     => PlayerPrefs.GetInt("best_damage", 0);
-    public static int BestTurns      => PlayerPrefs.GetInt("best_turns", 0);
-    public static int BestDice       => PlayerPrefs.GetInt("best_dice", 0);
-    public static int BestGold       => PlayerPrefs.GetInt("best_gold", 0);
-    public static int BestLevels     => PlayerPrefs.GetInt("best_levels", 0);
+    // Best run (PlayerPrefs ile kalici — long değerler string olarak saklanır)
+    private static long GetLongPref(string key, long def = 0)
+    {
+        string s = PlayerPrefs.GetString(key, "");
+        if (long.TryParse(s, out long val)) return val;
+        // Eski int kayıtlarını da oku (geriye uyumluluk)
+        return PlayerPrefs.GetInt(key, (int)def);
+    }
+
+    public static long BestKills      => GetLongPref("best_kills");
+    public static long BestDamage     => GetLongPref("best_damage");
+    public static long BestTurns      => GetLongPref("best_turns");
+    public static long BestDice       => GetLongPref("best_dice");
+    public static long BestGold       => GetLongPref("best_gold");
+    public static long BestLevels     => GetLongPref("best_levels");
 
     public void SaveBestRun()
     {
-        if (totalEnemiesKilled > BestKills)   PlayerPrefs.SetInt("best_kills",   totalEnemiesKilled);
-        if (totalDamageDealt   > BestDamage)  PlayerPrefs.SetInt("best_damage",  totalDamageDealt);
-        if (totalTurnsPlayed   > BestTurns)   PlayerPrefs.SetInt("best_turns",   totalTurnsPlayed);
-        if (totalDiceRolled    > BestDice)    PlayerPrefs.SetInt("best_dice",    totalDiceRolled);
-        if (totalGoldEarned    > BestGold)    PlayerPrefs.SetInt("best_gold",    totalGoldEarned);
-        if (totalLevelsPlayed  > BestLevels)  PlayerPrefs.SetInt("best_levels",  totalLevelsPlayed);
+        if (totalEnemiesKilled > BestKills)   PlayerPrefs.SetString("best_kills",   totalEnemiesKilled.ToString());
+        if (totalDamageDealt   > BestDamage)  PlayerPrefs.SetString("best_damage",  totalDamageDealt.ToString());
+        if (totalTurnsPlayed   > BestTurns)   PlayerPrefs.SetString("best_turns",   totalTurnsPlayed.ToString());
+        if (totalDiceRolled    > BestDice)    PlayerPrefs.SetString("best_dice",    totalDiceRolled.ToString());
+        if (totalGoldEarned    > BestGold)    PlayerPrefs.SetString("best_gold",    totalGoldEarned.ToString());
+        if (totalLevelsPlayed  > BestLevels)  PlayerPrefs.SetString("best_levels",  totalLevelsPlayed.ToString());
         PlayerPrefs.Save();
     }
 
@@ -136,26 +183,39 @@ public class RunManager : MonoBehaviour
     {
         BasePerk prefabScript = perkPrefab.GetComponent<BasePerk>();
 
-        // Hem activePerks hem inventoryPerks'te bu perk tipinden var mi kontrol et
-        BasePerk existingActive = activePerks.Find(p => p.GetType() == prefabScript.GetType());
-        BasePerk existingInventory = inventoryPerks.Find(p => p.GetType() == prefabScript.GetType());
+        // Dice Hoarder: maxLevel=1 olduğu için upgrade path anlamsız; her kopya ayrı stacklenmeli
+        bool isStackable = prefabScript is DiceHoarderPerk;
 
-        if (existingActive != null)
-        {
-            // Aktif slotlarda zaten varsa: sadece yukselt
-            existingActive.Upgrade();
-            GameEvents.PerkAcquired(existingActive.GetType().Name);
-            RefreshPerkUI();
-            return;
-        }
+        // Sacrifice rewards can force duplicate instances even for normally-unique perks.
+        bool forceDuplicate = allowDuplicatePerk;
+        allowDuplicatePerk = false; // consume the flag — one-shot override
 
-        if (existingInventory != null)
+        // Showman perki: envanterde varsa duplicate perkler her zaman kabul edilir.
+        if (HasShowman()) forceDuplicate = true;
+
+        if (!isStackable && !forceDuplicate)
         {
-            // Envanterde (stash) varsa: orani yukselt
-            existingInventory.Upgrade();
-            GameEvents.PerkAcquired(existingInventory.GetType().Name);
-            RefreshPerkUI();
-            return;
+            // Hem activePerks hem inventoryPerks'te bu perk tipinden var mi kontrol et
+            BasePerk existingActive = activePerks.Find(p => p.GetType() == prefabScript.GetType());
+            BasePerk existingInventory = inventoryPerks.Find(p => p.GetType() == prefabScript.GetType());
+
+            if (existingActive != null)
+            {
+                // Aktif slotlarda zaten varsa: sadece yukselt
+                existingActive.Upgrade();
+                GameEvents.PerkAcquired(existingActive.GetType().Name);
+                RefreshPerkUI();
+                return;
+            }
+
+            if (existingInventory != null)
+            {
+                // Envanterde (stash) varsa: orani yukselt
+                existingInventory.Upgrade();
+                GameEvents.PerkAcquired(existingInventory.GetType().Name);
+                RefreshPerkUI();
+                return;
+            }
         }
 
         // Collection: perk ilk kez alındı event'i
@@ -165,14 +225,14 @@ public class RunManager : MonoBehaviour
         GameObject newPerkObj = Instantiate(perkPrefab, transform);
         BasePerk newPerk = newPerkObj.GetComponent<BasePerk>();
 
-        // LevelUpManager listelerinden dogru rarity'i ata
-        if (LevelUpManager.instance != null)
+        // MergedShopManager listelerinden dogru rarity'i ata
+        if (MergedShopManager.instance != null)
         {
-            if (LevelUpManager.instance.legendaryPerks.Contains(perkPrefab))
+            if (MergedShopManager.instance.legendaryPerks.Contains(perkPrefab))
                 newPerk.rarity = PerkRarity.Legendary;
-            else if (LevelUpManager.instance.epicPerks.Contains(perkPrefab))
+            else if (MergedShopManager.instance.epicPerks.Contains(perkPrefab))
                 newPerk.rarity = PerkRarity.Epic;
-            else if (LevelUpManager.instance.rarePerks.Contains(perkPrefab))
+            else if (MergedShopManager.instance.rarePerks.Contains(perkPrefab))
                 newPerk.rarity = PerkRarity.Rare;
         }
 
@@ -183,13 +243,30 @@ public class RunManager : MonoBehaviour
             newPerk.OnAcquire();
             newPerk.OnEquip();
         }
-        else
+        else if (inventoryPerks.Count < MAX_INVENTORY_PERKS)
         {
             inventoryPerks.Add(newPerk);
             newPerk.OnAcquire();
         }
+        else
+        {
+            // Stash dolu — perki yok et
+            Debug.LogWarning($"Stash full! Cannot add perk: {newPerk.perkName}");
+            Destroy(newPerkObj);
+            return;
+        }
 
         RefreshPerkUI();
+    }
+
+    /// <summary>Envanterde (active veya stash) Showman perki var mi?</summary>
+    public bool HasShowman()
+    {
+        for (int i = 0; i < activePerks.Count; i++)
+            if (activePerks[i] is ShowmanPerk) return true;
+        for (int i = 0; i < inventoryPerks.Count; i++)
+            if (inventoryPerks[i] is ShowmanPerk) return true;
+        return false;
     }
 
     /// <summary>Aktif slot ile envanter slotunu yer degistirir.</summary>
@@ -232,6 +309,7 @@ public class RunManager : MonoBehaviour
     public void MoveToInventory(int activeIndex)
     {
         if (activeIndex < 0 || activeIndex >= activePerks.Count) return;
+        if (inventoryPerks.Count >= MAX_INVENTORY_PERKS) return;
 
         BasePerk perk = activePerks[activeIndex];
         if (!perk.CanUnequip()) return;
@@ -275,7 +353,7 @@ public class RunManager : MonoBehaviour
 
         if (inventoryPerks.Count > 0)
         {
-            sb.AppendLine($"-- Stash ({inventoryPerks.Count}) --");
+            sb.AppendLine($"-- Stash ({inventoryPerks.Count}/{MAX_INVENTORY_PERKS}) --");
             foreach (var p in inventoryPerks)
                 sb.AppendLine($"{p.perkName}  Lv {p.currentLevel}");
         }
@@ -283,4 +361,138 @@ public class RunManager : MonoBehaviour
         return sb.ToString().TrimEnd();
     }
 
+    // =========================================================================
+    // GRANT API — Balatro-style (gold/heal event'leri)
+    // =========================================================================
+    // Bir perk gold/HP verecekse currentGold +=' veya .Heal() yerine bunlari cagirir.
+    // Sebep: Mimetic / Leftmost / Parasitic gibi "perk kopyalayici" perkler komsu
+    // perkin verdiklerini de aynen verir. Bu metodlar o yansitmayi otomatik yapar.
+    //
+    // Kombat icinde veya disinda her yerden cagirilabilir (OnDamaged, OnSkip, spike push, vs.).
+    // =========================================================================
+
+    /// <summary>
+    /// Bir perkten gold ver. Aktif Mimetic/Leftmost/Parasitic perkler source'u kopyaliyorsa
+    /// otomatik olarak ek gold uygular.
+    /// </summary>
+    public void GrantGold(BasePerk source, int amount)
+    {
+        if (amount <= 0 || source == null) return;
+
+        currentGold += amount;
+        if (TurnManager.instance != null) TurnManager.instance.UpdateCoinUI();
+        GameEvents.GoldChanged(currentGold);
+        source.TriggerVisualPop();
+
+        ApplyPerkMirrors(source, copy => GrantGoldNoMirror(copy, amount));
+    }
+
+    /// <summary>
+    /// Bir perkten HP ver. Aktif Mimetic/Leftmost/Parasitic perkler source'u kopyaliyorsa
+    /// otomatik olarak ek heal uygular.
+    /// </summary>
+    public void GrantHeal(BasePerk source, int amount)
+    {
+        if (amount <= 0 || source == null) return;
+
+        ApplyHealNoMirror(amount);
+        source.TriggerVisualPop();
+
+        ApplyPerkMirrors(source, copy => ApplyHealForMirror(copy, amount));
+    }
+
+    private void GrantGoldNoMirror(BasePerk source, int amount)
+    {
+        currentGold += amount;
+        if (TurnManager.instance != null) TurnManager.instance.UpdateCoinUI();
+        GameEvents.GoldChanged(currentGold);
+        if (source != null) source.TriggerVisualPop();
+    }
+
+    private void ApplyHealNoMirror(int amount)
+    {
+        // playerCurrentHealth + scene player.health senkron tutulur.
+        playerCurrentHealth = System.Math.Min(playerCurrentHealth + amount, playerMaxHealth);
+        if (TurnManager.instance != null && TurnManager.instance.player != null
+            && TurnManager.instance.player.health != null)
+        {
+            TurnManager.instance.player.health.Heal(amount);
+        }
+    }
+
+    private void ApplyHealForMirror(BasePerk source, int amount)
+    {
+        ApplyHealNoMirror(amount);
+        if (source != null) source.TriggerVisualPop();
+    }
+
+    /// <summary>
+    /// Mimetic / Leftmost / Parasitic varsa source perki kopyaliyorlarsa, mirror'i uygular.
+    /// mirrorAction = source rolune giren kopyalayici perk ile cagrilir (visual pop icin).
+    /// Retrigger-perkleri (Mimetic/Leftmost/Parasitic) source olarak gelirse hicbir mirror yok
+    /// (perk dosyalarinin kendi IsIncompatible/target kurallariyla ayni).
+    /// </summary>
+    private void ApplyPerkMirrors(BasePerk source, System.Action<BasePerk> mirrorAction)
+    {
+        if (activePerks == null) return;
+        if (IsRetriggerPerk(source)) return; // perk-retrigger perkleri kopyalanmaz
+
+        int sourceIdx = activePerks.IndexOf(source);
+
+        // Mimetic: source'un solunda hemen Mimetic varsa → 1 mirror.
+        if (sourceIdx > 0)
+        {
+            var leftNeighbor = activePerks[sourceIdx - 1];
+            if (leftNeighbor is MimeticGrowthPerk && !leftNeighbor.IsIncompatible())
+                mirrorAction(leftNeighbor);
+        }
+
+        // Leftmost: source en soldaki "valid" hedefse → 2 mirror.
+        foreach (var p in activePerks)
+        {
+            if (p is LeftmostResonancePerk leftmost && !leftmost.IsIncompatible())
+            {
+                if (GetLeftmostResonanceTarget(leftmost) == source)
+                {
+                    mirrorAction(leftmost);
+                    mirrorAction(leftmost);
+                }
+            }
+        }
+
+        // Parasitic: source'un solunda common perk var ve Parasitic Chorus aktifse → 1 mirror.
+        if (sourceIdx > 0)
+        {
+            var leftNeighbor = activePerks[sourceIdx - 1];
+            if (leftNeighbor != null && leftNeighbor.rarity == PerkRarity.Common && !IsRetriggerPerk(leftNeighbor))
+            {
+                foreach (var p in activePerks)
+                {
+                    if (p is ParasiticChorusPerk parasitic && !parasitic.IsIncompatible())
+                    {
+                        mirrorAction(parasitic);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private static bool IsRetriggerPerk(BasePerk p)
+    {
+        return p is MimeticGrowthPerk || p is LeftmostResonancePerk || p is ParasiticChorusPerk;
+    }
+
+    private BasePerk GetLeftmostResonanceTarget(LeftmostResonancePerk leftmost)
+    {
+        for (int i = 0; i < activePerks.Count; i++)
+        {
+            var c = activePerks[i];
+            if (c == null) continue;
+            if (c == leftmost) return null;
+            if (IsRetriggerPerk(c)) return null;
+            return c;
+        }
+        return null;
+    }
 }

@@ -49,8 +49,8 @@ public class CollectionSetupTool : EditorWindow
 
         GUILayout.Space(5);
 
-        if (GUILayout.Button("Rarity'leri LevelUpManager'dan Güncelle", GUILayout.Height(30)))
-            SyncRaritiesFromLevelUpManager();
+        if (GUILayout.Button("Rarity'leri MergedShopManager'dan Güncelle", GUILayout.Height(30)))
+            SyncRaritiesFromMergedShop();
 
         GUILayout.Space(10);
         EditorGUILayout.HelpBox(
@@ -835,20 +835,17 @@ public class CollectionSetupTool : EditorWindow
     // ═══════════════════════════════════════════════════════
 
     /// <summary>
-    /// Ana Sahne'deki LevelUpManager listelerinden rarity bilgisini okuyup
+    /// Ana Sahne'deki MergedShopManager listelerinden rarity bilgisini okuyup
     /// PerkCollectionData entry'lerine yazar.
-    /// Bu fonksiyonu çalıştırmadan önce Ana Sahne'yi açmana GEREK YOK —
-    /// LevelUpManager prefab'ını sahneden veya scene'den bulur.
     /// </summary>
-    private static void SyncRaritiesFromLevelUpManager()
+    private static void SyncRaritiesFromMergedShop()
     {
-        // Önce sahnedeki LevelUpManager'ı bul
-        LevelUpManager lum = Object.FindFirstObjectByType<LevelUpManager>();
+        MergedShopManager shop = Object.FindFirstObjectByType<MergedShopManager>();
 
-        if (lum == null)
+        if (shop == null)
         {
-            EditorUtility.DisplayDialog("LevelUpManager Bulunamadı",
-                "Sahnede LevelUpManager yok.\n\n" +
+            EditorUtility.DisplayDialog("MergedShopManager Bulunamadı",
+                "Sahnede MergedShopManager yok.\n\n" +
                 "Ana Sahne'yi (Ana Sahne.unity) aç ve tekrar dene,\n" +
                 "veya entry'lerdeki rarity'leri elle ayarla.",
                 "Tamam");
@@ -877,10 +874,9 @@ public class CollectionSetupTool : EditorWindow
             return;
         }
 
-        // LevelUpManager listelerinden rarity eşle
-        var legendarySet = new HashSet<GameObject>(lum.legendaryPerks);
-        var epicSet = new HashSet<GameObject>(lum.epicPerks);
-        var rareSet = new HashSet<GameObject>(lum.rarePerks);
+        var legendarySet = new HashSet<GameObject>(shop.legendaryPerks);
+        var epicSet = new HashSet<GameObject>(shop.epicPerks);
+        var rareSet = new HashSet<GameObject>(shop.rarePerks);
 
         int updated = 0;
         foreach (var entry in db.entries)
@@ -910,7 +906,7 @@ public class CollectionSetupTool : EditorWindow
         AssetDatabase.SaveAssets();
         Debug.Log($"<color=#FFD700>[COLLECTION]</color> {updated} entry'nin rarity'si güncellendi.");
         EditorUtility.DisplayDialog("Rarity Güncelleme Tamamlandı",
-            $"{updated} perk'in rarity'si LevelUpManager'dan güncellendi.", "Tamam");
+            $"{updated} perk'in rarity'si MergedShopManager'dan güncellendi.", "Tamam");
     }
 
     // ═══════════════════════════════════════════════════════

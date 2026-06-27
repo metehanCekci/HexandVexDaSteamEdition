@@ -1,6 +1,14 @@
 using System;
 using UnityEngine;
 
+public enum TrapTileState
+{
+    Idle,
+    Triggered,
+    Collapsing,
+    Destroyed
+}
+
 /// <summary>
 /// Tüm trap tile'ların yayınladığı event'ler.
 /// Ses, animasyon, VFX gibi sistemler bu event'leri dinleyerek tile lojiğine girmeden çalışır.
@@ -21,6 +29,12 @@ public static class TrapTileEvents
 
     /// <summary>Bir trap tile'da titreşim durduğunda ateşlenir. (cell)</summary>
     public static event Action<Vector3Int> OnTileShakeStopped;
+
+    /// <summary>Bir explosion tile patladığında ateşlenir. (cell)</summary>
+    public static event Action<Vector3Int> OnExplosionTileTriggered;
+
+    /// <summary>Bir teleport tile tetiklendiğinde ateşlenir. (fromCell, toCell)</summary>
+    public static event Action<Vector3Int, Vector3Int> OnTeleportTileTriggered;
 
     // ──────── Yardımcı Fire Metotları ────────
 
@@ -47,5 +61,15 @@ public static class TrapTileEvents
     public static void FireTileShakeStopped(Vector3Int cell)
     {
         OnTileShakeStopped?.Invoke(cell);
+    }
+
+    public static void FireExplosionTileTriggered(Vector3Int cell)
+    {
+        OnExplosionTileTriggered?.Invoke(cell);
+    }
+
+    public static void FireTeleportTileTriggered(Vector3Int fromCell, Vector3Int toCell)
+    {
+        OnTeleportTileTriggered?.Invoke(fromCell, toCell);
     }
 }

@@ -13,7 +13,9 @@ public class HotbarSetupTool : EditorWindow
     private const int MAX_SLOTS = 5;
     private const int DEFAULT_VISIBLE = 3;
     private const float SLOT_SIZE = 60f;
-    private const float SLOT_SPACING = 6f;
+    private const float SLOT_SPACING = 16f;
+    // Icon insets: 0 → icon fills the entire slot.
+    private const float ICON_INSET = 0f;
 
     [MenuItem("Tools/Setup Hotbar UI")]
     public static void Setup()
@@ -38,7 +40,7 @@ public class HotbarSetupTool : EditorWindow
         canvasGO.transform.SetParent(rootGO.transform, false);
         Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 15;
+        canvas.sortingOrder = 1000;
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
@@ -132,8 +134,8 @@ public class HotbarSetupTool : EditorWindow
         GameObject iconGO = new GameObject("Icon", typeof(RectTransform));
         iconGO.transform.SetParent(slotGO.transform, false);
         RectTransform iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin = new Vector2(0.1f, 0.1f);
-        iconRT.anchorMax = new Vector2(0.9f, 0.9f);
+        iconRT.anchorMin = new Vector2(ICON_INSET, ICON_INSET);
+        iconRT.anchorMax = new Vector2(1f - ICON_INSET, 1f - ICON_INSET);
         iconRT.offsetMin = Vector2.zero;
         iconRT.offsetMax = Vector2.zero;
         Image iconImg = iconGO.AddComponent<Image>();

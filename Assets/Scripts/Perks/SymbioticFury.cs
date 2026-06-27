@@ -1,18 +1,18 @@
+using System.Collections;
+using System.Collections.Generic;
+
 public class SymbioticFuryPerk : BasePerk
 {
-    // Oyun başladığında veya bu perk alındığında önceliğini çok yüksek yapıyoruz
-    // Böylece +1, +2 gibi zar artıran perkler önce çalışır, Sword Dance en son çalışır!
-    private void Awake()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        priority = 99; // En sona atar
-        rarity = PerkRarity.Secret;
-    }
+        { "mult", GameKeywords.Crit("multiply") },
+        { "add",  GameKeywords.Status("adding") }
+    };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        payload.multiplyInsteadOfAdd = true;
-        
-        // Buradaki TriggerVisualPop(); satırını sildik çünkü TurnManager zaten 
-        // matematiksel sıçramayı (toplamadan çarpmaya geçişi) algılayıp kendisi patlatacak.
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        ctx.payload.multiplyInsteadOfAdd = true;
     }
 }

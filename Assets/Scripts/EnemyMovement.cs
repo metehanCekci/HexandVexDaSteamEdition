@@ -30,6 +30,13 @@ public class EnemyMovement : MonoBehaviour
 
     [HideInInspector] public bool isElite = false;
 
+    /// <summary>Neural Hijack: taraf değiştirmiş dost düşman.</summary>
+    [HideInInspector] public bool isAllied = false;
+    /// <summary>Bir kez dost olan düşman bir daha düşman olamaz.</summary>
+    [HideInInspector] public bool wasAllied = false;
+    /// <summary>Neural Hijack: dönüştürülürken oyuncunun attığı zar toplamı. Her vuruşta bu kadar hasar verir.</summary>
+    [HideInInspector] public long hijackDamage = 0;
+
     private Vector3Int cell;
     private Vector3 targetWorldPos;
     private bool isMoving = false;
@@ -48,15 +55,18 @@ public class EnemyMovement : MonoBehaviour
     {
         if (groundMap == null)
         {
-            GameObject mapObj = GameObject.Find("GroundMap");
+            GameObject mapObj = GameObject.Find("Ground");
             if (mapObj != null) groundMap = mapObj.GetComponent<Tilemap>();
         }
 
         if (warningMap == null)
         {
-            GameObject warnObj = GameObject.Find("WarningMap");
+            GameObject warnObj = GameObject.Find("WarningA");
             if (warnObj != null) warningMap = warnObj.GetComponent<Tilemap>();
         }
+
+        if (warningTile == null && TurnManager.instance != null)
+            warningTile = TurnManager.instance.warningTile;
     }
 
     void Start()
@@ -116,12 +126,22 @@ public class EnemyMovement : MonoBehaviour
 
         var warlock = GetComponent<WarlockEnemyAI>();
         if (warlock != null) { warlock.OnWarlockDied(); return; }
+
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null) { ninja.OnNinjaDied(); return; }
     }
 
-    private void HandleDamaged(int remainingHP)
+    private void HandleDamaged(long remainingHP)
     {
+        // Ally iken hasar alınca charge animasyonunu bozma
+        if (isAllied) return;
+
         var bruiser = GetComponent<BruiserEnemyAI>();
         if (bruiser != null) bruiser.HandleDamaged();
+
+        // Ninja: vurulunca hemen kaç (sersem gibi)
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null) ninja.OnHit();
     }
 
     // ─── Movement ───
@@ -419,10 +439,21 @@ public class EnemyMovement : MonoBehaviour
                 ScaffoldManager.instance.OnEntityEnter(cell);
             }
 
-            // Hazard damage (spikes etc.)
+            // Hazard damage (spikes etc.) — same treatment as knockback into spikes
             if (isHazard && health != null)
             {
-                health.TakeDamage(1);
+                // 50% maxHP damage (same as TurnManager knockback-into-spike logic)
+                if (TurnManager.instance != null)
+                    TurnManager.instance.StartCoroutine(TurnManager.instance.FlashHazardTileCoroutine(cell));
+                health.TakeDamage(System.Math.Max(1L, health.maxHP / 2));
+
+                // Bounce away to a safe neighbor if still alive
+                if (health.currentHP > 0 && TurnManager.instance != null)
+                {
+                    Vector3Int bounceCell = TurnManager.instance.GetRandomSafeNeighbor(cell);
+                    if (bounceCell != cell)
+                        StartKnockbackMovement(bounceCell);
+                }
             }
         }
     }
@@ -466,6 +497,19 @@ public class EnemyMovement : MonoBehaviour
             return;
         }
 
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null)
+        {
+            // Ninja: sadece kaçış intent'i göster (saldırı döngüsü ExecuteLockedMove'da)
+            if (!isStunned && health.currentHP > 0 && ninja.ShouldFlee(playerCell))
+            {
+                hasLockedTarget = false;
+                var visuals = GetComponent<EnemyVisuals>();
+                if (visuals != null) visuals.SetArrowVisibility(false);
+            }
+            return;
+        }
+
         var melee = GetComponent<MeleeEnemyAI>();
         if (melee != null)
         {
@@ -493,6 +537,14 @@ public class EnemyMovement : MonoBehaviour
         if (warlock != null)
         {
             ExecuteWarlockMove(warlock);
+            return;
+        }
+
+        // Ninja: kendi turn coroutine'ini başlat
+        var ninja = GetComponent<NinjaEnemyAI>();
+        if (ninja != null)
+        {
+            StartCoroutine(ninja.ExecuteNinjaTurn());
             return;
         }
 
@@ -621,6 +673,14 @@ public class EnemyMovement : MonoBehaviour
                 if (TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(neighbor) && neighbor != cell) continue;
 
                 float cellPenalty = 0f;
+
+                // Seismic Step: titreyen tile'lardan kaçın
+                if (RunManager.instance != null)
+                {
+                    var seismicPerk = RunManager.instance.activePerks.Find(p => p is SeismicStepPerk) as SeismicStepPerk;
+                    if (seismicPerk != null && seismicPerk.IsCellShaking(neighbor))
+                        cellPenalty += 20f;
+                }
 
                 if (TurnManager.instance != null)
                 {
@@ -844,4 +904,5 @@ public class EnemyMovement : MonoBehaviour
     public bool IsTotem => GetComponent<TotemEnemyAI>() != null;
     public bool IsBoss => GetComponent<SpawnerBossAI>() != null;
     public bool IsWarlock => GetComponent<WarlockEnemyAI>() != null;
+    public bool IsNinja => GetComponent<NinjaEnemyAI>() != null;
 }

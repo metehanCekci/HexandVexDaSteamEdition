@@ -128,9 +128,12 @@ public class ShopDealer : MonoBehaviour
         int slotCount = itemCells.Length;
 
         int secretSlotIndex = -1;
+        bool secretAvailable = false;
+        if (secretItem != null && secretItem is SecretPerkOrb orbCheck)
+            secretAvailable = orbCheck.HasAvailableSecrets();
         bool guaranteeSecret = (RunManager.instance != null && RunManager.instance.currentLevel >= 6
                                 && !Shopmanager.hasBoughtSecretItem);
-        if (secretItem != null && !Shopmanager.hasBoughtSecretItem &&
+        if (secretItem != null && !Shopmanager.hasBoughtSecretItem && secretAvailable &&
             (guaranteeSecret || Random.value < Shopmanager.instance.secretItemChance))
             secretSlotIndex = Random.Range(0, slotCount);
 
@@ -154,7 +157,7 @@ public class ShopDealer : MonoBehaviour
                 }
                 while (usedIndices.Contains(poolIdx) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
-                       (RunManager.instance != null && RunManager.instance.hasPerkReroll && selectedItem is MutationCatalyst));
+                       selectedItem is LuckyClover);
                 usedIndices.Add(poolIdx);
             }
             if (selectedItem == null) continue;
@@ -375,6 +378,7 @@ public class ShopDealer : MonoBehaviour
         var scaler = goldHudGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
         goldHudGO.AddComponent<GraphicRaycaster>();
 
         GameObject rowGO = new GameObject("GoldRow", typeof(RectTransform));
@@ -486,6 +490,11 @@ public class ShopDealer : MonoBehaviour
 
         if (item.itemType == ItemType.Instant)
         {
+            // Secret orb: satın alındığında her zaman bought flag'ini set et
+            if (Shopmanager.instance != null && Shopmanager.instance.secretItem != null &&
+                item.itemName == Shopmanager.instance.secretItem.itemName)
+                Shopmanager.hasBoughtSecretItem = true;
+
             if (!item.Use())
             {
                 RunManager.instance.currentGold += item.price;
@@ -679,7 +688,7 @@ public class ShopDealer : MonoBehaviour
     {
         if (goldHudText == null) yield break;
         Color orig = goldHudText.color;
-        goldHudText.color = Color.red;
+        goldHudText.color = UIColors.CantAffordColor;
         yield return new WaitForSeconds(0.3f);
         goldHudText.color = orig;
     }

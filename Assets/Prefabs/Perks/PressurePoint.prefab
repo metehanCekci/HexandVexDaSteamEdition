@@ -45,11 +45,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PressurePointPerk
   currentLevel: 1
-  maxLevel: 3
+  maxLevel: 1
   perkName: Pressure Point
-  description: 'Deal more damage to healthier enemies. 100% HP: 2x, 99-50%: 1.75x,
-    below 50%: 1.5x.'
+  description: Healthier enemies take more damage. Up to {mult} at {full}.
   icon: {fileID: 2736176967971650083, guid: fbb0a2fd518471944876506f526def58, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 1

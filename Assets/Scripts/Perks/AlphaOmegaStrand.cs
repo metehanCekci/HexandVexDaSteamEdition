@@ -1,33 +1,37 @@
-using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class AlphaOmegaStrandPerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Common;
-    }
+        { "bonus", GameKeywords.Plus(2 * currentLevel) }
+    };
 
-    // YENİ: Kart tekrar seçilirse seviye artsın
     public override void Upgrade()
     {
         base.Upgrade();
         TriggerVisualPop();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (payload.diceRolls.Count > 0)
-        {
-            // İlk zara seviye başına +2 ekler
-            payload.diceRolls[0] += (2 * currentLevel);
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (ctx.payload.diceRolls.Count == 0) yield break;
 
-            if (payload.diceRolls.Count > 1)
-            {
-                // Son zara seviye başına +2 ekler
-                payload.diceRolls[payload.diceRolls.Count - 1] += (2 * currentLevel);
-            }
-            if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-                TriggerVisualPop();
+        int bonus = 2 * currentLevel;
+        int delta = 0;
+
+        ctx.payload.diceRolls[0] += bonus;
+        delta += bonus;
+
+        if (ctx.payload.diceRolls.Count > 1)
+        {
+            ctx.payload.diceRolls[ctx.payload.diceRolls.Count - 1] += bonus;
+            delta += bonus;
         }
+        ctx.payload.ApplyAdd(delta);
+        ctx.AnimatePop(this);
     }
 }

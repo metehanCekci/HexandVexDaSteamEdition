@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: VolatileRoll
   loreText: "Dice that defy probability \u2014 each face is either salvation or doom.
     The organism's neural pathways have been rewired to embrace chaos."
-  rarity: 1
+  rarity: 3
   unlockCondition: 0
   requiredAmount: 1
   conditionParam: 

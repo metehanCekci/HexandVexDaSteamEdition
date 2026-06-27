@@ -1,10 +1,14 @@
+﻿using System.Collections.Generic;
+
 public class LuckyCloverPerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Rare;
-        maxLevel = 3;
-    }
+        { "reroll", GameKeywords.Action("Reroll") },
+        { "rerolls", GameKeywords.Plus(currentLevel) }
+    };
+
+    public override bool CanBeOffered() { return false; }
 
     public override void OnAcquire()
     {

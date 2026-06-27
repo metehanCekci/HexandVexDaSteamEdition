@@ -48,18 +48,8 @@ public static class ShopDealerSetupTool
 
         Debug.Log("ShopDealer prefab oluşturuldu: " + prefabPath);
 
-        // Auto-assign to LevelGenerator if found in scene
-        LevelGenerator levelGen = Object.FindFirstObjectByType<LevelGenerator>();
-        if (levelGen != null)
-        {
-            levelGen.shopDealerPrefab = prefab;
-            EditorUtility.SetDirty(levelGen);
-            Debug.Log("ShopDealer prefab → LevelGenerator.shopDealerPrefab'a atandı.");
-        }
-        else
-        {
-            Debug.LogWarning("Sahnede LevelGenerator bulunamadı. Prefab'ı manuel olarak LevelGenerator.shopDealerPrefab'a atayın.");
-        }
+        // shopDealerPrefab artık LevelGenerator'dan kaldırıldı — sadece log bas
+        Debug.Log($"ShopDealer prefab oluşturuldu: {prefab.name}. GenerateShopArena direkt placeholder kullandığı için manuel atama gerekmez.");
 
         // Mark scene dirty
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(

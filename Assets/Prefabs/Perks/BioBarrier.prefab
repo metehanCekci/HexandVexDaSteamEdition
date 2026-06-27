@@ -47,10 +47,13 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 1
   perkName: Bio-Barrier
-  description: Gain a shield at the start of each level. Blocks one lethal hit.
+  description: Start each [white]combat[/white] with a [white]shield[/white] that
+    blocks one hit.
   icon: {fileID: -3981353234451992249, guid: 8b476cec834219949b6a5d1f7270a373, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 0
   shieldPrefab: {fileID: 3347869054971392747, guid: 687484031efea9341964845852145a51, type: 3}
   shieldOffsetY: 0.1

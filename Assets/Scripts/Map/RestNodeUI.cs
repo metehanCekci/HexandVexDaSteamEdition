@@ -42,7 +42,7 @@ public class RestNodeUI : MonoBehaviour
         Time.timeScale = 0f;
 
         // Heal miktarını hesapla — canı tamamen doldur
-        int healAmount = 999;
+        long healAmount = 999;
         if (RunManager.instance != null)
             healAmount = RunManager.instance.playerMaxHealth - RunManager.instance.playerCurrentHealth;
 
@@ -54,6 +54,8 @@ public class RestNodeUI : MonoBehaviour
         if (RunManager.instance != null)
         {
             canTrain = RunManager.instance.activePerks.Exists(
+                p => p != null && p.currentLevel < p.maxLevel
+            ) || RunManager.instance.inventoryPerks.Exists(
                 p => p != null && p.currentLevel < p.maxLevel
             );
         }
@@ -84,16 +86,22 @@ public class RestNodeUI : MonoBehaviour
         if (infoText != null) infoText.text = "";
     }
 
-    private void OnRest(int amount)
+    private void OnRest(long amount)
     {
         Debug.Log($"[REST] OnRest called — amount={amount}");
 
         if (RunManager.instance != null)
         {
-            RunManager.instance.playerCurrentHealth = Mathf.Min(
+            RunManager.instance.playerCurrentHealth = System.Math.Min(
                 RunManager.instance.playerCurrentHealth + amount,
                 RunManager.instance.playerMaxHealth
             );
+
+            // Dice Hoarder: Rest butonuna basıldığında active+stash tüm kopyaları +1
+            foreach (var p in RunManager.instance.activePerks)
+                if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
+            foreach (var p in RunManager.instance.inventoryPerks)
+                if (p is DiceHoarderPerk hoarder) hoarder.OnCampfireVisited();
         }
 
         // HealthScript'i de senkronize et (yoksa savaşta eski can değeri kalır)
@@ -113,30 +121,39 @@ public class RestNodeUI : MonoBehaviour
 
     private void OnTrain()
     {
-        if (RunManager.instance == null || RunManager.instance.activePerks.Count == 0) return;
+        if (RunManager.instance == null) return;
 
-        var upgradeablePerks = RunManager.instance.activePerks.FindAll(
-            p => p != null && p.currentLevel < p.maxLevel
-        );
+        // Perk stash panelini ac ve upgrade moduna al
+        if (PerkInventoryUI.instance == null)
+            PerkInventoryUI.CreateFromCode();
 
-        if (upgradeablePerks.Count > 0)
+        if (PerkInventoryUI.instance != null)
         {
-            BasePerk chosen = upgradeablePerks[Random.Range(0, upgradeablePerks.Count)];
-            chosen.Upgrade();
-            if (infoText != null) infoText.text = $"{chosen.perkName} upgraded!";
-
-            // Upgrade olan perkte pop animasyonu
-            if (PerkInventoryUI.instance != null)
-                PerkInventoryUI.instance.TriggerPopForPerk(chosen);
-            if (ActivePerkBar.instance != null)
-                ActivePerkBar.instance.TriggerPopForPerk(chosen);
-        }
-        else
-        {
-            if (infoText != null) infoText.text = "All perks maxed!";
+            PerkInventoryUI.instance.Show();
+            PerkInventoryUI.instance.EnterUpgradeMode(OnPerkChosenForUpgrade);
         }
 
+        if (infoText != null) infoText.text = "Choose a perk to upgrade";
         DisableButtons();
+    }
+
+    private void OnPerkChosenForUpgrade(BasePerk chosen)
+    {
+        if (chosen == null) return;
+
+        chosen.Upgrade();
+        if (infoText != null) infoText.text = $"{chosen.perkName} upgraded!";
+
+        // Upgrade olan perkte pop animasyonu
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.TriggerPopForPerk(chosen);
+        if (ActivePerkBar.instance != null)
+            ActivePerkBar.instance.TriggerPopForPerk(chosen);
+
+        // Stash panelini yenile (yeni level gosterilsin)
+        if (PerkInventoryUI.instance != null)
+            PerkInventoryUI.instance.RefreshUI();
+
         StartCoroutine(CloseAfterDelay());
     }
 

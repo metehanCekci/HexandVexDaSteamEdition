@@ -1,35 +1,36 @@
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class NeuralRebootPerk : BasePerk
 {
-    void Awake()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Common;
-        isRerollPerk = true;
-    }
+        { "low", GameKeywords.Counter("3") },
+        { "reroll", GameKeywords.Action("rerolled") }
+    };
 
-    public override void OnAcquire()
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        base.OnAcquire();
-    }
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
 
-    // 3 veya altı gelen her zarı, 3'ün üstü gelene kadar tekrar tekrar atar
-    public override void ModifyCombat(CombatPayload payload)
-    {
-        for (int i = 0; i < payload.diceRolls.Count; i++)
+        int delta = 0;
+        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
         {
-            if (payload.diceRolls[i] <= 3)
+            if (ctx.payload.diceRolls[i] <= 3)
             {
-                int oldVal = payload.diceRolls[i];
+                int oldVal = ctx.payload.diceRolls[i];
                 int safety = 0;
-                while (payload.diceRolls[i] <= 3 && safety < 100)
+                while (ctx.payload.diceRolls[i] <= 3 && safety < 100)
                 {
-                    payload.diceRolls[i] = Random.Range(1, 7);
+                    ctx.payload.diceRolls[i] = Random.Range(1, 7);
                     safety++;
                 }
-                Debug.Log($"NeuralReboot: Zar {i + 1} yeniden atildi: {oldVal} -> {payload.diceRolls[i]}");
+                delta += ctx.payload.diceRolls[i] - oldVal;
             }
         }
+        ctx.payload.ApplyAdd(delta);
+        if (delta != 0) ctx.AnimatePop(this);
     }
 }

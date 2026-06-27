@@ -41,10 +41,18 @@ public class HotbarUI : MonoBehaviour
 
     [Header("Style")]
     public float slotSize = 60f;
-    public float slotSpacing = 6f;
-    public Color emptySlotColor = new Color(0.15f, 0.15f, 0.15f, 0.7f);
+    public float slotSpacing = 16f;
+    [Tooltip("Icon padding inside the slot (fraction of slot size). 0 = icon fills the entire slot.")]
+    [Range(0f, 0.45f)] public float iconInset = 0f;
     public Color occupiedSlotColor = new Color(0.25f, 0.25f, 0.25f, 0.9f);
-    public Color hoverColor = new Color(0.4f, 0.4f, 0.2f, 1f);
+
+    // ── Item Drag-to-Sell state ──
+    private const float HOLD_THRESHOLD = 0.35f; // basılı tutma süresi (saniye)
+    private int holdSlotIndex = -1;
+    private float holdTimer;
+    private bool isItemDragging;
+    private GameObject itemDragGhost;
+    private int dragItemSlot = -1;
 
     void Awake()
     {
@@ -80,7 +88,25 @@ public class HotbarUI : MonoBehaviour
             maxVisibleSlots = Mathf.Min(InventoryManager.instance.SlotCount, slots.Count);
 
         ApplySlotVisibility();
+        ApplyIconInsets();
         RefreshSlots();
+    }
+
+    // Push the inspector iconInset onto every slot's icon RectTransform.
+    // Lets us tweak icon size without re-running the editor setup tool.
+    private void ApplyIconInsets()
+    {
+        float min = Mathf.Clamp(iconInset, 0f, 0.45f);
+        float max = 1f - min;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i] == null || slots[i].iconImage == null) continue;
+            RectTransform iconRT = slots[i].iconImage.rectTransform;
+            iconRT.anchorMin = new Vector2(min, min);
+            iconRT.anchorMax = new Vector2(max, max);
+            iconRT.offsetMin = Vector2.zero;
+            iconRT.offsetMax = Vector2.zero;
+        }
     }
 
     void OnEnable()
@@ -98,15 +124,34 @@ public class HotbarUI : MonoBehaviour
         if (InventoryManager.instance == null) return;
         if (SecretPerkCinematic.instance != null && SecretPerkCinematic.instance.IsPlaying) return;
 
+        // ── Item drag sırasında: ghost takip + bırakma kontrolü ──
+        if (isItemDragging)
+        {
+            UpdateItemDrag();
+            return;
+        }
+
         // Targeting aktifken aynı slot tuşu/tıkı iptal eder
         if (TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive && !TurnManager.instance.isMitsuriTargeting)
         {
             int cancelSlot = TurnManager.instance.pendingTargetingSlot;
             if (cancelSlot >= 0)
             {
+                // Tuşla iptal
                 for (int i = 0; i < hotkeys.Length && i < maxVisibleSlots; i++)
                 {
                     if (Input.GetKeyDown(hotkeys[i]) && i == cancelSlot)
+                    {
+                        TurnManager.instance.CancelTargeting();
+                        return;
+                    }
+                }
+
+                // Tıklamayla iptal
+                if (Input.GetMouseButtonDown(0) && cancelSlot < slots.Count && slots[cancelSlot] != null)
+                {
+                    RectTransform rt = slots[cancelSlot].GetComponent<RectTransform>();
+                    if (rt != null && RectTransformUtility.RectangleContainsScreenPoint(rt, Input.mousePosition, hotbarCanvas != null ? hotbarCanvas.worldCamera : null))
                     {
                         TurnManager.instance.CancelTargeting();
                         return;
@@ -121,7 +166,43 @@ public class HotbarUI : MonoBehaviour
             if (Input.GetKeyDown(hotkeys[i]))
             {
                 UseSlot(i);
+                return;
             }
+        }
+
+        // ── Basılı tutma algılama (hold-to-drag) ──
+        if (Input.GetMouseButtonDown(0))
+        {
+            holdSlotIndex = GetSlotUnderMouse();
+            holdTimer = 0f;
+        }
+
+        if (Input.GetMouseButton(0) && holdSlotIndex >= 0)
+        {
+            holdTimer += Time.unscaledDeltaTime;
+            if (holdTimer >= HOLD_THRESHOLD)
+            {
+                BaseItem item = InventoryManager.instance.GetItem(holdSlotIndex);
+                if (item != null)
+                {
+                    BeginItemDrag(holdSlotIndex, item);
+                }
+                holdSlotIndex = -1;
+                holdTimer = 0f;
+            }
+        }
+
+        // Mouse bırakıldığında: eğer hold threshold'a ulaşılmadıysa normal tıklama
+        if (Input.GetMouseButtonUp(0) && holdSlotIndex >= 0)
+        {
+            if (holdTimer < HOLD_THRESHOLD)
+            {
+                int slotIdx = GetSlotUnderMouse();
+                if (slotIdx >= 0 && slotIdx == holdSlotIndex)
+                    UseSlot(slotIdx);
+            }
+            holdSlotIndex = -1;
+            holdTimer = 0f;
         }
     }
 
@@ -176,12 +257,14 @@ public class HotbarUI : MonoBehaviour
             if (item != null)
             {
                 slot.background.color = occupiedSlotColor;
-                slot.button.interactable = true;
+
+                bool onCooldown = item.usedThisCombat;
+                slot.button.interactable = !onCooldown;
 
                 if (item.icon != null)
                 {
                     slot.iconImage.sprite = item.icon;
-                    slot.iconImage.color = Color.white;
+                    slot.iconImage.color = onCooldown ? new Color(0.4f, 0.4f, 0.4f, 0.6f) : Color.white;
                     slot.iconImage.enabled = true;
                 }
                 else
@@ -189,18 +272,27 @@ public class HotbarUI : MonoBehaviour
                     slot.iconImage.enabled = false;
                 }
 
+                // Cooldown overlay
+                EnsureCooldownOverlay(slot);
+                if (slot.cooldownOverlay != null)
+                    slot.cooldownOverlay.enabled = onCooldown;
+
                 HotbarSlotTooltip tt = slot.tooltip ?? slot.GetComponent<HotbarSlotTooltip>();
                 if (tt != null)
                 {
+                    item.RebuildDescription();
                     tt.itemName = item.itemName ?? "";
-                    tt.itemDesc = item.description ?? "";
+                    tt.itemDesc = item.renderedDescription ?? "";
                     tt.hasItem = true;
                 }
             }
             else
             {
-                slot.background.color = emptySlotColor;
                 slot.iconImage.enabled = false;
+
+                // Hide cooldown overlay for empty slots
+                if (slot.cooldownOverlay != null)
+                    slot.cooldownOverlay.enabled = false;
 
                 // Targeting slotu: görsel boş ama tıklanabilir (iptal için)
                 slot.button.interactable = (i == targetSlot);
@@ -210,6 +302,176 @@ public class HotbarUI : MonoBehaviour
                     tt2.hasItem = false;
             }
         }
+    }
+
+    private void EnsureCooldownOverlay(HotbarSlotUI slot)
+    {
+        if (slot.cooldownOverlay != null) return;
+
+        GameObject overlayGO = new GameObject("CooldownOverlay", typeof(RectTransform));
+        overlayGO.transform.SetParent(slot.transform, false);
+        overlayGO.layer = slot.gameObject.layer;
+
+        RectTransform rt = overlayGO.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
+        Image img = overlayGO.AddComponent<Image>();
+        img.color = new Color(0f, 0f, 0f, 0.55f);
+        img.raycastTarget = false;
+        img.enabled = false;
+
+        slot.cooldownOverlay = img;
+    }
+
+    // ═══════════════════════════════════════════
+    // ITEM DRAG-TO-SELL
+    // ═══════════════════════════════════════════
+
+    private int GetSlotUnderMouse()
+    {
+        for (int i = 0; i < slots.Count && i < maxVisibleSlots; i++)
+        {
+            if (slots[i] == null) continue;
+            RectTransform rt = slots[i].GetComponent<RectTransform>();
+            if (rt != null && RectTransformUtility.RectangleContainsScreenPoint(
+                rt, Input.mousePosition, hotbarCanvas != null ? hotbarCanvas.worldCamera : null))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void BeginItemDrag(int slotIndex, BaseItem item)
+    {
+        isItemDragging = true;
+        dragItemSlot = slotIndex;
+
+        // Ghost oluştur
+        itemDragGhost = new GameObject("ItemDragGhost", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        Canvas ghostCanvas = itemDragGhost.AddComponent<Canvas>();
+        ghostCanvas.overrideSorting = true;
+        ghostCanvas.sortingOrder = 200;
+        itemDragGhost.AddComponent<GraphicRaycaster>();
+
+        // Hotbar canvas'ın üstüne koy
+        itemDragGhost.transform.SetParent(hotbarCanvas.transform, false);
+        itemDragGhost.transform.SetAsLastSibling();
+
+        RectTransform ghostRT = itemDragGhost.GetComponent<RectTransform>();
+        ghostRT.sizeDelta = new Vector2(slotSize, slotSize);
+        ghostRT.localScale = Vector3.one * 1.15f;
+
+        Image ghostImg = itemDragGhost.GetComponent<Image>();
+        if (item.icon != null)
+        {
+            ghostImg.sprite = item.icon;
+            ghostImg.color = new Color(1f, 1f, 1f, 0.85f);
+        }
+        else
+        {
+            ghostImg.color = new Color(0.5f, 0.5f, 0.6f, 0.85f);
+        }
+        ghostImg.raycastTarget = false;
+
+        // Kaynak slotu soluklaştır
+        if (slotIndex < slots.Count && slots[slotIndex] != null)
+        {
+            CanvasGroup cg = slots[slotIndex].GetComponent<CanvasGroup>();
+            if (cg == null) cg = slots[slotIndex].gameObject.AddComponent<CanvasGroup>();
+            cg.alpha = 0.35f;
+        }
+
+        // SellBox'ı aç
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.ShowForItem(item, slotIndex);
+    }
+
+    private void UpdateItemDrag()
+    {
+        // Ghost mouse takibi
+        if (itemDragGhost != null)
+        {
+            RectTransform canvasRT = hotbarCanvas.GetComponent<RectTransform>();
+            Vector2 pos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRT, Input.mousePosition, null, out pos);
+            RectTransform ghostRT = itemDragGhost.GetComponent<RectTransform>();
+            ghostRT.anchoredPosition = pos;
+
+            // Hafif sallanma
+            float wobble = Mathf.Sin(Time.unscaledTime * 8f) * 3f;
+            ghostRT.localRotation = Quaternion.Euler(0f, 0f, wobble);
+        }
+
+        // Mouse bırakıldı — SellBox'a mı düştü kontrol et
+        if (!Input.GetMouseButton(0))
+        {
+            bool sold = false;
+
+            // SellBox kontrolü — perk drag yoluyla aynı: EventSystem RaycastAll ile
+            // farklı Canvas'lardaki SellBoxDropZone'u bul. Rect-only kontrolü
+            // canvas sıralaması/ghost overlay nedeniyle güvenilmez oluyordu.
+            if (SellBoxController.instance != null && EventSystem.current != null)
+            {
+                PointerEventData ped = new PointerEventData(EventSystem.current)
+                {
+                    position = Input.mousePosition
+                };
+                var results = new List<RaycastResult>();
+                EventSystem.current.RaycastAll(ped, results);
+
+                foreach (var r in results)
+                {
+                    SellBoxDropZone zone = r.gameObject.GetComponent<SellBoxDropZone>();
+                    if (zone == null) zone = r.gameObject.GetComponentInParent<SellBoxDropZone>();
+                    if (zone != null)
+                    {
+                        sold = SellBoxController.instance.TrySell();
+                        break;
+                    }
+                }
+
+                // Fallback: RaycastAll ghost/overlay tarafından engellenirse
+                // doğrudan rect kontrolü yap (eski davranış).
+                if (!sold && SellBoxController.instance.IsMouseOverSellBox())
+                {
+                    sold = SellBoxController.instance.TrySell();
+                }
+            }
+
+            EndItemDrag();
+
+            if (!sold)
+            {
+                // Satış olmadıysa slotu eski haline getir
+                RefreshSlots();
+            }
+        }
+    }
+
+    private void EndItemDrag()
+    {
+        // Ghost sil
+        if (itemDragGhost != null) Destroy(itemDragGhost);
+        itemDragGhost = null;
+
+        // Kaynak slotu düzelt
+        if (dragItemSlot >= 0 && dragItemSlot < slots.Count && slots[dragItemSlot] != null)
+        {
+            CanvasGroup cg = slots[dragItemSlot].GetComponent<CanvasGroup>();
+            if (cg != null) cg.alpha = 1f;
+        }
+
+        isItemDragging = false;
+        dragItemSlot = -1;
+
+        // SellBox'ı kapat
+        if (SellBoxController.instance != null)
+            SellBoxController.instance.HideSellBox();
     }
 
     private void UseSlot(int index)
@@ -361,7 +623,7 @@ public class HotbarSlotTooltip : MonoBehaviour, IPointerEnterHandler, IPointerEx
         descText.alignment = TextAlignmentOptions.Left;
         descText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
         descText.raycastTarget = false;
-        descText.enableWordWrapping = true;
+        descText.textWrappingMode = TextWrappingModes.Normal;
 
         Canvas ttCanvas = tooltipObj.AddComponent<Canvas>();
         ttCanvas.overrideSorting = true;

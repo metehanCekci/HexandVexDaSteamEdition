@@ -1,25 +1,31 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class ChitinArmorPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-    }
+    private bool isEquipped = false;
 
-    // İlk alındığında çalışır (1. Seviye)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "dodge", GameKeywords.Status("dodge") }
+    };
+
     public override void OnAcquire()
     {
-        RunManager.instance.armorChance += 0.15f; 
         TriggerVisualPop();
     }
 
-    // YENİ: Kart tekrar seçilirse çalışır (Seviye Atlama)
-    public override void Upgrade()
+    public override void OnEquip()
     {
-        base.Upgrade(); // Seviyeyi 1 artırır
-        
-        RunManager.instance.armorChance += 0.15f; // Her seviyede +%15 Zırh şansı daha!
-        TriggerVisualPop();
+        if (isEquipped) return;
+        isEquipped = true;
+        RunManager.instance.dodgeChance += 0.30f;
+    }
+
+    public override void OnUnequip()
+    {
+        if (!isEquipped) return;
+        isEquipped = false;
+        RunManager.instance.dodgeChance -= 0.30f;
     }
 }

@@ -46,7 +46,11 @@ public class PhaseShiftCursor : MonoBehaviour
 
     private void DeactivateCursor()
     {
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        // Hand control back to CursorManager (project-wide custom cursor) instead of the OS default.
+        if (CursorManager.instance != null)
+            CursorManager.instance.SetDefault();
+        else
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
         isCustomCursorActive = false;
     }
 

@@ -1,23 +1,24 @@
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class GlassCanonPerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Rare;
-        maxLevel = 1;
-    }
+        { "hpLabel", GameKeywords.HealthText("HP") },
+        { "hp", GameKeywords.Hp(3) },
+        { "mult", GameKeywords.Mult(2) }
+    };
 
     public override void OnAcquire()
     {
-        // Sadece max HP 3'ten büyükse düşür — zaten 3 veya altındaysa dokunma
         if (RunManager.instance.playerMaxHealth <= 3) return;
 
         RunManager.instance.playerMaxHealth = 3;
         if (RunManager.instance.playerCurrentHealth > 3)
             RunManager.instance.playerCurrentHealth = 3;
 
-        // Sahnedeki player health component'ini de güncelle
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
             var h = TurnManager.instance.player.health;
@@ -25,7 +26,6 @@ public class GlassCanonPerk : BasePerk
             if (h.currentHP > 3) h.currentHP = 3;
             h.updateHealth();
         }
-        Debug.Log($"[GlassCanon] Acquired! Max HP set to 3, Current HP: {(TurnManager.instance?.player?.health?.currentHP ?? RunManager.instance.playerCurrentHealth)}");
         TriggerVisualPop();
     }
 
@@ -34,12 +34,9 @@ public class GlassCanonPerk : BasePerk
         var rm = RunManager.instance;
         if (rm.playerMaxHealth <= 3) return;
 
-        int oldMax = rm.playerMaxHealth;
-        int newMax = 3;
-
+        long newMax = 3;
         rm.playerMaxHealth = newMax;
-        // Current HP'yi 3'e düşür ama asla mevcut değerin altına indirme
-        rm.playerCurrentHealth = Mathf.Clamp(rm.playerCurrentHealth, 1, newMax);
+        rm.playerCurrentHealth = System.Math.Clamp(rm.playerCurrentHealth, 1, newMax);
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
         {
@@ -53,9 +50,8 @@ public class GlassCanonPerk : BasePerk
     public override void OnUnequip()
     {
         var rm = RunManager.instance;
-        int defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
+        long defaultMaxHP = TurnManager.instance != null ? TurnManager.instance.startingMaxHP : 5;
 
-        // Sadece maxHP'yi geri yükselt, currentHP'ye dokunma (stash abuse fix)
         rm.playerMaxHealth = defaultMaxHP;
 
         if (TurnManager.instance != null && TurnManager.instance.player != null)
@@ -66,13 +62,11 @@ public class GlassCanonPerk : BasePerk
         }
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        // Glass Cannon: Her koşulda 2x hasar
-        payload.multiplier *= 2f;
-
-        Debug.Log($"[GlassCanon] 2x damage applied, Final multiplier: {payload.multiplier}x");
-
-        TriggerVisualPop();
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        ctx.payload.ApplyMult(2f);
+        ctx.AnimatePop(this);
     }
 }

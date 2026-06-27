@@ -15,15 +15,17 @@ public class MapManager : MonoBehaviour
 
     [Header("Parallax Background")]
     public Texture mapBackgroundTexture; // Inspector'dan kendi arkaplan dokunuzu atayın
+    public Sprite mapBackgroundSprite;   // Alternatif: sprite olarak arka plan resmi
 
     [Header("Node Icons")]
     public Sprite combatIcon;
     public Sprite eliteIcon;
-    public Sprite shopIcon;
-    public Sprite perkIcon;
-    public Sprite restIcon;
-    public Sprite eventIcon;
     public Sprite bossIcon;
+    public Sprite restIcon;
+    public Sprite shopIcon;
+    public Sprite sacrificeIcon;
+    public Sprite enchantIcon;
+    public Sprite treasureIcon;
 
     [Header("Rest UI")]
     public GameObject restCanvasPrefab; // Inspector'dan RestCanvas prefab'ını sürükle
@@ -70,11 +72,9 @@ public class MapManager : MonoBehaviour
             defaultConfig.minNodesPerRow = 2;
             defaultConfig.maxNodesPerRow = 3;
             defaultConfig.threeNodeChance = 0.15f;
-            defaultConfig.shopChance = 0.12f;
-            defaultConfig.perkChance = 0.15f;
             defaultConfig.restChance = 0.10f;
             defaultConfig.eliteChance = 0.10f;
-            defaultConfig.eventChance = 0.08f;
+            defaultConfig.enchantChance = 0.08f;
             layerConfigs = new MapLayerData[] { defaultConfig };
         }
 
@@ -95,6 +95,31 @@ public class MapManager : MonoBehaviour
         {
             LoadRestUIFromPrefab();
         }
+
+        // Enchant UI yoksa otomatik oluştur
+        if (EnchantNodeUI.instance == null)
+        {
+            GameObject enchantGO = new GameObject("EnchantNodeUI");
+            enchantGO.AddComponent<EnchantNodeUI>();
+            DontDestroyOnLoad(enchantGO);
+        }
+
+        // MagicTileManager yoksa otomatik oluştur
+        if (MagicTileManager.instance == null)
+        {
+            GameObject mtGO = new GameObject("MagicTileManager");
+            mtGO.AddComponent<MagicTileManager>();
+        }
+
+        // SacrificeNodeManager yoksa otomatik oluştur
+        if (SacrificeNodeManager.instance == null)
+        {
+            GameObject sacGO = new GameObject("SacrificeNodeManager");
+            sacGO.AddComponent<SacrificeNodeManager>();
+        }
+        // Cache perk lists from MergedShopManager early
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.CachePerkLists();
 
         // Auto-spawn Inventory & Hotbar if not present
         EnsureInventoryAndHotbar();
@@ -128,13 +153,14 @@ public class MapManager : MonoBehaviour
         var scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // Panel (saydam — arkaplan parallax'tan gelecek)
+        // Panel — koyu arkaplan (parallax'ın arkasında güvenlik ağı)
         GameObject panelGO = MakeUIObj("MapPanel", canvasGO.transform);
         StretchFull(panelGO.GetComponent<RectTransform>());
         Image panelBG = panelGO.AddComponent<Image>();
-        panelBG.color = new Color(0f, 0f, 0f, 0f);
+        panelBG.color = new Color(0.03f, 0.03f, 0.05f, 1f); // Koyu lacivert — parallax yüklenmezse bu görünür
         CanvasGroup cg = panelGO.AddComponent<CanvasGroup>();
 
         // ─── ScrollRect tabanlı scroll sistemi ───
@@ -146,23 +172,41 @@ public class MapManager : MonoBehaviour
         scrollRT.offsetMin = Vector2.zero;
         scrollRT.offsetMax = Vector2.zero;
         scrollGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // Raycast almak için
-        scrollGO.AddComponent<Mask>().showMaskGraphic = true;
+        scrollGO.AddComponent<Mask>().showMaskGraphic = false;
 
-        // ─── Parallax arkaplan (inspector'dan sprite atanacak) ───
+        // ─── Parallax arkaplan (scroll'un içinde, ilk child) ───
         GameObject parallaxGO = MakeUIObj("ParallaxBG", scrollGO.transform);
         RectTransform parallaxRT = parallaxGO.GetComponent<RectTransform>();
         StretchFull(parallaxRT);
+
         RawImage parallaxImg = parallaxGO.AddComponent<RawImage>();
         parallaxImg.raycastTarget = false;
-        if (mapBackgroundTexture != null)
+
+        Debug.Log($"[MAP BG] mapBackgroundSprite={mapBackgroundSprite != null}, mapBackgroundTexture={mapBackgroundTexture != null}");
+
+        if (mapBackgroundSprite != null)
+        {
+            parallaxImg.texture = mapBackgroundSprite.texture;
+            parallaxImg.color = Color.white;
+            // Tiling: ekranı kaplayacak kadar tekrar et
+            // 1920x1080 referans çözünürlük üzerinden tile sayısı hesapla
+            float tilesX = 1920f / mapBackgroundSprite.texture.width;
+            float tilesY = 1080f / mapBackgroundSprite.texture.height;
+            parallaxImg.uvRect = new Rect(0f, 0f, tilesX, tilesY);
+            Debug.Log($"[MAP BG] Tiling mode: texture={mapBackgroundSprite.texture.name}, tiles={tilesX:F1}x{tilesY:F1}");
+        }
+        else if (mapBackgroundTexture != null)
         {
             parallaxImg.texture = mapBackgroundTexture;
-            parallaxImg.color = new Color(0.07f, 0.07f, 0.07f, 1f);
-            parallaxImg.uvRect = new Rect(0f, 0f, 16f, 9f); // 16:9 oran, 2x tile
+            parallaxImg.color = Color.white;
+            float tilesX = 1920f / mapBackgroundTexture.width;
+            float tilesY = 1080f / mapBackgroundTexture.height;
+            parallaxImg.uvRect = new Rect(0f, 0f, tilesX, tilesY);
+            Debug.Log($"[MAP BG] Texture tiling: {mapBackgroundTexture.name}, tiles={tilesX:F1}x{tilesY:F1}");
         }
         else
         {
-            // Texture atanmamışsa tamamen gizle
+            Debug.LogWarning("[MAP BG] No background assigned! Set mapBackgroundSprite or mapBackgroundTexture on MapManager in Inspector.");
             parallaxImg.color = new Color(0f, 0f, 0f, 0f);
         }
 
@@ -224,11 +268,12 @@ public class MapManager : MonoBehaviour
         // Node icon'larını ata
         ui.combatIcon = combatIcon;
         ui.eliteIcon = eliteIcon;
-        ui.shopIcon = shopIcon;
-        ui.perkIcon = perkIcon;
-        ui.restIcon = restIcon;
-        ui.eventIcon = eventIcon;
         ui.bossIcon = bossIcon;
+        ui.restIcon = restIcon;
+        ui.shopIcon = shopIcon;
+        ui.sacrificeIcon = sacrificeIcon;
+        ui.enchantIcon = enchantIcon;
+        ui.treasureIcon = treasureIcon;
 
         mapUI = ui;
         canvasGO.SetActive(false); // Başlangıçta tüm canvas'ı kapat
@@ -248,33 +293,39 @@ public class MapManager : MonoBehaviour
         rt.pivot = new Vector2(0.5f, 0.5f);
 
         Image bg = go.AddComponent<Image>();
-        bg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+        bg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta şeffaf — SetState renklendirecek
 
         Button btn = go.AddComponent<Button>();
         btn.transition = Selectable.Transition.None;
         btn.targetGraphic = bg;
 
-        // Outline — icon'dan sadece 2px büyük ince beyaz çerçeve
-        GameObject outlineGO = MakeUIObj("Outline", go.transform);
-        var outlineRT = outlineGO.GetComponent<RectTransform>();
-        outlineRT.anchorMin = new Vector2(0.15f, 0.15f);
-        outlineRT.anchorMax = new Vector2(0.85f, 0.85f);
-        outlineRT.offsetMin = new Vector2(-2f, -2f);
-        outlineRT.offsetMax = new Vector2(2f, 2f);
-        Image outlineImg = outlineGO.AddComponent<Image>();
-        outlineImg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta tamamen gizli
-        outlineImg.raycastTarget = false;
-        outlineGO.transform.SetAsFirstSibling(); // BG'nin arkasında
-
-        // Icon
+        // Icon — ana görsel
         GameObject iconGO = MakeUIObj("Icon", go.transform);
         var iconRT = iconGO.GetComponent<RectTransform>();
-        iconRT.anchorMin = new Vector2(0.15f, 0.15f);
-        iconRT.anchorMax = new Vector2(0.85f, 0.85f);
+        iconRT.anchorMin = new Vector2(0.1f, 0.1f);
+        iconRT.anchorMax = new Vector2(0.9f, 0.9f);
         iconRT.offsetMin = Vector2.zero;
         iconRT.offsetMax = Vector2.zero;
         Image iconImg = iconGO.AddComponent<Image>();
         iconImg.preserveAspect = true;
+        iconImg.raycastTarget = false;
+        iconImg.enabled = false; // Başlangıçta gizli — UpdateIcon açacak
+
+        // Outline — icon'un arkasında, icon'dan 3px büyük, sadece kenarlık görevi görür
+        // Bu bir çerçeve DEĞİL, icondan 3px büyük aynı sprite ama beyaz tint ile
+        // (dolu beyaz kare sorunu olmasın diye sprite olmadan gizli kalır)
+        GameObject outlineGO = MakeUIObj("Outline", go.transform);
+        var outlineRT = outlineGO.GetComponent<RectTransform>();
+        outlineRT.anchorMin = new Vector2(0.1f, 0.1f);
+        outlineRT.anchorMax = new Vector2(0.9f, 0.9f);
+        outlineRT.offsetMin = new Vector2(-3f, -3f);
+        outlineRT.offsetMax = new Vector2(3f, 3f);
+        Image outlineImg = outlineGO.AddComponent<Image>();
+        outlineImg.color = new Color(0f, 0f, 0f, 0f); // Başlangıçta gizli
+        outlineImg.raycastTarget = false;
+        outlineImg.preserveAspect = true;
+        outlineImg.enabled = false; // sprite atanana kadar render etme
+        outlineGO.transform.SetAsFirstSibling(); // Icon'un arkasında
 
         // Label
         GameObject labelGO = MakeUIObj("Label", go.transform);
@@ -416,6 +467,30 @@ public class MapManager : MonoBehaviour
             PerkInventoryUI.CreateFromCode();
         }
 
+        // EnchantNodeUI yok olmuş olabilir
+        if (EnchantNodeUI.instance == null)
+        {
+            GameObject enchantGO = new GameObject("EnchantNodeUI");
+            enchantGO.AddComponent<EnchantNodeUI>();
+            DontDestroyOnLoad(enchantGO);
+        }
+
+        // MagicTileManager yok olmuş olabilir
+        if (MagicTileManager.instance == null)
+        {
+            GameObject mtGO = new GameObject("MagicTileManager");
+            mtGO.AddComponent<MagicTileManager>();
+        }
+
+        // SacrificeNodeManager yok olmuş olabilir
+        if (SacrificeNodeManager.instance == null)
+        {
+            GameObject sacGO = new GameObject("SacrificeNodeManager");
+            sacGO.AddComponent<SacrificeNodeManager>();
+        }
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.CachePerkLists();
+
         // Inventory & Hotbar yok olmuş olabilir
         EnsureInventoryAndHotbar();
     }
@@ -433,6 +508,10 @@ public class MapManager : MonoBehaviour
         // Reset inventory for new run
         if (InventoryManager.instance != null)
             InventoryManager.instance.ResetForNewRun();
+
+        // Reset sacrifice node rewards for new run
+        if (SacrificeNodeManager.instance != null)
+            SacrificeNodeManager.instance.ResetForNewRun();
 
         GenerateNewMap(0);
 
@@ -485,7 +564,7 @@ public class MapManager : MonoBehaviour
     }
 
     // ─── Oyuncu bir node seçtiğinde ───
-    public void SelectNode(int nodeId)
+    public void SelectNode(int nodeId, bool force = false)
     {
         if (isTransitioning) return;
         if (currentMap == null) return;
@@ -493,16 +572,23 @@ public class MapManager : MonoBehaviour
         MapNode node = currentMap.GetNode(nodeId);
         if (node == null) return;
 
-        // İlk hamle: row 0 node'larından birine girebilir
-        if (currentMap.currentNodeId == -1)
+        if (!force)
         {
-            if (node.row != 0) return;
+            // İlk hamle: row 0 node'larından birine girebilir
+            if (currentMap.currentNodeId == -1)
+            {
+                if (node.row != 0) return;
+            }
+            else
+            {
+                // Sadece current node'un child'larına gidilebilir
+                MapNode current = currentMap.GetNode(currentMap.currentNodeId);
+                if (current == null || !current.childIds.Contains(nodeId)) return;
+            }
         }
         else
         {
-            // Sadece current node'un child'larına gidilebilir
-            MapNode current = currentMap.GetNode(currentMap.currentNodeId);
-            if (current == null || !current.childIds.Contains(nodeId)) return;
+            Debug.Log($"[DEV] Force-selected node {nodeId} (row {node.row}, {node.nodeType})");
         }
 
         node.visited = true;
@@ -532,8 +618,7 @@ public class MapManager : MonoBehaviour
     {
         bool isCombatNode = node.nodeType == MapNodeType.Combat
                          || node.nodeType == MapNodeType.EliteCombat
-                         || node.nodeType == MapNodeType.Boss
-                         || node.nodeType == MapNodeType.Event;
+                         || node.nodeType == MapNodeType.Boss;
 
         if (isCombatNode)
         {
@@ -547,7 +632,7 @@ public class MapManager : MonoBehaviour
         }
         else
         {
-            // Non-combat (Shop, Perk, Rest): node'ları smooth küçültüp kaybet
+            // Non-combat (Rest, Enchant, etc.): node'ları smooth küçültüp kaybet
             yield return StartCoroutine(SmoothDismissMapNodes());
             HideGameplayElements();
         }
@@ -564,20 +649,9 @@ public class MapManager : MonoBehaviour
                 showHotbar = true;
                 break;
 
-            case MapNodeType.Event:
-                LevelGenerator.instance.GenerateNextLevel();
-                showHotbar = true;
-                break;
-
-            case MapNodeType.Shop:
-                if (Shopmanager.instance != null)
-                    Shopmanager.instance.OpenAsMapNode();
-                showHotbar = true;
-                break;
-
-            case MapNodeType.PerkSelection:
-                if (LevelUpManager.instance != null)
-                    LevelUpManager.instance.ShowLevelUpScreen();
+            case MapNodeType.Enchant:
+                if (EnchantNodeUI.instance != null)
+                    EnchantNodeUI.instance.Show();
                 break;
 
             case MapNodeType.Rest:
@@ -585,11 +659,22 @@ public class MapManager : MonoBehaviour
                     RestNodeUI.instance.Show();
                 break;
 
+            case MapNodeType.Sacrifice:
+                if (SacrificeNodeManager.instance != null)
+                    SacrificeNodeManager.instance.Show();
+                break;
+
             case MapNodeType.Boss:
                 PlayerPrefs.SetInt("kills_before_boss", 0); // Boss'a ulaşıldı, sayaç sıfırla
                 RunManager.instance.currentLevel++;
                 LevelGenerator.instance.GenerateBossArena();
                 showHotbar = true;
+                break;
+
+            case MapNodeType.Treasure:
+                // TODO: Sandık açma UI'ı — içinden rastgele perk çıkacak
+                Debug.Log("[MapManager] Treasure node — placeholder, auto-completing");
+                OnNodeComplete();
                 break;
         }
 
@@ -689,7 +774,7 @@ public class MapManager : MonoBehaviour
         fader.blocksRaycasts = false;
     }
 
-    // ─── Combat/Shop/Perk/Rest bittikten sonra haritaya dön ───
+    // ─── Combat/Rest bittikten sonra haritaya dön ───
     public void OnNodeComplete()
     {
         Debug.Log($"[MAP] OnNodeComplete called. currentNodeId={currentMap?.currentNodeId}");
@@ -717,9 +802,10 @@ public class MapManager : MonoBehaviour
         if (RunManager.instance != null)
             lastType = RunManager.instance.currentNodeType;
 
-        bool wasNonCombat = lastType == MapNodeType.Shop
-                         || lastType == MapNodeType.PerkSelection
-                         || lastType == MapNodeType.Rest;
+        bool wasNonCombat = lastType == MapNodeType.Rest
+                         || lastType == MapNodeType.Enchant
+                         || lastType == MapNodeType.Sacrifice
+                         || lastType == MapNodeType.Treasure;
 
         if (wasNonCombat)
         {
@@ -729,6 +815,10 @@ public class MapManager : MonoBehaviour
             yield return null;
             if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
             yield return StartCoroutine(SmoothRevealMapNodes());
+
+            // Envanter her zaman açık kalsın
+            if (PerkInventoryUI.instance != null)
+                PerkInventoryUI.instance.Show();
         }
         else if (ScreenFader.instance != null)
         {
@@ -748,8 +838,40 @@ public class MapManager : MonoBehaviour
             yield return null;
             if (mapUI != null) mapUI.CenterOnCurrentNode(currentMap);
 
-            yield return new WaitForSecondsRealtime(0.2f);
-            yield return StartCoroutine(FadeFromBlack());
+            // Combat sonrası shop: map arkaplanı + perk inventory görünür,
+            // ama node'lar yerine shop gösterilir
+            if (MergedShopManager.instance != null)
+            {
+                HideMapNodes();
+                // Map raycast'larını kapat — shop'un tıklanabilir olması için
+                if (mapUI != null && mapUI.canvasGroup != null)
+                {
+                    mapUI.canvasGroup.interactable = false;
+                    mapUI.canvasGroup.blocksRaycasts = false;
+                }
+
+                bool shopDone = false;
+                MergedShopManager.instance.OpenAfterCombat(() => shopDone = true);
+
+                yield return new WaitForSecondsRealtime(0.2f);
+                yield return StartCoroutine(FadeFromBlack());
+
+                while (!shopDone) yield return null;
+
+                // Shop kapandı — map raycast'larını geri aç, node'ları smooth göster
+                if (mapUI != null && mapUI.canvasGroup != null)
+                {
+                    mapUI.canvasGroup.interactable = true;
+                    mapUI.canvasGroup.blocksRaycasts = true;
+                }
+                ShowMapNodes();
+                yield return StartCoroutine(SmoothRevealMapNodes());
+            }
+            else
+            {
+                yield return new WaitForSecondsRealtime(0.2f);
+                yield return StartCoroutine(FadeFromBlack());
+            }
         }
         else
         {
@@ -809,17 +931,55 @@ public class MapManager : MonoBehaviour
         {
             yield return StartCoroutine(FadeToBlack());
 
+            // Boss sonrası shop: map arkaplanı göster, node'ları gizle, shop aç
+            if (MergedShopManager.instance != null)
+            {
+                // Mevcut map arkaplanını göster (node'lar gizli)
+                ShowMapInstant();
+                HideMapNodes();
+                if (mapUI != null && mapUI.canvasGroup != null)
+                {
+                    mapUI.canvasGroup.interactable = false;
+                    mapUI.canvasGroup.blocksRaycasts = false;
+                }
+
+                if (PerkInventoryUI.instance != null)
+                    PerkInventoryUI.instance.Show();
+
+                bool shopDone = false;
+                MergedShopManager.instance.OpenAfterCombat(() => shopDone = true);
+
+                yield return new WaitForSecondsRealtime(0.2f);
+                yield return StartCoroutine(FadeFromBlack());
+
+                while (!shopDone) yield return null;
+
+                // Shop kapandı — karart, yeni map oluştur, göster
+                yield return StartCoroutine(FadeToBlack());
+            }
+
             // Ekran karardıktan sonra tile'ları temizle
             if (LevelGenerator.instance != null)
             {
                 LevelGenerator.instance.groundMap?.ClearAllTiles();
-                if (LevelGenerator.instance.backgroundMap != null)
-                    LevelGenerator.instance.backgroundMap.ClearAllTiles();
+                if (LevelGenerator.instance.columnMap != null)
+                    LevelGenerator.instance.columnMap.ClearAllTiles();
             }
 
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             Debug.Log($"[MAP] BossDefeatedSequence — GenerateNewMap(layerIndex={newLayerIndex})");
             GenerateNewMap(newLayerIndex);
+
+            // Node container'ı geri aç — HideMapNodes() kapatmıştı
+            ShowMapNodes();
+
+            // Map raycast'larını geri aç
+            if (mapUI != null && mapUI.canvasGroup != null)
+            {
+                mapUI.canvasGroup.interactable = true;
+                mapUI.canvasGroup.blocksRaycasts = true;
+            }
+
             ShowMapInstant();
 
             yield return null;
@@ -833,6 +993,7 @@ public class MapManager : MonoBehaviour
         {
             int newLayerIndex = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
             GenerateNewMap(newLayerIndex);
+            ShowMapNodes();
             ShowMapInstant();
             Debug.Log("[MAP] BossDefeatedSequence completed (no fader)");
         }
@@ -867,6 +1028,10 @@ public class MapManager : MonoBehaviour
 
         if (mapUI != null)
         {
+            // Node container'ı aktif olduğundan emin ol (HideMapNodes kapatmış olabilir)
+            if (mapUI.nodeContainer != null && !mapUI.nodeContainer.gameObject.activeSelf)
+                mapUI.nodeContainer.gameObject.SetActive(true);
+
             mapUI.RefreshNodeStates(currentMap);
             mapUI.Show();
             mapUI.CenterOnCurrentNode(currentMap);
@@ -932,19 +1097,19 @@ public class MapManager : MonoBehaviour
         if (LevelGenerator.instance != null)
         {
             LevelGenerator.instance.groundMap?.ClearAllTiles();
-            if (LevelGenerator.instance.backgroundMap != null)
-                LevelGenerator.instance.backgroundMap.ClearAllTiles();
-            if (LevelGenerator.instance.hazardMap != null)
-                LevelGenerator.instance.hazardMap.ClearAllTiles();
-            if (LevelGenerator.instance.scaffoldMap != null)
-                LevelGenerator.instance.scaffoldMap.ClearAllTiles();
+            if (LevelGenerator.instance.columnMap != null)
+                LevelGenerator.instance.columnMap.ClearAllTiles();
+            if (LevelGenerator.instance.foreGroundA != null)
+                LevelGenerator.instance.foreGroundA.ClearAllTiles();
+            if (LevelGenerator.instance.foreGroundB != null)
+                LevelGenerator.instance.foreGroundB.ClearAllTiles();
             if (ScaffoldManager.instance != null)
                 ScaffoldManager.instance.ClearAll();
         }
     }
 
     // ─── Layer config'i güvenli al (fallback: son config) ───
-    private MapLayerData GetLayerConfig(int layerIndex)
+    public MapLayerData GetLayerConfig(int layerIndex)
     {
         if (layerConfigs == null || layerConfigs.Length == 0)
         {
@@ -952,7 +1117,9 @@ public class MapManager : MonoBehaviour
             return ScriptableObject.CreateInstance<MapLayerData>();
         }
 
-        int idx = Mathf.Clamp(layerIndex, 0, layerConfigs.Length - 1);
+        // Layer'lar arasında sonsuza dek döngü yap: 1 → 2 → … → N → 1 → 2 → …
+        // (Eski davranış Mathf.Clamp idi — son layer'da takılıp kalıyordu.)
+        int idx = ((layerIndex % layerConfigs.Length) + layerConfigs.Length) % layerConfigs.Length;
         return layerConfigs[idx];
     }
 }

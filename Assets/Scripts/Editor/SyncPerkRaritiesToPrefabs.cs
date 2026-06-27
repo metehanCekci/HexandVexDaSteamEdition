@@ -39,7 +39,7 @@ public class SyncPerkRaritiesToPrefabs
             { "MutantSwarm",        PerkRarity.Rare },
             { "DoubleOrNothing",    PerkRarity.Rare },
             { "GlassCanon",         PerkRarity.Rare },
-            { "VolatileRoll",       PerkRarity.Rare },
+            { "VolatileRoll",       PerkRarity.Legendary },
             { "CarrionFeeder",      PerkRarity.Rare },
             { "CatalyticEnzyme",    PerkRarity.Rare },
             { "NecroticTouch",      PerkRarity.Rare },
@@ -68,10 +68,26 @@ public class SyncPerkRaritiesToPrefabs
             { "TerminalFuryGland",  PerkRarity.Legendary },
             { "HostSyndrome",       PerkRarity.Legendary },
             { "CapitalistPunch",    PerkRarity.Legendary },
-            { "GeneticCartel",      PerkRarity.Legendary },
+            { "GeneticCartel",      PerkRarity.Epic },
 
             // Secret
             { "SymbioticFury",      PerkRarity.Secret },
+            { "Ouroboros",          PerkRarity.Secret },
+
+            // New perks
+            { "CondensedFury",      PerkRarity.Epic },
+            { "SymbioticArsenal",   PerkRarity.Rare },
+            { "IronWill",           PerkRarity.Rare },
+            { "NeuralHijack",       PerkRarity.Legendary },
+            { "SeismicStep",        PerkRarity.Legendary },
+            { "CascadeProtocol",    PerkRarity.Legendary },
+            { "DiceHoarder",        PerkRarity.Legendary },
+            { "PentUpStrike",       PerkRarity.Epic },
+            { "VoidHunger",         PerkRarity.Common },
+            { "Deadweight",         PerkRarity.Rare },
+            { "KillChain",          PerkRarity.Epic },
+            { "InsurancePolicy",    PerkRarity.Rare },
+            { "PhantomAssault",     PerkRarity.Legendary },
         };
 
         int prefabUpdated = 0;

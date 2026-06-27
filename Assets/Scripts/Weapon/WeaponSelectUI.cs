@@ -81,8 +81,10 @@ public class WeaponSelectUI : MonoBehaviour
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 999;
-        canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasObj.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
+        var wpnScaler = canvasObj.AddComponent<CanvasScaler>();
+        wpnScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        wpnScaler.referenceResolution = new Vector2(1920, 1080);
+        wpnScaler.matchWidthOrHeight = 0.5f;
         canvasObj.AddComponent<GraphicRaycaster>();
 
         panelRoot = canvasObj;

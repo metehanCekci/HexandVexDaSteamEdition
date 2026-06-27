@@ -63,10 +63,10 @@ public class StatsPanelUI : MonoBehaviour
 
     // Mevcut değer best'i geçiyorsa altın rengi ve "NEW BEST!" göster
     // ★ unicode yerine [BEST] kullan — TMP font embed olmadan box görünür
-    private string FormatWithBest(int current, int best)
+    private string FormatWithBest(long current, long best)
     {
         if (current > best)
-            return $"<color=#FFD700>{current} [BEST]</color>";
+            return $"<color=#{UIColors.Gold}>{current} [BEST]</color>";
         return $"{current}  <color=#888888><size=11>best {best}</size></color>";
     }
 
@@ -85,7 +85,10 @@ public class StatsPanelUI : MonoBehaviour
         }
 
         foreach (var perk in rm.activePerks)
-            spawnedRows.Add(CreatePerkRow(perk.icon, perk.perkName, perk.currentLevel, perk.description, true));
+        {
+            perk.RebuildDescription();
+            spawnedRows.Add(CreatePerkRow(perk.icon, perk.perkName, perk.currentLevel, perk.renderedDescription, true));
+        }
     }
 
     private GameObject CreatePerkRow(Sprite icon, string name, int level, string description, bool showLevel)
@@ -174,7 +177,7 @@ public class StatsPanelUI : MonoBehaviour
             descTmp.fontSize = 11;
             descTmp.color = new Color(0.75f, 0.75f, 0.75f, 1f);
             descTmp.alignment = TextAlignmentOptions.TopLeft;
-            descTmp.enableWordWrapping = true;
+            descTmp.textWrappingMode = TextWrappingModes.Normal;
             if (starCrushFont != null) descTmp.font = starCrushFont;
             var descLE = descGo.AddComponent<LayoutElement>();
             descLE.flexibleWidth = 1;

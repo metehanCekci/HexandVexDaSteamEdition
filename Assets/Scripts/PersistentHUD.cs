@@ -23,7 +23,7 @@ public class PersistentHUD : MonoBehaviour
     public Color hpDamagePulseColor = new Color(1f, 0.2f, 0.2f);
     public Color goldPulseColor = new Color(1f, 0.95f, 0.4f);
 
-    private int lastHP = -1;
+    private long lastHP = -1;
     private int lastGold = -1;
     private Coroutine hpPulseCoroutine;
     private Coroutine goldPulseCoroutine;
@@ -84,8 +84,8 @@ public class PersistentHUD : MonoBehaviour
     {
         if (RunManager.instance == null) return;
 
-        int curHP = RunManager.instance.playerCurrentHealth;
-        int maxHP = RunManager.instance.playerMaxHealth;
+        long curHP = RunManager.instance.playerCurrentHealth;
+        long maxHP = RunManager.instance.playerMaxHealth;
 
         if (hpText != null) hpText.text = curHP + "/" + maxHP;
         if (goldText != null) goldText.text = RunManager.instance.currentGold.ToString();

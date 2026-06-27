@@ -14,12 +14,16 @@ public class TrapTileAudioListener : MonoBehaviour
     {
         TrapTileEvents.OnTileCollapsing += HandleCollapse;
         TrapTileEvents.OnTileShakeStarted += HandleShakeStart;
+        TrapTileEvents.OnExplosionTileTriggered += HandleExplosion;
+        TrapTileEvents.OnTeleportTileTriggered += HandleTeleport;
     }
 
     void OnDisable()
     {
         TrapTileEvents.OnTileCollapsing -= HandleCollapse;
         TrapTileEvents.OnTileShakeStarted -= HandleShakeStart;
+        TrapTileEvents.OnExplosionTileTriggered -= HandleExplosion;
+        TrapTileEvents.OnTeleportTileTriggered -= HandleTeleport;
     }
 
     private void HandleCollapse(Vector3Int cell)
@@ -33,5 +37,18 @@ public class TrapTileAudioListener : MonoBehaviour
     {
         // İleride scaffold'a özel titreşim sesi eklemek istersen buraya yaz:
         // if (AudioManager.instance != null) AudioManager.instance.PlayScaffoldShake();
+    }
+
+    private void HandleExplosion(Vector3Int cell)
+    {
+        // Explosion tile ses: AnimateExplosionFX içinde PlayExplosion zaten çağrılıyor.
+        // İleride farklı bir ses istersen buraya yaz:
+        // if (AudioManager.instance != null) AudioManager.instance.PlayExplosion();
+    }
+
+    private void HandleTeleport(Vector3Int fromCell, Vector3Int toCell)
+    {
+        // Teleport tile ses:
+        if (AudioManager.instance != null) AudioManager.instance.PlayTextEffect();
     }
 }

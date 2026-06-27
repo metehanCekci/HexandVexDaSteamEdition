@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8370909524944938661
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1841248713773633592}
+  - component: {fileID: 618506652852210943}
+  m_Layer: 0
+  m_Name: PentUpStrike
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1841248713773633592
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8370909524944938661}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &618506652852210943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8370909524944938661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c14258f9031e0145acd84de57858f41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PentUpStrikePerk
+  currentLevel: 1
+  maxLevel: 3
+  perkName: Pent-Up Strike
+  description: '[white]Attacks[/white] deal {zero}. Dice values are stored. [white]Skip[/white]
+    to unleash all stored damage at {percent}.
+    [stack]
+    [white]Currently:[/white] {stored}
+    ({stacks} stacks)[/stack]'
+  icon: {fileID: -6057070678955543277, guid: e0985c2aa7805be4083330c7e00651fb, type: 3}
+  priority: 0
+  isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
+  rarity: 2
+  storedDamage: 0
+  storedStacks: 0
+  isReleasing: 0

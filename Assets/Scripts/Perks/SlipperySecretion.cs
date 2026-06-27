@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 
@@ -9,21 +9,33 @@ public class SlipperySecretionPerk : BasePerk
     private Dictionary<Vector3Int, GameObject> mucusVisuals = new Dictionary<Vector3Int, GameObject>();
     private Vector3Int lastTrackedCell;
     private bool initialized = false;
+    private bool isEquipped = false;
 
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        maxLevel = 3;
-        rarity = PerkRarity.Common;
-    }
+        { "trail", GameKeywords.Status("slime trail") },
+        { "slide", GameKeywords.Action("slide") }
+    };
 
     public override void OnAcquire()
     {
+        isEquipped = true;
         InitTracking();
     }
 
     public override void OnEquip()
     {
+        isEquipped = true;
         InitTracking();
+    }
+
+    public override void OnUnequip()
+    {
+        isEquipped = false;
+        ClearAllVisuals();
+        mucusCells.Clear();
+        trailHistory.Clear();
+        initialized = false;
     }
 
     public override void OnLevelStart()
@@ -32,8 +44,8 @@ public class SlipperySecretionPerk : BasePerk
         mucusCells.Clear();
         trailHistory.Clear();
         initialized = false;
-        // InitTracking burada çağrılmaz — eski level'daki pozisyonu almasın.
-        // Update'teki lazy init yeni level'daki doğru pozisyonu alacak.
+        // InitTracking burada Ã§aÄŸrÄ±lmaz â€” eski level'daki pozisyonu almasÄ±n.
+        // Update'teki lazy init yeni level'daki doÄŸru pozisyonu alacak.
     }
 
     private void InitTracking()
@@ -47,6 +59,7 @@ public class SlipperySecretionPerk : BasePerk
 
     void Update()
     {
+        if (!isEquipped) return;
         if (TurnManager.instance == null || TurnManager.instance.player == null) return;
 
         // Lazy init: OnLevelStart'ta player henuz null olabilir

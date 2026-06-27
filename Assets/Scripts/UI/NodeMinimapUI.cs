@@ -131,17 +131,18 @@ public class NodeMinimapUI : MonoBehaviour
         ComputeReachability(map, nextStepIds, futureReachable);
 
         // İkonları al
-        Sprite combatIcon = null, eliteIcon = null, shopIcon = null;
-        Sprite perkIcon = null, restIcon = null, eventIcon = null, bossIcon = null;
+        Sprite combatIcon = null, eliteIcon = null, bossIcon = null;
+        Sprite restIcon = null, sacrificeIcon = null;
+        Sprite enchantIcon = null, treasureIcon = null;
         if (MapManager.instance != null)
         {
             combatIcon = MapManager.instance.combatIcon;
             eliteIcon = MapManager.instance.eliteIcon;
-            shopIcon = MapManager.instance.shopIcon;
-            perkIcon = MapManager.instance.perkIcon;
-            restIcon = MapManager.instance.restIcon;
-            eventIcon = MapManager.instance.eventIcon;
             bossIcon = MapManager.instance.bossIcon;
+            restIcon = MapManager.instance.restIcon;
+            sacrificeIcon = MapManager.instance.sacrificeIcon;
+            enchantIcon = MapManager.instance.enchantIcon;
+            treasureIcon = MapManager.instance.treasureIcon;
         }
 
         // Node pozisyonları
@@ -173,8 +174,7 @@ public class NodeMinimapUI : MonoBehaviour
             // İkon
             Image nodeImg = nodeGO.AddComponent<Image>();
             nodeImg.raycastTarget = false;
-            Sprite icon = GetIcon(node.nodeType, combatIcon, eliteIcon, shopIcon,
-                                   perkIcon, restIcon, eventIcon, bossIcon);
+            Sprite icon = GetIcon(node.nodeType, combatIcon, eliteIcon, bossIcon, restIcon, sacrificeIcon, enchantIcon, treasureIcon);
 
             if (icon != null)
             {
@@ -312,18 +312,17 @@ public class NodeMinimapUI : MonoBehaviour
         return -totalWidth / 2f + column * COL_SPACING;
     }
 
-    private Sprite GetIcon(MapNodeType type, Sprite combat, Sprite elite, Sprite shop,
-                           Sprite perk, Sprite rest, Sprite evt, Sprite boss)
+    private Sprite GetIcon(MapNodeType type, Sprite combat, Sprite elite, Sprite boss, Sprite rest, Sprite sacrifice, Sprite enchant, Sprite treasure)
     {
         switch (type)
         {
             case MapNodeType.Combat:        return combat;
             case MapNodeType.EliteCombat:    return elite;
-            case MapNodeType.Shop:           return shop;
-            case MapNodeType.PerkSelection:  return perk;
-            case MapNodeType.Rest:           return rest;
-            case MapNodeType.Event:          return evt;
             case MapNodeType.Boss:           return boss;
+            case MapNodeType.Rest:           return rest;
+            case MapNodeType.Sacrifice:      return sacrifice;
+            case MapNodeType.Enchant:        return enchant;
+            case MapNodeType.Treasure:       return treasure;
             default:                         return null;
         }
     }
@@ -334,11 +333,10 @@ public class NodeMinimapUI : MonoBehaviour
         {
             case MapNodeType.Combat:        return "F";
             case MapNodeType.EliteCombat:    return "E";
-            case MapNodeType.Shop:           return "S";
-            case MapNodeType.PerkSelection:  return "P";
             case MapNodeType.Rest:           return "R";
-            case MapNodeType.Event:          return "?";
+            case MapNodeType.Enchant:        return "E";
             case MapNodeType.Boss:           return "B";
+            case MapNodeType.Treasure:       return "T";
             default:                         return "?";
         }
     }
@@ -350,11 +348,10 @@ public class NodeMinimapUI : MonoBehaviour
         {
             case MapNodeType.Combat:        c = new Color(0.8f, 0.2f, 0.2f); break;
             case MapNodeType.EliteCombat:    c = new Color(1f, 0.4f, 0f); break;
-            case MapNodeType.Shop:           c = new Color(1f, 0.85f, 0.2f); break;
-            case MapNodeType.PerkSelection:  c = new Color(0.6f, 0.2f, 1f); break;
             case MapNodeType.Rest:           c = new Color(0.2f, 0.8f, 0.4f); break;
-            case MapNodeType.Event:          c = new Color(0.2f, 0.6f, 1f); break;
+            case MapNodeType.Enchant:        c = new Color(0.3f, 0.8f, 1f); break;
             case MapNodeType.Boss:           c = new Color(1f, 0f, 0f); break;
+            case MapNodeType.Treasure:       c = new Color(1f, 0.85f, 0.2f); break;
             default:                         c = Color.white; break;
         }
         if (isCurrent) return c;

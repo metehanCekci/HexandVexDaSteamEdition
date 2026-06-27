@@ -8,90 +8,87 @@ public class LevelGenerator : MonoBehaviour
 {
     public static LevelGenerator instance;
 
+    // ── Tilemaps ──
     [Header("Tilemaps")]
     public Tilemap groundMap;
-    public Tilemap backgroundMap;
-    // ==========================================
-    // YENİ: DİKENLER İÇİN AYRI TİLEMAP
-    // ==========================================
-    public Tilemap hazardMap;
+    public Tilemap columnMap;
+    public Tilemap foreGroundA;
+    public Tilemap foreGroundB;
 
-    // ==========================================
-    // SCAFFOLD: ÇÖKEN PLATFORM TİLEMAP
-    // ==========================================
-    public Tilemap scaffoldMap;
+    // ── Tile Set ──
+    [Header("Tile Set (MapManager yokken fallback)")]
+    public LayerTileSet defaultTileSet;
 
-    [Header("Tiles (Üst Zemin)")]
-    public TileBase groundTile;
-    public TileBase hazardTile;
-
-    [Header("Scaffold (Çöken Platform)")]
-    public TileBase scaffoldTile; // Üst kısım (tileMap_303)
-    public TileBase lowerScaffoldTile; // Alt kısım (tileMap_101)
-    [Range(0f, 1f)] public float scaffoldSpawnChance = 0.08f;
-
-    [Header("Tiles (Arka Plan Sütun)")]
-    public TileBase columnTile;
-
-    [Header("Prefabs & Settings")]
+    // ── Prefablar ──
+    [Header("Prefablar")]
     public GameObject playerPrefab;
-    public GameObject meleeEnemyPrefab;
-    public GameObject aoeEnemyPrefab;
 
-    [Header("Boss Arenası Prefableri")]
-    public GameObject bossPrefab;
-    public GameObject totemPrefab;
+    // ── Harita Ayarları ──
+    [Header("Harita")]
+    public int baseMapRadius = 3;
 
-    [Header("Shop Arena")]
-    public GameObject shopDealerPrefab; // Optional — if null, creates a placeholder sprite
+    // ── Runtime Cell Takibi ──
+    [HideInInspector] public List<Vector3Int> validCells = new List<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> hazardCells = new HashSet<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> scaffoldCells = new HashSet<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> explosionCells = new HashSet<Vector3Int>();
+    [HideInInspector] public HashSet<Vector3Int> teleportCells = new HashSet<Vector3Int>();
+    [HideInInspector] public Dictionary<Vector3Int, Vector3Int> teleportPairs = new Dictionary<Vector3Int, Vector3Int>();
+    private Dictionary<Vector3Int, GroundVariant> cellVariantMap = new Dictionary<Vector3Int, GroundVariant>();
 
-    [Header("Warlock Düşman")]
-    public GameObject warlockEnemyPrefab;
-    public int warlockStartLevel = 0; // Her bölümde çıkabilir
-    [Range(0f, 1f)] public float warlockSpawnChance = 0.15f;
-    private static float bossLegendaryMultiplier = 1f;  // Her bosstan sonra 2 ile çarpılır
+    // ── Sabitler ──
+    private static float bossLegendaryMultiplier = 1f;
+    private static readonly Vector3Int[] oddOffsets  = { new Vector3Int(+1, 0, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0) };
+    private static readonly Vector3Int[] evenOffsets = { new Vector3Int(+1, 0, 0), new Vector3Int(+1, +1, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(0, -1, 0), new Vector3Int(+1, -1, 0) };
 
     public static void ResetBossMultiplier() { bossLegendaryMultiplier = 1f; }
 
     public float CurrentEnemyHealth
     {
-        get { 
+        get
+        {
             float baseHealth = 7f * bossLegendaryMultiplier;
-            return baseHealth * Mathf.Pow(1.2f, RunManager.instance.currentLevel); 
+            return baseHealth * Mathf.Pow(1.2f, RunManager.instance.currentLevel);
         }
     }
-
-    public int baseMapRadius = 3;
-    public int aoeStartLevel = 1; // Her bölümde çıkabilir
-
-    private List<Vector3Int> validCells = new List<Vector3Int>();
-    public HashSet<Vector3Int> hazardCells = new HashSet<Vector3Int>();
-    public HashSet<Vector3Int> scaffoldCells = new HashSet<Vector3Int>();
-
-    private static readonly Vector3Int[] oddOffsets = { new Vector3Int(+1, 0, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0) };
-    private static readonly Vector3Int[] evenOffsets = { new Vector3Int(+1, 0, 0), new Vector3Int(+1, +1, 0), new Vector3Int(0, +1, 0), new Vector3Int(-1, 0, 0), new Vector3Int(0, -1, 0), new Vector3Int(+1, -1, 0) };
 
     void Awake()
     {
         if (instance == null) instance = this;
 
-        if (backgroundMap == null)
+        if (columnMap == null)
         {
-            GameObject bgObj = GameObject.Find("BackgroundMap");
-            if (bgObj != null) backgroundMap = bgObj.GetComponent<Tilemap>();
+            GameObject obj = GameObject.Find("Column");
+            if (obj != null) columnMap = obj.GetComponent<Tilemap>();
         }
 
-        if (hazardMap == null)
+        if (foreGroundA == null)
         {
-            GameObject hzObj = GameObject.Find("HazardMap");
-            if (hzObj != null) hazardMap = hzObj.GetComponent<Tilemap>();
+            GameObject obj = GameObject.Find("ForeGroundA");
+            if (obj != null) foreGroundA = obj.GetComponent<Tilemap>();
         }
 
-        if (scaffoldMap == null)
+        if (foreGroundB == null)
         {
-            GameObject scObj = GameObject.Find("ScaffoldMap");
-            if (scObj != null) scaffoldMap = scObj.GetComponent<Tilemap>();
+            GameObject obj = GameObject.Find("ForeGroundB");
+            if (obj != null) foreGroundB = obj.GetComponent<Tilemap>();
         }
+    }
+
+    /// <summary>
+    /// Aktif layer'ın tile set'ini döndürür.
+    /// MapManager varsa o anki layer config'inden okur, yoksa defaultTileSet'i kullanır.
+    /// </summary>
+    public LayerTileSet GetActiveTileSet()
+    {
+        if (MapManager.instance != null)
+        {
+            int layerIdx = RunManager.instance != null ? RunManager.instance.currentLayerIndex : 0;
+            MapLayerData config = MapManager.instance.GetLayerConfig(layerIdx);
+            if (config != null && config.tileSet != null)
+                return config.tileSet;
+        }
+        return defaultTileSet;
     }
 
     void Start()
@@ -103,13 +100,61 @@ public class LevelGenerator : MonoBehaviour
     {
         yield return null;
 
+        // ─── Starting Perk Selection (play'e basınca ilk göreceği şey) ───
+        if (StartingPerkSelectionUI.instance != null)
+        {
+            // Keep the screen fully black while we bring up the perk panel so the placeholder
+            // scene behind it (character, tiles, etc.) never flashes. We'll fade from black to
+            // the panel once it's shown.
+            CanvasGroup fader = ScreenFader.instance?.faderGroup;
+            if (ScreenFader.instance != null)
+            {
+                ScreenFader.instance.StopAllCoroutines();
+                if (fader != null)
+                {
+                    fader.alpha = 1f;
+                    fader.blocksRaycasts = true;
+                }
+            }
+
+            Debug.Log("[LEVEL-DEBUG] Starting perk selection screen showing...");
+            bool selectionDone = false;
+            StartingPerkSelectionUI.instance.Show(() => { selectionDone = true; });
+
+            // Let the panel render one frame so it's fully laid out before we fade it in.
+            yield return null;
+
+            // Fade the black away to reveal the perk panel (placeholder scene stays hidden behind the panel's full-screen BG).
+            if (fader != null)
+            {
+                float dur = 0.5f;
+                float elapsed = 0f;
+                float startAlpha = fader.alpha;
+                while (elapsed < dur)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    fader.alpha = Mathf.Lerp(startAlpha, 0f, Mathf.Clamp01(elapsed / dur));
+                    yield return null;
+                }
+                fader.alpha = 0f;
+                fader.blocksRaycasts = false;
+            }
+
+            // Wait until player confirms their 3 picks
+            while (!selectionDone)
+                yield return null;
+
+            Debug.Log("[LEVEL-DEBUG] Starting perk selection completed!");
+        }
+
         // Map sistemi aktifse: ilk level'i üretme, haritayı göster
         Debug.Log($"[LEVEL-DEBUG] LevelBaslatmaSırası: MapManager.instance={MapManager.instance}, null={MapManager.instance == null}");
         if (MapManager.instance != null)
         {
-            // ScreenFader'ın otomatik fade'lerini durdur — MapManager kontrol edecek
-            if (ScreenFader.instance != null)
-                ScreenFader.instance.StopAllCoroutines();
+            // NOTE: previously we stopped ScreenFader's coroutines here so MapManager could control
+            // the transition. But after the starting-perk screen the fader is mid fade-out/fade-in
+            // (to avoid the character popping in), and stopping it would strand the screen black.
+            // Let ScreenFader finish its transition naturally.
 
             MapManager.instance.StartNewRun();
             Debug.Log("Map sistemi aktif — harita gösteriliyor.");
@@ -119,11 +164,34 @@ public class LevelGenerator : MonoBehaviour
             // Legacy flow: direkt level üret
             GenerateNextLevel();
 
-            if (ScreenFader.instance != null)
+            // Perk screen left the fader at black so the character wouldn't pop in.
+            // Now the level is built, fade it back up to reveal the world.
+            if (ScreenFader.instance != null && ScreenFader.instance.faderGroup != null)
             {
-                Debug.Log("Harita çizildi. Ekran karartması (veya aydınlanması) arka planda çalışıyor.");
+                ScreenFader.instance.StopAllCoroutines();
+                yield return StartCoroutine(FadeScreenFromBlack(0.5f));
+                Debug.Log("Harita çizildi, ekran aydınlatıldı.");
             }
         }
+    }
+
+    private System.Collections.IEnumerator FadeScreenFromBlack(float duration)
+    {
+        CanvasGroup fader = ScreenFader.instance?.faderGroup;
+        if (fader == null) yield break;
+
+        float startAlpha = fader.alpha;
+        if (startAlpha <= 0.01f) yield break; // already visible
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            fader.alpha = Mathf.Lerp(startAlpha, 0f, Mathf.Clamp01(elapsed / duration));
+            yield return null;
+        }
+        fader.alpha = 0f;
+        fader.blocksRaycasts = false;
     }
 
     public void GenerateNextLevel()
@@ -156,14 +224,20 @@ public class LevelGenerator : MonoBehaviour
         }
 
         groundMap.ClearAllTiles();
-        if (backgroundMap != null) backgroundMap.ClearAllTiles();
-        if (hazardMap != null) hazardMap.ClearAllTiles();
-        if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
+        if (columnMap != null) columnMap.ClearAllTiles();
+        if (foreGroundA != null) foreGroundA.ClearAllTiles();
+        if (foreGroundB != null) foreGroundB.ClearAllTiles();
+        if (foreGroundB != null) foreGroundB.ClearAllTiles();
         if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
+        if (MagicTileManager.instance != null) MagicTileManager.instance.ClearActiveTiles();
 
         validCells.Clear();
         hazardCells.Clear();
         scaffoldCells.Clear();
+        explosionCells.Clear();
+        teleportCells.Clear();
+        teleportPairs.Clear();
+        cellVariantMap.Clear();
 
         foreach (var enemy in TurnManager.instance.enemies)
         {
@@ -171,13 +245,20 @@ public class LevelGenerator : MonoBehaviour
         }
         TurnManager.instance.enemies.Clear();
 
+        LayerTileSet ts = GetActiveTileSet();
+        float scaffoldSpawnChance = ts != null ? ts.scaffoldSpawnChance : 0.08f;
+
         bool isPostBossLevel = RunManager.instance.currentLevel > 1 && RunManager.instance.currentLevel % 5 == 1;
         bool isEliteNode = RunManager.instance.currentNodeType == MapNodeType.EliteCombat;
         int currentRadius = Mathf.Min(baseMapRadius + (RunManager.instance.currentLevel / 8), baseMapRadius + 3); // Max radius cap
         int enemyCountToSpawn = Mathf.Min(3 + (RunManager.instance.currentLevel / 8), 6); // Max 6 enemy limit
 
-        // Elite node'larda daha fazla ve güçlü düşman
-        if (isEliteNode) enemyCountToSpawn += 2;
+        // Elite node'larda daha büyük harita ve daha fazla güçlü düşman
+        if (isEliteNode)
+        {
+            currentRadius += 2;
+            enemyCountToSpawn += 2;
+        }
 
         for (int x = -currentRadius; x <= currentRadius; x++)
         {
@@ -191,36 +272,45 @@ public class LevelGenerator : MonoBehaviour
                     {
                         float roll = Random.value;
 
-                        groundMap.SetTile(cell, groundTile);
+                        SetGroundWithVariant(cell, ts);
                         groundMap.SetColor(cell, Color.white);
 
                         // Merkeze asla tehlikeli tile koyma
                         if (cell != Vector3Int.zero)
                         {
-                            float hazardThreshold = scaffoldSpawnChance + 0.08f;
-                            float scaffoldThreshold = hazardThreshold + scaffoldSpawnChance;
+                            bool hasExplosionTile = ts != null && ts.explosionTile != null;
+                            bool hasScaffoldTile  = ts != null && ts.scaffoldTile != null;
+                            float hazardThreshold    = scaffoldSpawnChance + 0.08f;
+                            float scaffoldThreshold  = hazardThreshold + scaffoldSpawnChance;
 
                             if (roll < hazardThreshold)
                             {
-                                // Diken (Hazard) tile
-                                // Komşusunda 2+ hazard varsa spawn etme → geçilmez duvarlar engellenir
+                                // Diken / Explosion tile — Komşusunda 2+ hazard varsa spawn etme
                                 int adjacentHazardCount = 0;
                                 Vector3Int[] hazOffsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
                                 foreach (var off in hazOffsets)
-                                {
                                     if (hazardCells.Contains(cell + off)) adjacentHazardCount++;
-                                }
 
                                 if (adjacentHazardCount < 2)
                                 {
-                                    if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
-                                    hazardCells.Add(cell);
+                                    if (hasExplosionTile)
+                                    {
+                                        // Explosion tile — hazardCells'e de eklenir (düşman kaçar)
+                                        if (foreGroundA != null) foreGroundA.SetTile(cell, ts.explosionTile);
+                                        hazardCells.Add(cell);
+                                        explosionCells.Add(cell);
+                                    }
+                                    else if (ts != null && ts.hazardTile != null)
+                                    {
+                                        // Normal spike tile
+                                        if (foreGroundA != null) foreGroundA.SetTile(cell, ts.hazardTile);
+                                        hazardCells.Add(cell);
+                                    }
                                 }
                             }
-                            else if (roll < scaffoldThreshold)
+                            else if (roll < scaffoldThreshold && hasScaffoldTile && !hasExplosionTile)
                             {
-                                // Scaffold (Çöken Platform) tile
-                                // Komşusunda zaten scaffold varsa spawn etme → kümeleme ve adacık oluşumunu engelle
+                                // Scaffold — sadece explosionTile olmayan layer'larda
                                 bool hasAdjacentScaffold = false;
                                 Vector3Int[] cellOffsets = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
                                 foreach (var off in cellOffsets)
@@ -228,10 +318,10 @@ public class LevelGenerator : MonoBehaviour
                                     if (scaffoldCells.Contains(cell + off)) { hasAdjacentScaffold = true; break; }
                                 }
 
-                                if (!hasAdjacentScaffold && scaffoldMap != null && scaffoldTile != null)
+                                if (!hasAdjacentScaffold && foreGroundB != null)
                                 {
                                     groundMap.SetTile(cell, null);
-                                    scaffoldMap.SetTile(cell, scaffoldTile);
+                                    foreGroundB.SetTile(cell, ts.scaffoldTile);
                                     scaffoldCells.Add(cell);
                                 }
                             }
@@ -264,7 +354,7 @@ public class LevelGenerator : MonoBehaviour
                     Vector3Int neighbor = existing + off;
                     if (!validCells.Contains(neighbor))
                     {
-                        groundMap.SetTile(neighbor, groundTile);
+                        SetGroundWithVariant(neighbor, ts);
                         groundMap.SetColor(neighbor, Color.white);
                         validCells.Add(neighbor);
                         needed--;
@@ -295,20 +385,30 @@ public class LevelGenerator : MonoBehaviour
         // KESİN ÇÖZÜM: OYUNCU DOĞDUĞU KAREYİ ZORLA TERTEMİZ YAP!
         // ========================================================
         hazardCells.Remove(playerStartCell);
-        if (hazardMap != null) hazardMap.SetTile(playerStartCell, null);
+        explosionCells.Remove(playerStartCell);
+        if (foreGroundA != null) foreGroundA.SetTile(playerStartCell, null);
 
         scaffoldCells.Remove(playerStartCell);
-        if (scaffoldMap != null) scaffoldMap.SetTile(playerStartCell, null);
+        if (foreGroundB != null) foreGroundB.SetTile(playerStartCell, null);
 
-        groundMap.SetTile(playerStartCell, groundTile); // Altına sağlam zemin koy
+        teleportCells.Remove(playerStartCell);
+        if (foreGroundB != null) foreGroundB.SetTile(playerStartCell, null);
+        if (teleportPairs.ContainsKey(playerStartCell))
+        {
+            Vector3Int paired = teleportPairs[playerStartCell];
+            teleportPairs.Remove(playerStartCell);
+            teleportPairs.Remove(paired);
+            teleportCells.Remove(paired);
+        }
+
+        SetGroundWithVariant(playerStartCell, ts); // Altına sağlam zemin koy
         if (!validCells.Contains(playerStartCell)) validCells.Add(playerStartCell);
 
-        TurnManager.instance.player.transform.position = groundMap.GetCellCenterWorld(playerStartCell);
-        TurnManager.instance.player.StartKnockbackMovement(playerStartCell);
+        // ForceSetPosition: scaffold event'lerini tetiklemeden oyuncuyu doğru hücreye yerleştir
+        TurnManager.instance.player.ForceSetPosition(playerStartCell);
         validCells.Remove(playerStartCell);
 
         List<Vector3Int> spawnedEnemyCells = new List<Vector3Int>();
-        int spawnedWarlockCount = 0;
         Vector3 playerWorldPos = groundMap.GetCellCenterWorld(playerStartCell);
 
         for (int i = 0; i < enemyCountToSpawn; i++)
@@ -386,28 +486,25 @@ public class LevelGenerator : MonoBehaviour
 
             Vector3 spawnPos = groundMap.GetCellCenterWorld(bestSpawnCell);
 
-            GameObject prefabToSpawn = meleeEnemyPrefab;
-
-            if (warlockEnemyPrefab != null && spawnedWarlockCount < 3 &&
-                (RunManager.instance.currentLevel >= warlockStartLevel || RunManager.instance.currentLevel == 0))
+            // Düşman seçimi: enemies dizisini sırayla kontrol et, ilk geçeni spawn et
+            GameObject prefabToSpawn = null;
+            if (ts != null && ts.enemies != null && ts.enemies.Length > 0)
             {
-                float effectiveChance = (RunManager.instance.currentLevel == 0) ? 0.50f : warlockSpawnChance;
-                if (Random.value < effectiveChance)
+                foreach (var entry in ts.enemies)
                 {
-                    prefabToSpawn = warlockEnemyPrefab;
+                    if (entry.prefab != null && Random.value < entry.spawnChance)
+                    {
+                        prefabToSpawn = entry.prefab;
+                        break;
+                    }
                 }
+                // Hiçbiri geçmediyse index 0 (varsayılan melee)
+                if (prefabToSpawn == null)
+                    prefabToSpawn = ts.enemies[0].prefab;
             }
 
-            if (prefabToSpawn == meleeEnemyPrefab && RunManager.instance.currentLevel >= aoeStartLevel)
-            {
-                if (Random.value < 0.30f && aoeEnemyPrefab != null)
-                {
-                    prefabToSpawn = aoeEnemyPrefab;
-                }
-            }
-
+            if (prefabToSpawn == null) continue;
             GameObject newEnemyObj = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
-            if (prefabToSpawn == warlockEnemyPrefab) spawnedWarlockCount++;
             EnemyMovement enemyAI = newEnemyObj.GetComponent<EnemyMovement>();
             enemyAI.groundMap = this.groundMap;
 
@@ -444,6 +541,19 @@ public class LevelGenerator : MonoBehaviour
             StartCoroutine(enemyAI.FadeSpawnCoroutine());
         }
 
+        // ========================================================
+        // ULAŞILAMAZ DÜŞMAN KONTROLÜ
+        // Oyuncudan BFS ile erişilemeyen düşmanları anında öldür
+        // ========================================================
+        KillUnreachableEnemies(playerStartCell);
+
+        // Teleport tile'ları olan layer'larda pair'ları yerleştir
+        if (ts != null && ts.teleportTileA != null && ts.teleportTileB != null)
+        {
+            int numPairs = Mathf.Clamp(1 + (RunManager.instance.currentLevel / 5), 1, 2);
+            SpawnTeleportPairs(numPairs, playerStartCell, ts);
+        }
+
         TurnManager.instance.isPlayerTurn = true;
         TurnManager.instance.hasAttackedThisTurn = false;
 
@@ -451,13 +561,76 @@ public class LevelGenerator : MonoBehaviour
         if (RunManager.instance != null)
         {
             RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
+            // Clear blue tile extended range from previous level
+            RunManager.instance.surgeBootStacks = 0;
+            RunManager.instance.surgeBootNextTurn = false;
         }
 
         TurnManager.instance.player.UpdateHighlights();
 
         TurnManager.instance.Invoke("LockAllEnemyIntents", 0.1f);
 
+        // Magic tile'ları haritaya yerleştir
+        if (MagicTileManager.instance != null)
+            MagicTileManager.instance.SpawnMagicTiles();
+
         Debug.Log($"🗺️ Level {RunManager.instance.currentLevel} oluşturuldu!");
+    }
+
+    /// <summary>
+    /// Oyuncu pozisyonundan BFS ile erişilemeyen düşmanları anında öldürür.
+    /// Spike/hazard arkasında sıkışıp oyunu kilitleyen düşmanları engeller.
+    /// </summary>
+    private void KillUnreachableEnemies(Vector3Int playerCell)
+    {
+        // BFS: oyuncu cell'inden erişilebilen tüm non-hazard hücreleri bul
+        // Not: validCells'den spawn sırasında cell'ler çıkarılıyor,
+        // bu yüzden groundMap ve foreGroundB üzerinden kontrol yapıyoruz
+        HashSet<Vector3Int> reachable = new HashSet<Vector3Int>();
+        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        queue.Enqueue(playerCell);
+        reachable.Add(playerCell);
+
+        while (queue.Count > 0)
+        {
+            Vector3Int current = queue.Dequeue();
+            Vector3Int[] offsets = (current.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offsets)
+            {
+                Vector3Int neighbor = current + off;
+                if (reachable.Contains(neighbor)) continue;
+                if (hazardCells.Contains(neighbor)) continue; // Hazard üzerinden geçilemez
+                // Hücre geçerli mi: ground veya scaffold tile'ı olmalı
+                bool hasGround = groundMap.HasTile(neighbor);
+                bool hasScaffold = foreGroundB != null && foreGroundB.HasTile(neighbor);
+                if (!hasGround && !hasScaffold) continue;
+                reachable.Add(neighbor);
+                queue.Enqueue(neighbor);
+            }
+        }
+
+        // Erişilemeyen düşmanları öldür
+        List<EnemyMovement> toKill = new List<EnemyMovement>();
+        foreach (var enemy in TurnManager.instance.enemies)
+        {
+            if (enemy == null) continue;
+            Vector3Int enemyCell = groundMap.WorldToCell(enemy.transform.position);
+            if (!reachable.Contains(enemyCell))
+            {
+                toKill.Add(enemy);
+            }
+        }
+
+        foreach (var enemy in toKill)
+        {
+            Debug.Log($"⚠️ Ulaşılamaz düşman tespit edildi, anında öldürülüyor: {enemy.name} @ {groundMap.WorldToCell(enemy.transform.position)}");
+            enemy.health.currentHP = 0;
+            if (enemy.gameObject.activeInHierarchy)
+                StartCoroutine(enemy.FadeDieCoroutine());
+        }
+
+        if (toKill.Count > 0)
+            TurnManager.instance.enemies.RemoveAll(e => e == null || e.health.currentHP <= 0);
     }
 
     // ========================================================
@@ -484,13 +657,15 @@ public class LevelGenerator : MonoBehaviour
         // isLevelClearTriggered reset — yoksa boss ölünce WaitAndTriggerLevelClear tetiklenmez
         if (TurnManager.instance != null) TurnManager.instance.isLevelClearTriggered = false;
         groundMap.ClearAllTiles();
-        if (backgroundMap != null) backgroundMap.ClearAllTiles();
-        if (hazardMap != null) hazardMap.ClearAllTiles();
-        if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
+        if (columnMap != null) columnMap.ClearAllTiles();
+        if (foreGroundA != null) foreGroundA.ClearAllTiles();
+        if (foreGroundB != null) foreGroundB.ClearAllTiles();
         if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
+        if (MagicTileManager.instance != null) MagicTileManager.instance.ClearActiveTiles();
         validCells.Clear();
         hazardCells.Clear();
         scaffoldCells.Clear();
+        cellVariantMap.Clear();
 
         foreach (var enemy in TurnManager.instance.enemies)
         {
@@ -513,13 +688,14 @@ public class LevelGenerator : MonoBehaviour
                         float roll = Random.value;
                         
                         // Zemin banko konuluyor
-                        groundMap.SetTile(cell, groundTile);
+                        LayerTileSet bossTs = GetActiveTileSet();
+                        SetGroundWithVariant(cell, bossTs);
                         groundMap.SetColor(cell, Color.white);
 
                         // Boss arenasında merkeze değil de rastgele bir yerlere sadece diken (hazard) serpiştiriyoruz. Scaffold YÖK EDİLDİ!
-                        if (roll < 0.08f && Vector3Int.zero != cell)
+                        if (roll < 0.08f && Vector3Int.zero != cell && bossTs?.hazardTile != null)
                         {
-                            if (hazardMap != null) hazardMap.SetTile(cell, hazardTile);
+                            if (foreGroundA != null) foreGroundA.SetTile(cell, bossTs.hazardTile);
                             hazardCells.Add(cell);
                         }
 
@@ -554,16 +730,16 @@ public class LevelGenerator : MonoBehaviour
         // KESİN ÇÖZÜM: BOSS ARENASINDA DA OYUNCU DOĞDUĞU KAREYİ TERTEMİZ YAP!
         // ========================================================
         hazardCells.Remove(playerStartCell);
-        if (hazardMap != null) hazardMap.SetTile(playerStartCell, null);
+        if (foreGroundA != null) foreGroundA.SetTile(playerStartCell, null);
 
         scaffoldCells.Remove(playerStartCell);
-        if (scaffoldMap != null) scaffoldMap.SetTile(playerStartCell, null);
+        if (foreGroundB != null) foreGroundB.SetTile(playerStartCell, null);
 
-        groundMap.SetTile(playerStartCell, groundTile); // Altına sağlam zemin koy
+        SetGroundWithVariant(playerStartCell, GetActiveTileSet()); // Altına sağlam zemin koy
         if (!validCells.Contains(playerStartCell)) validCells.Add(playerStartCell);
 
-        TurnManager.instance.player.transform.position = groundMap.GetCellCenterWorld(playerStartCell);
-        TurnManager.instance.player.StartKnockbackMovement(playerStartCell);
+        // ForceSetPosition: scaffold event'lerini tetiklemeden oyuncuyu doğru hücreye yerleştir
+        TurnManager.instance.player.ForceSetPosition(playerStartCell);
         validCells.Remove(playerStartCell);
 
         List<Vector3Int> availableSpawnCells = validCells.Where(c => !hazardCells.Contains(c) && !scaffoldCells.Contains(c)).ToList();
@@ -578,16 +754,16 @@ public class LevelGenerator : MonoBehaviour
 
         availableSpawnCells = availableSpawnCells.OrderByDescending(c => Vector3.Distance(groundMap.GetCellCenterWorld(c), worldCenter)).ToList();
 
+        LayerTileSet bossLayerTs = GetActiveTileSet();
         EnemyMovement spawnedBossAI = null;
-        if (bossPrefab != null && availableSpawnCells.Count > 0)
+        if (bossLayerTs?.bossPrefab != null && availableSpawnCells.Count > 0)
         {
             Vector3Int bossCell = availableSpawnCells[0];
             Vector3 bossPos = groundMap.GetCellCenterWorld(bossCell);
 
-            GameObject bossObj = Instantiate(bossPrefab, bossPos, Quaternion.identity);
+            GameObject bossObj = Instantiate(bossLayerTs.bossPrefab, bossPos, Quaternion.identity);
             EnemyMovement bossAI = bossObj.GetComponent<EnemyMovement>();
 
-            // Boss sahnesinde legendary multiplier'ı uyguLAMA, ama normal düşmanın 3 katı HP'ye sahip
             float bossHealth = LevelGenerator.instance.CurrentEnemyHealth * 2f;
             bossAI.health.maxHP = Mathf.RoundToInt(bossHealth);
             bossAI.health.currentHP = bossAI.health.maxHP;
@@ -595,11 +771,10 @@ public class LevelGenerator : MonoBehaviour
 
             StartCoroutine(bossAI.FadeSpawnCoroutine());
             spawnedBossAI = bossAI;
-
             availableSpawnCells.RemoveAt(0);
         }
 
-        if (totemPrefab != null)
+        if (bossLayerTs?.totemPrefab != null)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -609,7 +784,7 @@ public class LevelGenerator : MonoBehaviour
                 Vector3Int totemCell = availableSpawnCells[index];
                 Vector3 totemPos = groundMap.GetCellCenterWorld(totemCell);
 
-                GameObject totemObj = Instantiate(totemPrefab, totemPos, Quaternion.identity);
+                GameObject totemObj = Instantiate(bossLayerTs.totemPrefab, totemPos, Quaternion.identity);
                 EnemyMovement totemAI = totemObj.GetComponent<EnemyMovement>();
 
                 totemAI.health.maxHP = 1;
@@ -617,19 +792,35 @@ public class LevelGenerator : MonoBehaviour
                 totemAI.health.updateHealth();
 
                 StartCoroutine(totemAI.FadeSpawnCoroutine());
-
                 availableSpawnCells.RemoveAt(index);
             }
         }
 
+        // Ulaşılamaz düşman kontrolü (boss arena)
+        KillUnreachableEnemies(playerStartCell);
+
         TurnManager.instance.hasAttackedThisTurn = false;
+
+        // Reset remainingMoves for the new boss arena so perks like ReflexFiber start fresh
+        // on the very first boss-arena turn (the regular level path does this in GenerateNextLevel,
+        // but boss arenas branched out before reaching that block).
+        if (RunManager.instance != null)
+        {
+            RunManager.instance.remainingMoves = RunManager.instance.extraMovesPerTurn;
+            RunManager.instance.surgeBootStacks = 0;
+            RunManager.instance.surgeBootNextTurn = false;
+        }
 
         if (spawnedBossAI != null && BossIntroSequence.instance != null)
         {
+            // Boss intro önce oynasın, bitince magic tile'lar spawn olsun
             StartCoroutine(DelayedBossIntro(spawnedBossAI));
         }
         else
         {
+            // Magic tile'ları boss arenasına yerleştir
+            if (MagicTileManager.instance != null)
+                MagicTileManager.instance.SpawnMagicTiles();
             TurnManager.instance.isPlayerTurn = true;
             TurnManager.instance.player.UpdateHighlights();
         }
@@ -638,29 +829,55 @@ public class LevelGenerator : MonoBehaviour
     private IEnumerator DelayedBossIntro(EnemyMovement boss)
     {
         yield return new WaitForSeconds(0.8f);
-        BossIntroSequence.instance.PlayIntro(boss);
+        BossIntroSequence.instance.PlayIntro(boss, () =>
+        {
+            if (MagicTileManager.instance != null)
+                MagicTileManager.instance.SpawnMagicTiles();
+        });
+    }
+
+    /// <summary>
+    /// Hücreye rastgele bir ground varyantı koyar ve cellVariantMap'e kaydeder.
+    /// GenerateColumns aynı varyantın column tile'ını kullanır.
+    /// </summary>
+    private void SetGroundWithVariant(Vector3Int cell, LayerTileSet ts)
+    {
+        if (ts == null) { groundMap.SetTile(cell, null); return; }
+
+        GroundVariant variant = ts.PickRandomVariant();
+        if (variant != null)
+        {
+            groundMap.SetTile(cell, variant.groundTile);
+            cellVariantMap[cell] = variant;
+        }
+        else
+        {
+            groundMap.SetTile(cell, null);
+        }
     }
 
     private void GenerateColumns()
     {
-        if (backgroundMap == null) return;
-        backgroundMap.ClearAllTiles();
+        if (columnMap == null) return;
+        columnMap.ClearAllTiles();
+
+        LayerTileSet ts = GetActiveTileSet();
+        TileBase lowerScaffold = ts?.lowerScaffoldTile;
 
         foreach (var cell in validCells)
         {
             if (scaffoldCells.Contains(cell))
             {
-                if (lowerScaffoldTile != null)
-                {
-                    backgroundMap.SetTile(cell, lowerScaffoldTile);
-                }
+                if (lowerScaffold != null)
+                    columnMap.SetTile(cell, lowerScaffold);
             }
             else
             {
-                if (columnTile != null)
-                {
-                    backgroundMap.SetTile(cell, columnTile);
-                }
+                // Aynı varyantın column tile'ını kullan
+                if (cellVariantMap.TryGetValue(cell, out GroundVariant variant) && variant.columnTile != null)
+                    columnMap.SetTile(cell, variant.columnTile);
+                else if (ts != null && ts.columnTile != null)
+                    columnMap.SetTile(cell, ts.columnTile);
             }
         }
     }
@@ -749,8 +966,8 @@ public class LevelGenerator : MonoBehaviour
         foreach (var cell in cellsToRemove)
         {
             groundMap.SetTile(cell, null);
-            if (hazardMap != null) hazardMap.SetTile(cell, null);
-            if (scaffoldMap != null) scaffoldMap.SetTile(cell, null);
+            if (foreGroundA != null) foreGroundA.SetTile(cell, null);
+            if (foreGroundB != null) foreGroundB.SetTile(cell, null);
             validCells.Remove(cell);
             hazardCells.Remove(cell);
             scaffoldCells.Remove(cell);
@@ -765,29 +982,132 @@ public class LevelGenerator : MonoBehaviour
     {
         if (hazardCells.Count == 0) return;
 
-        // Güvenli hücrelerin bağlı bileşen sayısını hesapla
-        int baseComponents = CountSafeComponents();
-        if (baseComponents <= 1) return; // Zaten tek bileşen, sorun yok
-
-        // Her hazard'ı geçici olarak kaldırıp bileşen sayısını kontrol et
-        List<Vector3Int> toRemove = new List<Vector3Int>();
-        foreach (var hCell in new List<Vector3Int>(hazardCells))
+        // Tekrarlı kaldırma: her iterasyonda yeni bottleneck'ler açığa çıkabilir
+        const int maxIterations = 20;
+        for (int iter = 0; iter < maxIterations; iter++)
         {
-            // Hazard'ı geçici olarak güvenli yap
-            hazardCells.Remove(hCell);
-            int newComponents = CountSafeComponents();
-            hazardCells.Add(hCell);
+            int baseComponents = CountSafeComponents();
+            if (baseComponents <= 1) return;
 
-            // Bu hazard kaldırılınca bileşen sayısı düşüyorsa darboğaz
-            if (newComponents < baseComponents)
-                toRemove.Add(hCell);
+            List<Vector3Int> toRemove = new List<Vector3Int>();
+            foreach (var hCell in new List<Vector3Int>(hazardCells))
+            {
+                hazardCells.Remove(hCell);
+                int newComponents = CountSafeComponents();
+                hazardCells.Add(hCell);
+
+                if (newComponents < baseComponents)
+                    toRemove.Add(hCell);
+            }
+
+            // Tek tek kaldırarak bağlantı sağlanamadıysa,
+            // kopuk bölgeler arasındaki en yakın hazard'ları BFS ile bul ve kaldır
+            if (toRemove.Count == 0 && baseComponents > 1)
+            {
+                toRemove = FindHazardsBridgingIslands();
+            }
+
+            if (toRemove.Count == 0) break;
+
+            foreach (var cell in toRemove)
+            {
+                hazardCells.Remove(cell);
+                if (foreGroundA != null) foreGroundA.SetTile(cell, null);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Kopuk güvenli adalar arasında hazard hücreleri üzerinden en kısa yolu bulur
+    /// ve o yoldaki hazard'ları kaldırır.
+    /// </summary>
+    private List<Vector3Int> FindHazardsBridgingIslands()
+    {
+        List<Vector3Int> result = new List<Vector3Int>();
+
+        // Güvenli adaları bul
+        List<HashSet<Vector3Int>> islands = new List<HashSet<Vector3Int>>();
+        HashSet<Vector3Int> unvisited = new HashSet<Vector3Int>();
+        foreach (var c in validCells)
+            if (!hazardCells.Contains(c) && !scaffoldCells.Contains(c))
+                unvisited.Add(c);
+
+        while (unvisited.Count > 0)
+        {
+            HashSet<Vector3Int> island = new HashSet<Vector3Int>();
+            Queue<Vector3Int> q = new Queue<Vector3Int>();
+            Vector3Int start = unvisited.First();
+            q.Enqueue(start); unvisited.Remove(start); island.Add(start);
+            while (q.Count > 0)
+            {
+                Vector3Int curr = q.Dequeue();
+                Vector3Int[] offs = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+                foreach (var off in offs)
+                {
+                    Vector3Int nb = curr + off;
+                    if (unvisited.Contains(nb)) { unvisited.Remove(nb); island.Add(nb); q.Enqueue(nb); }
+                }
+            }
+            islands.Add(island);
         }
 
-        foreach (var cell in toRemove)
+        if (islands.Count <= 1) return result;
+
+        // En büyük adadan diğer adalara hazard hücreleri üzerinden BFS yap
+        HashSet<Vector3Int> mainIsland = islands.OrderByDescending(i => i.Count).First();
+        HashSet<Vector3Int> otherSafeCells = new HashSet<Vector3Int>();
+        foreach (var island in islands)
+            if (island != mainIsland)
+                foreach (var c in island) otherSafeCells.Add(c);
+
+        // BFS: mainIsland kenarından başla, hazard hücreleri üzerinden ilerle
+        Queue<Vector3Int> bfs = new Queue<Vector3Int>();
+        Dictionary<Vector3Int, Vector3Int> cameFrom = new Dictionary<Vector3Int, Vector3Int>();
+
+        foreach (var cell in mainIsland)
         {
-            hazardCells.Remove(cell);
-            if (hazardMap != null) hazardMap.SetTile(cell, null);
+            Vector3Int[] offs = (cell.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offs)
+            {
+                Vector3Int nb = cell + off;
+                if (hazardCells.Contains(nb) && !cameFrom.ContainsKey(nb))
+                {
+                    bfs.Enqueue(nb);
+                    cameFrom[nb] = cell; // parent is a safe cell (sentinel)
+                }
+            }
         }
+
+        Vector3Int bridgeEnd = Vector3Int.zero;
+        bool found = false;
+        while (bfs.Count > 0 && !found)
+        {
+            Vector3Int curr = bfs.Dequeue();
+            Vector3Int[] offs = (curr.y % 2 != 0) ? evenOffsets : oddOffsets;
+            foreach (var off in offs)
+            {
+                Vector3Int nb = curr + off;
+                if (otherSafeCells.Contains(nb)) { bridgeEnd = curr; found = true; break; }
+                if (hazardCells.Contains(nb) && !cameFrom.ContainsKey(nb))
+                {
+                    cameFrom[nb] = curr;
+                    bfs.Enqueue(nb);
+                }
+            }
+        }
+
+        if (found)
+        {
+            // Yolu geri izle, sadece hazard olan hücreleri topla
+            Vector3Int step = bridgeEnd;
+            while (cameFrom.ContainsKey(step) && hazardCells.Contains(step))
+            {
+                result.Add(step);
+                step = cameFrom[step];
+            }
+        }
+
+        return result;
     }
 
     /// <summary>Güvenli (hazard/scaffold olmayan) hücrelerin bağlı bileşen sayısını döner.</summary>
@@ -878,8 +1198,8 @@ public class LevelGenerator : MonoBehaviour
             if (!largestIsland.Contains(cell))
             {
                 groundMap.SetTile(cell, null);
-                if (hazardMap != null) hazardMap.SetTile(cell, null); 
-                if (scaffoldMap != null) scaffoldMap.SetTile(cell, null); 
+                if (foreGroundA != null) foreGroundA.SetTile(cell, null); 
+                if (foreGroundB != null) foreGroundB.SetTile(cell, null); 
                 toRemove.Add(cell);
             }
         }
@@ -915,14 +1235,15 @@ public class LevelGenerator : MonoBehaviour
     public ShopDealer GenerateShopArena()
     {
         groundMap.ClearAllTiles();
-        if (backgroundMap != null) backgroundMap.ClearAllTiles();
-        if (hazardMap != null) hazardMap.ClearAllTiles();
-        if (scaffoldMap != null) scaffoldMap.ClearAllTiles();
+        if (columnMap != null) columnMap.ClearAllTiles();
+        if (foreGroundA != null) foreGroundA.ClearAllTiles();
+        if (foreGroundB != null) foreGroundB.ClearAllTiles();
         if (ScaffoldManager.instance != null) ScaffoldManager.instance.ClearAll();
 
         validCells.Clear();
         hazardCells.Clear();
         scaffoldCells.Clear();
+        cellVariantMap.Clear();
 
         // Destroy all enemies (shop has none)
         if (TurnManager.instance != null)
@@ -941,7 +1262,7 @@ public class LevelGenerator : MonoBehaviour
                 if (Mathf.Abs(x + y) <= shopRadius)
                 {
                     Vector3Int cell = new Vector3Int(x, y, 0);
-                    groundMap.SetTile(cell, groundTile);
+                    SetGroundWithVariant(cell, GetActiveTileSet());
                     groundMap.SetColor(cell, Color.white);
                     validCells.Add(cell);
                 }
@@ -983,13 +1304,8 @@ public class LevelGenerator : MonoBehaviour
         Vector3 dealerWorldPos = groundMap.GetCellCenterWorld(dealerVisualCell);
 
         GameObject dealerGO;
-        if (shopDealerPrefab != null)
         {
-            dealerGO = Instantiate(shopDealerPrefab, dealerWorldPos, Quaternion.identity);
-        }
-        else
-        {
-            // Capsule placeholder dealer
+            // Placeholder dealer (prefab yok)
             dealerGO = new GameObject("ShopDealer");
             dealerGO.transform.position = dealerWorldPos;
             SpriteRenderer sr = dealerGO.AddComponent<SpriteRenderer>();
@@ -1069,4 +1385,40 @@ public class LevelGenerator : MonoBehaviour
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
     }
+
+    // ──────── Layer 2: Teleport Pair Spawn ────────
+
+    private void SpawnTeleportPairs(int numPairs, Vector3Int playerStartCell, LayerTileSet ts)
+    {
+        if (foreGroundB == null || ts == null || ts.teleportTileA == null || ts.teleportTileB == null) return;
+
+        List<Vector3Int> candidates = validCells.Where(c =>
+            !hazardCells.Contains(c) &&
+            !scaffoldCells.Contains(c) &&
+            !teleportCells.Contains(c) &&
+            c != playerStartCell
+        ).ToList();
+
+        for (int p = 0; p < numPairs; p++)
+        {
+            if (candidates.Count < 2) break;
+
+            int idxA = Random.Range(0, candidates.Count);
+            Vector3Int cellA = candidates[idxA];
+            candidates.RemoveAt(idxA);
+
+            List<Vector3Int> farCandidates = candidates.Where(c => HexDistance(c, cellA) >= 4).ToList();
+            if (farCandidates.Count == 0) farCandidates = candidates;
+
+            int idxB = Random.Range(0, farCandidates.Count);
+            Vector3Int cellB = farCandidates[idxB];
+            candidates.Remove(cellB);
+
+            foreGroundB.SetTile(cellA, ts.teleportTileA);
+            foreGroundB.SetTile(cellB, ts.teleportTileB);
+            teleportCells.Add(cellA);       // Sadece giriş tile'ı tetiklenir
+            teleportPairs[cellA] = cellB;   // Tek yönlü: A→B
+        }
+    }
+
 }

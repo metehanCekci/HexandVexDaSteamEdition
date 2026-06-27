@@ -53,8 +53,8 @@ public class HexMovement : MonoBehaviour
 
     void Start()
     {
-        if (groundMap == null) groundMap = GameObject.Find("GroundMap").GetComponent<Tilemap>();
-        if (highlightMap == null) highlightMap = GameObject.Find("HighlightMap").GetComponent<Tilemap>();
+        if (groundMap == null) groundMap = GameObject.Find("Ground").GetComponent<Tilemap>();
+        if (highlightMap == null) highlightMap = GameObject.Find("Highlight").GetComponent<Tilemap>();
         if (health == null) health = GetComponent<HealthScript>();
 
         if (visualRenderer == null) visualRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -193,6 +193,12 @@ public class HexMovement : MonoBehaviour
                         ScaffoldManager.instance.OnEntityLeave(previousCellForScaffold);
                         ScaffoldManager.instance.OnEntityEnter(currentCellPosition);
                     }
+                    // Seismic Step: waypoint geçişinde de kontrol
+                    if (RunManager.instance != null)
+                    {
+                        var seismicPerk = RunManager.instance.activePerks.Find(p => p is SeismicStepPerk) as SeismicStepPerk;
+                        if (seismicPerk != null) seismicPerk.OnPlayerLeftCell(previousCellForScaffold);
+                    }
                     previousCellForScaffold = currentCellPosition;
                     currentWaypoint = null;
                     MoveCharacter(finalTarget);
@@ -208,6 +214,13 @@ public class HexMovement : MonoBehaviour
                 {
                     ScaffoldManager.instance.OnEntityLeave(previousCellForScaffold);
                     ScaffoldManager.instance.OnEntityEnter(currentCellPosition);
+                }
+
+                // Seismic Step: titreyen tile'dan ayrılınca çöker
+                if (RunManager.instance != null)
+                {
+                    var seismicPerk = RunManager.instance.activePerks.Find(p => p is SeismicStepPerk) as SeismicStepPerk;
+                    if (seismicPerk != null) seismicPerk.OnPlayerLeftCell(previousCellForScaffold);
                 }
 
                 if (!isKnockbackMove) TurnManager.instance.PlayerFinishedMove(currentCellPosition);
@@ -236,6 +249,7 @@ public class HexMovement : MonoBehaviour
     public void ForceSetPosition(Vector3Int targetCell)
     {
         currentCellPosition = targetCell;
+        previousCellForScaffold = targetCell;
         targetWorldPosition = groundMap.GetCellCenterWorld(targetCell);
         targetWorldPosition.z = 0;
         transform.position = targetWorldPosition;
@@ -330,34 +344,39 @@ public class HexMovement : MonoBehaviour
             }
         }
 
-        // Range-2: Surge Boot aktifse, komşuların komşularını da ekle
-        if (RunManager.instance != null && RunManager.instance.surgeBootActive)
+        // Surge Boot: her stack +1 hex range ekler. 1 stack -> range 2, 2 stack -> range 3, ...
+        if (RunManager.instance != null && RunManager.instance.surgeBootStacks > 0)
         {
-            List<Vector3Int> range2Cells = new List<Vector3Int>();
-            foreach (var mid in validCells)
+            int extraRings = RunManager.instance.surgeBootStacks;
+            for (int ring = 0; ring < extraRings; ring++)
             {
-                Vector3Int[] midOffsets = (mid.y % 2 != 0) ? evenOffsets : oddOffsets;
-                foreach (var off2 in midOffsets)
+                // Her halka bir oncekinin disindaki komsulari ekler
+                List<Vector3Int> nextRing = new List<Vector3Int>();
+                foreach (var mid in validCells)
                 {
-                    Vector3Int far = mid + off2;
-                    if (far == currentCellPosition) continue; // Başlangıç noktasına geri dönme
-                    if (validCells.Contains(far)) continue;   // Zaten range-1'de var
-                    if (range2Cells.Contains(far)) continue;  // Zaten eklendi
+                    Vector3Int[] midOffsets = (mid.y % 2 != 0) ? evenOffsets : oddOffsets;
+                    foreach (var off2 in midOffsets)
+                    {
+                        Vector3Int far = mid + off2;
+                        if (far == currentCellPosition) continue; // Başlangıç noktasına geri dönme
+                        if (validCells.Contains(far)) continue;   // Zaten ic halkalardan birinde var
+                        if (nextRing.Contains(far)) continue;     // Bu halkada zaten eklendi
 
-                    bool isFarScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(far);
-                    if (!groundMap.HasTile(far) && !isFarScaffold) continue;
-                    
-                    bool isHazard = LevelGenerator.instance != null && LevelGenerator.instance.hazardCells != null && LevelGenerator.instance.hazardCells.Contains(far);
-                    if (isHazard) continue;
-                    bool isCollapsing = ScaffoldManager.instance != null && ScaffoldManager.instance.IsCollapsing(far);
-                    if (isCollapsing) continue;
-                    if (TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(far)) continue;
+                        bool isFarScaffold = ScaffoldManager.instance != null && ScaffoldManager.instance.IsScaffoldCell(far);
+                        if (!groundMap.HasTile(far) && !isFarScaffold) continue;
 
-                    range2Cells.Add(far);
-                    waypointMap[far] = mid; // Bu hücreye gitmek için mid'den geç
+                        bool isHazard = LevelGenerator.instance != null && LevelGenerator.instance.hazardCells != null && LevelGenerator.instance.hazardCells.Contains(far);
+                        if (isHazard) continue;
+                        bool isCollapsing = ScaffoldManager.instance != null && ScaffoldManager.instance.IsCollapsing(far);
+                        if (isCollapsing) continue;
+                        if (TurnManager.instance != null && TurnManager.instance.IsEnemyAtCell(far)) continue;
+
+                        nextRing.Add(far);
+                        waypointMap[far] = mid; // Bu hücreye gitmek için mid'den geç
+                    }
                 }
+                validCells.AddRange(nextRing);
             }
-            validCells.AddRange(range2Cells);
         }
 
         foreach (var cell in validCells)

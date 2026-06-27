@@ -1,25 +1,25 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class PassiveEnzymePerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Common;
-    }
+        { "skip",   GameKeywords.Action("Skipping") },
+        { "reward", GameKeywords.Gold(4 * currentLevel) },
+        { "boss",   GameKeywords.Status("bosses") }
+    };
 
-    // YENİ: Kart tekrar seçilirse sadece seviyeyi artır (Matematiği OnSkip içinde halledeceğiz)
     public override void Upgrade()
     {
-        base.Upgrade(); 
+        base.Upgrade();
         TriggerVisualPop();
     }
 
     public override void OnSkip()
     {
-        // Boss sahnesinde çalışmasın
         if (RunManager.instance != null && RunManager.instance.currentNodeType == MapNodeType.Boss) return;
 
-        // Son 1 düşman kaldıysa çalışmasın — sonsuz para kasma engeli
         if (TurnManager.instance != null && TurnManager.instance.enemies != null)
         {
             int alive = 0;
@@ -28,8 +28,6 @@ public class PassiveEnzymePerk : BasePerk
             if (alive <= 1) return;
         }
 
-        RunManager.instance.currentGold += (2 * currentLevel);
-        GameEvents.GoldChanged(RunManager.instance.currentGold);
-        TriggerVisualPop();
+        RunManager.instance.GrantGold(this, 4 * currentLevel);
     }
 }

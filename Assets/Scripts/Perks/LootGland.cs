@@ -1,27 +1,52 @@
-using UnityEngine; 
-using System;      
-using System.Collections.Generic; 
+﻿using UnityEngine;
+using System;
+using System.Collections.Generic;
 
 public class LootGlandPerk : BasePerk
 {
-    void OnEnable()
-    {
-        rarity = PerkRarity.Common;
-    }
+    private bool bonusApplied = false;
 
-    // İlk alındığında çalışır (1. Seviye)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "bonus", GameKeywords.PlusGold(2 * currentLevel) },
+        { "kill",  GameKeywords.Action("kill") }
+    };
+
     public override void OnAcquire()
     {
-        RunManager.instance.bonusGold += 1; // DÜZELTME: Eski kodlarında "bonusGold" olarak geçiyordu, onu kullandım.
+        ApplyBonus();
         TriggerVisualPop();
     }
 
-    // YENİ: Kart tekrar seçilirse çalışır (2. ve 3. Seviyeler)
     public override void Upgrade()
     {
-        base.Upgrade(); // Seviyeyi 1 artırır ve konsola "Seviye atladı" yazar
-        
-        RunManager.instance.bonusGold += 1; // Her seviyede +2 altın daha eklensin
+        RemoveBonus();
+        base.Upgrade();
+        ApplyBonus();
         TriggerVisualPop();
+    }
+
+    public override void OnEquip()
+    {
+        ApplyBonus();
+    }
+
+    public override void OnUnequip()
+    {
+        RemoveBonus();
+    }
+
+    private void ApplyBonus()
+    {
+        if (bonusApplied) return;
+        bonusApplied = true;
+        RunManager.instance.bonusGold += 2 * currentLevel;
+    }
+
+    private void RemoveBonus()
+    {
+        if (!bonusApplied) return;
+        bonusApplied = false;
+        RunManager.instance.bonusGold -= 2 * currentLevel;
     }
 }

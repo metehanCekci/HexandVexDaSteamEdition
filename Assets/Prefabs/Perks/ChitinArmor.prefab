@@ -45,10 +45,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChitinArmorPerk
   currentLevel: 1
-  maxLevel: 3
+  maxLevel: 1
   perkName: Chitin Armor
-  description: +15% armor chance per level. Armor blocks all damage from one hit.
+  description: Gain +30% chance to [white]evade[/white] incoming attack.
   icon: {fileID: 3394840567205637898, guid: 12b239a60ad68104f82e6ebe6d38a836, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 0

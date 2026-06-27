@@ -21,7 +21,7 @@ public class WarlockEnemyAI : MonoBehaviour
 
     private bool isTransitioning = false;
     [HideInInspector] public bool isBurnDamage = false;
-    private int previousHP;
+    private long previousHP;
 
     private List<Vector3Int> attack1WarningCells = new List<Vector3Int>();
     private List<Vector3Int> attack2WarningCells = new List<Vector3Int>();
@@ -110,20 +110,14 @@ public class WarlockEnemyAI : MonoBehaviour
         if (myEnemyMovement.health.currentHP < previousHP && !isTransitioning)
         {
             previousHP = myEnemyMovement.health.currentHP;
-            // Stun durumundaysa ışınlanma — sadece warninglerı temizle ve döngüyü sıfırla
-            if (myEnemyMovement.skipTurns > 0)
-            {
-                ClearAllWarnings();
-                cyclePhase = 0;
-                currentIdleCounter = initialIdleOffset;
-            }
             // Burn/DoT hasarı sırasında ışınlanma — saldırısını interrupt etme
-            else if (isBurnDamage)
+            if (isBurnDamage)
             {
                 // HP güncellendi, teleport yok, saldırı devam eder
             }
             else
             {
+                // Her vuruşta (stun dahil) ışınlan
                 StartCoroutine(HitAndTeleportSequence());
             }
         }
@@ -350,16 +344,15 @@ public class WarlockEnemyAI : MonoBehaviour
 
                 if (dodged)
                 {
-                    if (AudioManager.instance != null) AudioManager.instance.PlayShieldBreak();
-                    if (TurnManager.instance != null && TurnManager.instance.dodgeEffectPrefab != null)
-                        Instantiate(TurnManager.instance.dodgeEffectPrefab, TurnManager.instance.player.transform.position, Quaternion.identity);
+                    if (TurnManager.instance != null)
+                        TurnManager.instance.PlayShieldBreakFX(TurnManager.instance.player.transform.position);
                 }
                 else if (RunManager.instance.hasBioBarrier)
                 {
                     foreach (var perk in RunManager.instance.activePerks) if (perk is BioBarrierPerk aegis) { aegis.BreakShield(); break; }
                     RunManager.instance.hasBioBarrier = false;
                 }
-                else TurnManager.instance.player.health.TakeDamage(attackDamage);
+                else TurnManager.instance.PlayerTakeDamage(attackDamage);
 
                 Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyMovement.GetCurrentCellPosition());
                 TurnManager.instance.player.StartKnockbackMovement(pushTarget);
@@ -409,16 +402,15 @@ public class WarlockEnemyAI : MonoBehaviour
 
                     if (dodged)
                     {
-                        if (AudioManager.instance != null) AudioManager.instance.PlayShieldBreak();
-                        if (TurnManager.instance != null && TurnManager.instance.dodgeEffectPrefab != null)
-                            Instantiate(TurnManager.instance.dodgeEffectPrefab, TurnManager.instance.player.transform.position, Quaternion.identity);
+                        if (TurnManager.instance != null)
+                            TurnManager.instance.PlayShieldBreakFX(TurnManager.instance.player.transform.position);
                     }
                     else if (RunManager.instance.hasBioBarrier)
                     {
                         foreach (var perk in RunManager.instance.activePerks) if (perk is BioBarrierPerk aegis) { aegis.BreakShield(); break; }
                         RunManager.instance.hasBioBarrier = false;
                     }
-                    else TurnManager.instance.player.health.TakeDamage(attackDamage);
+                    else TurnManager.instance.PlayerTakeDamage(attackDamage);
 
                     Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(playerCell, myEnemyMovement.GetCurrentCellPosition());
                     TurnManager.instance.player.StartKnockbackMovement(pushTarget);

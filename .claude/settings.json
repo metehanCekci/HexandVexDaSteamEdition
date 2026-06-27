@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(C:/Users/deniz/AppData/Local/Programs/Python/Python312/python.exe -c ':*)",
+      "Bash(C:/Users/deniz/AppData/Local/Programs/Python/Python312/python.exe)",
+      "Bash(grep -r \"LevelUpManager\" /c/GitHub/HexandVexDaSteamEdition/Assets/Scenes/*.unity)",
+      "Bash(grep -l \"LevelUpManager\" /c/GitHub/HexandVexDaSteamEdition/Assets/Scenes/*)",
+      "Bash(grep -n \"CreateFromCode\\\\|Instantiate.*LevelUpManager\" /c/GitHub/HexandVexDaSteamEdition/Assets/Scripts/*.cs)",
+      "Bash(grep -n \"AddPerkToTube\" /c/GitHub/HexandVexDaSteamEdition/Assets/Scripts/*.cs)"
+    ],
+    "additionalDirectories": [
+      "c:\\GitHub\\HexandVexDaSteamEdition\\Assets\\Prefabs\\Perks"
+    ]
+  }
+}

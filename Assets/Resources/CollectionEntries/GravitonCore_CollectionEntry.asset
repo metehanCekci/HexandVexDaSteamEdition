@@ -16,7 +16,7 @@ MonoBehaviour:
   perkId: GravitonCore
   loreText: A dense gravitational implant that warps local space during impacts.
     Nearby bodies are pulled toward the point of collision.
-  rarity: 0
+  rarity: 2
   unlockCondition: 0
   requiredAmount: 1
   conditionParam: 

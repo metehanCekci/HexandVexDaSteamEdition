@@ -11,8 +11,8 @@ public class CameraController : MonoBehaviour
     public float maxZoomZ = -25f;
 
     [Header("Kamera Sınırları")]
-    public Vector2 minBounds = new Vector2(-60f, -60f); 
-    public Vector2 maxBounds = new Vector2(60f, 60f);   
+    public Vector2 minBounds = new Vector2(-120f, -120f);
+    public Vector2 maxBounds = new Vector2(120f, 120f);
 
     [Header("Mobil Hassasiyet Ayarları")]
     public float touchPanSpeed = 0.05f;
@@ -191,5 +191,18 @@ public class CameraController : MonoBehaviour
         CameraController controller = FindFirstObjectByType<CameraController>();
         if (controller != null)
             controller.Shake(0.1f, 0.0375f);
+    }
+
+    /// <summary>
+    /// External zoom control — modifies targetPosition.z so LateUpdate respects it.
+    /// </summary>
+    public Vector3 GetTargetPosition()
+    {
+        return targetPosition;
+    }
+
+    public void SetTargetPosition(Vector3 pos)
+    {
+        targetPosition = pos;
     }
 }

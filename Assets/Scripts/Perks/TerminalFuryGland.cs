@@ -1,46 +1,33 @@
-using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
-/// Terminal Fury Gland (Legendary)
-/// Always active. Multiplier = maxHP / currentHP
-/// 5/5 HP = 1x, 1/5 HP = 5x
+/// Terminal Fury Gland (Legendary). Multiplier = 2 + (maxHP - currentHP).
 /// </summary>
 public class TerminalFuryGlandPerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        perkName    = "Terminal Fury Gland";
-        description = "Always deal double damage, get +1x mult per missing health.";
-        rarity      = PerkRarity.Legendary;
-        maxLevel    = 1;
-        priority    = 15;
-    }
+        { "base",    GameKeywords.Mult(2f) },
+        { "per",     GameKeywords.Mult(1f) },
+        { "missing", GameKeywords.HealthText("missing HP") }
+    };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
         var rm = RunManager.instance;
         var tm = TurnManager.instance;
-        if (rm == null || tm == null || tm.player == null) return;
+        if (rm == null || tm == null || tm.player == null) yield break;
 
-        int maxHP = rm.playerMaxHealth;
-        int currentHP = tm.player.health.currentHP;
+        long maxHP = rm.playerMaxHealth;
+        long currentHP = tm.player.health.currentHP;
         if (currentHP < 1) currentHP = 1;
 
-        // Always 2x base, +1x per missing HP (5/5=2x, 4/5=3x, 1/5=6x)
         float tfgMult = 2f + (maxHP - currentHP);
-
-        // Glass Cannon varsa: additif birlestir (TFG + GC), GC'nin *= 2'sini geri al
-        bool hasGC = rm.activePerks.Exists(p => p is GlassCanonPerk);
-        if (hasGC)
-        {
-            // GC daha once payload.multiplier *= 2 uyguladi, geri al ve toplami koy
-            payload.multiplier = payload.multiplier / 2f * (tfgMult + 2f);
-        }
-        else
-        {
-            payload.multiplier *= tfgMult;
-        }
-
-        TriggerVisualPop();
+        ctx.payload.ApplyMult(tfgMult);
+        ctx.AnimatePop(this);
     }
 }

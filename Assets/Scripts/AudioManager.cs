@@ -51,12 +51,16 @@ public class AudioManager : MonoBehaviour
 
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
-        
+
         // AudioMixer'ı Resources'tan yükle (yolunu kontrol et)
         audioMixer = Resources.Load<AudioMixer>("NewAudioMixer");
         if (audioMixer == null) audioMixer = FindFirstObjectByType<AudioMixer>();
-        
-        // Saved ses ayarlarını yükle
+    }
+
+    void Start()
+    {
+        // Saved ses ayarlarını yükle — Start'ta yapılmalı,
+        // Awake'de mixer snapshot değerleri eziyordu.
         LoadAudioSettings();
     }
 

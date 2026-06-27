@@ -1,20 +1,41 @@
-using UnityEngine; // Unity motoru için
-using System;      // Temel fonksiyonlar için
-using System.Collections.Generic; // Listeler için
+﻿using UnityEngine;
+using System;
+using System.Collections.Generic;
+
 public class DormantSporePerk : BasePerk
 {
-    void OnEnable()
+    public int storedExtraDices = 0;
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Common;
+        { "skip",   GameKeywords.Action("skip") },
+        { "die",    GameKeywords.Plus(1, "die") },
+        { "attack", GameKeywords.Action("attack") },
+        { "stored", GameKeywords.Counter(storedExtraDices.ToString()) }
+    };
+
+    public int ConsumeStoredDice()
+    {
+        int dice = storedExtraDices;
+        storedExtraDices = 0;
+        RebuildDescription();
+        return dice;
     }
 
-    public int storedExtraDices = 0;
+    public override void OnAcquire()
+    {
+        RebuildDescription();
+    }
 
     public override void OnSkip()
     {
         storedExtraDices++;
-        Debug.Log($"🎯 Ambush: 1 zar birikti! Toplam: {storedExtraDices}");
+        RebuildDescription();
         TriggerVisualPop();
     }
-    // ModifyCombat artık burada değil, TurnManager'da yönetiliyor!
+
+    public override void OnLevelStart()
+    {
+        RebuildDescription();
+    }
 }

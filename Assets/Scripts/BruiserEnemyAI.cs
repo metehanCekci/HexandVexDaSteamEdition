@@ -264,10 +264,9 @@ public class BruiserEnemyAI : MonoBehaviour
 
             if (dodged)
             {
-                if (AudioManager.instance != null) AudioManager.instance.PlayShieldBreak();
-                if (TurnManager.instance != null && TurnManager.instance.dodgeEffectPrefab != null)
+                if (TurnManager.instance != null)
                 {
-                    Object.Instantiate(TurnManager.instance.dodgeEffectPrefab, player.transform.position, Quaternion.identity);
+                    TurnManager.instance.PlayShieldBreakFX(player.transform.position);
                 }
             }
             else if (RunManager.instance.hasBioBarrier)
@@ -275,7 +274,7 @@ public class BruiserEnemyAI : MonoBehaviour
                 foreach (var perk in RunManager.instance.activePerks) if (perk is BioBarrierPerk aegis) { aegis.BreakShield(); break; }
                 RunManager.instance.hasBioBarrier = false;
             }
-            else player.health.TakeDamage(2);
+            else TurnManager.instance.PlayerTakeDamage(2);
 
             Vector3Int pushTarget = TurnManager.instance.GetOppositeCell(player.GetCurrentCellPosition(), movement.GetCurrentCellPosition());
             player.StartKnockbackMovement(pushTarget);

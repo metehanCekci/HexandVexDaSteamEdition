@@ -31,7 +31,7 @@ public class SpawnerBossAI : MonoBehaviour
     
     private bool isTransitioning = false; 
     private bool isSummoning = false; 
-    private int previousHP; 
+    private long previousHP;
 
     private Tilemap groundMap;
     private Tilemap bossWarningMap;
@@ -50,7 +50,7 @@ public class SpawnerBossAI : MonoBehaviour
         groundMap = LevelGenerator.instance.groundMap;
         arenaRadius = LevelGenerator.instance.baseMapRadius + 1 + (RunManager.instance.currentLevel / 10);
 
-        GameObject warnObj = GameObject.Find("BossWarningMap");
+        GameObject warnObj = GameObject.Find("WarningB");
         if (warnObj != null) 
         {
             bossWarningMap = warnObj.GetComponent<Tilemap>();
@@ -388,8 +388,8 @@ public class SpawnerBossAI : MonoBehaviour
                 bool dodged = Random.value < RunManager.instance.dodgeChance;
                 if (dodged)
                 {
-                    if (TurnManager.instance.dodgeEffectPrefab != null)
-                        Instantiate(TurnManager.instance.dodgeEffectPrefab, TurnManager.instance.player.transform.position, Quaternion.identity);
+                    if (TurnManager.instance != null)
+                        TurnManager.instance.PlayShieldBreakFX(TurnManager.instance.player.transform.position);
                 }
                 else if (RunManager.instance.hasBioBarrier)
                 {
@@ -398,7 +398,7 @@ public class SpawnerBossAI : MonoBehaviour
                 }
                 else
                 {
-                    TurnManager.instance.player.health.TakeDamage(2);
+                    TurnManager.instance.PlayerTakeDamage(2);
                 }
             }
 
@@ -479,7 +479,11 @@ public class SpawnerBossAI : MonoBehaviour
             }
             if (tooCloseToSpawned) continue;
 
-            GameObject prefab = Random.value > 0.5f ? LevelGenerator.instance.meleeEnemyPrefab : LevelGenerator.instance.aoeEnemyPrefab;
+            var bossSpawnTs = LevelGenerator.instance?.GetActiveTileSet();
+            GameObject prefab = null;
+            if (bossSpawnTs != null && bossSpawnTs.enemies != null && bossSpawnTs.enemies.Length > 0)
+                prefab = bossSpawnTs.enemies[Random.Range(0, bossSpawnTs.enemies.Length)].prefab;
+            if (prefab == null) continue;
             Vector3 spawnPos = groundMap.GetCellCenterWorld(cell);
             GameObject minionObj = Instantiate(prefab, spawnPos, Quaternion.identity);
 

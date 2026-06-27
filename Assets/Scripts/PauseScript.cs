@@ -36,6 +36,13 @@ public class PauseManager : MonoBehaviour
         // Normal ESC basma kodun...
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            // Targeting aktifse once onu iptal et, pause acma
+            if (!isPaused && TurnManager.instance != null && TurnManager.instance.IsAnyTargetingActive)
+            {
+                TurnManager.instance.CancelTargeting();
+                return;
+            }
+
             if (isPaused) Resume();
             else Pause();
         }
@@ -50,8 +57,11 @@ public class PauseManager : MonoBehaviour
     public void Pause()
     {
         pauseMenuUI.SetActive(true);
-        EnsureCanvasSortingOrder(pauseMenuUI, 500);
+        EnsureCanvasSortingOrder(pauseMenuUI, 5000);
         EnsurePauseCanvasGroup();
+
+        // Shop açıkken pause menüsüne tıklanabilmesi için shop etkileşimini kapat
+        SetShopInteraction(false);
 
         if (statsPanelUI != null) statsPanelUI.Refresh();
         else if (pauseStatsText != null) pauseStatsText.text = RunManager.instance.GetStatsSummary();
@@ -136,6 +146,9 @@ public class PauseManager : MonoBehaviour
         Time.timeScale = 1f;
         isPaused = false;
         animCoroutine = null;
+
+        // Shop etkileşimini geri aç
+        SetShopInteraction(true);
     }
 
     /// <summary>
@@ -152,7 +165,6 @@ public class PauseManager : MonoBehaviour
     public void Restart()
     {
         Time.timeScale = 1f;
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ForceClose();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
@@ -171,10 +183,6 @@ public class PauseManager : MonoBehaviour
         Time.timeScale = 1f;
         isPaused = false;
         if (pauseMenuUI != null) pauseMenuUI.SetActive(false);
-
-        // Perk menüsünü zorla kapat
-        if (LevelUpManager.instance != null)
-            LevelUpManager.instance.ForceClose();
 
         if (ScreenFader.instance != null)
         {
@@ -237,6 +245,26 @@ public class PauseManager : MonoBehaviour
         else
         {
             SceneManager.LoadScene(sceneIndex);
+        }
+    }
+
+    /// <summary>
+    /// Shop açıkken pause menüsünün altında kalıp tıklamayı engellemesini önler.
+    /// enabled=false → shop CanvasGroup'larının blocksRaycasts ve interactable'ını kapatır.
+    /// enabled=true  → geri açar.
+    /// </summary>
+    private void SetShopInteraction(bool enabled)
+    {
+        if (MergedShopManager.instance != null && MergedShopManager.instance.canvasGroup != null)
+        {
+            MergedShopManager.instance.canvasGroup.interactable = enabled;
+            MergedShopManager.instance.canvasGroup.blocksRaycasts = enabled;
+        }
+
+        if (Shopmanager.instance != null && Shopmanager.instance.shopCanvasGroupRef != null)
+        {
+            Shopmanager.instance.shopCanvasGroupRef.interactable = enabled;
+            Shopmanager.instance.shopCanvasGroupRef.blocksRaycasts = enabled;
         }
     }
 

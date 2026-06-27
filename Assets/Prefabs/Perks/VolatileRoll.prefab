@@ -45,10 +45,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VolatileRollPerk
   currentLevel: 1
-  maxLevel: 3
+  maxLevel: 1
   perkName: Volatile Roll
-  description: Each die has a 50% chance to become 1 or 6.
+  description: Dice only roll [white]1[/white] or [white]6[/white]. For every {six}
+    roll an extra die .
   icon: {fileID: -4363507172755077261, guid: 89ebaf46365c7c840a712eae6c2490d1, type: 3}
   priority: 0
   isRerollPerk: 0
-  rarity: 1
+  processLast: 0
+  isPerkRetrigger: 0
+  rarity: 3

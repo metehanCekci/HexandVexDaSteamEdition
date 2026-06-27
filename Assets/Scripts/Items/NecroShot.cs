@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/NecroShot", fileName = "NecroShot")]
 public class NecroShot : BaseItem
@@ -6,9 +7,12 @@ public class NecroShot : BaseItem
     void OnEnable()
     {
         itemName = "Necro-Shot";
-        description = "Instantly kill any enemy on the map";
-        price = 10;
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "kill", "Instantly kill" }
+    };
 
     public override bool Use()
     {
