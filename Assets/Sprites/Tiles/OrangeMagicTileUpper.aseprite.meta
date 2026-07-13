@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 01ab1f3529969794ca4600f8a2cce4aa
+guid: de049d33c2bf0874ba221b58bec40225
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -76,8 +76,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.4808, y: 0.6776}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -91,8 +91,8 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
-    defaultPivotAlignment: 9
-    customPivotPosition: {x: 0.4808, y: 0.6776}
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -129,7 +129,7 @@ ScriptedImporter:
   animatedSpriteImportData:
   - name: OrangeMagicTileUpper
     originalName: 
-    pivot: {x: 0.5126087, y: 0.79338354}
+    pivot: {x: 0.52, y: -0.625}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 92
-      height: 133
-    spriteID: 3c07d1d5f91355f4a900f804500dcb00
+      width: 50
+      height: 32
+    spriteID: decb3ddd0c76c29479d83dbfdeabe75e
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -163,15 +163,15 @@ ScriptedImporter:
     layerType: 0
     blendMode: 0
     cells:
-    - name: healthBar
+    - name: OrangeMagicTileUpper
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 49
-        y: 30
-        width: 92
-        height: 133
-      spriteId: 3c07d1d5f91355f4a900f804500dcb00
+        x: 0
+        y: 20
+        width: 50
+        height: 32
+      spriteId: decb3ddd0c76c29479d83dbfdeabe75e
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 200, y: 200}
-  previousTextureSize: {x: 128, y: 256}
+  canvasSize: {x: 52, y: 52}
+  previousTextureSize: {x: 64, y: 64}
