@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: MoveableHe
   m_EditorClassIdentifier: Unity.2D.Tilemap.Extras::UnityEngine.Tilemaps.AnimatedTile
   m_AnimatedSprites:
-  - {fileID: 2513816786276679017, guid: 7e523daeeada9bc41b425b878feadc15, type: 3}
-  - {fileID: -8956226312498522138, guid: 7e523daeeada9bc41b425b878feadc15, type: 3}
-  - {fileID: 4590031046157227423, guid: 7e523daeeada9bc41b425b878feadc15, type: 3}
+  - {fileID: 2625284530847156037, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: -6401676372412849659, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: 3847759276178371190, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: -666859330301549729, guid: 08e48c313d253b44faba593712994f06, type: 3}
   m_MinSpeed: 5
   m_MaxSpeed: 5
   m_AnimationStartTime: 0

@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: WarningHex
   m_EditorClassIdentifier: Unity.2D.Tilemap.Extras::UnityEngine.Tilemaps.AnimatedTile
   m_AnimatedSprites:
-  - {fileID: -2137660288374767930, guid: 7e523daeeada9bc41b425b878feadc15, type: 3}
-  - {fileID: 2636229683890829513, guid: 7e523daeeada9bc41b425b878feadc15, type: 3}
-  - {fileID: -1919986970225393064, guid: 7e523daeeada9bc41b425b878feadc15, type: 3}
+  - {fileID: -5327509843026673588, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: 9169126766508991431, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: -7861939587552560938, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: -972069134847389577, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: -1923838229199939167, guid: 08e48c313d253b44faba593712994f06, type: 3}
+  - {fileID: 1629373515434183586, guid: 08e48c313d253b44faba593712994f06, type: 3}
   m_MinSpeed: 3
   m_MaxSpeed: 3
   m_AnimationStartTime: 0

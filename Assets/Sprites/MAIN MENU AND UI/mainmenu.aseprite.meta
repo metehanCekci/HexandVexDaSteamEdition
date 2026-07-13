@@ -36,7 +36,7 @@ ScriptedImporter:
     spriteMeshType: 1
     alignment: 0
     spritePivot: {x: 0.5, y: 0.5}
-    spritePixelsToUnits: 100
+    spritePixelsToUnits: 172
     spriteBorder: {x: 0, y: 0, z: 0, w: 0}
     spriteGenerateFallbackPhysicsShape: 0
     generateCubemap: 6
@@ -102,7 +102,11 @@ ScriptedImporter:
     generateIndividualEvents: 1
     generateSpriteAtlas: 1
   importFileNodeState: 1
+<<<<<<< Updated upstream:Assets/Sprites/MAIN MENU AND UI/mainmenu.aseprite.meta
   platformSettingsDirtyTick: 0
+=======
+  platformSettingsDirtyTick: 639195761526705623
+>>>>>>> Stashed changes:Assets/Sprites/Tiles/NEW_ToxicWaste.aseprite.meta
   textureAssetName: 
   singleSpriteImportData:
   - name: 
@@ -150,7 +154,11 @@ ScriptedImporter:
     uvTransform: {x: 4, y: 4}
   - name: Frame_1
     originalName: 
+<<<<<<< Updated upstream:Assets/Sprites/MAIN MENU AND UI/mainmenu.aseprite.meta
     pivot: {x: 0.49844238, y: 0}
+=======
+    pivot: {x: 0.50523937, y: 0.76035255}
+>>>>>>> Stashed changes:Assets/Sprites/Tiles/NEW_ToxicWaste.aseprite.meta
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -171,7 +179,11 @@ ScriptedImporter:
     uvTransform: {x: 654, y: 4}
   - name: Frame_2
     originalName: 
+<<<<<<< Updated upstream:Assets/Sprites/MAIN MENU AND UI/mainmenu.aseprite.meta
     pivot: {x: 0.49844238, y: 0}
+=======
+    pivot: {x: 0.5058216, y: 0.578512}
+>>>>>>> Stashed changes:Assets/Sprites/Tiles/NEW_ToxicWaste.aseprite.meta
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -192,7 +204,32 @@ ScriptedImporter:
     uvTransform: {x: 1304, y: 4}
   - name: Frame_3
     originalName: 
+<<<<<<< Updated upstream:Assets/Sprites/MAIN MENU AND UI/mainmenu.aseprite.meta
     pivot: {x: 0.49844238, y: 0}
+=======
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 66
+      y: 808
+      width: 55
+      height: 30
+    spriteID: 731fa724f4d6570479e67dc750575c88
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: CrunchyBig
+    originalName: 
+    pivot: {x: 0.5056694, y: 0.7601109}
+>>>>>>> Stashed changes:Assets/Sprites/Tiles/NEW_ToxicWaste.aseprite.meta
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -213,7 +250,11 @@ ScriptedImporter:
     uvTransform: {x: 4, y: 372}
   - name: Frame_4
     originalName: 
+<<<<<<< Updated upstream:Assets/Sprites/MAIN MENU AND UI/mainmenu.aseprite.meta
     pivot: {x: 0.49844238, y: 0}
+=======
+    pivot: {x: 0.50728947, y: 0.6013128}
+>>>>>>> Stashed changes:Assets/Sprites/Tiles/NEW_ToxicWaste.aseprite.meta
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -273,8 +314,180 @@ ScriptedImporter:
     indices: 
     edges: []
     tessellationDetail: 0
+<<<<<<< Updated upstream:Assets/Sprites/MAIN MENU AND UI/mainmenu.aseprite.meta
     uvTransform: {x: 4, y: 740}
   spriteSheetImportData: []
+=======
+    uvTransform: {x: 0, y: 0}
+  - name: Warning3
+    originalName: 
+    pivot: {x: 0.5071196, y: 0.5375919}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 196
+      y: 667
+      width: 66
+      height: 25
+    spriteID: eb36e0955e789ff4386f9a7bcbc94e76
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: Warning4
+    originalName: 
+    pivot: {x: 0.5078992, y: 0.539389}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 263
+      y: 667
+      width: 66
+      height: 25
+    spriteID: 57cc225be75a7ee498df39f7cf1aa842
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: Warning5
+    originalName: 
+    pivot: {x: 0.50855416, y: 0.5384619}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 330
+      y: 667
+      width: 66
+      height: 25
+    spriteID: 6d4eb3d393ed20143b4a930fb9fb5ac2
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: Warning6
+    originalName: 
+    pivot: {x: 0.5068447, y: 0.5376456}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 397
+      y: 667
+      width: 66
+      height: 25
+    spriteID: e509ded3a0984ec4fb05b8acbcda6d1f
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: YellowBefore1
+    originalName: 
+    pivot: {x: 0.50809664, y: 0.4803356}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 60
+      y: 608
+      width: 66
+      height: 22
+    spriteID: 0990318a1ed6556428bb13e8969f5bc5
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: YellowBefore2
+    originalName: 
+    pivot: {x: 0.5091028, y: 0.47724497}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 129
+      y: 608
+      width: 66
+      height: 22
+    spriteID: 18343f7fa6d565e4b91ed7e59701a951
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: YellowBefore3
+    originalName: 
+    pivot: {x: 0.5072204, y: 0.4783353}
+    alignment: 9
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 198
+      y: 608
+      width: 66
+      height: 22
+    spriteID: ea9b83ba98040a849b893ea66564698f
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+  - name: YellowBefore4
+    originalName: 
+    pivot: {x: 0.5, y: 0.5}
+    alignment: 0
+    border: {x: 0, y: 0, z: 0, w: 0}
+    customData: 
+    rect:
+      serializedVersion: 2
+      x: 267
+      y: 608
+      width: 66
+      height: 22
+    spriteID: ae7319bc23705384ea7350f6da01a7b0
+    spriteBone: []
+    spriteOutline: []
+    vertices: []
+    spritePhysicsOutline: []
+    indices: 
+    edges: []
+    tessellationDetail: 0
+    uvTransform: {x: 0, y: 0}
+>>>>>>> Stashed changes:Assets/Sprites/Tiles/NEW_ToxicWaste.aseprite.meta
   tileSetImportData: []
   asepriteLayers:
   - layerIndex: 0
@@ -357,7 +570,47 @@ ScriptedImporter:
     tileSetIndex: 0
     parentIndex: -1
   tileSets: []
+<<<<<<< Updated upstream:Assets/Sprites/MAIN MENU AND UI/mainmenu.aseprite.meta
   platformSettings: []
+=======
+  platformSettings:
+  - name: DefaultTexturePlatform
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  - name: Standalone
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+  - name: Android
+    overridden: 0
+    ignorePlatformSupport: 0
+    maxTextureSize: 16384
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    androidETC2FallbackOverride: 0
+>>>>>>> Stashed changes:Assets/Sprites/Tiles/NEW_ToxicWaste.aseprite.meta
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
