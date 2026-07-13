@@ -2435,8 +2435,9 @@ public class TurnManager : MonoBehaviour
         }
 
         if (player != null) player.TriggerAttackAnimation();
+        yield return new WaitForSeconds(0.2f);
         if (AudioManager.instance != null) AudioManager.instance.PlaySwing();
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.4f);
         if (AudioManager.instance != null) AudioManager.instance.PlayHit();
         isAttackAnimationPlaying = false;
         hexesMovedThisTurn = 0;
