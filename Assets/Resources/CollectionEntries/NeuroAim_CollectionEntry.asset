@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: NeuroAim_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 1036782846232815647, guid: 326cb9d6ffa3e224eb82cf9698109001, type: 3}
+  perkId: NeuroAim
+  loreText: Targeting wetware spliced into the occipital lobe. It highlights weak points in real-time, dramatically increasing your chance to land a critical hit.
+  unlockCondition: 0
+  requiredAmount: 25
+  conditionParam: 
+  unlockHint: "Ko\u015Fulu ayarla!"

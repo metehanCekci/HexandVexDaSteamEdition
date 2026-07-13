@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: SporeCloud_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 1409260542230063526, guid: d982a3cdd65e520448d81a6a9fe9f097, type: 3}
+  perkId: SporeCloud
+  loreText: A defensive fungal colony embedded in the host's epidermis. When threatened,
+    it releases paralytic spores in a dense cloud.
+  rarity: 0
+  unlockCondition: 1
+  requiredAmount: 500
+  conditionParam: 
+  unlockHint: Kill 500 enemies in total.

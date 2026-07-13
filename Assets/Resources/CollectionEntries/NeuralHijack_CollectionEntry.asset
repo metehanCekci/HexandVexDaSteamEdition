@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: NeuralHijack_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 7733694003799486102, guid: 33746d0890e3b1549bf3c320ca4a1ecf, type: 3}
+  perkId: NeuralHijack
+  loreText: A parasitic neural implant that hijacks enemy nervous systems on impact.
+    The converted host fights alongside you until the implant burns out.
+  rarity: 3
+  unlockCondition: 10
+  requiredAmount: 20
+  conditionParam: 
+  unlockHint: Push 20 enemies into spikes.

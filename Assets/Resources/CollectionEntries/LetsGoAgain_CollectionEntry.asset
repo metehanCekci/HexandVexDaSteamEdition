@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: LetsGoAgain_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 3920184756210837521, guid: a2c8e4f6b3d7190a5e8c2f4b6d9a1e37, type: 3}
+  perkId: LetsGoAgain
+  loreText: A temporal echo device embedded in the brainstem. After all implants fire once, a phantom signal triggers them all to activate a second time.
+  rarity: 4
+  unlockCondition: 0
+  requiredAmount: 0
+  conditionParam: 
+  unlockHint: 

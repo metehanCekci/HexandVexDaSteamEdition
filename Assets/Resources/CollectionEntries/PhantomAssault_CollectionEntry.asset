@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: PhantomAssault_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 3813607909340182871, guid: a140a693559f868439b7ff2cc7e43ad8, type: 3}
+  perkId: PhantomAssault
+  loreText: Quantum echoes of your killing intent linger where you struck. When you
+    pause, every phantom remembers, and every phantom strikes as one.
+  rarity: 3
+  unlockCondition: 1
+  requiredAmount: 300
+  conditionParam: 
+  unlockHint: Kill 300 enemies in total.

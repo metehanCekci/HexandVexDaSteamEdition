@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: KillChain_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 8770049335834323996, guid: 1867db604725d11428bc9a201d26bfb0, type: 3}
+  perkId: KillChain
+  loreText: "A predatory adrenaline response that accelerates with each kill. The
+    hunt feeds itself \u2014 every death fuels the next strike."
+  rarity: 2
+  unlockCondition: 8
+  requiredAmount: 10
+  conditionParam: 
+  unlockHint: Kill 10 enemies in a single run.

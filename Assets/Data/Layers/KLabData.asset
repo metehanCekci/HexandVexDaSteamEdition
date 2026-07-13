@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccca2586bc193c24aadcee379b7ee148, type: 3}
+  m_Name: KLabData
+  m_EditorClassIdentifier: Assembly-CSharp::MapLayerData
+  layerName: Layer2Data
+  totalRows: 8
+  minNodesPerRow: 1
+  maxNodesPerRow: 3
+  threeNodeChance: 0.15
+  restChance: 0.3
+  eliteChance: 0.1
+  enchantChance: 0.3
+  sacrificeChance: 0.1
+  tileSet: {fileID: 11400000, guid: e6e5558eae4bd664093f54a048f204a6, type: 2}

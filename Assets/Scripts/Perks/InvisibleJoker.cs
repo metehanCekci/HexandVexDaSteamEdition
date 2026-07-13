@@ -1,0 +1,98 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// Invisible Joker — Epic. Balatro adaptasyonu.
+/// 2 combat boyunca pasif olarak bekler (armed degil). 2. combat temizlendiginde "armed" olur.
+/// Armed'ken oyuncu BU perki sattiginda: sahip oldugu (active + inventory) tum diger perkler
+/// arasindan rastgele birinin kopyasini ekler. Showman gerekmez —
+/// duplicate iznini kendisi forceler (allowDuplicatePerk flag).
+/// </summary>
+public class InvisibleJokerPerk : BasePerk
+{
+    private const int CombatsRequired = 2;
+    public int combatsPassed = 0;
+    public bool armed = false;
+
+    public override Dictionary<string, object> GetDescValues()
+    {
+        int remaining = Mathf.Max(0, CombatsRequired - combatsPassed);
+        string waitText = remaining == 1 ? "1 combat" : remaining + " combats";
+        return new Dictionary<string, object>
+        {
+            { "wait", GameKeywords.Counter(waitText) },
+            { "effect", GameKeywords.Retrigger("copy a random implant you own") }
+        };
+    }
+
+    public override void OnAcquire()
+    {
+        GameEvents.OnPerkSold += HandlePerkSold;
+    }
+
+    void OnDestroy()
+    {
+        GameEvents.OnPerkSold -= HandlePerkSold;
+    }
+
+    public override void OnLevelClear()
+    {
+        if (armed) return;
+        combatsPassed++;
+        if (combatsPassed >= CombatsRequired)
+        {
+            armed = true;
+            TriggerVisualPop();
+        }
+        RebuildDescription();
+    }
+
+    private void HandlePerkSold(BasePerk soldPerk)
+    {
+        if (!armed) return;
+        if (soldPerk != this) return; // sadece KENDISI satilinca tetiklenir
+        CopyRandomOwnedPerk();
+    }
+
+    private void CopyRandomOwnedPerk()
+    {
+        if (RunManager.instance == null) return;
+        if (MergedShopManager.instance == null) return;
+
+        // Sahip oldugumuz tum perk tipleri (kendimiz haric — zaten listeden cikarildik ama guvenlik icin filtreliyoruz)
+        HashSet<System.Type> ownedTypes = new HashSet<System.Type>();
+        foreach (var p in RunManager.instance.activePerks)
+            if (p != null && p != this) ownedTypes.Add(p.GetType());
+        foreach (var p in RunManager.instance.inventoryPerks)
+            if (p != null && p != this) ownedTypes.Add(p.GetType());
+
+        if (ownedTypes.Count == 0) return;
+
+        // Bu tiplerin prefab'larini havuzlardan bul
+        List<GameObject> candidatePrefabs = new List<GameObject>();
+        var ms = MergedShopManager.instance;
+        AddMatchingPrefabs(ms.commonPerks, ownedTypes, candidatePrefabs);
+        AddMatchingPrefabs(ms.rarePerks, ownedTypes, candidatePrefabs);
+        AddMatchingPrefabs(ms.epicPerks, ownedTypes, candidatePrefabs);
+        AddMatchingPrefabs(ms.legendaryPerks, ownedTypes, candidatePrefabs);
+
+        if (candidatePrefabs.Count == 0) return;
+
+        var chosen = candidatePrefabs[Random.Range(0, candidatePrefabs.Count)];
+
+        // Showman olmadan da duplicate olarak eklensin diye one-shot flag
+        RunManager.instance.allowDuplicatePerk = true;
+        RunManager.instance.AddPerk(chosen);
+    }
+
+    private static void AddMatchingPrefabs(List<GameObject> pool, HashSet<System.Type> types, List<GameObject> output)
+    {
+        if (pool == null) return;
+        foreach (var prefab in pool)
+        {
+            if (prefab == null) continue;
+            var script = prefab.GetComponent<BasePerk>();
+            if (script != null && types.Contains(script.GetType())) output.Add(prefab);
+        }
+    }
+}

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b2624f0ab82d84981a2c7d452d7793, type: 3}
+  m_Name: OrganPouch_CollectionEntry
+  m_EditorClassIdentifier: Assembly-CSharp::PerkCollectionData
+  perkPrefab: {fileID: 1986514174070140262, guid: 8d2cf8eb1410c6d44942bc4168924640, type: 3}
+  perkId: OrganPouch
+  loreText: A bioengineered abdominal cavity expansion. Extra folds of synthetic
+    tissue create room for one more tool on your belt.
+  rarity: 0
+  unlockCondition: 4
+  requiredAmount: 250
+  conditionParam: 
+  unlockHint: Collect 250 gold in a run.
