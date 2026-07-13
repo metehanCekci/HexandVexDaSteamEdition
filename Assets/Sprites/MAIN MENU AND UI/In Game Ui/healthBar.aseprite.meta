@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD
 guid: 01ab1f3529969794ca4600f8a2cce4aa
+=======
+guid: 9f3ce25965a76c644b072ecc6f1cd827
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -76,8 +80,13 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
+<<<<<<< HEAD
     defaultPivotAlignment: 9
     customPivotPosition: {x: 0.4808, y: 0.6776}
+=======
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -91,8 +100,13 @@ ScriptedImporter:
     importHiddenLayers: 0
     layerImportMode: 1
     defaultPivotSpace: 0
+<<<<<<< HEAD
     defaultPivotAlignment: 9
     customPivotPosition: {x: 0.4808, y: 0.6776}
+=======
+    defaultPivotAlignment: 7
+    customPivotPosition: {x: 0.5, y: 0.5}
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
     mosaicPadding: 4
     spritePadding: 0
     generateModelPrefab: 1
@@ -127,9 +141,15 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
+<<<<<<< HEAD
   - name: OrangeMagicTileUpper
     originalName: 
     pivot: {x: 0.500032, y: 0.47610003}
+=======
+  - name: healthBar
+    originalName: 
+    pivot: {x: 0.5543478, y: -0.22556391}
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +157,15 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
+<<<<<<< HEAD
       width: 50
       height: 32
     spriteID: 3c07d1d5f91355f4a900f804500dcb00
+=======
+      width: 92
+      height: 133
+    spriteID: 9cf8cb1616e92b946bb86a67b51ddeee
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,16 +179,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
+<<<<<<< HEAD
       value0: 3141479491
+=======
+      value0: 2006455713
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
       value1: 0
       value2: 0
       value3: 0
     guid: 0
+<<<<<<< HEAD
     name: OrangeMagicTileUpper
+=======
+    name: healthBar
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
+<<<<<<< HEAD
     - name: OrangeMagicTileUpper
       frameIndex: 0
       additiveSortOrder: 0
@@ -172,6 +207,17 @@ ScriptedImporter:
         width: 50
         height: 32
       spriteId: 3c07d1d5f91355f4a900f804500dcb00
+=======
+    - name: healthBar
+      frameIndex: 0
+      additiveSortOrder: 0
+      cellRect:
+        x: 49
+        y: 30
+        width: 92
+        height: 133
+      spriteId: 9cf8cb1616e92b946bb86a67b51ddeee
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +227,10 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
+<<<<<<< HEAD
   canvasSize: {x: 52, y: 52}
   previousTextureSize: {x: 64, y: 64}
+=======
+  canvasSize: {x: 200, y: 200}
+  previousTextureSize: {x: 128, y: 256}
+>>>>>>> parent of 7d8d8fc (Revert "Merge branch 'Denizs-Branch' of https://github.com/metehanCekci/HexandVexDaSteamEdition into Denizs-Branch")

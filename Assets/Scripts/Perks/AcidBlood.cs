@@ -1,19 +1,14 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class AcidBloodPerk : BasePerk
 {
-    void OnEnable() { maxLevel = 3; rarity = PerkRarity.Common; UpdateDescription(); }
-
-    public override void OnAcquire() { UpdateDescription(); }
-
-    public override void Upgrade()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        base.Upgrade();
-        UpdateDescription();
-    }
+        { "push",   GameKeywords.Action("Push") },
+        { "spikes", GameKeywords.Status("spikes") },
+        { "heal",   GameKeywords.Heal(currentLevel) }
+    };
 
-    private void UpdateDescription()
-    {
-        description = $"Pushing an enemy into spikes heals you for {currentLevel} HP.";
-    }
+    public override void OnAcquire() { RebuildDescription(); }
 }

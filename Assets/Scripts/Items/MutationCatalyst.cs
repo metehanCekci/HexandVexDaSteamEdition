@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/MutationCatalyst", fileName = "MutationCatalyst")]
 public class MutationCatalyst : BaseItem
@@ -6,16 +7,20 @@ public class MutationCatalyst : BaseItem
     void OnEnable()
     {
         itemName = "Mutation Catalyst";
-        description = "Unlocks a free item reroll in every shop for the rest of the run.";
-        price = 18;
-        itemType = ItemType.Instant;
+        itemType = ItemType.Consumable;
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "cost", 0 }
+    };
 
     public override bool Use()
     {
         if (RunManager.instance == null) return false;
-        if (RunManager.instance.hasMutationCatalyst) return false; // Zaten sahip
-        RunManager.instance.hasMutationCatalyst = true;
+        RunManager.instance.pendingRerollReset = true;
+        if (MergedShopManager.instance != null)
+            MergedShopManager.instance.ApplyFreeRerollFromCatalyst();
         return true;
     }
 }

@@ -47,8 +47,10 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 2
   perkName: Organ Pouch
-  description: One more inventory slot.
+  description: Gain {slots} item slot.
   icon: {fileID: 879421308609144542, guid: 9094303d702dc5844adfccf15d339c80, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 0

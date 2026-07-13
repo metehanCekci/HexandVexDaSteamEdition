@@ -1,6 +1,10 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class VoodooParasitePerk : BasePerk
 {
-    void OnEnable() { maxLevel = 4; rarity = PerkRarity.Legendary; }
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
+    {
+        { "nearby", GameKeywords.Status("nearby") },
+        { "curse",  GameKeywords.Action("voodoo curse") }
+    };
 }

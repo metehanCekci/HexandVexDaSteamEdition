@@ -36,6 +36,11 @@ public class SacrificeNodeManager : MonoBehaviour
     [Header("Leave")]
     public Button leaveButton;
 
+    [Header("Progression Bar")]
+    public Image[] progressionDots = new Image[3];   // ○  ○  ○  (3 sacrifice nodes)
+    public Image[] progressionLines = new Image[2];  // connecting segments between dots
+    private const int TOTAL_SACRIFICE_NODES = 3;
+
     // Runtime
     private List<BasePerk> tubePerks = new List<BasePerk>();
     private List<GameObject> tubePerkIcons = new List<GameObject>();
@@ -48,7 +53,7 @@ public class SacrificeNodeManager : MonoBehaviour
     private GameObject persistentSecretPerk;
     private bool poolGenerated;
 
-    // Cached perk lists (because LevelUpManager doesn't persist across scenes)
+    // Cached perk lists (because MergedShopManager doesn't persist across scenes)
     private List<GameObject> cachedRarePerks;
     private List<GameObject> cachedEpicPerks;
     private List<GameObject> cachedLegendaryPerks;
@@ -85,6 +90,9 @@ public class SacrificeNodeManager : MonoBehaviour
     public void Show()
     {
         if (panel == null) BuildFromCode();
+
+        // Older scenes (built via editor tool) may not have the progression bar — inject it on first Show.
+        EnsureProgressionBar();
 
         ReturnAllTubePerks();
 
@@ -143,9 +151,8 @@ public class SacrificeNodeManager : MonoBehaviour
     // ═══════════════════════════════════════════
 
     /// <summary>
-    /// Cache perk lists from LevelUpManager. Call this early (e.g. MapManager.Start)
-    /// while LevelUpManager is still alive. LevelUpManager doesn't use DontDestroyOnLoad
-    /// so it gets destroyed on scene transitions.
+    /// Cache perk lists from MergedShopManager. Call this early (e.g. MapManager.Start)
+    /// while MergedShopManager is still alive.
     /// </summary>
     public void CachePerkLists()
     {
@@ -156,67 +163,25 @@ public class SacrificeNodeManager : MonoBehaviour
 
         try
         {
-            Debug.Log("[SACRIFICE] CachePerkLists: entering try block...");
-            LevelUpManager lum = null;
-
-            // Method 1: static instance
-            try
+            MergedShopManager shop = MergedShopManager.instance;
+            if (shop == null) shop = FindFirstObjectByType<MergedShopManager>();
+            if (shop == null)
             {
-                var inst = LevelUpManager.instance;
-                Debug.Log("[SACRIFICE] LevelUpManager.instance ref = " + (inst == null ? "NULL" : "EXISTS"));
-                if (inst != null)
-                {
-                    var go = inst.gameObject;
-                    lum = inst;
-                    Debug.Log("[SACRIFICE] Found LevelUpManager via instance: " + go.name);
-                }
-            }
-            catch (System.Exception e1)
-            {
-                Debug.Log("[SACRIFICE] instance is destroyed (fake null): " + e1.Message);
-                lum = null;
+                var allShops = Resources.FindObjectsOfTypeAll<MergedShopManager>();
+                if (allShops.Length > 0) shop = allShops[0];
             }
 
-            // Method 2: FindObjectOfType
-            if (lum == null)
+            if (shop == null)
             {
-                lum = FindObjectOfType<LevelUpManager>();
-                Debug.Log("[SACRIFICE] FindObjectOfType result = " + (lum == null ? "NULL" : lum.name));
-            }
-
-            // Method 3: Resources.FindObjectsOfTypeAll (includes inactive)
-            if (lum == null)
-            {
-                var allLums = Resources.FindObjectsOfTypeAll<LevelUpManager>();
-                Debug.Log("[SACRIFICE] Resources.FindObjectsOfTypeAll found " + allLums.Length + " LevelUpManagers");
-                foreach (var candidate in allLums)
-                {
-                    try
-                    {
-                        var go = candidate.gameObject;
-                        if (go.scene.isLoaded || string.IsNullOrEmpty(go.scene.name))
-                        {
-                            lum = candidate;
-                            Debug.Log("[SACRIFICE] Found LevelUpManager via Resources: " + go.name);
-                            break;
-                        }
-                    }
-                    catch { /* destroyed candidate, skip */ }
-                }
-            }
-
-            if (lum == null)
-            {
-                Debug.Log("[SACRIFICE] CachePerkLists: LevelUpManager not found anywhere. Will retry later.");
+                Debug.Log("[SACRIFICE] CachePerkLists: MergedShopManager not found anywhere. Will retry later.");
                 return;
             }
 
-            // Safely read the lists
-            var rare = lum.rarePerks;
-            var epic = lum.epicPerks;
-            var legendary = lum.legendaryPerks;
+            var rare = shop.rarePerks;
+            var epic = shop.epicPerks;
+            var legendary = shop.legendaryPerks;
 
-            Debug.Log("[SACRIFICE] LevelUpManager lists: rare=" + (rare != null ? rare.Count.ToString() : "null")
+            Debug.Log("[SACRIFICE] MergedShopManager lists: rare=" + (rare != null ? rare.Count.ToString() : "null")
                 + ", epic=" + (epic != null ? epic.Count.ToString() : "null")
                 + ", legendary=" + (legendary != null ? legendary.Count.ToString() : "null"));
 
@@ -279,7 +244,7 @@ public class SacrificeNodeManager : MonoBehaviour
     {
         if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
 
-        // Method 1: Try via LevelUpManager
+        // Method 1: Try via MergedShopManager primary lookup
         CachePerkLists();
 
         if (cachedRarePerks != null && cachedRarePerks.Count > 0) return;
@@ -287,7 +252,7 @@ public class SacrificeNodeManager : MonoBehaviour
         // Method 2: Steal from MergedShopManager which caches its own copies
         try
         {
-            var shop = FindObjectOfType<MergedShopManager>();
+            var shop = FindFirstObjectByType<MergedShopManager>();
             if (shop == null)
             {
                 var allShops = Resources.FindObjectsOfTypeAll<MergedShopManager>();
@@ -371,6 +336,8 @@ public class SacrificeNodeManager : MonoBehaviour
         persistentEpicPerk = null;
         persistentLegendaryPerk = null;
         persistentSecretPerk = null;
+        if (RunManager.instance != null)
+            RunManager.instance.sacrificeNodesVisited = 0;
         ReturnAllTubePerks();
     }
 
@@ -498,15 +465,49 @@ public class SacrificeNodeManager : MonoBehaviour
     // LEVER
     // ═══════════════════════════════════════════
 
+    // 1-based visit number for the CURRENT open sacrifice node.
+    // sacrificeNodesVisited counts completed visits, so the current one is +1.
+    private int CurrentVisitNumber()
+    {
+        if (RunManager.instance == null) return 1;
+        return RunManager.instance.sacrificeNodesVisited + 1;
+    }
+
+    private bool IsTierUnlocked(PerkRarity tier)
+    {
+        int v = CurrentVisitNumber();
+        switch (tier)
+        {
+            case PerkRarity.Rare:      return v >= 1;
+            case PerkRarity.Epic:      return v >= 2;
+            case PerkRarity.Legendary: return v >= 3;
+            case PerkRarity.Secret:    return v >= 3;
+        }
+        return false;
+    }
+
+    // Required visit number to unlock a given tier (for locked-slot labels).
+    private static int UnlockVisitFor(PerkRarity tier)
+    {
+        switch (tier)
+        {
+            case PerkRarity.Rare:      return 1;
+            case PerkRarity.Epic:      return 2;
+            case PerkRarity.Legendary: return 3;
+            case PerkRarity.Secret:    return 3;
+        }
+        return 1;
+    }
+
     private bool CanPullLever()
     {
         if (isAnimating) return false;
         int c = tubePerks.Count;
         if (c == 1) return true; // reroll her zaman
-        if (c == 2) return persistentRarePerk != null;
-        if (c == 4) return persistentEpicPerk != null;
-        if (c == 6) return persistentLegendaryPerk != null;
-        if (c == 10) return true; // secret uses SecretPerkOrb directly
+        if (c == 2) return persistentRarePerk != null && IsTierUnlocked(PerkRarity.Rare);
+        if (c == 4) return persistentEpicPerk != null && IsTierUnlocked(PerkRarity.Epic);
+        if (c == 6) return persistentLegendaryPerk != null && IsTierUnlocked(PerkRarity.Legendary);
+        if (c == 10) return IsTierUnlocked(PerkRarity.Secret);
         return false;
     }
 
@@ -558,6 +559,8 @@ public class SacrificeNodeManager : MonoBehaviour
 
             SecretPerkOrb orb = FindSecretPerkOrb();
             Debug.Log($"[SACRIFICE] SecretPerkOrb found={orb != null}, pool={orb?.secretPerkPool?.Count ?? -1}");
+            // Let duplicate perks stack when the reward comes from sacrifice.
+            if (RunManager.instance != null) RunManager.instance.allowDuplicatePerk = true;
             bool orbResult = orb != null && orb.Use();
             Debug.Log($"[SACRIFICE] SecretPerkOrb.Use() returned {orbResult}");
             if (orbResult)
@@ -576,11 +579,17 @@ public class SacrificeNodeManager : MonoBehaviour
                 }
 
                 if (statusText != null) statusText.text = "SECRET MUTATION ACQUIRED!";
-                if (RunManager.instance != null) RunManager.instance.RefreshPerkUI();
+                if (RunManager.instance != null)
+                {
+                    RunManager.instance.sacrificeNodesVisited++;
+                    RunManager.instance.RefreshPerkUI();
+                }
                 yield return new WaitForSecondsRealtime(0.5f);
             }
             else
             {
+                // Clear the unused dupe flag since AddPerk was never reached.
+                if (RunManager.instance != null) RunManager.instance.allowDuplicatePerk = false;
                 Debug.LogWarning("[SACRIFICE] SecretPerkOrb not found or Use() failed!");
                 if (statusText != null) statusText.text = "NO SECRET AVAILABLE";
                 yield return new WaitForSecondsRealtime(1f);
@@ -631,10 +640,12 @@ public class SacrificeNodeManager : MonoBehaviour
                 // Show reward perk appearing in tube
                 yield return StartCoroutine(ShowRewardInTube(rewardPrefab));
 
-                // Actually grant the perk
+                // Actually grant the perk — allow duplicate (sacrifice-only rule)
                 if (RunManager.instance != null)
                 {
+                    RunManager.instance.allowDuplicatePerk = true;
                     RunManager.instance.AddPerk(rewardPrefab);
+                    RunManager.instance.sacrificeNodesVisited++;
                     RunManager.instance.RefreshPerkUI();
                     Debug.Log($"[SACRIFICE] AddPerk SUCCESS: {perkName}");
                 }
@@ -862,6 +873,13 @@ public class SacrificeNodeManager : MonoBehaviour
     private void RefreshUI()
     {
         int count = tubePerks.Count;
+        int visit = CurrentVisitNumber();
+
+        // Sacrifice progression label in the title
+        if (titleText != null)
+            titleText.text = $"SACRIFICE MACHINE  <size=22><color=#888888>#{visit}</color></size>";
+
+        RefreshProgressionBar();
 
         // Lever
         bool canPull = CanPullLever();
@@ -874,23 +892,42 @@ public class SacrificeNodeManager : MonoBehaviour
             leverText.color = canPull ? Color.white : new Color(0.35f, 0.35f, 0.35f);
         }
 
-        // Reward slots — always show info
-        if (rareSlot != null) { rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2); rareSlot.SetHighlighted(count == 2); }
-        if (epicSlot != null) { epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4); epicSlot.SetHighlighted(count == 4); }
-        if (legendarySlot != null) { legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6); legendarySlot.SetHighlighted(count == 6); }
+        // Reward slots — lock tiers not yet unlocked for this visit number
+        bool rareUnlocked = IsTierUnlocked(PerkRarity.Rare);
+        bool epicUnlocked = IsTierUnlocked(PerkRarity.Epic);
+        bool legendaryUnlocked = IsTierUnlocked(PerkRarity.Legendary);
 
-        // Status
+        if (rareSlot != null)
+        {
+            rareSlot.Setup(PerkRarity.Rare, persistentRarePerk, 2, !rareUnlocked, UnlockVisitFor(PerkRarity.Rare));
+            rareSlot.SetHighlighted(count == 2 && rareUnlocked);
+        }
+        if (epicSlot != null)
+        {
+            epicSlot.Setup(PerkRarity.Epic, persistentEpicPerk, 4, !epicUnlocked, UnlockVisitFor(PerkRarity.Epic));
+            epicSlot.SetHighlighted(count == 4 && epicUnlocked);
+        }
+        if (legendarySlot != null)
+        {
+            legendarySlot.Setup(PerkRarity.Legendary, persistentLegendaryPerk, 6, !legendaryUnlocked, UnlockVisitFor(PerkRarity.Legendary));
+            legendarySlot.SetHighlighted(count == 6 && legendaryUnlocked);
+        }
+
+        // Status — gate messages by unlock state
         if (statusText != null)
         {
-            if (count == 0) statusText.text = "DRAG PERKS INTO THE TUBE";
-            else if (count == 1) statusText.text = "PULL LEVER TO REROLL REWARDS";
-            else if (count == 2) statusText.text = "PULL LEVER FOR RARE PERK";
-            else if (count == 3) statusText.text = "NEED 1 MORE FOR EPIC (4)";
-            else if (count == 4) statusText.text = "PULL LEVER FOR EPIC PERK";
-            else if (count == 5) statusText.text = "NEED 1 MORE FOR LEGENDARY (6)";
-            else if (count == 6) statusText.text = "PULL LEVER FOR LEGENDARY PERK";
-            else if (count >= 7 && count <= 9) statusText.text = $"NEED {10 - count} MORE FOR ???";
-            else if (count == 10) statusText.text = "PULL LEVER FOR ??? PERK";
+            string s;
+            if (count == 0) s = "DRAG PERKS INTO THE TUBE";
+            else if (count == 1) s = "PULL LEVER TO REROLL REWARDS";
+            else if (count == 2) s = rareUnlocked ? "PULL LEVER FOR RARE PERK" : $"RARE LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Rare)}";
+            else if (count == 3) s = "NEED 1 MORE FOR EPIC (4)";
+            else if (count == 4) s = epicUnlocked ? "PULL LEVER FOR EPIC PERK" : $"EPIC LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Epic)}";
+            else if (count == 5) s = "NEED 1 MORE FOR LEGENDARY (6)";
+            else if (count == 6) s = legendaryUnlocked ? "PULL LEVER FOR LEGENDARY PERK" : $"LEGENDARY LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Legendary)}";
+            else if (count >= 7 && count <= 9) s = $"NEED {10 - count} MORE FOR ???";
+            else if (count == 10) s = IsTierUnlocked(PerkRarity.Secret) ? "PULL LEVER FOR ??? PERK" : $"??? LOCKED — UNLOCKS AT SACRIFICE #{UnlockVisitFor(PerkRarity.Secret)}";
+            else s = "";
+            statusText.text = s;
         }
     }
 
@@ -923,6 +960,9 @@ public class SacrificeNodeManager : MonoBehaviour
             new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1),
             new Vector2(-50, -15), new Vector2(500, 55),
             "SACRIFICE MACHINE", 36, new Color(0.8f, 0.2f, 0.6f), TextAlignmentOptions.Center);
+
+        // Progression bar — three dots connected by short lines, sits under the title
+        BuildProgressionBar(panel.transform);
 
         // Machine
         GameObject machineGO = MakeUI("MachineBody", panel.transform);
@@ -978,6 +1018,118 @@ public class SacrificeNodeManager : MonoBehaviour
         BuildLeaveButton(panel.transform);
 
         panel.SetActive(false);
+    }
+
+    // Build the progression bar lazily for scenes assembled via the editor setup tool
+    // (which predates this feature). Idempotent — does nothing once dots exist.
+    private void EnsureProgressionBar()
+    {
+        if (progressionDots != null && progressionDots.Length > 0 && progressionDots[0] != null) return;
+        if (panel == null) return;
+
+        // If a previous run left a stale "ProgressionBar" child around, clear it first.
+        Transform existing = panel.transform.Find("ProgressionBar");
+        if (existing != null) Destroy(existing.gameObject);
+
+        progressionDots = new Image[3];
+        progressionLines = new Image[2];
+        BuildProgressionBar(panel.transform);
+    }
+
+    // Three dots (○─○─○) showing sacrifice progression. Position: directly under the title.
+    private void BuildProgressionBar(Transform parent)
+    {
+        const float DOT_SIZE = 18f;
+        const float LINE_W = 36f;
+        const float LINE_H = 3f;
+        const float SPACING = 4f; // gap between dot edge and line start
+
+        GameObject barGO = MakeUI("ProgressionBar", parent);
+        RectTransform brt = barGO.GetComponent<RectTransform>();
+        brt.anchorMin = new Vector2(0.5f, 1f);
+        brt.anchorMax = new Vector2(0.5f, 1f);
+        brt.pivot = new Vector2(0.5f, 1f);
+        brt.anchoredPosition = new Vector2(-50f, -62f); // matches title's -50 X offset, sits below it
+        brt.sizeDelta = new Vector2(DOT_SIZE * 3 + LINE_W * 2 + SPACING * 4, DOT_SIZE + 6f);
+
+        // Layout: dot, line, dot, line, dot — manually positioned for precise alignment
+        float totalW = DOT_SIZE * 3 + LINE_W * 2 + SPACING * 4;
+        float cursorX = -totalW / 2f;
+
+        for (int i = 0; i < TOTAL_SACRIFICE_NODES; i++)
+        {
+            // Dot
+            GameObject dotGO = MakeUI($"Dot{i}", barGO.transform);
+            RectTransform drt = dotGO.GetComponent<RectTransform>();
+            drt.anchorMin = new Vector2(0.5f, 0.5f);
+            drt.anchorMax = new Vector2(0.5f, 0.5f);
+            drt.pivot = new Vector2(0.5f, 0.5f);
+            drt.sizeDelta = new Vector2(DOT_SIZE, DOT_SIZE);
+            drt.anchoredPosition = new Vector2(cursorX + DOT_SIZE / 2f, 0f);
+            Image dotImg = dotGO.AddComponent<Image>();
+            dotImg.color = new Color(0.25f, 0.25f, 0.3f, 0.9f);
+            dotImg.raycastTarget = false;
+            progressionDots[i] = dotImg;
+
+            cursorX += DOT_SIZE;
+
+            // Connecting line (skip after last dot)
+            if (i < TOTAL_SACRIFICE_NODES - 1)
+            {
+                cursorX += SPACING;
+                GameObject lineGO = MakeUI($"Line{i}", barGO.transform);
+                RectTransform lrt = lineGO.GetComponent<RectTransform>();
+                lrt.anchorMin = new Vector2(0.5f, 0.5f);
+                lrt.anchorMax = new Vector2(0.5f, 0.5f);
+                lrt.pivot = new Vector2(0.5f, 0.5f);
+                lrt.sizeDelta = new Vector2(LINE_W, LINE_H);
+                lrt.anchoredPosition = new Vector2(cursorX + LINE_W / 2f, 0f);
+                Image lineImg = lineGO.AddComponent<Image>();
+                lineImg.color = new Color(0.2f, 0.2f, 0.25f, 0.85f);
+                lineImg.raycastTarget = false;
+                progressionLines[i] = lineImg;
+
+                cursorX += LINE_W + SPACING;
+            }
+        }
+    }
+
+    // Update dot/line colors based on the current visit number (1..3).
+    // Visit N is "current" (highlight), visits < N are "completed" (filled), visits > N are "future" (dim).
+    private void RefreshProgressionBar()
+    {
+        if (progressionDots == null || progressionDots.Length == 0) return;
+
+        int currentVisit = CurrentVisitNumber(); // 1-based
+        Color completedColor = new Color(0.85f, 0.3f, 0.65f, 1f);   // pink — matches title
+        Color currentColor   = new Color(1f, 0.55f, 0.85f, 1f);     // brighter pink for "now"
+        Color futureColor    = new Color(0.22f, 0.22f, 0.27f, 0.9f);
+        Color lineCompleted  = new Color(0.7f, 0.25f, 0.55f, 0.9f);
+        Color lineFuture     = new Color(0.18f, 0.18f, 0.22f, 0.85f);
+
+        for (int i = 0; i < progressionDots.Length; i++)
+        {
+            if (progressionDots[i] == null) continue;
+            int visitNumber = i + 1;
+            if (visitNumber < currentVisit)
+                progressionDots[i].color = completedColor;
+            else if (visitNumber == currentVisit)
+                progressionDots[i].color = currentColor;
+            else
+                progressionDots[i].color = futureColor;
+
+            // Subtle scale pulse for current — bigger than the others
+            RectTransform drt = progressionDots[i].rectTransform;
+            drt.localScale = (visitNumber == currentVisit) ? Vector3.one * 1.25f : Vector3.one;
+        }
+
+        // Lines: filled if the visit before them is completed (i.e. line i is between dot i and dot i+1)
+        for (int i = 0; i < progressionLines.Length; i++)
+        {
+            if (progressionLines[i] == null) continue;
+            int leftVisit = i + 1;
+            progressionLines[i].color = (leftVisit < currentVisit) ? lineCompleted : lineFuture;
+        }
     }
 
     private void BuildLever(Transform parent)
@@ -1051,7 +1203,7 @@ public class SacrificeNodeManager : MonoBehaviour
         // Description
         TMP_Text descTxt = MakeAnchText("Desc", slotGO.transform,
             new Vector2(0, 0.12f), new Vector2(1, 0.30f), "", 9, new Color(0.65f, 0.65f, 0.65f));
-        descTxt.enableWordWrapping = true;
+        descTxt.textWrappingMode = TextWrappingModes.Normal;
         descTxt.overflowMode = TextOverflowModes.Truncate;
 
         // Cost (bottom)
@@ -1135,7 +1287,7 @@ public class SacrificeNodeManager : MonoBehaviour
         txt.text = text; txt.fontSize = fontSize; txt.color = color;
         txt.alignment = TextAlignmentOptions.Center;
         txt.raycastTarget = false;
-        txt.enableWordWrapping = false;
+        txt.textWrappingMode = TextWrappingModes.NoWrap;
         txt.overflowMode = TextOverflowModes.Ellipsis;
         if (cachedFont != null) txt.font = cachedFont;
         return txt;

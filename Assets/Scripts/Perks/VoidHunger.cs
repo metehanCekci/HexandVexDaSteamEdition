@@ -1,44 +1,49 @@
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
-/// Void Hunger (Common)
-/// Çöken her tile (scaffold + seismic) başına kalıcı +0.5x damage multiplier.
-/// Run boyunca birikir, sıfırlanmaz.
-/// +0.25x per collapsed tile, max level 1
+/// Void Hunger (Common). Cöken her tile basina kalici +0.25x damage.
 /// </summary>
 public class VoidHungerPerk : BasePerk
 {
     private int collapsedCount = 0;
     private bool subscribed = false;
 
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues()
     {
-        rarity = PerkRarity.Common;
-        maxLevel = 1;
+        float totalBonus = collapsedCount * 0.25f;
+        return new Dictionary<string, object>
+        {
+            { "collapse", GameKeywords.Action("collapsed tile") },
+            { "per",     GameKeywords.Mult(0.25f) },
+            { "count",   GameKeywords.Counter(collapsedCount.ToString()) },
+            { "total",   GameKeywords.Mult(totalBonus) }
+        };
     }
 
     public override void OnAcquire()
     {
         Subscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnEquip()
     {
         Subscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnUnequip()
     {
         Unsubscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnLevelStart()
     {
         Subscribe();
-        description = GetDescription();
+        RebuildDescription();
     }
 
     private void Subscribe()
@@ -63,20 +68,16 @@ public class VoidHungerPerk : BasePerk
     private void OnTileDestroyed(Vector3Int cell)
     {
         collapsedCount++;
-        description = GetDescription();
+        RebuildDescription();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (collapsedCount <= 0) return;
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (collapsedCount <= 0) yield break;
 
-        payload.multiplier += collapsedCount * 0.25f;
-        TriggerVisualPop();
-    }
-
-    private string GetDescription()
-    {
-        float totalBonus = collapsedCount * 0.25f;
-        return $"Each collapsed tile grants permanent +0.25x damage multiplier.\nCollapsed: {collapsedCount} (+{totalBonus:F1}x)";
+        ctx.payload.ApplyMult(1f + collapsedCount * 0.25f);
+        ctx.AnimatePop(this);
     }
 }

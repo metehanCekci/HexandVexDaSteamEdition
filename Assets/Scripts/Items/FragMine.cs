@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [CreateAssetMenu(menuName = "Items/FragMine", fileName = "FragMine")]
 public class FragMine : BaseItem
@@ -6,9 +7,13 @@ public class FragMine : BaseItem
     void OnEnable()
     {
         itemName = "Frag-Mine";
-        description = "Place a bomb on any hex. Rolls dice and deals damage to all enemies within 1 hex radius";
-        price = 24;
     }
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
+    {
+        { "dmg", "damage" },
+        { "radius", 1 }
+    };
 
     public override bool Use()
     {

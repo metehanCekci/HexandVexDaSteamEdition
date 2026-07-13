@@ -261,8 +261,8 @@ public class Shopmanager : MonoBehaviour
     {
         RefreshCoinDisplay();
         if (MapManager.instance != null) { MapManager.instance.OnNodeComplete(); return; }
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
-        else { RunManager.instance.currentLevel++; LevelGenerator.instance.GenerateNextLevel(); }
+        RunManager.instance.currentLevel++;
+        LevelGenerator.instance.GenerateNextLevel();
     }
 
     public void OnBossCleared()
@@ -271,8 +271,8 @@ public class Shopmanager : MonoBehaviour
         currentRerollCost = Mathf.RoundToInt(rerollBaseCost);
         RefreshCoinDisplay();
         if (MapManager.instance != null) { MapManager.instance.OnNodeComplete(); return; }
-        if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
-        else { RunManager.instance.currentLevel++; LevelGenerator.instance.GenerateNextLevel(); }
+        RunManager.instance.currentLevel++;
+        LevelGenerator.instance.GenerateNextLevel();
     }
 
     // ═══════════════════════════════════════════
@@ -364,7 +364,6 @@ public class Shopmanager : MonoBehaviour
                 while (usedIndices.Contains(poolIdx) ||
                        (selectedItem != null && shownItemNames.Contains(selectedItem.itemName)) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
-                       (RunManager.instance != null && RunManager.instance.hasMutationCatalyst && selectedItem is MutationCatalyst) ||
                        selectedItem is LuckyClover);
                 usedIndices.Add(poolIdx);
             }
@@ -401,7 +400,8 @@ public class Shopmanager : MonoBehaviour
             if (item.icon != null) { card.iconImage.sprite = item.icon; card.iconImage.color = Color.white; card.iconImage.enabled = true; }
             else { card.iconImage.sprite = null; card.iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); }
         }
-        if (card.descriptionText != null) card.descriptionText.text = item.description;
+        item.RebuildDescription();
+        if (card.descriptionText != null) card.descriptionText.text = item.renderedDescription;
         if (card.priceText != null) card.priceText.text = item.price.ToString();
     }
 
@@ -473,19 +473,23 @@ public class Shopmanager : MonoBehaviour
         {
             if (purchased.Count > i && purchased[i]) continue;
             if (cardSlots[i].button == null) continue;
-            bool canAfford = currentItems[i] != null && RunManager.instance.currentGold >= currentItems[i].price;
+            bool canAffordRaw = currentItems[i] != null && RunManager.instance.currentGold >= currentItems[i].price;
+            bool canAfford = canAffordRaw;
             if (canAfford && currentItems[i].itemType == ItemType.Consumable && InventoryManager.instance != null && !InventoryManager.instance.HasEmptySlot())
                 canAfford = false;
             cardSlots[i].button.interactable = canAfford;
+            if (cardSlots[i].priceText != null)
+                cardSlots[i].priceText.color = UIColors.GetAffordabilityColor(canAffordRaw);
         }
     }
 
     private void RefreshRerollButton()
     {
+        bool canAfford = RunManager.instance != null && RunManager.instance.currentGold >= currentRerollCost;
         if (rerollPriceTextRef != null)
-            rerollPriceTextRef.text = "REROLL  <color=#FFD933>" + currentRerollCost + "</color>";
-        if (rerollButtonRef != null && RunManager.instance != null)
-            rerollButtonRef.interactable = RunManager.instance.currentGold >= currentRerollCost;
+            rerollPriceTextRef.text = $"REROLL  <color=#{UIColors.GetAffordabilityHex(canAfford)}>{currentRerollCost}</color>";
+        if (rerollButtonRef != null)
+            rerollButtonRef.interactable = canAfford;
     }
 
     // ═══════════════════════════════════════════
@@ -527,7 +531,7 @@ public class Shopmanager : MonoBehaviour
     {
         if (t == null) yield break;
         Color orig = t.color;
-        t.color = Color.red;
+        t.color = UIColors.CantAffordColor;
         yield return new WaitForSecondsRealtime(0.3f);
         t.color = orig;
     }

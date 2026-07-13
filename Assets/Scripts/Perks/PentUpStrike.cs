@@ -1,58 +1,84 @@
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Pent-Up Strike (Epic)
-/// Normal saldırıda 0 hasar verir (knockback kalır), zar toplamını biriktirir.
-/// Skip ile saldırdığında biriken tüm hasarı tek seferde verir.
-/// Seviye başına birikim %25 ekstra bonus.
-/// Lv1: %100, Lv2: %125, Lv3: %150
+/// Normal saldiri 0 hasar verir (knockback kalir), zar toplamini biriktirir.
+/// Skip ile saldirdiginda biriken tum hasari tek seferde verir.
+/// Mimetic ile replay olunca iki kez release / iki kez biriktirir.
 /// </summary>
 public class PentUpStrikePerk : BasePerk
 {
-    [HideInInspector] public int storedDamage = 0;
-    [HideInInspector] public int storedStacks = 0;
+    [HideInInspector] public long storedDamage = 0;
+    [HideInInspector] public long storedStacks = 0;
     [HideInInspector] public bool isReleasing = false;
 
-    void OnEnable()
+    // Snapshot — orijinal pass'te dondurulur, replay bundan okur ki state mutasyonu
+    // her cagride dogru sekilde uygulansin.
+    private long releaseSnapshot = 0;
+    private bool releaseSnapshotMode = false;
+
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Epic;
-    }
+        { "attack",  GameKeywords.Action("Attacks") },
+        { "zero",    GameKeywords.Plus(0, "damage") },
+        { "push",    GameKeywords.Action("knockback") },
+        { "skip",    GameKeywords.Action("Skip") },
+        { "percent", GameKeywords.Plus(50 + currentLevel * 50, "%") },
+        { "stored",  GameKeywords.Counter($"{storedDamage} damage") },
+        { "stacks",  GameKeywords.Counter(storedStacks.ToString()) }
+    };
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        if (isReleasing)
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
+        if (!ctx.isReplay)
         {
-            // Skip saldırısı: biriken hasarı flatBonus olarak ekle
-            // Lv1: %100, Lv2: %150, Lv3: %200
-            float bonus = storedDamage * (0.5f + currentLevel * 0.5f);
-            payload.flatBonus += Mathf.FloorToInt(bonus);
-            storedDamage = 0;
-            storedStacks = 0;
-            isReleasing = false;
-            description = GetDescription();
-            TriggerVisualPop();
+            // Orijinal pass: snapshot'i dondur
+            releaseSnapshotMode = isReleasing;
+            releaseSnapshot = storedDamage;
+        }
+
+        if (releaseSnapshotMode)
+        {
+            // Release: snapshot'tan bonus uygula. Mimetic ile replay'de aynisi tekrar.
+            double bonus = releaseSnapshot * (0.5 + currentLevel * 0.5);
+            ctx.payload.ApplyAdd(bonus);
+            ctx.AnimatePop(this);
+
+            if (!ctx.isReplay)
+            {
+                // Sifirlama sadece orijinalde
+                storedDamage = 0;
+                storedStacks = 0;
+                isReleasing = false;
+                RebuildDescription();
+            }
         }
         else
         {
-            // Normal saldırı: zar toplamını biriktir, hasarı sıfırla
-            int diceSum = payload.diceRolls.Sum();
+            // Biriktir: snapshot'taki zar toplamini biriktir.
+            // Mimetic ile replay'de ayni miktari bir kez daha biriktirir (iki kez stack).
+            long diceSum = ctx.payload.diceRolls.Sum();
             storedDamage += diceSum;
             storedStacks++;
 
-            // Tüm zarları 0 yap — knockback hâlâ çalışır ama hasar 0
-            for (int i = 0; i < payload.diceRolls.Count; i++)
-                payload.diceRolls[i] = 0;
-            payload.flatBonus = 0;
-            payload.multiplier = 0f;
+            // Damage kovasini sifirla — processLast=true oldugumuz icin onceki perkler bitti.
+            for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
+                ctx.payload.diceRolls[i] = 0;
+            ctx.payload.runningDamage = 0.0;
 
-            description = GetDescription();
-            TriggerVisualPop();
+            RebuildDescription();
+            ctx.AnimatePop(this);
         }
     }
 
@@ -67,12 +93,6 @@ public class PentUpStrikePerk : BasePerk
         storedDamage = 0;
         storedStacks = 0;
         isReleasing = false;
-        description = GetDescription();
-    }
-
-    private string GetDescription()
-    {
-        int percent = 50 + currentLevel * 50;
-        return $"Attacks deal 0 damage but still knockback. Dice values are stored. Skip to unleash all stored damage at {percent}%.\nStored: {storedDamage} ({storedStacks} stacks)";
+        RebuildDescription();
     }
 }

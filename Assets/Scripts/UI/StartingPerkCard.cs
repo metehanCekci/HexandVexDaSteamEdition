@@ -63,6 +63,7 @@ public class StartingPerkCard : MonoBehaviour
         }
 
         // Description
+        perk.RebuildDescription();
         if (descriptionText != null)
             descriptionText.text = perk.renderedDescription;
 

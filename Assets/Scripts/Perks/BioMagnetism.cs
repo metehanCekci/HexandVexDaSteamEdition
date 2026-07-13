@@ -1,14 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class BioMagnetismPerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Epic;
-    }
+        { "pull",       GameKeywords.Action("Pull") },
+        { "levelStart", GameKeywords.Action("level start") }
+    };
 
-    public override void OnAcquire()
-    {
-        priority = 1; // Sıralaması önemli değil, savaş başlamadan özel olarak çağırıyoruz.
-    }
 }

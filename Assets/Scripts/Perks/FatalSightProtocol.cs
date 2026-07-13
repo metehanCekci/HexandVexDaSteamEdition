@@ -1,4 +1,5 @@
-using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Fatal Sight Protocol (Legendary)
@@ -7,29 +8,31 @@ using UnityEngine;
 /// </summary>
 public class FatalSightProtocolPerk : BasePerk
 {
-    void OnEnable()
-    {
-        perkName    = "Fatal Sight Protocol";
-        description = "All attacks are Critical Hits. Each 1% Crit Chance converts to +1% Crit Damage.";
-        rarity      = PerkRarity.Legendary;
-        maxLevel    = 1;
-        priority    = 1; // Önce çalışsın, sonraki perkler critHit=true üzerine eklensin
-    }
+    // Replay edilirse criticalChance->criticalDamageMultiplier transferini iki kez yapardi.
+    public override bool CanBeRetriggeredByPerks => false;
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
+        { "attacks", GameKeywords.Action("attacks") },
+        { "crit",    GameKeywords.Crit("Critical Hits") },
+        { "chance",  GameKeywords.CritPlus(1, "crit chance") },
+        { "dmg",     GameKeywords.CritPlus(1, "crit damage") }
+    };
+
+    public override IEnumerator OnEvent(CombatContext ctx)
+    {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+
         var rm = RunManager.instance;
-        if (rm == null) return;
+        if (rm == null) yield break;
 
-        // Her saldırıda: birikmiş critChance varsa dönüştür
-        // (sonradan alınan crit perkleri de bu şekilde yakalanır)
         if (rm.criticalChance > 0f)
         {
-            // critChance → critDamage: 1:1 dönüşüm (0.10 critChance = +0.10 critDamage)
             rm.criticalDamageMultiplier += rm.criticalChance;
             rm.criticalChance = 0f;
         }
 
-        payload.isCriticalHit = true;
+        ctx.payload.isCriticalHit = true;
     }
 }

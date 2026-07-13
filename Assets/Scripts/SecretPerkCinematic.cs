@@ -125,7 +125,7 @@ public class SecretPerkCinematic : MonoBehaviour
         perkNameText.color = new Color(1f, 0.27f, 0.27f, 1f); // Secret kırmızı
         perkNameText.fontStyle = FontStyles.Bold;
         perkNameText.raycastTarget = false;
-        perkNameText.enableWordWrapping = false;
+        perkNameText.textWrappingMode = TextWrappingModes.NoWrap;
         RectTransform nameRT = nameGO.GetComponent<RectTransform>();
         nameRT.anchorMin = nameRT.anchorMax = new Vector2(0.5f, 0.38f);
         nameRT.sizeDelta = new Vector2(800, 60);

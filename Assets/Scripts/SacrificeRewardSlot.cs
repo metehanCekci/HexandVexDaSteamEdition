@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class SacrificeRewardSlot : MonoBehaviour
+public class SacrificeRewardSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     public Image background;
     public Image iconImage;
@@ -14,19 +15,42 @@ public class SacrificeRewardSlot : MonoBehaviour
 
     private PerkRarity slotRarity;
     private int cost;
+    private bool isLocked;
+    private int lockedUntilVisit;
+    private GameObject currentPerkPrefab;
 
     public void Setup(PerkRarity rarity, GameObject perkPrefab, int perkCost)
     {
+        Setup(rarity, perkPrefab, perkCost, false, 0);
+    }
+
+    // lockedUntilVisit: 1-based sacrifice visit number at which this slot unlocks.
+    // Only meaningful when locked=true.
+    public void Setup(PerkRarity rarity, GameObject perkPrefab, int perkCost, bool locked, int lockedUntilVisit)
+    {
         slotRarity = rarity;
         cost = perkCost;
+        isLocked = locked;
+        this.lockedUntilVisit = lockedUntilVisit;
+        this.currentPerkPrefab = perkPrefab;
 
-        if (perkPrefab != null)
+        // Slot needs a raycastable graphic so PointerEnter/Exit fire
+        if (background != null) background.raycastTarget = true;
+
+        if (locked)
+        {
+            if (nameText != null) nameText.text = "LOCKED";
+            if (descText != null) descText.text = $"Unlocks at Sacrifice #{lockedUntilVisit}";
+            if (iconImage != null) iconImage.enabled = false;
+        }
+        else if (perkPrefab != null)
         {
             BasePerk bp = perkPrefab.GetComponent<BasePerk>();
             if (bp != null)
             {
+                bp.RebuildDescription();
                 if (nameText != null) nameText.text = bp.perkName;
-                if (descText != null) descText.text = bp.description;
+                if (descText != null) descText.text = bp.renderedDescription;
                 if (iconImage != null && bp.icon != null)
                 {
                     iconImage.sprite = bp.icon;
@@ -41,7 +65,7 @@ public class SacrificeRewardSlot : MonoBehaviour
             if (iconImage != null) iconImage.enabled = false;
         }
 
-        if (costText != null) costText.text = $"{cost} PERKS";
+        if (costText != null) costText.text = locked ? "LOCKED" : $"{cost} PERKS";
         if (rarityLabel != null)
         {
             rarityLabel.text = rarity.ToString().ToUpper();
@@ -51,6 +75,23 @@ public class SacrificeRewardSlot : MonoBehaviour
 
     public void SetHighlighted(bool active)
     {
+        if (isLocked)
+        {
+            // Locked — very dim, red-tinted cost, rarity label muted
+            if (background != null) background.color = new Color(0.04f, 0.02f, 0.04f, 0.85f);
+            if (glowBorder != null) glowBorder.gameObject.SetActive(false);
+            if (iconImage != null) iconImage.color = new Color(0.2f, 0.2f, 0.2f, 0.4f);
+            if (nameText != null) nameText.color = new Color(0.55f, 0.2f, 0.2f);
+            if (descText != null) descText.color = new Color(0.65f, 0.5f, 0.3f);
+            if (costText != null) costText.color = new Color(0.5f, 0.2f, 0.2f);
+            if (rarityLabel != null)
+            {
+                Color rc = GetRarityColor(slotRarity);
+                rarityLabel.color = new Color(rc.r * 0.4f, rc.g * 0.4f, rc.b * 0.4f, 1f);
+            }
+            return;
+        }
+
         if (active)
         {
             // Aktif — karartma yok, her şey net görünür
@@ -73,15 +114,33 @@ public class SacrificeRewardSlot : MonoBehaviour
         }
     }
 
-    public static Color GetRarityColor(PerkRarity rarity)
+    public static Color GetRarityColor(PerkRarity rarity) => UIColors.GetRarityColor(rarity);
+
+    // ─── Tooltip (uses the shared perk tooltip on ActivePerkBar) ───
+
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        switch (rarity)
+        if (ActivePerkBar.instance == null) return;
+        RectTransform anchor = transform as RectTransform;
+        if (anchor == null) return;
+
+        if (isLocked)
         {
-            case PerkRarity.Rare:      return new Color(0.27f, 0.53f, 1f);
-            case PerkRarity.Epic:      return new Color(0.67f, 0.27f, 1f);
-            case PerkRarity.Legendary: return new Color(1f, 0.67f, 0f);
-            case PerkRarity.Secret:    return new Color(1f, 0.27f, 0.27f);
-            default:                   return Color.white;
+            string title = $"{slotRarity.ToString().ToUpper()} LOCKED";
+            string body = $"Unlocks at Sacrifice #{lockedUntilVisit}.\nVisit more sacrifice nodes to access this tier.";
+            ActivePerkBar.instance.ShowGenericTooltip(title, body, GetRarityColor(slotRarity), anchor);
         }
+        else if (currentPerkPrefab != null)
+        {
+            BasePerk bp = currentPerkPrefab.GetComponent<BasePerk>();
+            if (bp != null)
+                ActivePerkBar.instance.ShowPerkTooltip(bp, anchor);
+        }
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (ActivePerkBar.instance != null)
+            ActivePerkBar.instance.HideSharedTooltip();
     }
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -8,15 +8,16 @@ public class PerkLeechPerk : BasePerk
     private const int FRAGMENTS_NEEDED = 3;
     private bool isMerging = false;
 
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Rare;
-    }
+        { "kill",    GameKeywords.Action("kill") },
+        { "needed",  GameKeywords.Counter(FRAGMENTS_NEEDED.ToString()) },
+        { "current", GameKeywords.Counter($"{fragments}/{FRAGMENTS_NEEDED}") }
+    };
 
     public override void OnAcquire()
     {
-        description = GetDescription();
+        RebuildDescription();
     }
 
     public override void OnEnemyKilled(EnemyMovement enemy)
@@ -24,7 +25,7 @@ public class PerkLeechPerk : BasePerk
         if (enemy == null || !enemy.isElite || isMerging) return;
 
         fragments++;
-        description = GetDescription();
+        RebuildDescription();
 
         TriggerVisualPop();
 
@@ -34,14 +35,9 @@ public class PerkLeechPerk : BasePerk
         if (fragments >= FRAGMENTS_NEEDED)
         {
             fragments = 0;
-            description = GetDescription();
+            RebuildDescription();
             StartCoroutine(MergeFragmentsAndGrantPerk());
         }
-    }
-
-    private string GetDescription()
-    {
-        return $"Earn a implant fragment when you kill an elite enemy. 3 fragments = random implant.\nFragments: {fragments}/{FRAGMENTS_NEEDED}";
     }
 
     private IEnumerator MergeFragmentsAndGrantPerk()
@@ -49,8 +45,8 @@ public class PerkLeechPerk : BasePerk
         isMerging = true;
 
         GameObject perkPrefab = null;
-        if (LevelUpManager.instance != null)
-            perkPrefab = LevelUpManager.instance.GetRandomPerkByRarity(false);
+        if (MergedShopManager.instance != null)
+            perkPrefab = MergedShopManager.instance.GetRandomPerkByRarity(false);
 
         if (perkPrefab == null) { isMerging = false; yield break; }
 
@@ -79,7 +75,7 @@ public class PerkLeechPerk : BasePerk
             yield return null;
         }
 
-        // 3 fragment — ucgen formasyonda, 1/3 boyut
+        // 3 fragment â€” ucgen formasyonda
         float radius = 0.5f;
         float fragScale = 0.2f;
         List<Transform> frags = new List<Transform>();
@@ -158,7 +154,6 @@ public class PerkLeechPerk : BasePerk
         }
         Object.Destroy(flash);
 
-        // Kisa bekleme, sonra fade out
         yield return new WaitForSeconds(0.15f);
 
         dur = 0.2f; e = 0f;

@@ -1,20 +1,26 @@
-using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class CapitalistPunchPerk : BasePerk
 {
-    void OnEnable() { maxLevel = 1; rarity = PerkRarity.Legendary; description = "Every 5 gold you have grants +1 damage to all dice."; }
-
-    public override void ModifyCombat(CombatPayload payload)
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        if (RunManager.instance == null) return;
+        { "cost",  GameKeywords.Gold(5) },
+        { "bonus", GameKeywords.Plus(1, "damage") }
+    };
 
-        int bonus = RunManager.instance.currentGold / 5; // Her 5 altın için +1 hasar
-        if (bonus > 0)
-        {
-            for (int i = 0; i < payload.diceRolls.Count; i++)
-                payload.diceRolls[i] += bonus;
-            if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-                TriggerVisualPop();
-        }
+    public override IEnumerator OnEvent(CombatContext ctx)
+    {
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        if (RunManager.instance == null) yield break;
+
+        int bonus = RunManager.instance.currentGold / 5;
+        if (bonus <= 0) yield break;
+
+        for (int i = 0; i < ctx.payload.diceRolls.Count; i++)
+            ctx.payload.diceRolls[i] += bonus;
+        ctx.payload.ApplyAdd(bonus * ctx.payload.diceRolls.Count);
+        ctx.AnimatePop(this);
     }
 }

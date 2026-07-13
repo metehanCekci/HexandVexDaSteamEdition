@@ -47,9 +47,11 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Hydraulic Impact
-  description: Enemies knocked into walls take massive bonus damage based on their
-    max health.
+  description: '[white]Pushing[/white] an enemy into a wall deals {wallDmg} of their
+    max [green]HP[/green].'
   icon: {fileID: 1285743474836564925, guid: af7022d079a62134697efbc3739b04ea, type: 3}
   priority: 0
   isRerollPerk: 0
+  processLast: 0
+  isPerkRetrigger: 0
   rarity: 2

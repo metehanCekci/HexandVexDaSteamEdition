@@ -1,19 +1,16 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// Host Syndrome (Legendary)
 /// Gain +1 extra die for every enemy currently adjacent to you.
-/// Extra dice are added before rolling in TurnManager.
 /// </summary>
 public class HostSyndromePerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        perkName     = "Host Syndrome";
-        description  = "Roll +1 extra die for every enemy adjacent to you.";
-        rarity       = PerkRarity.Legendary;
-        maxLevel     = 1;
-    }
+        { "bonus", GameKeywords.Plus(1, "die") }
+    };
 
     /// <summary>Called by TurnManager before rolling dice. Returns extra dice count.</summary>
     public int GetExtraDice()

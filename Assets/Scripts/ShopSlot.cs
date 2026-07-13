@@ -136,7 +136,7 @@ public class ShopSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         descText.alignment = TextAlignmentOptions.Left; // Windows menüsü gibi Sola Dayalı
         descText.color = new Color(0.9f, 0.9f, 0.9f, 1f); // Hafif kırık beyaz
         descText.raycastTarget = false;
-        descText.enableWordWrapping = true;
+        descText.textWrappingMode = TextWrappingModes.Normal;
 
         // ==========================================
         // İÇERİK: FİYAT (Coin ikonu + Fiyat)

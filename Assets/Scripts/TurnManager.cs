@@ -54,6 +54,7 @@ public class TurnManager : MonoBehaviour
     [HideInInspector] public CoinDropService coinService;
     private DiceUIController diceUI;
     private PerkCombatProcessor perkProcessor;
+    public PerkCombatProcessor PerkProcessor => perkProcessor;
     [HideInInspector] public bool isLevelClearTriggered = false;
     private bool manualDiceSkip = false;
     private bool speedDiceMode = false;
@@ -91,7 +92,7 @@ public class TurnManager : MonoBehaviour
     private static readonly Vector3Int[] oddOffsets = HexGridUtils.OddOffsets;
     private static readonly Vector3Int[] evenOffsets = HexGridUtils.EvenOffsets;
 
-    public int finalDamage = 0;
+    public long finalDamage = 0;
 
     [Header("Run Reset (R tuşu)")]
     private float holdRTimer = 0f;
@@ -212,13 +213,6 @@ public class TurnManager : MonoBehaviour
                 holdRTimer = 0f;
                 StopAllCoroutines();
                 Time.timeScale = 1f;
-
-                // Perk menüsünü zorla kapat
-                if (LevelUpManager.instance != null)
-                {
-                    LevelUpManager.instance.StopAllCoroutines();
-                    LevelUpManager.instance.ForceClose();
-                }
 
                 // Enchant seçim panelini zorla kapat
                 if (EnchantNodeUI.instance != null)
@@ -474,9 +468,9 @@ public class TurnManager : MonoBehaviour
 
     private void DebugEquipAllPerks()
     {
-        if (LevelUpManager.instance == null || RunManager.instance == null) return;
-        var lum = LevelUpManager.instance;
-        List<List<GameObject>> allLists = new List<List<GameObject>> { lum.commonPerks, lum.rarePerks, lum.epicPerks, lum.legendaryPerks };
+        if (MergedShopManager.instance == null || RunManager.instance == null) return;
+        var shop = MergedShopManager.instance;
+        List<List<GameObject>> allLists = new List<List<GameObject>> { shop.commonPerks, shop.rarePerks, shop.epicPerks, shop.legendaryPerks };
         int added = 0;
         foreach (var list in allLists)
         {
@@ -521,14 +515,14 @@ public class TurnManager : MonoBehaviour
             int moves = RunManager.instance.extraMovesPerTurn;
             RunManager.instance.remainingMoves = moves;
 
-            // Surge Boot: her tur başında sıfırla (Use() anında aktifleştirir)
-            RunManager.instance.surgeBootActive = false;
+            // Surge Boot: her tur başında sıfırla (Use() anında stack ekler)
+            RunManager.instance.surgeBootStacks = 0;
             RunManager.instance.surgeBootNextTurn = false;
 
             // Blue Magic Tile: activate surge boot (range-2 movement) while standing on it
             if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType blueCheck) && blueCheck == MagicTileType.Blue)
             {
-                RunManager.instance.surgeBootActive = true;
+                RunManager.instance.surgeBootStacks = 1;
                 MagicTileManager.instance.MarkBlueTileActive(player.GetCurrentCellPosition());
             }
 
@@ -566,10 +560,6 @@ public class TurnManager : MonoBehaviour
     }
     public void ResetGame()
     {
-        // Perk menüsünü zorla kapat
-        if (LevelUpManager.instance != null)
-            LevelUpManager.instance.ForceClose();
-
         // 1. Zamanı normale döndür (Pause'dan geliyorsa)
         Time.timeScale = 1f;
 
@@ -601,14 +591,14 @@ public class TurnManager : MonoBehaviour
             rm.bonusGoldPerKill = 0;
             rm.skipBonusGold = 0;
             rm.bonusDiceNextCombat = 0;
-            rm.doubleGoldNextKill = false;
-            rm.doubleDamageNextCombat = false;
-            rm.cleaveNextCombat = false;
+            rm.doubleGoldNextKillStacks = 0;
+            rm.doubleDamageNextCombatStacks = 0;
+            rm.cleaveNextCombatStacks = 0;
             rm.surgeBootNextTurn = false;
-            rm.surgeBootActive = false;
+            rm.surgeBootStacks = 0;
             rm.hasPerkReroll = false;
             rm.hasLuckyClover = false;
-            rm.hasMutationCatalyst = false;
+            rm.pendingRerollReset = false;
             // selectedWeapon sıfırlanMAZ — silah seçimi MainMenu'de yapılır, ResetGame silahı ezmesin
 
             // Perkleri temizle (Sahnedeki objeleri yok et)
@@ -658,7 +648,7 @@ public class TurnManager : MonoBehaviour
         activeMineCell = new Vector3Int(-999, -999, -999);
     }
 
-    public void PlayerTakeDamage(int amt)
+    public void PlayerTakeDamage(long amt)
     {
         if (player == null || player.health.currentHP <= 0) return;
         ResetCombo();
@@ -767,6 +757,13 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // Piggy bank interest payout — coins fly into gold counter; we hold until the animation wraps.
+        if (PiggyBankManager.instance != null)
+        {
+            float hold = PiggyBankManager.instance.PayInterest();
+            if (hold > 0f) yield return new WaitForSeconds(hold);
+        }
+
         // Map sistemi aktifse → haritaya dön
         if (MapManager.instance != null)
         {
@@ -777,7 +774,6 @@ public class TurnManager : MonoBehaviour
             bool isBossLevel = RunManager.instance.currentLevel > 0 && RunManager.instance.currentLevel % 5 == 0;
             if (isBossLevel) Shopmanager.instance.OnBossCleared(); else Shopmanager.instance.OnDungeonCleared();
         }
-        else if (LevelUpManager.instance != null) LevelUpManager.instance.ShowLevelUpScreen();
     }
 
     private void SetupCoinIcon()
@@ -1137,7 +1133,7 @@ public class TurnManager : MonoBehaviour
             payload.isCriticalHit = true;
         }
 
-        int totalDamage = payload.GetFinalDamage();
+        long totalDamage = payload.GetFinalDamage();
         if (!skipDiceVisuals)
         {
             UpdateTotalDamageDisplay(totalDamage);
@@ -1209,6 +1205,10 @@ public class TurnManager : MonoBehaviour
         player.ForceSetPosition(enemyCell);
         target.ForceSetPosition(playerCell);
 
+        // Phase Shift bir teleport — normal hareket akışına girmediği için HandlePlayerPhase'in
+        // tile efektlerini elle uygulamamız gerekiyor (yoksa yellow gold/orange move/red 2x kaybolur).
+        ApplyTeleportTileEffects(enemyCell);
+
         // Oyuncu büyür
         elapsed = 0f;
         while (elapsed < shrinkDur)
@@ -1224,8 +1224,8 @@ public class TurnManager : MonoBehaviour
         if (activeMineCell.y != -999 && target.GetCurrentCellPosition() == activeMineCell)
         {
             yield return new WaitForSeconds(0.1f);
-            var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
-            float mineDamagePercent = phantomPerk != null ? phantomPerk.currentLevel * 0.25f : 0.25f;
+            var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk) as PhantomLimbPerk;
+            float mineDamagePercent = phantomPerk != null ? phantomPerk.GetMineDamagePercent() : 0.25f;
             TriggerExplosion(activeMineCell, mineDamagePercent);
 
             if (target != null && target.health.currentHP > 0)
@@ -1260,6 +1260,32 @@ public class TurnManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
             StartCoroutine(EnemyPhase());
         }
+    }
+
+    // Apply enchanted tile step-on effects after a teleport (Phase Shift, etc.).
+    // Mirrors the yellow/orange handling in HandlePlayerPhase but skips movement-only logic
+    // (hex counters, blue tile distance check, hazard knockback) since this isn't a step.
+    private void ApplyTeleportTileEffects(Vector3Int playerCell)
+    {
+        if (MagicTileManager.instance == null || RunManager.instance == null) return;
+
+        // Yellow: stepping on grants +10 gold, then the tile is consumed (single-use).
+        if (MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType yellowStep) && yellowStep == MagicTileType.Yellow)
+        {
+            RunManager.instance.currentGold += 10;
+            GameEvents.GoldChanged(RunManager.instance.currentGold);
+            UpdateCoinUI();
+            MagicTileManager.instance.ConsumePlayerTile();
+        }
+
+        // Orange: consume the previous orange tile if we left it, mark the new one as the active orange.
+        // We don't grant the +1 move bonus here because Phase Shift ends the player turn immediately
+        // afterwards (remainingMoves = 0), so the bonus would just be wiped out.
+        MagicTileManager.instance.CheckOrangeTileConsumption(playerCell);
+        if (MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType orangeStep) && orangeStep == MagicTileType.Orange)
+            MagicTileManager.instance.MarkOrangeTileActive(playerCell);
+        // Red is intentionally NOT handled here — MultiAttack already detects it via IsPlayerOnMagicTile
+        // when the post-teleport adjacent attack fires, and consumes it on hit.
     }
 
     public void StartThornPlacement()
@@ -1589,7 +1615,7 @@ public class TurnManager : MonoBehaviour
         foreach (var e in enemiesToHit)
         {
             if (e == null) continue;
-            int explosionDamage = Mathf.Max(1, Mathf.RoundToInt(e.health.maxHP * damagePercent));
+            long explosionDamage = System.Math.Max(1L, (long)(e.health.maxHP * damagePercent));
             e.health.TakeDamage(explosionDamage);
 
             // Patlama sonrası alpha'yı hemen reset et (stun alpha kalmasın)
@@ -1644,7 +1670,7 @@ public class TurnManager : MonoBehaviour
         foreach (var e in enemiesToHit)
         {
             if (e == null) continue;
-            e.health.TakeDamage(Mathf.Max(1, e.health.maxHP / 2));
+            e.health.TakeDamage(System.Math.Max(1L, e.health.maxHP / 2));
         }
 
         // Oyuncu hasarı (merkez veya komşuda ise)
@@ -1784,9 +1810,9 @@ public class TurnManager : MonoBehaviour
         // Notify listeners (ShopDealer uses this to detect player stepping on its tile)
         GameEvents.PlayerMoved(playerCell);
 
-        // Surge Boot: hareketten sonra kapat
+        // Surge Boot: hareketten sonra kapat (tum stack'leri yak)
         if (RunManager.instance != null)
-            RunManager.instance.surgeBootActive = false;
+            RunManager.instance.surgeBootStacks = 0;
 
         // Blue Magic Tile: 2+ hex hareket edildiyse tüket
         if (MagicTileManager.instance != null)
@@ -2039,8 +2065,8 @@ public class TurnManager : MonoBehaviour
 
             if (victim != null && victim.health.currentHP > 0)
             {
-                var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
-                float mineDamagePercent = phantomPerk != null ? phantomPerk.currentLevel * 0.25f : 0.25f;
+                var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk) as PhantomLimbPerk;
+                float mineDamagePercent = phantomPerk != null ? phantomPerk.GetMineDamagePercent() : 0.25f;
                 TriggerExplosion(activeMineCell, mineDamagePercent);
 
                 if (victim != null && victim.health.currentHP > 0)
@@ -2251,8 +2277,8 @@ public class TurnManager : MonoBehaviour
                     EnemyMovement mineVictim = GetEnemyAtCell(activeMineCell);
                     if (mineVictim != null && mineVictim.health.currentHP > 0)
                     {
-                        var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk);
-                        float mineDmgPct = phantomPerk != null ? phantomPerk.currentLevel * 0.25f : 0.25f;
+                        var phantomPerk = RunManager.instance.activePerks.Find(p => p is PhantomLimbPerk) as PhantomLimbPerk;
+                        float mineDmgPct = phantomPerk != null ? phantomPerk.GetMineDamagePercent() : 0.25f;
                         TriggerExplosion(activeMineCell, mineDmgPct);
 
                         if (mineVictim != null && mineVictim.health.currentHP > 0)
@@ -2299,18 +2325,28 @@ public class TurnManager : MonoBehaviour
         if (RunManager.instance.bonusDiceNextCombat > 0) { extraDices += RunManager.instance.bonusDiceNextCombat; RunManager.instance.bonusDiceNextCombat = 0; }
         // Host Syndrome: +1 die per adjacent enemy
         foreach (var p in RunManager.instance.activePerks) if (p is HostSyndromePerk hostPerk) { extraDices += hostPerk.GetExtraDice(); }
-        // Dice Hoarder: +1 die per visited perk/shop level
+        // Dice Hoarder: +1 die per visited rest (active + stash kopyaları toplanır)
         foreach (var p in RunManager.instance.activePerks) if (p is DiceHoarderPerk hoardPerk) { extraDices += hoardPerk.GetExtraDice(); }
+        foreach (var p in RunManager.instance.inventoryPerks) if (p is DiceHoarderPerk hoardPerk) { extraDices += hoardPerk.GetExtraDice(); }
         // Green Magic Tile: +1 die while standing on it (single-use)
         if (MagicTileManager.instance != null && MagicTileManager.instance.IsPlayerOnMagicTile(out MagicTileType magicType) && magicType == MagicTileType.Green)
         {
             extraDices += 1;
             MagicTileManager.instance.ConsumePlayerTile();
         }
-        // Condensed Fury: roll 1 fewer die (minimum 1 die always)
-        int diceReduction = 0;
-        foreach (var p in RunManager.instance.activePerks) if (p is CondensedFuryPerk cfPerk) { diceReduction += cfPerk.GetDiceReduction(); }
-        int totalDice = Mathf.Max(1, diceCount + extraDices - diceReduction);
+        // Condensed Fury: tek zar at, kaybedilen zar sayisi kadar o zari retriggerla
+        int intendedDice = Mathf.Max(1, diceCount + extraDices);
+        int totalDice = intendedDice;
+        CondensedFuryPerk condensedFury = RunManager.instance.activePerks.Find(p => p is CondensedFuryPerk) as CondensedFuryPerk;
+        if (condensedFury != null && intendedDice > 1)
+        {
+            condensedFury.pendingRetriggerCount = intendedDice - 1;
+            totalDice = 1;
+        }
+        else if (condensedFury != null)
+        {
+            condensedFury.pendingRetriggerCount = 0;
+        }
         for (int i = 0; i < totalDice; i++) currentRolls.Add(Random.Range(1, 7));
         // Reroll stack: her zara kalıcı bonus ekle (AMA SADECE PERK VARSA)
         if (RunManager.instance != null && RunManager.instance.shopRerollStack > 0)
@@ -2373,7 +2409,7 @@ public class TurnManager : MonoBehaviour
 
         if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.ForceClose();
 
-        // Fatal Sight Protocol: isCriticalHit may already be set by a perk in ModifyCombat
+        // Fatal Sight Protocol: isCriticalHit may already be set by a perk in OnEvent(OnAttack)
         if (payload.isCriticalHit)
         {
             if (!skipDiceVisuals)
@@ -2394,11 +2430,11 @@ public class TurnManager : MonoBehaviour
         }
 
         // OverClok: zar gizlenmeden önce 2x hasarı göster
-        int finalDamage = payload.GetFinalDamage();
-        if (RunManager.instance.doubleDamageNextCombat)
+        long finalDamage = payload.GetFinalDamage();
+        if (RunManager.instance.doubleDamageNextCombatStacks > 0)
         {
             finalDamage *= 2;
-            RunManager.instance.doubleDamageNextCombat = false;
+            RunManager.instance.doubleDamageNextCombatStacks--;
             if (!skipDiceVisuals)
             {
                 UpdateTotalDamageDisplay(finalDamage);
@@ -2427,10 +2463,10 @@ public class TurnManager : MonoBehaviour
         HideDiceResults();
         diceUI.EndDiceAnim();
 
-        int damagePerEnemy = 0;
+        long damagePerEnemy = 0;
         if (targets.Count > 0)
         {
-            if (RunManager.instance.cleaveNextCombat) { damagePerEnemy = finalDamage; RunManager.instance.cleaveNextCombat = false; }
+            if (RunManager.instance.cleaveNextCombatStacks > 0) { damagePerEnemy = finalDamage; RunManager.instance.cleaveNextCombatStacks--; }
             else { damagePerEnemy = finalDamage / targets.Count; }
         }
 
@@ -2455,23 +2491,23 @@ public class TurnManager : MonoBehaviour
         foreach (var enemy in targets)
         {
             if (enemy == null) continue;
-            int actualDamage = damagePerEnemy;
+            long actualDamage = damagePerEnemy;
 
             // Pressure Point: dusmanin HP yuzdesine gore hasar carpani
             if (pressurePointPerk != null)
             {
-                float ppMult = pressurePointPerk.GetMultiplier(enemy);
-                actualDamage = Mathf.FloorToInt(actualDamage * ppMult);
+                double ppMult = pressurePointPerk.GetMultiplier(enemy);
+                actualDamage = (long)System.Math.Min(actualDamage * ppMult, long.MaxValue);
                 if (ppMult > 1f) pressurePointPerk.TriggerVisualPop();
             }
 
             // Necrotic Touch: %25 alti HP'deki dusmanlar 2x hasar alir
             if (necroticTouchPerk != null)
             {
-                float ntMult = necroticTouchPerk.GetMultiplier(enemy);
+                double ntMult = necroticTouchPerk.GetMultiplier(enemy);
                 if (ntMult > 1f)
                 {
-                    actualDamage = Mathf.FloorToInt(actualDamage * ntMult);
+                    actualDamage = (long)System.Math.Min(actualDamage * ntMult, long.MaxValue);
                     necroticTouchPerk.TriggerVisualPop();
                 }
             }
@@ -2479,28 +2515,36 @@ public class TurnManager : MonoBehaviour
             // Deadweight: stunlanmış düşmanlar ekstra hasar alır
             if (deadweightPerk != null && deadweightPerk.IsStunned(enemy))
             {
-                float dwMult = deadweightPerk.GetStunnedMultiplier();
-                actualDamage = Mathf.FloorToInt(actualDamage * dwMult);
+                double dwMult = deadweightPerk.GetStunnedMultiplier();
+                actualDamage = (long)System.Math.Min(actualDamage * dwMult, long.MaxValue);
                 deadweightPerk.TriggerVisualPop();
             }
 
             if (retributionPerk != null)
             {
-                int stackBonus = retributionPerk.GetBonusFor(enemy);
+                long stackBonus = retributionPerk.GetBonusFor(enemy);
                 retributionPerk.RegisterHit(enemy);
                 if (stackBonus > 0)
                 {
-                    // Retribution bonusunu payload multiplier ve crit ile scale et
-                    float scaledBonus = stackBonus * payload.multiplier;
+                    // Retribution bonusunu runningDamage seviyesine olcekle.
+                    // Balatro modelinde "birikmis multiplier" artik yok — bunun yerine
+                    // stackBonus'u zar tabanina gore olceklenmis etkin multiplier ile carpmaliyiz.
+                    // effectiveMult = runningDamage / baseSum (zar tabani).
+                    double baseSum = 0;
+                    foreach (int r in payload.diceRolls) baseSum += r;
+                    double effectiveMult = baseSum > 0 ? (payload.runningDamage / baseSum) : 1.0;
+                    if (effectiveMult <= 0) effectiveMult = 1.0;
+
+                    double scaledBonus = stackBonus * effectiveMult;
                     if (payload.isCriticalHit)
                         scaledBonus *= RunManager.instance.criticalDamageMultiplier;
-                    actualDamage += Mathf.FloorToInt(scaledBonus);
+                    actualDamage += (long)System.Math.Min(scaledBonus, long.MaxValue - actualDamage);
                     retributionPerk.TriggerVisualPop();
                     if (!skipDiceVisuals && PerkListUI.instance != null) PerkListUI.instance.TriggerShakeForPerk(retributionPerk);
                 }
             }
 
-            int hpBefore = enemy.health.currentHP;
+            long hpBefore = enemy.health.currentHP;
             bool dies = hpBefore <= actualDamage;
             enemy.health.TakeDamage(actualDamage, true);
             ApplyBurnIfActive(enemy);
@@ -2517,7 +2561,7 @@ public class TurnManager : MonoBehaviour
                 yield return new WaitForSeconds(0.2f);
                 if (AudioManager.instance != null) AudioManager.instance.PlayHit();
 
-                int echoDmg = actualDamage;
+                long echoDmg = actualDamage;
                 if (enemy.health.currentHP <= echoDmg) dies = true;
                 enemy.health.TakeDamage(echoDmg, true);
                 SpawnSlashEffect(enemy.transform.position);
@@ -2526,7 +2570,7 @@ public class TurnManager : MonoBehaviour
             // Overkill Protocol: fazla hasari baska dusmana aktar
             if (overkillPerk != null && dies)
             {
-                int overkill = actualDamage - hpBefore;
+                long overkill = actualDamage - hpBefore;
                 if (overkill > 0) overkillPerk.TransferOverkill(enemy, overkill);
             }
 
@@ -2538,16 +2582,24 @@ public class TurnManager : MonoBehaviour
             // ========================================================
             if (voodooPerk != null && enemies.Count > 1)
             {
-                // Hayatta olanları candan (büyükten küçüğe) sıralayıp liste haline getir
+                // Hayatta olanları candan (büyükten küçüğe) sıralayıp liste haline getir.
+                // Boss ve totemleri hariç tut — totem ölünce TotemDestroySequence devreye girer
+                // ve summonedMinions hayatlarını anında sıfırlıyor; aynı anda voodoo bu minion'lara
+                // vuruyorsa sprite haritada asılı kalabiliyor (ölüm akışları çakışıyor).
                 var others = enemies.Where(e => e != null && e != enemy && e.health.currentHP > 0
-                                            && !e.IsBoss)
+                                            && !e.IsBoss && !e.IsTotem)
                                     .OrderByDescending(e => e.health.currentHP)
                                     .ToList();
 
                 int voodooHits = Mathf.Min(voodooPerk.currentLevel, others.Count);
                 for (int v = 0; v < voodooHits; v++)
                 {
-                    others[v].health.TakeDamage(damagePerEnemy, true);
+                    // Voodoo Parasite ikincil hasari — AI/hareket interrupt etme (Pyrogenic Glands ile ayni pattern).
+                    // applyStun=false => HealthScript enemy.ApplyStun cagirmaz.
+                    // Warlock'un teleport etmemesi icin isBurnDamage flag'ini set et.
+                    var warlock = others[v].GetComponent<WarlockEnemyAI>();
+                    if (warlock != null) warlock.isBurnDamage = true;
+                    others[v].health.TakeDamage(damagePerEnemy, false, false);
 
                     SpawnSlashEffect(others[v].transform.position);
                 }
@@ -2749,10 +2801,10 @@ public class TurnManager : MonoBehaviour
             GameEvents.EnemyPushedIntoSpike(spikeTotal);
 
             yield return new WaitForSeconds(0.2f);
-            foreach (var s in spikedEnemies) { StartCoroutine(FlashHazardTileCoroutine(s.GetCurrentCellPosition())); s.health.TakeDamage(Mathf.Max(1, s.health.maxHP / 2)); }
+            foreach (var s in spikedEnemies) { StartCoroutine(FlashHazardTileCoroutine(s.GetCurrentCellPosition())); s.health.TakeDamage(System.Math.Max(1L, s.health.maxHP / 2)); }
 
             var acidPerk = RunManager.instance.activePerks.Find(p => p is AcidBloodPerk) as AcidBloodPerk;
-            if (acidPerk != null) { player.health.Heal(spikedEnemies.Count * acidPerk.currentLevel); acidPerk.TriggerVisualPop(); }
+            if (acidPerk != null) RunManager.instance.GrantHeal(acidPerk, spikedEnemies.Count * acidPerk.currentLevel);
 
             yield return new WaitForSeconds(0.2f);
             foreach (var s in spikedEnemies) if (s != null && s.health.currentHP > 0) { Vector3Int randomBounceCell = GetRandomSafeNeighbor(s.GetCurrentCellPosition()); s.StartKnockbackMovement(randomBounceCell); anyoneBounced = true; }
@@ -2904,7 +2956,7 @@ public class TurnManager : MonoBehaviour
 
     // ──────── Neural Hijack: Dost Düşman Sistemi ────────
 
-    private void ConvertToAlly(EnemyMovement enemy, int damage, EnemyMovement pushedEnemy = null)
+    private void ConvertToAlly(EnemyMovement enemy, long damage, EnemyMovement pushedEnemy = null)
     {
         enemy.isAllied = true;
         enemy.wasAllied = true;
@@ -2920,7 +2972,7 @@ public class TurnManager : MonoBehaviour
         enemy.isBumping = false;
 
         // Neural Hijack: oyuncunun bu saldırıdaki hasarını kaydet
-        enemy.hijackDamage = Mathf.Max(1, damage);
+        enemy.hijackDamage = System.Math.Max(1L, damage);
 
         // Sprite'ı itilen düşmana doğru çevir
         if (pushedEnemy != null)
@@ -3101,7 +3153,7 @@ public class TurnManager : MonoBehaviour
 
                 foreach (var target in targets)
                 {
-                    int allyDamage = Mathf.Max(1, ally.hijackDamage);
+                    long allyDamage = System.Math.Max(1L, ally.hijackDamage);
                     target.health.TakeDamage(allyDamage);
                     AllyKnockbackTarget(target, allyCell);
                 }
@@ -3202,7 +3254,7 @@ public class TurnManager : MonoBehaviour
         }
 
         // Damage
-        int allyDamage = Mathf.Max(1, ally.hijackDamage);
+        long allyDamage = System.Math.Max(1L, ally.hijackDamage);
         foreach (var c in lineCells)
         {
             EnemyMovement hit = GetEnemyAtCell(c);
@@ -3362,7 +3414,7 @@ public class TurnManager : MonoBehaviour
         }
 
         // Damage
-        int allyDamage = Mathf.Max(1, ally.hijackDamage);
+        long allyDamage = System.Math.Max(1L, ally.hijackDamage);
         foreach (var c in aoeCells)
         {
             EnemyMovement hit = GetEnemyAtCell(c);
@@ -3459,7 +3511,7 @@ public class TurnManager : MonoBehaviour
         if (perk != null) perk.TickBurns();
     }
 
-    public void UpdateTotalDamageDisplay(int val) => diceUI.UpdateTotalDamageDisplay(val);
+    public void UpdateTotalDamageDisplay(long val) => diceUI.UpdateTotalDamageDisplay(val);
     public void HideDiceResults() => diceUI.HideDiceResults();
     public void RegisterComboHit() => diceUI.RegisterComboHit();
     public void ResetCombo() => diceUI.ResetCombo();
@@ -3512,7 +3564,7 @@ public class TurnManager : MonoBehaviour
 
     private bool IsNeighbor(Vector3Int cell1, Vector3Int cell2) => HexGridUtils.IsNeighbor(cell1, cell2);
 
-    private Vector3Int GetRandomSafeNeighbor(Vector3Int centerCell)
+    public Vector3Int GetRandomSafeNeighbor(Vector3Int centerCell)
     {
         Vector3Int[] offsets = (centerCell.y % 2 != 0) ? evenOffsets : oddOffsets;
         List<Vector3Int> safeNeighbors = new List<Vector3Int>();
@@ -3733,7 +3785,7 @@ public class TurnManager : MonoBehaviour
 
     private Vector3Int OffsetToCube(Vector3Int o) => HexGridUtils.OffsetToCube(o);
 
-    private IEnumerator FlashHazardTileCoroutine(Vector3Int cell)
+    public IEnumerator FlashHazardTileCoroutine(Vector3Int cell)
     {
         Tilemap targetMap = LevelGenerator.instance.foreGroundA;
         if (targetMap == null) yield break;

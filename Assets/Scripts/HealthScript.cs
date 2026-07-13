@@ -9,11 +9,11 @@ using System.Collections;
 public class HealthScript : MonoBehaviour
 {    public static HitstopManager hitstopManager;
     [Header("HP Settings")]
-    public int maxHP = 3;
-    public int currentHP;
+    public long maxHP = 3;
+    public long currentHP;
 
     public System.Action OnDeath;
-    public System.Action<int> OnDamaged;
+    public System.Action<long> OnDamaged;
 
     public TMP_Text hptext;
 
@@ -79,7 +79,7 @@ public class HealthScript : MonoBehaviour
         }
     }
 
-    public void TakeDamage(int dmg, bool applyHitstop = false, bool applyStun = true)
+    public void TakeDamage(long dmg, bool applyHitstop = false, bool applyStun = true)
     {
         if (isDead) return;
 
@@ -145,7 +145,8 @@ public class HealthScript : MonoBehaviour
 
     private IEnumerator DamageFlash()
     {
-        spriteRenderer.color = Color.red;
+        Color dmg = UIColors.DamageColor;
+        spriteRenderer.color = dmg;
 
         float duration = 0.35f;
         float elapsed = 0f;
@@ -154,7 +155,7 @@ public class HealthScript : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             // originalColor'ın alpha'sı o sırada değişiyor olsa bile sorunsuz takip eder
-            spriteRenderer.color = Color.Lerp(Color.red, originalColor, elapsed / duration);
+            spriteRenderer.color = Color.Lerp(dmg, originalColor, elapsed / duration);
             yield return null;
         }
 
@@ -219,7 +220,7 @@ public class HealthScript : MonoBehaviour
     /// <summary>
     /// Hasar ver ama damage text ve camera shake gösterme (scaffold düşüşü gibi sessiz ölümler için).
     /// </summary>
-    public void TakeDamageSilent(int dmg)
+    public void TakeDamageSilent(long dmg)
     {
         if (isDead) return;
         currentHP -= dmg;
@@ -236,10 +237,10 @@ public class HealthScript : MonoBehaviour
         if (currentHP <= 0) Die();
     }
 
-    public void Heal(int amount)
+    public void Heal(long amount)
     {
         if (isDead) return;
-        currentHP = Mathf.Min(currentHP + amount, maxHP);
+        currentHP = System.Math.Min(currentHP + amount, maxHP);
 
         if (gameObject.CompareTag("Player") && RunManager.instance != null)
         {

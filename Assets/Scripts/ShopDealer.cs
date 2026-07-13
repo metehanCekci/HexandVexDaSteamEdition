@@ -157,7 +157,6 @@ public class ShopDealer : MonoBehaviour
                 }
                 while (usedIndices.Contains(poolIdx) ||
                        (selectedItem != null && secretItem != null && selectedItem.itemName == secretItem.itemName) ||
-                       (RunManager.instance != null && RunManager.instance.hasMutationCatalyst && selectedItem is MutationCatalyst) ||
                        selectedItem is LuckyClover);
                 usedIndices.Add(poolIdx);
             }
@@ -689,7 +688,7 @@ public class ShopDealer : MonoBehaviour
     {
         if (goldHudText == null) yield break;
         Color orig = goldHudText.color;
-        goldHudText.color = Color.red;
+        goldHudText.color = UIColors.CantAffordColor;
         yield return new WaitForSeconds(0.3f);
         goldHudText.color = orig;
     }

@@ -1,19 +1,19 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class OverkillProtocolPerk : BasePerk
 {
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        maxLevel = 1;
-        rarity = PerkRarity.Common;
-    }
+        { "overkill", GameKeywords.Action("Overkill") },
+        { "carry",    GameKeywords.Status("carries over") }
+    };
 
     /// <summary>
     /// Called by TurnManager after an enemy dies from combat damage.
     /// Returns the overkill amount to transfer to a random living enemy.
     /// </summary>
-    public void TransferOverkill(EnemyMovement deadEnemy, int overkillAmount)
+    public void TransferOverkill(EnemyMovement deadEnemy, long overkillAmount)
     {
         if (overkillAmount <= 0 || TurnManager.instance == null) return;
 

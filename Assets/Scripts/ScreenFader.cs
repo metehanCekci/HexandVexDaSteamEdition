@@ -64,7 +64,7 @@ public class ScreenFader : MonoBehaviour
         if (fadeAndLoadActive) return;
 
         // Logo sahnesi kendi fade'ini yönetiyor
-        if (FindObjectOfType<LogoSceneScript>() != null) return;
+        if (FindFirstObjectByType<LogoSceneScript>() != null) return;
 
         // Map sistemi aktifse fade'i MapManager kontrol ediyor
         if (MapManager.instance != null) return;

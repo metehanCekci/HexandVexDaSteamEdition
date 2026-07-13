@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -6,11 +6,11 @@ public class SporeCloudPerk : BasePerk
 {
     private bool subscribed = false;
 
-    void OnEnable()
+    public override System.Collections.Generic.Dictionary<string, object> GetDescValues() => new System.Collections.Generic.Dictionary<string, object>
     {
-        maxLevel = 3;
-        rarity = PerkRarity.Common;
-    }
+        { "stun",   GameKeywords.Status("stun") },
+        { "radius", GameKeywords.Counter(currentLevel.ToString()) }
+    };
 
     public override void OnAcquire()
     {
@@ -58,7 +58,7 @@ public class SporeCloudPerk : BasePerk
         subscribed = false;
     }
 
-    private void OnPlayerDamaged(int remainingHP)
+    private void OnPlayerDamaged(long remainingHP)
     {
         if (TurnManager.instance == null || TurnManager.instance.player == null) return;
 
@@ -76,8 +76,8 @@ public class SporeCloudPerk : BasePerk
             Vector3Int enemyCell = enemy.GetCurrentCellPosition();
             if (affectedCells.Contains(enemyCell))
             {
-                // 2 tur stun: bu turun sonunda DecreaseStunTurn 1 düşürecek,
-                // böylece saldıran düşman da bir sonraki tur stunlanmış kalır.
+                // 2 tur stun: bu turun sonunda DecreaseStunTurn 1 dÃ¼ÅŸÃ¼recek,
+                // bÃ¶ylece saldÄ±ran dÃ¼ÅŸman da bir sonraki tur stunlanmÄ±ÅŸ kalÄ±r.
                 enemy.ApplyStun(2, true);
             }
         }
@@ -124,10 +124,10 @@ public class SporeCloudPerk : BasePerk
 
         Vector3 center = groundMap.GetCellCenterWorld(playerCell);
 
-        // Merkez patlama — büyük ve parlak
+        // Merkez patlama â€” bÃ¼yÃ¼k ve parlak
         StartCoroutine(SpawnSmokeParticle(center, 2.0f + currentLevel * 0.6f, 0.85f, true));
 
-        // Her etkilenen cell'de ayrı duman parçacığı
+        // Her etkilenen cell'de ayrÄ± duman parÃ§acÄ±ÄŸÄ±
         float delay = 0f;
         foreach (var cell in cells)
         {
@@ -138,7 +138,7 @@ public class SporeCloudPerk : BasePerk
             delay += 0.04f;
         }
 
-        // Ekstra küçük parçacıklar — pop hissi
+        // Ekstra kÃ¼Ã§Ã¼k parÃ§acÄ±klar â€” pop hissi
         for (int i = 0; i < 4 + currentLevel * 2; i++)
         {
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
@@ -165,7 +165,7 @@ public class SporeCloudPerk : BasePerk
         sr.sprite = CreateCircleSprite();
         sr.sortingOrder = 100;
 
-        // Burst: parlak yeşil-sarı, normal: yeşil
+        // Burst: parlak yeÅŸil-sarÄ±, normal: yeÅŸil
         Color baseColor = isBurst
             ? new Color(0.5f, 0.9f, 0.2f, maxAlpha)
             : new Color(0.3f + Random.Range(0f, 0.2f), 0.7f + Random.Range(0f, 0.2f), 0.1f, maxAlpha);
@@ -181,7 +181,7 @@ public class SporeCloudPerk : BasePerk
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
 
-            // Pop efekti: hızlı büyüme sonra hafif geri çekilme
+            // Pop efekti: hÄ±zlÄ± bÃ¼yÃ¼me sonra hafif geri Ã§ekilme
             float scaleT;
             if (isBurst && t < 0.2f)
             {
@@ -195,7 +195,7 @@ public class SporeCloudPerk : BasePerk
                 smoke.transform.localScale = Vector3.Lerp(startScale, endScale, scaleT);
             }
 
-            // Alpha: hızlı yüksel, yavaş düş
+            // Alpha: hÄ±zlÄ± yÃ¼ksel, yavaÅŸ dÃ¼ÅŸ
             float alpha;
             if (t < 0.15f)
                 alpha = Mathf.Lerp(0f, maxAlpha, t / 0.15f);

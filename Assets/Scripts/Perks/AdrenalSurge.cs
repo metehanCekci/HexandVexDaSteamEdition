@@ -1,14 +1,19 @@
+using System.Collections;
+using System.Collections.Generic;
+
 public class AdrenalSurgePerk : BasePerk
 {
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        rarity = PerkRarity.Epic;
-    }
+        { "attack", GameKeywords.Action("attack") },
+        { "mult",   GameKeywords.Mult(2) }
+    };
 
-    public override void ModifyCombat(CombatPayload payload)
+    public override IEnumerator OnEvent(CombatContext ctx)
     {
-        payload.multiplier *= 2.0f;
-        if (TurnManager.instance != null && !TurnManager.instance.skipDiceVisuals)
-            TriggerVisualPop();
+        if (ctx.eventType != CombatEventType.OnAttack) yield break;
+        if (ctx.currentPerk != this) yield break;
+        ctx.payload.ApplyMult(2.0f);
+        ctx.AnimatePop(this);
     }
 }

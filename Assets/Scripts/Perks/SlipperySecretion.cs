@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Tilemaps;
 
@@ -11,11 +11,11 @@ public class SlipperySecretionPerk : BasePerk
     private bool initialized = false;
     private bool isEquipped = false;
 
-    void OnEnable()
+    public override Dictionary<string, object> GetDescValues() => new Dictionary<string, object>
     {
-        maxLevel = 3;
-        rarity = PerkRarity.Common;
-    }
+        { "trail", GameKeywords.Status("slime trail") },
+        { "slide", GameKeywords.Action("slide") }
+    };
 
     public override void OnAcquire()
     {
@@ -44,8 +44,8 @@ public class SlipperySecretionPerk : BasePerk
         mucusCells.Clear();
         trailHistory.Clear();
         initialized = false;
-        // InitTracking burada çağrılmaz — eski level'daki pozisyonu almasın.
-        // Update'teki lazy init yeni level'daki doğru pozisyonu alacak.
+        // InitTracking burada Ã§aÄŸrÄ±lmaz â€” eski level'daki pozisyonu almasÄ±n.
+        // Update'teki lazy init yeni level'daki doÄŸru pozisyonu alacak.
     }
 
     private void InitTracking()

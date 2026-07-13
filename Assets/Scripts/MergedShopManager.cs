@@ -70,10 +70,6 @@ public class MergedShopManager : MonoBehaviour
     public BaseItem secretItem;
     [Range(0f, 1f)] public float secretItemChance = 0.0005f;
 
-    [Header("Item Reroll (Mutation Catalyst)")]
-    public Button itemRerollButton;
-    public TMP_Text itemRerollText;
-
     // ═══════════════════════════════════════════
     // İÇ STATE
     // ═══════════════════════════════════════════
@@ -85,9 +81,9 @@ public class MergedShopManager : MonoBehaviour
 
     private int   perkRerollCount;
     private float currentPerkRerollCost;
+    private bool  catalystFreeRerollPending;
     private int   hoveredPerkIndex = -1;
     private int   hoveredItemIndex = -1;
-    private bool  itemRerollUsed;
 
     public static bool hasBoughtSecretItem = false;
 
@@ -116,6 +112,8 @@ public class MergedShopManager : MonoBehaviour
 
         // Gold event'ine abone ol — satış, F7 vb. gold değişince shop coin text güncellensin
         GameEvents.OnGoldChanged += OnGoldChangedHandler;
+        UIColors.OnChanged       += OnColorsChanged;
+        GameKeywords.OnChanged   += OnColorsChanged;
 
         // Kartlara ShopCardHover ekle (editor'den bake edilen eski EventTrigger'lari guncelle)
         UpgradeCardHovers();
@@ -275,30 +273,23 @@ public class MergedShopManager : MonoBehaviour
         coinRT.anchoredPosition = new Vector2(halfW + 4f + coinRT.sizeDelta.x * 0.5f, 0f);
     }
 
+    private static bool IsDisabledPerk(GameObject prefab)
+    {
+        if (prefab == null) return true;
+        var bp = prefab.GetComponent<BasePerk>();
+        if (bp == null) return false;
+        return bp is SeismicStepPerk;
+    }
+
     private void AutoPopulatePerkPools()
     {
-        // Önce LevelUpManager'dan dene
-        if (LevelUpManager.instance != null && LevelUpManager.instance.commonPerks.Count > 0)
-        {
-            commonPerks    = new List<GameObject>(LevelUpManager.instance.commonPerks);
-            rarePerks      = new List<GameObject>(LevelUpManager.instance.rarePerks);
-            epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
-            legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
-            Debug.Log($"[MergedShop] Perk pools from LevelUpManager: C={commonPerks.Count} R={rarePerks.Count} E={epicPerks.Count} L={legendaryPerks.Count}");
-
-            // Also feed SacrificeNodeManager while we have valid perk lists
-            if (SacrificeNodeManager.instance != null)
-                SacrificeNodeManager.instance.InjectPerkLists(rarePerks, epicPerks, legendaryPerks, GetSecretPerkPool());
-
-            return;
-        }
-
-        // LevelUpManager yoksa: projedeki tüm BasePerk prefab'larını tara
+        // Projedeki tüm BasePerk prefab'larını tara
         var allPerks = Resources.FindObjectsOfTypeAll<BasePerk>();
         foreach (var perk in allPerks)
         {
             // Scene objeleri değil, sadece prefab asset'leri al
             if (perk.gameObject.scene.IsValid()) continue;
+            if (perk is SeismicStepPerk) continue;
             GameObject prefab = perk.gameObject;
             switch (perk.rarity)
             {
@@ -441,13 +432,8 @@ public class MergedShopManager : MonoBehaviour
         // PerkInventoryUI'ı shop'un üstünde tut — tıklanabilir olsun
         EnsurePerkPanelAboveShop();
 
-        if (commonPerks.Count == 0 && LevelUpManager.instance != null)
-        {
-            commonPerks    = new List<GameObject>(LevelUpManager.instance.commonPerks);
-            rarePerks      = new List<GameObject>(LevelUpManager.instance.rarePerks);
-            epicPerks      = new List<GameObject>(LevelUpManager.instance.epicPerks);
-            legendaryPerks = new List<GameObject>(LevelUpManager.instance.legendaryPerks);
-        }
+        if (commonPerks.Count == 0)
+            AutoPopulatePerkPools();
 
         // Always try to inject — perks may have been cached earlier via fallback
         if (SacrificeNodeManager.instance != null && rarePerks != null && rarePerks.Count > 0)
@@ -455,7 +441,16 @@ public class MergedShopManager : MonoBehaviour
 
         perkRerollCount         = 0;
         currentPerkRerollCost   = perkRerollBaseCost;
-        itemRerollUsed          = false;
+        catalystFreeRerollPending = false;
+
+        // Mutation Catalyst: ilk reroll bedava + sayaç sıfırdan başlar
+        if (RunManager.instance != null && RunManager.instance.pendingRerollReset)
+        {
+            currentPerkRerollCost = 0f;
+            catalystFreeRerollPending = true;
+            RunManager.instance.pendingRerollReset = false;
+        }
+
         shownItemNames.Clear();
 
         EnsureAllCoinIcons();
@@ -463,7 +458,6 @@ public class MergedShopManager : MonoBehaviour
         GenerateItemChoices();
         RefreshGold();
         RefreshRerollButton();
-        RefreshItemRerollButton();
 
         if (panel != null)
         {
@@ -746,7 +740,7 @@ public class MergedShopManager : MonoBehaviour
             bool canAfford = RunManager.instance.currentGold >= perkSlots[i].price;
 
             if (perkSlots[i].priceText != null)
-                perkSlots[i].priceText.color = canAfford ? new Color(1f, 0.85f, 0.2f) : new Color(1f, 0.3f, 0.3f);
+                perkSlots[i].priceText.color = UIColors.GetAffordabilityColor(canAfford);
         }
     }
 
@@ -755,10 +749,10 @@ public class MergedShopManager : MonoBehaviour
         Debug.Log($"[MergedShop] >>> TryReroll CALLED on {this.GetType().Name}");
         if (RunManager.instance == null) { Debug.Log("[MergedShop] TryReroll: RunManager null!"); return; }
 
-        // Mutation Catalyst: bedava reroll (tek seferlik)
-        bool freeReroll = RunManager.instance.hasPerkReroll;
+        // Mutation Catalyst: Perk reroll hakki (bedava ve sayaci artirmaz, tek seferlik)
+        bool freeReroll = catalystFreeRerollPending || RunManager.instance.hasPerkReroll;
         int goldBefore = RunManager.instance.currentGold;
-        Debug.Log($"[MergedShop] TryReroll: hasPerkReroll={freeReroll}, baseCost={perkRerollBaseCost}, increment={perkRerollIncrement}, rerollCount={perkRerollCount}, currentCost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={goldBefore}");
+        Debug.Log($"[MergedShop] TryReroll: catalystFree={catalystFreeRerollPending}, hasPerkReroll={RunManager.instance.hasPerkReroll}, baseCost={perkRerollBaseCost}, increment={perkRerollIncrement}, rerollCount={perkRerollCount}, currentCost={Mathf.RoundToInt(currentPerkRerollCost)}, gold={goldBefore}");
         if (!freeReroll)
         {
             int cost = Mathf.RoundToInt(currentPerkRerollCost);
@@ -769,8 +763,15 @@ public class MergedShopManager : MonoBehaviour
         }
         else
         {
-            RunManager.instance.hasPerkReroll = false;
-            // Bedava reroll maliyeti artırmasın
+            if (catalystFreeRerollPending)
+            {
+                catalystFreeRerollPending = false;
+                currentPerkRerollCost = perkRerollBaseCost + perkRerollIncrement * perkRerollCount;
+            }
+            else
+            {
+                RunManager.instance.hasPerkReroll = false;
+            }
         }
 
         if (!freeReroll)
@@ -785,16 +786,25 @@ public class MergedShopManager : MonoBehaviour
         RefreshRerollButton();
     }
 
+    public void ApplyFreeRerollFromCatalyst()
+    {
+        catalystFreeRerollPending = true;
+        currentPerkRerollCost = 0f;
+        if (RunManager.instance != null) RunManager.instance.pendingRerollReset = false;
+        RefreshRerollButton();
+    }
+
     private void RefreshRerollButton()
     {
         if (RunManager.instance == null) return;
-        bool free = RunManager.instance.hasPerkReroll;
+        bool free = catalystFreeRerollPending || RunManager.instance.hasPerkReroll;
         int cost = free ? 0 : Mathf.RoundToInt(currentPerkRerollCost);
+        bool canAfford = free || RunManager.instance.currentGold >= cost;
         if (perkRerollPriceText != null)
-            perkRerollPriceText.text = $"REROLL  <color=#FFD933>{cost}</color>";
+            perkRerollPriceText.text = $"REROLL  <color=#{UIColors.GetAffordabilityHex(canAfford)}>{cost}</color>";
         PositionCoinIcon(rerollCoinRT, perkRerollPriceText);
         if (perkRerollButton != null)
-            perkRerollButton.interactable = free || RunManager.instance.currentGold >= cost;
+            perkRerollButton.interactable = canAfford;
     }
 
     private void HidePerkSection()
@@ -825,7 +835,10 @@ public class MergedShopManager : MonoBehaviour
         // Havuz tükenirse shownItemNames sıfırla
         int available = 0;
         foreach (var item in itemPool)
+        {
+            if (item == null || string.IsNullOrEmpty(item.itemName)) continue;
             if (!shownItemNames.Contains(item.itemName) && !IsItemInInventory(item)) available++;
+        }
         if (available < 3) shownItemNames.Clear();
 
         List<int> used = new List<int>();
@@ -841,10 +854,11 @@ public class MergedShopManager : MonoBehaviour
                 picked = itemPool[idx];
                 if (++safety > 100) break;
             }
-            while (used.Contains(itemPool.IndexOf(picked))
+            while (picked == null
+                || string.IsNullOrEmpty(picked.itemName)
+                || used.Contains(itemPool.IndexOf(picked))
                 || shownItemNames.Contains(picked.itemName)
                 || (secretItem != null && picked.itemName == secretItem.itemName)
-                || (RunManager.instance != null && RunManager.instance.hasMutationCatalyst && picked is MutationCatalyst)
                 || picked is LuckyClover
                 || IsItemInInventory(picked));
 
@@ -923,10 +937,13 @@ public class MergedShopManager : MonoBehaviour
         {
             if (itemPurchased.Count > i && itemPurchased[i]) continue;
             if (itemSlots[i].button == null) continue;
-            bool can = currentItems[i] != null && RunManager.instance.currentGold >= currentItems[i].price;
+            bool canAfford = currentItems[i] != null && RunManager.instance.currentGold >= currentItems[i].price;
+            bool can = canAfford;
             if (can && currentItems[i].itemType == ItemType.Consumable && InventoryManager.instance != null && !InventoryManager.instance.HasEmptySlot())
                 can = false;
             itemSlots[i].button.interactable = can;
+            if (itemSlots[i].priceText != null)
+                itemSlots[i].priceText.color = UIColors.GetAffordabilityColor(canAfford);
         }
     }
 
@@ -936,96 +953,14 @@ public class MergedShopManager : MonoBehaviour
         if (item == null || InventoryManager.instance == null) return false;
         // Sadece consumable itemleri filtrele — instant itemler envanterde tutulmaz
         if (item.itemType != ItemType.Consumable) return false;
+        // Showman perki: ayni iteme tekrar sahip olmaya izin ver — duplicate filtresi devre disi
+        if (RunManager.instance != null && RunManager.instance.HasShowman()) return false;
         for (int i = 0; i < InventoryManager.instance.SlotCount; i++)
         {
             BaseItem slot = InventoryManager.instance.GetItem(i);
             if (slot != null && slot.itemName == item.itemName) return true;
         }
         return false;
-    }
-
-    // ═══════════════════════════════════════════
-    // ITEM REROLL (Mutation Catalyst)
-    // ═══════════════════════════════════════════
-
-    private void RefreshItemRerollButton()
-    {
-        bool show = RunManager.instance != null && RunManager.instance.hasMutationCatalyst && !itemRerollUsed;
-
-        if (show && itemRerollButton == null)
-            CreateItemRerollButton();
-
-        if (itemRerollButton != null)
-        {
-            itemRerollButton.gameObject.SetActive(show);
-            itemRerollButton.interactable = !itemRerollUsed;
-        }
-    }
-
-    private void CreateItemRerollButton()
-    {
-        if (itemSection == null) return;
-
-        TMP_FontAsset font = Resources.Load<TMP_FontAsset>("alagard SDF");
-
-        var btnGO = new GameObject("ItemRerollButton", typeof(RectTransform));
-        btnGO.transform.SetParent(itemSection.transform, false);
-        btnGO.layer = LayerMask.NameToLayer("UI");
-
-        RectTransform btnRT = btnGO.GetComponent<RectTransform>();
-        btnRT.anchorMin = new Vector2(0.5f, 0f);
-        btnRT.anchorMax = new Vector2(0.5f, 0f);
-        btnRT.pivot = new Vector2(0.5f, 0f);
-        btnRT.anchoredPosition = new Vector2(0f, -45f);
-        btnRT.sizeDelta = new Vector2(200f, 40f);
-
-        Image btnImg = btnGO.AddComponent<Image>();
-        btnImg.color = new Color(0.1f, 0.15f, 0.2f, 0.95f);
-
-        itemRerollButton = btnGO.AddComponent<Button>();
-        var colors = itemRerollButton.colors;
-        colors.highlightedColor = new Color(0.15f, 0.25f, 0.35f, 1f);
-        colors.pressedColor = new Color(0.05f, 0.1f, 0.15f, 1f);
-        colors.disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.5f);
-        itemRerollButton.colors = colors;
-
-        var textGO = new GameObject("Text", typeof(RectTransform));
-        textGO.transform.SetParent(btnGO.transform, false);
-        textGO.layer = LayerMask.NameToLayer("UI");
-        RectTransform textRT = textGO.GetComponent<RectTransform>();
-        textRT.anchorMin = Vector2.zero;
-        textRT.anchorMax = Vector2.one;
-        textRT.offsetMin = Vector2.zero;
-        textRT.offsetMax = Vector2.zero;
-
-        itemRerollText = textGO.AddComponent<TextMeshProUGUI>();
-        itemRerollText.text = "REROLL ITEMS";
-        if (font != null) itemRerollText.font = font;
-        itemRerollText.fontSize = 18;
-        itemRerollText.alignment = TextAlignmentOptions.Center;
-        itemRerollText.color = new Color(0.4f, 0.9f, 0.6f, 1f);
-        itemRerollText.fontStyle = FontStyles.Bold;
-        itemRerollText.raycastTarget = false;
-
-        // Outline
-        var outline = btnGO.AddComponent<Outline>();
-        outline.effectColor = new Color(0.4f, 0.9f, 0.6f, 0.6f);
-        outline.effectDistance = new Vector2(1.5f, -1.5f);
-
-        itemRerollButton.onClick.AddListener(TryItemReroll);
-        AddRuntimeHoverScale(btnGO);
-    }
-
-    private void TryItemReroll()
-    {
-        if (RunManager.instance == null || !RunManager.instance.hasMutationCatalyst) return;
-        if (itemRerollUsed) return;
-
-        itemRerollUsed = true;
-        GenerateItemChoices();
-        RefreshItemRerollButton();
-
-        if (AudioManager.instance != null) AudioManager.instance.PlayCard();
     }
 
     private void HideItemSection()
@@ -1055,10 +990,17 @@ public class MergedShopManager : MonoBehaviour
     void OnDestroy()
     {
         GameEvents.OnGoldChanged -= OnGoldChangedHandler;
+        UIColors.OnChanged       -= OnColorsChanged;
+        GameKeywords.OnChanged   -= OnColorsChanged;
+    }
+
+    private void OnColorsChanged()
+    {
+        if (panel != null && panel.activeSelf) RefreshGold();
     }
 
     // ═══════════════════════════════════════════
-    // PERK HELPERS (LevelUpManager'dan kopyalandı)
+    // PERK HELPERS
     // ═══════════════════════════════════════════
 
     private bool AreAllPerksMaxed()
@@ -1105,20 +1047,15 @@ public class MergedShopManager : MonoBehaviour
         return false;
     }
 
-    private GameObject GetRandomPerkByRarity(bool forceLegendary)
+    public GameObject GetRandomPerkByRarity(bool forceLegendary)
     {
         if (forceLegendary && legendaryPerks.Count > 0)
             return legendaryPerks[Random.Range(0, legendaryPerks.Count)];
 
-        int level = RunManager.instance?.currentLevel ?? 0;
-
-        float legendaryChance;
-        if (level >= 16) legendaryChance = 0.08f;
-        else if (level >= 8)  legendaryChance = 0.06f;
-        else                  legendaryChance = 0.04f;
-
-        float epicChance = 0.10f;
-        float rareChance = 0.30f;
+        // Sabit dağılım: Common %70 / Rare %15 / Epic %10 / Legendary %5
+        float legendaryChance = 0.05f;
+        float epicChance      = 0.10f;
+        float rareChance      = 0.15f;
 
         float roll = Random.value;
         List<GameObject> pool;
@@ -1220,7 +1157,7 @@ public class MergedShopManager : MonoBehaviour
     {
         if (t == null) yield break;
         Color orig = t.color;
-        t.color = Color.red;
+        t.color = UIColors.CantAffordColor;
         yield return new WaitForSecondsRealtime(0.3f);
         t.color = orig;
     }
@@ -1239,7 +1176,7 @@ public class MergedShopManager : MonoBehaviour
         Vector2 origPos = rt != null ? rt.anchoredPosition : Vector2.zero;
 
         // Kırmızı flash + titreşim
-        t.color = Color.red;
+        t.color = UIColors.CantAffordColor;
         float duration = 0.4f;
         float elapsed = 0f;
         float shakeIntensity = 6f;
@@ -1296,7 +1233,9 @@ public class MergedShopPerkSlot
         }
 
         if (nameText        != null) nameText.text        = perk.perkName.ToUpperInvariant();
-        if (descriptionText != null) descriptionText.text = perk.description;
+        // Shop'ta runtime sayaclari (Currently: X) gizle — oyuncu henuz sahip degil
+        perk.RebuildDescription(includeStack: false);
+        if (descriptionText != null) descriptionText.text = perk.renderedDescription;
 
         // Rarity rengi
         Color col = GetRarityColor(perk.rarity);
@@ -1346,18 +1285,7 @@ public class MergedShopPerkSlot
         }
     }
 
-    private Color GetRarityColor(PerkRarity r)
-    {
-        switch (r)
-        {
-            case PerkRarity.Common:    return new Color(0.8f, 0.8f, 0.8f);
-            case PerkRarity.Rare:      return new Color(0.27f, 0.53f, 1f);
-            case PerkRarity.Epic:      return new Color(0.67f, 0.27f, 1f);
-            case PerkRarity.Legendary: return new Color(1f, 0.67f, 0f);
-            case PerkRarity.Secret:    return new Color(1f, 0.27f, 0.27f);
-            default:                   return Color.white;
-        }
-    }
+    private Color GetRarityColor(PerkRarity r) => UIColors.GetRarityColor(r);
 }
 
 // ─── Item Slot ───
@@ -1387,7 +1315,8 @@ public class MergedShopItemSlot
         }
 
         if (nameText        != null) nameText.text        = item.itemName.ToUpperInvariant();
-        if (descriptionText != null) descriptionText.text = item.description;
+        item.RebuildDescription();
+        if (descriptionText != null) descriptionText.text = item.renderedDescription;
         if (priceText       != null) priceText.text       = item.price.ToString();
 
         if (iconImage != null)

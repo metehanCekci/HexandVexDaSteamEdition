@@ -47,9 +47,11 @@ MonoBehaviour:
   currentLevel: 1
   maxLevel: 3
   perkName: Passive Enzyme
-  description: Earn +2 gold when you skip when there is more than one enemy.
+  description: '[white]Skip[/white] grants {reward}. No effect on bosses or last
+    enemy.'
   icon: {fileID: 7074404283537310230, guid: 82f8293bb55cb2b4bb000ba170c8368b, type: 3}
   priority: 0
   isRerollPerk: 0
   processLast: 0
+  isPerkRetrigger: 0
   rarity: 0
